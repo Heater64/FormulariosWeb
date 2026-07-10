@@ -1,0 +1,161 @@
+/* ============================================================
+   ESTILOS PRINCIPALES
+   ============================================================ */
+
+/* Glass effect */
+.glass {
+    background: rgba(255, 255, 255, 0.8);
+    backdrop-filter: blur(20px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+/* Botones */
+.btn-blue {
+    background: #007AFF;
+    color: white;
+    border-radius: 980px;
+    padding: 12px 24px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+}
+.btn-blue:hover { background: #0055CC; transform: scale(1.02); }
+.btn-blue:active { transform: scale(0.98); }
+
+.btn-red {
+    background: #FF3B30;
+    color: white;
+    border-radius: 980px;
+    padding: 8px 16px;
+    font-weight: 500;
+    transition: all 0.2s;
+    border: none;
+    cursor: pointer;
+    font-size: 13px;
+}
+.btn-red:hover { background: #D63031; }
+
+/* Tarjetas */
+.card {
+    background: white;
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    border: 1px solid #f0f0f0;
+    transition: all 0.2s;
+}
+.card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+
+/* Inputs */
+.form-input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 1px solid #e5e5e5;
+    border-radius: 12px;
+    transition: all 0.2s;
+    font-size: 16px;
+}
+.form-input:focus {
+    outline: none;
+    border-color: #007AFF;
+    box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+}
+
+/* Botón compartir */
+.share-btn {
+    background: #25D366;
+    color: white;
+    border: none;
+    padding: 8px 16px;
+    border-radius: 50px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-size: 13px;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+}
+.share-btn:hover { background: #128C7E; }
+
+/* Badges */
+.badge {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 50px;
+    font-size: 12px;
+    font-weight: 500;
+}
+.badge-blue { background: #E8F2FF; color: #007AFF; }
+.badge-green { background: #E8F5E9; color: #2E7D32; }
+.badge-purple { background: #F3E5F5; color: #7B1FA2; }
+.badge-red { background: #FFEBEE; color: #C62828; }
+
+/* Loading */
+.loading {
+    display: inline-block;
+    width: 20px;
+    height: 20px;
+    border: 3px solid #f3f3f3;
+    border-top: 3px solid #007AFF;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+}
+@keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+}
+
+/* Toast */
+.toast {
+    position: fixed;
+    bottom: 20px;
+    right: 20px;
+    background: #333;
+    color: white;
+    padding: 16px 24px;
+    border-radius: 16px;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+    z-index: 999;
+    animation: slideUp 0.3s ease;
+}
+.toast-success { background: #2E7D32; }
+.toast-error { background: #C62828; }
+.toast.hidden { display: none; }
+
+@keyframes slideUp {
+    from { transform: translateY(100px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+/* Estados vacíos */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+}
+.empty-state .icon { font-size: 64px; margin-bottom: 16px; }
+.empty-state h3 { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 8px; }
+.empty-state p { color: #999; }
+
+/* Opciones de preguntas */
+.question-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 6px;
+}
+.question-option input[type="text"] {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #e5e5e5;
+    border-radius: 8px;
+    font-size: 14px;
+}
+.question-option input[type="text"]:focus {
+    outline: none;
+    border-color: #007AFF;
+}
+
+/* Utilidades */
+.hidden { display: none !important; }
