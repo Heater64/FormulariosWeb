@@ -845,3 +845,1174 @@
         font-size: 10px;
     }
 }
+
+/* ============================================================
+   EDITOR - DISEÑO MODERNO TIPO "NOTION"
+   ============================================================ */
+
+/* ============================================================
+   HEADER DEL EDITOR
+   ============================================================ */
+.editor-header {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 24px;
+    padding: 0 4px;
+    flex-wrap: wrap;
+}
+
+.editor-header .btn-ghost {
+    color: var(--gray-400);
+    padding: 8px 12px;
+    border-radius: 10px;
+    transition: all 0.2s;
+    font-size: 14px;
+}
+
+.editor-header .btn-ghost:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.editor-header .btn-ghost .lucide {
+    transition: transform 0.2s;
+}
+
+.editor-header .btn-ghost:hover .lucide {
+    transform: translateX(-2px);
+}
+
+#editorTitle {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.editor-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    margin-left: auto;
+    flex-wrap: wrap;
+}
+
+.editor-header-actions .btn-secondary {
+    padding: 6px 14px;
+    font-size: 12px;
+    border-radius: 8px;
+    background: var(--gray-100);
+    color: var(--gray-600);
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+}
+
+.editor-header-actions .btn-secondary:hover {
+    background: var(--gray-200);
+    transform: translateY(-1px);
+}
+
+.editor-header-actions .btn-secondary .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+.editor-header-actions .btn-ghost {
+    padding: 6px 10px;
+    border-radius: 8px;
+    font-size: 12px;
+    color: var(--gray-400);
+    transition: all 0.2s;
+}
+
+.editor-header-actions .btn-ghost:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.auto-save-indicator {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-400);
+    padding: 4px 12px;
+    border-radius: 20px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.auto-save-indicator.saving {
+    color: #F59E0B;
+    border-color: #F59E0B;
+    background: #FFFBEB;
+}
+
+.auto-save-indicator.saved {
+    color: #10B981;
+    border-color: #10B981;
+    background: #ECFDF5;
+}
+
+/* ============================================================
+   TARJETA DEL TÍTULO - DISEÑO MODERNO
+   ============================================================ */
+.editor-card {
+    background: white;
+    border-radius: 16px;
+    padding: 28px 32px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.editor-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 3px;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899);
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.editor-card:focus-within::before {
+    opacity: 1;
+}
+
+.editor-title-input {
+    width: 100%;
+    font-size: 28px;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    color: var(--gray-900);
+    padding: 0;
+    transition: all 0.2s;
+    letter-spacing: -0.5px;
+}
+
+.editor-title-input:focus {
+    outline: none;
+}
+
+.editor-title-input::placeholder {
+    color: var(--gray-300);
+    font-weight: 500;
+}
+
+.editor-title-input:focus::placeholder {
+    color: var(--gray-200);
+}
+
+.editor-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 12px;
+    flex-wrap: wrap;
+    gap: 10px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-100);
+}
+
+.editor-question-counter {
+    font-size: 13px;
+    color: var(--gray-400);
+    font-weight: 500;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: var(--gray-50);
+    padding: 4px 14px;
+    border-radius: 20px;
+    border: 1px solid var(--gray-100);
+}
+
+.editor-question-counter .count-number {
+    color: var(--gray-700);
+    font-weight: 700;
+    font-size: 15px;
+}
+
+.editor-meta .toggle-container {
+    font-size: 12px;
+    color: var(--gray-500);
+}
+
+.editor-meta .toggle-container.active {
+    color: var(--gray-800);
+}
+
+.editor-meta .toggle-switch {
+    width: 34px;
+    height: 18px;
+}
+
+.editor-meta .toggle-switch::after {
+    width: 14px;
+    height: 14px;
+}
+
+/* ============================================================
+   PREGUNTAS - DISEÑO MODERNO CON CARDS
+   ============================================================ */
+.questions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.question-card {
+    background: white;
+    border-radius: 16px;
+    padding: 20px 24px;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06), 0 1px 2px rgba(0, 0, 0, 0.04);
+    border: 1px solid var(--gray-200);
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    position: relative;
+}
+
+.question-card:hover {
+    border-color: var(--gray-300);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.question-card:focus-within {
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 4px rgba(59, 130, 246, 0.08);
+}
+
+.question-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    background: linear-gradient(180deg, #3B82F6, #8B5CF6);
+    border-radius: 4px 0 0 4px;
+    opacity: 0;
+    transition: opacity 0.3s;
+}
+
+.question-card:focus-within::before {
+    opacity: 1;
+}
+
+.question-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 14px;
+    flex-wrap: wrap;
+}
+
+.question-drag-handle {
+    cursor: grab;
+    color: var(--gray-300);
+    padding: 4px 6px;
+    border-radius: 6px;
+    transition: all 0.2s;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    margin-top: 2px;
+}
+
+.question-drag-handle:hover {
+    background: var(--gray-100);
+    color: var(--gray-500);
+}
+
+.question-drag-handle:active {
+    cursor: grabbing;
+}
+
+.question-number {
+    color: var(--gray-400);
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 28px;
+    padding-top: 4px;
+    font-variant-numeric: tabular-nums;
+}
+
+.question-content {
+    flex: 1;
+    min-width: 200px;
+}
+
+.question-content .badge {
+    font-size: 10px;
+    padding: 2px 10px;
+    border-radius: 12px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.3px;
+}
+
+.question-title-input {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--gray-800);
+    padding: 0;
+    margin: 4px 0 8px 0;
+    transition: all 0.2s;
+}
+
+.question-title-input:focus {
+    outline: none;
+    color: var(--gray-900);
+}
+
+.question-title-input::placeholder {
+    color: var(--gray-400);
+    font-weight: 400;
+}
+
+.question-title-input:focus::placeholder {
+    color: var(--gray-300);
+}
+
+.question-preview {
+    margin-top: 8px;
+    padding: 12px 16px;
+    background: var(--gray-50);
+    border-radius: 10px;
+    border: 1px solid var(--gray-100);
+    transition: all 0.2s;
+}
+
+.question-preview:hover {
+    background: var(--gray-50);
+    border-color: var(--gray-200);
+}
+
+.question-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+    margin-left: auto;
+}
+
+.question-actions-row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.question-actions-row .btn-ghost {
+    padding: 3px 8px;
+    font-size: 11px;
+    border-radius: 6px;
+    color: var(--gray-400);
+    transition: all 0.2s;
+}
+
+.question-actions-row .btn-ghost:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+.question-actions-row .btn-ghost .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+.question-controls select {
+    font-size: 12px;
+    padding: 4px 10px;
+    border-radius: 8px;
+    border: 1px solid var(--gray-200);
+    background: white;
+    color: var(--gray-700);
+    cursor: pointer;
+    transition: all 0.2s;
+    appearance: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%2394a3b8' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+    background-repeat: no-repeat;
+    background-position: right 8px center;
+    padding-right: 28px;
+    min-width: 120px;
+}
+
+.question-controls select:hover {
+    border-color: var(--gray-300);
+}
+
+.question-controls select:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+}
+
+.question-controls .toggle-container {
+    font-size: 11px;
+    color: var(--gray-500);
+}
+
+.question-controls .toggle-container.active {
+    color: var(--gray-800);
+}
+
+.question-controls .toggle-switch {
+    width: 30px;
+    height: 16px;
+}
+
+.question-controls .toggle-switch::after {
+    width: 12px;
+    height: 12px;
+}
+
+.question-controls .toggle-switch.active::after {
+    left: 16px;
+}
+
+.question-controls .btn-danger {
+    padding: 4px 10px;
+    font-size: 11px;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--gray-400);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+}
+
+.question-controls .btn-danger:hover {
+    background: #FEF2F2;
+    color: #DC2626;
+    border-color: #FEE2E2;
+}
+
+.question-controls .btn-danger .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+/* ============================================================
+   OPCIONES DE PREGUNTAS - DISEÑO MODERNO
+   ============================================================ */
+.question-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+    padding: 4px 0;
+    transition: all 0.2s;
+}
+
+.question-option:hover {
+    background: var(--gray-50);
+    border-radius: 8px;
+    padding: 4px 8px;
+    margin-left: -8px;
+}
+
+.question-option input[type="text"] {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: all 0.2s;
+    background: white;
+    color: var(--gray-800);
+}
+
+.question-option input[type="text"]:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.question-option input[type="radio"],
+.question-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: #3B82F6;
+    flex-shrink: 0;
+    cursor: pointer;
+}
+
+.question-option .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 14px;
+    padding: 4px;
+    border-radius: 6px;
+    transition: all 0.2s;
+}
+
+.question-option .remove-btn:hover {
+    color: #DC2626;
+    background: #FEF2F2;
+}
+
+/* ============================================================
+   TOOLBAR - DISEÑO MODERNO
+   ============================================================ */
+.question-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    padding: 14px 20px;
+    background: white;
+    border-radius: 16px;
+    margin-top: 16px;
+    border: 1px solid var(--gray-200);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.04);
+    transition: all 0.3s;
+}
+
+.question-toolbar:hover {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.06);
+}
+
+.toolbar-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding-right: 12px;
+    border-right: 1px solid var(--gray-200);
+}
+
+.toolbar-section:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.toolbar-section-title {
+    font-size: 9px;
+    font-weight: 700;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    padding-right: 6px;
+    flex-shrink: 0;
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: all 0.2s;
+    white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+    background: #EFF6FF;
+    border-color: #3B82F6;
+    color: #1D4ED8;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(59, 130, 246, 0.12);
+}
+
+.toolbar-btn:active {
+    transform: translateY(0);
+}
+
+.toolbar-btn .lucide {
+    width: 14px;
+    height: 14px;
+    transition: transform 0.2s;
+}
+
+.toolbar-btn:hover .lucide {
+    transform: scale(1.1);
+}
+
+.toolbar-btn .shortcut {
+    font-size: 9px;
+    color: var(--gray-400);
+    font-weight: 400;
+    background: var(--gray-100);
+    padding: 1px 6px;
+    border-radius: 4px;
+    margin-left: 2px;
+}
+
+/* ============================================================
+   EDITOR ACTIONS - BOTÓN GUARDAR MODERNO
+   ============================================================ */
+.editor-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.editor-actions .btn-primary {
+    padding: 14px 32px;
+    font-size: 15px;
+    border-radius: 12px;
+    background: linear-gradient(135deg, #3B82F6, #2563EB);
+    box-shadow: 0 4px 14px rgba(59, 130, 246, 0.3);
+    transition: all 0.3s;
+}
+
+.editor-actions .btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 6px 20px rgba(59, 130, 246, 0.4);
+}
+
+.editor-actions .btn-primary:active {
+    transform: translateY(0);
+}
+
+.editor-actions .btn-primary .lucide {
+    transition: transform 0.3s;
+}
+
+.editor-actions .btn-primary:hover .lucide {
+    transform: scale(1.1);
+}
+
+/* ============================================================
+   MATCH / ORDER / IDENTIFY - ESTILOS MODERNOS
+   ============================================================ */
+.match-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.match-column {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 12px 16px;
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+}
+
+.match-column:hover {
+    border-color: var(--gray-300);
+}
+
+.match-column-title {
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--gray-400);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.match-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    transition: all 0.2s;
+}
+
+.match-item:hover {
+    background: white;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-left: -6px;
+}
+
+.match-item input[type="text"] {
+    flex: 1;
+    padding: 4px 10px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.match-item input[type="text"]:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.match-item .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.match-item .remove-btn:hover {
+    color: #DC2626;
+    background: #FEF2F2;
+}
+
+.match-pairs-input {
+    margin-top: 12px;
+}
+
+.match-pairs-input .form-input {
+    font-size: 13px;
+    padding: 6px 12px;
+    border-radius: 8px;
+}
+
+/* ============================================================
+   ORDER ITEMS
+   ============================================================ */
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+    transition: all 0.2s;
+}
+
+.order-item:hover {
+    background: white;
+    border-radius: 6px;
+    padding: 4px 6px;
+    margin-left: -6px;
+}
+
+.order-item .order-number {
+    color: var(--gray-400);
+    font-size: 13px;
+    font-weight: 600;
+    min-width: 24px;
+}
+
+.order-item input[type="text"] {
+    flex: 1;
+    padding: 4px 10px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 13px;
+    transition: all 0.2s;
+}
+
+.order-item input[type="text"]:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.order-item .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 2px 6px;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.order-item .remove-btn:hover {
+    color: #DC2626;
+    background: #FEF2F2;
+}
+
+/* ============================================================
+   IDENTIFY
+   ============================================================ */
+.identify-clues {
+    margin-top: 8px;
+}
+
+.identify-clues textarea {
+    font-size: 14px;
+    padding: 10px 14px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 10px;
+    width: 100%;
+    min-height: 60px;
+    resize: vertical;
+    font-family: inherit;
+    transition: all 0.2s;
+    background: white;
+}
+
+.identify-clues textarea:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+.identify-answer-input {
+    margin-top: 8px;
+}
+
+.identify-answer-input input {
+    font-size: 14px;
+    padding: 6px 12px;
+    border: 1.5px solid var(--gray-200);
+    border-radius: 8px;
+    width: 100%;
+    max-width: 300px;
+    transition: all 0.2s;
+}
+
+.identify-answer-input input:focus {
+    outline: none;
+    border-color: #3B82F6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.08);
+}
+
+/* ============================================================
+   IMAGE PREVIEW
+   ============================================================ */
+.image-preview {
+    background: var(--gray-50);
+    border-radius: 12px;
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+}
+
+.image-preview:hover {
+    border-color: var(--gray-300);
+}
+
+.image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    background: white;
+    border-radius: 8px;
+    border: 1.5px dashed var(--gray-300);
+    color: var(--gray-400);
+    transition: all 0.2s;
+}
+
+.image-placeholder:hover {
+    border-color: var(--gray-400);
+    background: var(--gray-50);
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: white;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+}
+
+/* ============================================================
+   RESPONSIVE - EDITOR MÓVIL
+   ============================================================ */
+@media (max-width: 768px) {
+    .editor-header {
+        flex-direction: column;
+        align-items: stretch;
+        gap: 10px;
+        margin-bottom: 16px;
+    }
+
+    .editor-header .btn-ghost {
+        align-self: flex-start;
+    }
+
+    #editorTitle {
+        font-size: 18px;
+    }
+
+    .editor-header-actions {
+        width: 100%;
+        justify-content: flex-start;
+        flex-wrap: wrap;
+        gap: 4px;
+        margin-left: 0;
+        padding-top: 8px;
+        border-top: 1px solid var(--gray-100);
+    }
+
+    .editor-header-actions .btn-secondary,
+    .editor-header-actions .btn-ghost {
+        font-size: 11px;
+        padding: 4px 10px;
+    }
+
+    .auto-save-indicator {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+
+    .editor-card {
+        padding: 16px 18px;
+        border-radius: 14px;
+    }
+
+    .editor-title-input {
+        font-size: 20px;
+    }
+
+    .editor-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+        margin-top: 8px;
+        padding-top: 10px;
+    }
+
+    .editor-meta .toggle-container {
+        font-size: 11px;
+    }
+
+    .question-card {
+        padding: 14px 16px;
+        border-radius: 14px;
+        margin-bottom: 8px;
+    }
+
+    .question-card-header {
+        flex-direction: column;
+        gap: 8px;
+    }
+
+    .question-number {
+        font-size: 12px;
+        min-width: 24px;
+    }
+
+    .question-title-input {
+        font-size: 14px;
+        margin: 2px 0 6px 0;
+    }
+
+    .question-preview {
+        padding: 10px 12px;
+        border-radius: 8px;
+    }
+
+    .question-controls {
+        display: flex;
+        flex-direction: row;
+        flex-wrap: wrap;
+        gap: 4px;
+        width: 100%;
+        justify-content: flex-start;
+        margin-top: 6px;
+        margin-left: 0;
+    }
+
+    .question-controls select {
+        font-size: 11px;
+        padding: 3px 8px;
+        padding-right: 24px;
+        border-radius: 6px;
+        min-width: 80px;
+        flex: 1;
+    }
+
+    .question-controls .toggle-container {
+        font-size: 10px;
+    }
+
+    .question-controls .toggle-switch {
+        width: 28px;
+        height: 15px;
+    }
+
+    .question-controls .toggle-switch::after {
+        width: 11px;
+        height: 11px;
+    }
+
+    .question-controls .toggle-switch.active::after {
+        left: 15px;
+    }
+
+    .question-actions-row {
+        display: flex;
+        gap: 2px;
+        width: 100%;
+        justify-content: flex-start;
+        order: 0;
+    }
+
+    .question-actions-row .btn-ghost {
+        padding: 2px 6px;
+        font-size: 10px;
+    }
+
+    .question-actions-row .btn-ghost .lucide {
+        width: 12px;
+        height: 12px;
+    }
+
+    .question-toolbar {
+        padding: 10px 12px;
+        gap: 6px;
+        border-radius: 14px;
+        margin-top: 12px;
+    }
+
+    .toolbar-section {
+        width: 100%;
+        border-right: none;
+        border-bottom: 1px solid var(--gray-100);
+        padding-bottom: 6px;
+        margin-bottom: 4px;
+        padding-right: 0;
+    }
+
+    .toolbar-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+        margin-bottom: 0;
+    }
+
+    .toolbar-section-title {
+        width: 100%;
+        margin-bottom: 2px;
+        font-size: 8px;
+        letter-spacing: 0.5px;
+    }
+
+    .toolbar-btn {
+        font-size: 10px;
+        padding: 3px 10px;
+        border-radius: 6px;
+    }
+
+    .toolbar-btn .lucide {
+        width: 12px;
+        height: 12px;
+    }
+
+    .toolbar-btn .shortcut {
+        display: none;
+    }
+
+    .editor-actions {
+        margin-top: 16px;
+        flex-direction: column;
+    }
+
+    .editor-actions .btn-primary {
+        width: 100%;
+        justify-content: center;
+        padding: 12px;
+        font-size: 14px;
+        border-radius: 12px;
+    }
+
+    .match-container {
+        grid-template-columns: 1fr;
+        gap: 10px;
+    }
+
+    .match-column {
+        padding: 10px 12px;
+    }
+
+    .question-option {
+        padding: 3px 0;
+    }
+
+    .question-option input[type="text"] {
+        font-size: 13px;
+        padding: 4px 10px;
+    }
+
+    .question-option input[type="radio"],
+    .question-option input[type="checkbox"] {
+        width: 16px;
+        height: 16px;
+    }
+
+    .order-item {
+        padding: 3px 0;
+    }
+
+    .order-item input[type="text"] {
+        font-size: 13px;
+        padding: 4px 10px;
+    }
+
+    .identify-clues textarea {
+        font-size: 13px;
+        padding: 8px 12px;
+        min-height: 50px;
+    }
+
+    .identify-answer-input input {
+        font-size: 13px;
+        max-width: 100%;
+    }
+}
+
+@media (max-width: 480px) {
+    .editor-card {
+        padding: 12px 14px;
+        border-radius: 12px;
+    }
+
+    .editor-title-input {
+        font-size: 17px;
+    }
+
+    .question-card {
+        padding: 10px 12px;
+        border-radius: 12px;
+    }
+
+    .question-title-input {
+        font-size: 13px;
+    }
+
+    .question-preview {
+        padding: 8px 10px;
+    }
+
+    .question-controls select {
+        font-size: 10px;
+        padding: 2px 6px;
+        padding-right: 20px;
+        min-width: 60px;
+    }
+
+    .toolbar-btn {
+        font-size: 9px;
+        padding: 2px 8px;
+    }
+
+    .toolbar-btn .lucide {
+        width: 10px;
+        height: 10px;
+    }
+
+    .editor-actions .btn-primary {
+        padding: 10px;
+        font-size: 13px;
+    }
+}

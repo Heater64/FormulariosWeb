@@ -1385,3 +1385,536 @@
         padding: 12px;
     }
 }
+
+/* ============================================================
+   CONFIRM DIALOG - ALERTA PERSONALIZADA (VERSIÓN COMPLETA)
+   ============================================================ */
+.confirm-dialog-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+.confirm-dialog-overlay.active {
+    opacity: 1;
+}
+
+.confirm-dialog-overlay.closing {
+    opacity: 0;
+}
+
+.confirm-dialog {
+    background: white;
+    border-radius: 24px;
+    padding: 36px 40px;
+    max-width: 440px;
+    width: 100%;
+    text-align: center;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    transform: scale(0.9) translateY(20px);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    position: relative;
+    overflow: hidden;
+}
+
+.confirm-dialog::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: linear-gradient(90deg, #3B82F6, #8B5CF6, #EC4899);
+}
+
+.confirm-dialog-overlay.active .confirm-dialog {
+    transform: scale(1) translateY(0);
+}
+
+.confirm-dialog-icon {
+    font-size: 52px;
+    margin-bottom: 16px;
+    display: inline-block;
+    animation: confirmPulse 1.8s ease-in-out infinite;
+}
+
+@keyframes confirmPulse {
+    0%, 100% { transform: scale(1) rotate(0deg); }
+    50% { transform: scale(1.1) rotate(-3deg); }
+}
+
+.confirm-dialog-title {
+    font-size: 22px;
+    font-weight: 700;
+    color: var(--gray-900);
+    margin-bottom: 8px;
+}
+
+.confirm-dialog-message {
+    font-size: 15px;
+    color: var(--gray-600);
+    line-height: 1.6;
+    margin-bottom: 28px;
+}
+
+.confirm-dialog-actions {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.confirm-dialog-actions .btn-secondary {
+    padding: 12px 28px;
+    font-size: 14px;
+    border-radius: 12px;
+    min-width: 120px;
+    background: var(--gray-100);
+    color: var(--gray-700);
+    border: 1px solid var(--gray-200);
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.confirm-dialog-actions .btn-secondary:hover {
+    background: var(--gray-200);
+    transform: translateY(-2px);
+}
+
+.confirm-dialog-actions .btn-danger {
+    padding: 12px 28px;
+    font-size: 14px;
+    border-radius: 12px;
+    min-width: 120px;
+    background: #FEF2F2;
+    color: #DC2626;
+    border: 1px solid #FEE2E2;
+    transition: all 0.2s;
+    font-weight: 600;
+}
+
+.confirm-dialog-actions .btn-danger:hover {
+    background: #FEE2E2;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 14px rgba(220, 38, 38, 0.3);
+}
+
+/* ============================================================
+   NOTIFICACIONES - VERSIÓN MEJORADA PARA MÓVIL
+   ============================================================ */
+.notification-container {
+    position: fixed;
+    top: 90px;
+    right: 20px;
+    z-index: 9999;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 420px;
+    width: 100%;
+    pointer-events: none;
+}
+
+.notification {
+    pointer-events: auto;
+    background: white;
+    border-radius: 16px;
+    padding: 16px 20px;
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.15), 0 1px 3px rgba(0, 0, 0, 0.06);
+    border-left: 4px solid var(--gray-400);
+    opacity: 0;
+    transform: translateX(50px) scale(0.95);
+    transition: all 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+    animation: notificationSlideIn 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+    backdrop-filter: blur(10px);
+    background: rgba(255, 255, 255, 0.95);
+    max-width: 420px;
+}
+
+.notification-success {
+    border-left-color: #10B981;
+    background: #F0FDF4;
+}
+
+.notification-error {
+    border-left-color: #EF4444;
+    background: #FEF2F2;
+}
+
+.notification-warning {
+    border-left-color: #F59E0B;
+    background: #FFFBEB;
+}
+
+.notification-info {
+    border-left-color: #3B82F6;
+    background: #EFF6FF;
+}
+
+.notification-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+}
+
+.notification-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+.notification-success .notification-icon {
+    background: #D1FAE5;
+    color: #065F46;
+}
+
+.notification-error .notification-icon {
+    background: #FEE2E2;
+    color: #991B1B;
+}
+
+.notification-warning .notification-icon {
+    background: #FEF3C7;
+    color: #92400E;
+}
+
+.notification-info .notification-icon {
+    background: #DBEAFE;
+    color: #1D4ED8;
+}
+
+.notification-message {
+    flex: 1;
+    font-size: 14px;
+    color: var(--gray-700);
+    line-height: 1.5;
+    font-weight: 500;
+}
+
+.notification-close {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    transition: all 0.2s;
+    border-radius: 6px;
+    flex-shrink: 0;
+    margin-top: 2px;
+}
+
+.notification-close:hover {
+    color: var(--gray-600);
+    background: var(--gray-100);
+}
+
+/* ============================================================
+   RESPONSIVE - NOTIFICACIONES Y DIALOGOS EN MÓVIL
+   ============================================================ */
+@media (max-width: 768px) {
+    /* Notificaciones en móvil */
+    .notification-container {
+        top: 76px;
+        right: 10px;
+        left: 10px;
+        max-width: none;
+    }
+
+    .notification {
+        padding: 14px 16px;
+        border-radius: 14px;
+        max-width: none;
+        border-left-width: 4px;
+    }
+
+    .notification-icon {
+        font-size: 18px;
+        width: 28px;
+        height: 28px;
+    }
+
+    .notification-message {
+        font-size: 13px;
+    }
+
+    .notification-close {
+        font-size: 14px;
+        padding: 2px 4px;
+    }
+
+    /* Diálogo de confirmación en móvil */
+    .confirm-dialog-overlay {
+        padding: 16px;
+        align-items: center;
+    }
+
+    .confirm-dialog {
+        padding: 28px 24px;
+        border-radius: 20px;
+        max-width: 100%;
+        margin: 0 8px;
+    }
+
+    .confirm-dialog::before {
+        height: 3px;
+    }
+
+    .confirm-dialog-icon {
+        font-size: 40px;
+        margin-bottom: 12px;
+    }
+
+    .confirm-dialog-title {
+        font-size: 19px;
+    }
+
+    .confirm-dialog-message {
+        font-size: 14px;
+        margin-bottom: 20px;
+        line-height: 1.5;
+    }
+
+    .confirm-dialog-actions {
+        flex-direction: column;
+        gap: 8px;
+        width: 100%;
+    }
+
+    .confirm-dialog-actions .btn-secondary,
+    .confirm-dialog-actions .btn-danger {
+        width: 100%;
+        justify-content: center;
+        padding: 14px;
+        font-size: 14px;
+        border-radius: 12px;
+        min-width: unset;
+    }
+
+    .confirm-dialog-actions .btn-secondary {
+        order: 2;
+        background: var(--gray-100);
+    }
+
+    .confirm-dialog-actions .btn-danger {
+        order: 1;
+    }
+}
+
+@media (max-width: 480px) {
+    /* Notificaciones en móvil pequeño */
+    .notification-container {
+        top: 68px;
+        right: 6px;
+        left: 6px;
+    }
+
+    .notification {
+        padding: 12px 14px;
+        border-radius: 12px;
+        font-size: 12px;
+    }
+
+    .notification-icon {
+        font-size: 16px;
+        width: 24px;
+        height: 24px;
+    }
+
+    .notification-message {
+        font-size: 12px;
+    }
+
+    .notification-close {
+        font-size: 12px;
+    }
+
+    /* Diálogo en móvil pequeño */
+    .confirm-dialog-overlay {
+        padding: 10px;
+    }
+
+    .confirm-dialog {
+        padding: 24px 18px;
+        border-radius: 16px;
+        margin: 0 4px;
+    }
+
+    .confirm-dialog-icon {
+        font-size: 36px;
+        margin-bottom: 10px;
+    }
+
+    .confirm-dialog-title {
+        font-size: 17px;
+    }
+
+    .confirm-dialog-message {
+        font-size: 13px;
+        margin-bottom: 16px;
+    }
+
+    .confirm-dialog-actions .btn-secondary,
+    .confirm-dialog-actions .btn-danger {
+        padding: 12px;
+        font-size: 13px;
+        border-radius: 10px;
+    }
+}
+
+/* ============================================================
+   ALERTAS - VERSIÓN COMPLETA PARA MÓVIL
+   ============================================================ */
+.alert {
+    padding: 14px 18px;
+    border-radius: var(--radius);
+    border: 1px solid transparent;
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    margin-bottom: 12px;
+    animation: alertSlideIn 0.3s ease;
+}
+
+.alert-icon {
+    font-size: 20px;
+    flex-shrink: 0;
+    margin-top: 1px;
+}
+
+.alert-content {
+    flex: 1;
+}
+
+.alert-title {
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.alert-message {
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+.alert-close {
+    background: none;
+    border: none;
+    color: inherit;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 4px;
+    opacity: 0.6;
+    transition: all 0.2s;
+    flex-shrink: 0;
+}
+
+.alert-close:hover {
+    opacity: 1;
+}
+
+.alert-info {
+    background: #EFF6FF;
+    border-color: #DBEAFE;
+    color: #1D4ED8;
+}
+
+.alert-info .alert-title {
+    color: #1E40AF;
+}
+
+.alert-success {
+    background: #ECFDF5;
+    border-color: #D1FAE5;
+    color: #065F46;
+}
+
+.alert-success .alert-title {
+    color: #064E3B;
+}
+
+.alert-warning {
+    background: #FFFBEB;
+    border-color: #FEF3C7;
+    color: #92400E;
+}
+
+.alert-warning .alert-title {
+    color: #78350F;
+}
+
+.alert-error {
+    background: #FEF2F2;
+    border-color: #FEE2E2;
+    color: #991B1B;
+}
+
+.alert-error .alert-title {
+    color: #7F1D1D;
+}
+
+/* ============================================================
+   RESPONSIVE - ALERTAS EN MÓVIL
+   ============================================================ */
+@media (max-width: 768px) {
+    .alert {
+        padding: 12px 14px;
+        border-radius: 12px;
+        gap: 10px;
+        margin-bottom: 10px;
+    }
+
+    .alert-icon {
+        font-size: 18px;
+    }
+
+    .alert-title {
+        font-size: 14px;
+    }
+
+    .alert-message {
+        font-size: 13px;
+    }
+
+    .alert-close {
+        font-size: 14px;
+        padding: 2px;
+    }
+}
+
+@media (max-width: 480px) {
+    .alert {
+        padding: 10px 12px;
+        border-radius: 10px;
+        gap: 8px;
+        margin-bottom: 8px;
+    }
+
+    .alert-icon {
+        font-size: 16px;
+    }
+
+    .alert-title {
+        font-size: 13px;
+    }
+
+    .alert-message {
+        font-size: 12px;
+    }
+}

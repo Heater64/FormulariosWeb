@@ -20,10 +20,10 @@
             created_at: new Date().toISOString() 
         },
         { 
-            id: 'alumno', 
-            username: 'alumno',
-            fullName: 'Alumno Demo', 
-            password: 'alumno123', 
+            id: 'darwin', 
+            username: 'Darwin',
+            fullName: 'DARWIN', 
+            password: 'dnmr2009', 
             role: 'alumno', 
             active: true, 
             created_at: new Date().toISOString() 

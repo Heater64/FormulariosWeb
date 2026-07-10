@@ -1022,6 +1022,64 @@ window.saveForm = async function(showNotification = true) {
     } catch (error) {
         Utils.showNotification('Error al guardar: ' + error.message, 'error');
     }
+
+    // ============================================================
+// INDICADOR DE GUARDADO - MODERNO
+// ============================================================
+
+function updateAutoSaveIndicator(text, status = 'idle') {
+    const indicator = document.getElementById('autoSaveIndicator');
+    if (!indicator) return;
+    
+    indicator.textContent = text;
+    indicator.className = 'auto-save-indicator';
+    
+    if (status === 'saving') {
+        indicator.classList.add('saving');
+    } else if (status === 'saved') {
+        indicator.classList.add('saved');
+    }
+}
+
+// Modificar la función onFormChange
+window.onFormChange = function() {
+    isFormChanged = true;
+    updateAutoSaveIndicator('⏳ Sin guardar', 'idle');
+    document.getElementById('saveButton')?.classList.add('btn-warning');
+    
+    saveStateToHistory();
+    
+    clearTimeout(autoSaveTimer);
+    autoSaveTimer = setTimeout(() => {
+        if (isFormChanged) {
+            autoSave();
+        }
+    }, autoSaveInterval);
+};
+
+// Modificar autoSave
+async function autoSave() {
+    if (!isFormChanged) return;
+    
+    try {
+        updateAutoSaveIndicator('💾 Guardando...', 'saving');
+        await window.saveForm(false);
+        isFormChanged = false;
+        lastSaveTime = new Date();
+        updateAutoSaveIndicator('✅ Guardado', 'saved');
+        document.getElementById('saveButton')?.classList.remove('btn-warning');
+        
+        // Volver a estado normal después de 2 segundos
+        setTimeout(() => {
+            if (!isFormChanged) {
+                updateAutoSaveIndicator('✅ Guardado hace unos segundos', 'idle');
+            }
+        }, 2000);
+    } catch (error) {
+        console.error('Error en autoguardado:', error);
+        updateAutoSaveIndicator('⚠️ Error al guardar', 'idle');
+    }
+}
 };
     
     // ============================================================
