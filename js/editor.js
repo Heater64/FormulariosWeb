@@ -863,66 +863,72 @@
     };
     
     // ============================================================
-    // GUARDAR FORMULARIO
-    // ============================================================
+// GUARDAR FORMULARIO - Actualizado para usar config en forms
+// ============================================================
+
+window.saveForm = async function(showNotification = true) {
+    if (!window.isAdmin || !window.isAdmin()) {
+        Utils.showNotification('Solo el administrador puede guardar formularios', 'warning');
+        return;
+    }
     
-    window.saveForm = async function(showNotification = true) {
-        if (!window.isAdmin || !window.isAdmin()) {
-            Utils.showNotification('Solo el administrador puede guardar formularios', 'warning');
-            return;
+    const title = document.getElementById('formTitle').value.trim();
+    if (!title) {
+        Utils.showNotification('Por favor, escribe un título para el formulario', 'warning');
+        document.getElementById('formTitle').focus();
+        return;
+    }
+    
+    const questions = window.tempQuestions || [];
+    if (questions.length === 0) {
+        Utils.showNotification('Añade al menos una pregunta', 'warning');
+        return;
+    }
+    
+    if (questions.some(q => !q.title?.trim())) {
+        Utils.showNotification('Todas las preguntas deben tener título', 'warning');
+        return;
+    }
+    
+    if (questions.some(q => ['radio', 'checkbox'].includes(q.type) && (!q.options || q.options.length < 2))) {
+        Utils.showNotification('Las preguntas de opciones deben tener al menos 2 opciones', 'warning');
+        return;
+    }
+    
+    try {
+        const allowMultiple = document.getElementById('allowMultiple').checked;
+        const showAnswers = document.getElementById('showAnswers').checked;
+        const slug = Utils.generateSlug(title);
+        const config = getExamConfig();
+        
+        // Guardar formulario con config incluida
+        const formData = await window.formsManager.save(
+            window.editingId, 
+            title, 
+            questions, 
+            slug,
+            config  // <-- config se guarda en la columna config de forms
+        );
+        
+        // Actualizar metadatos (allowMultiple, showAnswers)
+        await window.formsManager.updateMeta(formData.id, {
+            allowMultiple: allowMultiple,
+            showAnswers: showAnswers
+        });
+        
+        if (showNotification) {
+            Utils.showNotification('Formulario guardado correctamente ✅', 'success');
         }
         
-        const title = document.getElementById('formTitle').value.trim();
-        if (!title) {
-            Utils.showNotification('Por favor, escribe un título para el formulario', 'warning');
-            document.getElementById('formTitle').focus();
-            return;
-        }
+        window.editingId = null;
+        window.tempQuestions = [];
+        if (typeof window.isFormChanged !== 'undefined') window.isFormChanged = false;
         
-        const questions = window.tempQuestions || [];
-        if (questions.length === 0) {
-            Utils.showNotification('Añade al menos una pregunta', 'warning');
-            return;
-        }
-        
-        if (questions.some(q => !q.title?.trim())) {
-            Utils.showNotification('Todas las preguntas deben tener título', 'warning');
-            return;
-        }
-        
-        if (questions.some(q => ['radio', 'checkbox'].includes(q.type) && (!q.options || q.options.length < 2))) {
-            Utils.showNotification('Las preguntas de opciones deben tener al menos 2 opciones', 'warning');
-            return;
-        }
-        
-        try {
-            const allowMultiple = document.getElementById('allowMultiple').checked;
-            const showAnswers = document.getElementById('showAnswers').checked;
-            const slug = Utils.generateSlug(title);
-            const config = getExamConfig();
-            
-            const formData = await window.formsManager.save(window.editingId, title, questions, slug);
-            
-            await window.formsManager.updateMeta(formData.id, {
-                allowMultiple: allowMultiple,
-                showAnswers: showAnswers
-            });
-            
-            await window.formsManager.updateConfig(formData.id, config);
-            
-            if (showNotification) {
-                Utils.showNotification('Formulario guardado correctamente ✅', 'success');
-            }
-            
-            window.editingId = null;
-            window.tempQuestions = [];
-            if (typeof window.isFormChanged !== 'undefined') window.isFormChanged = false;
-            
-            window.showView('dashboard');
-        } catch (error) {
-            Utils.showNotification('Error al guardar: ' + error.message, 'error');
-        }
-    };
+        window.showView('dashboard');
+    } catch (error) {
+        Utils.showNotification('Error al guardar: ' + error.message, 'error');
+    }
+};
     
     // ============================================================
     // ON FORM CHANGE (exportar para UX)

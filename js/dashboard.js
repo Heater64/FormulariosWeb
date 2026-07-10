@@ -112,7 +112,7 @@
                 let extraButton = '';
                 if (currentFilter === 'trash') {
                     extraButton = `
-                        <button onclick="setFilter('all'); renderDashboard()" class="btn-secondary mt-4">
+                        <button onclick="window.setFilter('all')" class="btn-primary mt-4" style="background:#3B82F6;">
                             <i data-lucide="arrow-left" class="w-4 h-4"></i>
                             Volver al Dashboard
                         </button>
@@ -158,12 +158,12 @@
             // Mostrar botón para volver si estamos en la papelera
             if (currentFilter === 'trash') {
                 html += `
-                    <div style="margin-bottom: 20px;">
-                        <button onclick="setFilter('all'); renderDashboard()" class="btn-secondary">
+                    <div class="trash-header-actions">
+                        <button onclick="window.setFilter('all')" class="btn-primary" style="background:#3B82F6;">
                             <i data-lucide="arrow-left" class="w-4 h-4"></i>
                             Volver al Dashboard
                         </button>
-                        <span class="text-sm text-gray-400 ml-4">🗑️ Papelera - ${forms.length} formulario(s)</span>
+                        <span class="trash-count">🗑️ Papelera - ${forms.length} formulario(s)</span>
                     </div>
                 `;
             }
@@ -221,22 +221,15 @@
                         </div>
                         <div class="form-card-actions">
                             ${!isInTrash ? `
-                                <!-- Ver - todos pueden ver -->
                                 <button onclick="showView('form', '${form.id}')" class="action-btn action-btn-view" title="Ver formulario">
                                     <i data-lucide="eye" class="w-4 h-4"></i>
                                     <span>Ver</span>
                                 </button>
-                                
-                                <!-- Solo Admin puede editar -->
                                 ${isAdmin ? `
                                 <button onclick="editForm('${form.id}')" class="action-btn action-btn-edit" title="Editar formulario">
                                     <i data-lucide="edit-2" class="w-4 h-4"></i>
                                     <span>Editar</span>
                                 </button>
-                                ` : ''}
-                                
-                                <!-- Solo Admin puede ver respuestas -->
-                                ${isAdmin ? `
                                 <button onclick="showView('responses', '${form.id}')" 
                                         class="action-btn action-btn-responses ${hasPending ? 'has-pending' : ''}"
                                         title="Ver respuestas">
@@ -244,26 +237,14 @@
                                     <span>Respuestas</span>
                                     ${hasResponses ? `<span class="response-badge ${hasPending ? 'pending' : ''}">${form.total}</span>` : ''}
                                 </button>
-                                ` : ''}
-                                
-                                <!-- Solo Admin puede compartir -->
-                                ${isAdmin ? `
                                 <button onclick="shareForm('${form.id}')" class="action-btn action-btn-share" title="Compartir">
                                     <i data-lucide="share-2" class="w-4 h-4"></i>
                                     <span>Compartir</span>
                                 </button>
-                                ` : ''}
-                                
-                                <!-- Solo Admin puede duplicar -->
-                                ${isAdmin ? `
                                 <button onclick="duplicateFormAction('${form.id}')" class="action-btn action-btn-duplicate" title="Duplicar">
                                     <i data-lucide="copy" class="w-4 h-4"></i>
                                     <span>Duplicar</span>
                                 </button>
-                                ` : ''}
-                                
-                                <!-- Solo Admin puede archivar/eliminar -->
-                                ${isAdmin ? `
                                 ${isArchived ? `
                                     <button onclick="unarchiveFormAction('${form.id}')" class="action-btn action-btn-restore" title="Restaurar">
                                         <i data-lucide="archive-restore" class="w-4 h-4"></i>
@@ -280,7 +261,6 @@
                                 </button>
                                 ` : ''}
                             ` : `
-                                <!-- En papelera - solo admin puede restaurar/eliminar -->
                                 ${isAdmin ? `
                                 <button onclick="restoreFromTrashAction('${form.id}')" class="action-btn action-btn-restore" title="Restaurar de papelera">
                                     <i data-lucide="rotate-ccw" class="w-4 h-4"></i>
@@ -324,11 +304,11 @@
     };
     
     // ============================================================
-    // FUNCIONES DE ORGANIZACIÓN (SOLO ADMIN)
+    // FUNCIONES DE ORGANIZACIÓN
     // ============================================================
     
     window.toggleFavoriteCard = function(formId, event) {
-        if (!window.isAdmin || !window.isAdmin()) {
+        if (!window.isAdmin && !window.isAdmin()) {
             Utils.showNotification('Solo el administrador puede gestionar favoritos', 'warning');
             return;
         }
@@ -368,9 +348,7 @@
         if (!window.isAdmin || !window.isAdmin()) return;
         if (window.restoreFromTrash) window.restoreFromTrash(formId);
         Utils.showNotification('♻️ Formulario restaurado de la papelera', 'success');
-        // Volver al dashboard después de restaurar
         window.setFilter('all');
-        window.renderDashboard();
     };
     
     window.permanentDeleteForm = function(formId) {
@@ -381,54 +359,12 @@
         window.renderDashboard();
     };
     
-    // ============================================================
-    // DUPLICAR FORMULARIO (SOLO ADMIN)
-    // ============================================================
-    
-    window.duplicateFormAction = async function(formId) {
-        if (!window.isAdmin || !window.isAdmin()) {
-            Utils.showNotification('Solo el administrador puede duplicar formularios', 'warning');
-            return;
-        }
-        
-        try {
-            Utils.showNotification('Duplicando formulario...', 'info');
-            
-            const form = window.formsManager.cache.find(f => f.id === formId);
-            if (!form) {
-                Utils.showNotification('Formulario no encontrado', 'error');
-                return;
-            }
-            
-            const newTitle = prompt('Título para el formulario duplicado:', `${form.title} (copia)`);
-            if (newTitle === null) return;
-            if (!newTitle.trim()) {
-                Utils.showNotification('El título es obligatorio', 'warning');
-                return;
-            }
-            
-            await window.formsManager.duplicate(formId, newTitle.trim());
-            Utils.showNotification('✅ Formulario duplicado correctamente', 'success');
-            window.renderDashboard();
-            
-        } catch (error) {
-            console.error('Error al duplicar:', error);
-            Utils.showNotification('❌ Error al duplicar: ' + error.message, 'error');
-        }
-    };
-    
-    // ============================================================
-    // ELIMINAR FORMULARIO (SOLO ADMIN)
-    // ============================================================
-    
     window.deleteForm = async function(formId) {
         if (!window.isAdmin || !window.isAdmin()) {
             Utils.showNotification('Solo el administrador puede eliminar formularios', 'warning');
             return;
         }
-        
         if (!confirm('⚠️ ¿Estás seguro de que quieres eliminar este formulario?\n\nSe moverá a la papelera.')) return;
-        
         try {
             Utils.showNotification('Moviendo a papelera...', 'info');
             if (window.moveToTrash) window.moveToTrash(formId);
@@ -439,36 +375,25 @@
         }
     };
     
-    // ============================================================
-    // COMPARTIR FORMULARIO (SOLO ADMIN)
-    // ============================================================
-    
     window.shareForm = function(formId) {
         if (!window.isAdmin || !window.isAdmin()) {
             Utils.showNotification('Solo el administrador puede compartir formularios', 'warning');
             return;
         }
-        
         const form = window.formsManager.cache.find(f => f.id === formId);
         if (!form) {
             Utils.showNotification('Formulario no encontrado', 'error');
             return;
         }
         const url = `${Utils.getCurrentURL()}?form=${formId}`;
-        const text = `📝 ${form.title}\n\nCompleta este formulario:\n${url}`;
-        
         if (navigator.share) {
-            navigator.share({ title: form.title, text: text, url: url }).catch(() => {
+            navigator.share({ title: form.title, text: `📝 ${form.title}`, url: url }).catch(() => {
                 Utils.copyToClipboard(url);
             });
         } else {
             Utils.copyToClipboard(url);
         }
     };
-    
-    // ============================================================
-    // EDITAR FORMULARIO (SOLO ADMIN)
-    // ============================================================
     
     window.editForm = function(formId) {
         if (!window.isAdmin || !window.isAdmin()) {
@@ -479,10 +404,6 @@
         window.showView('editor');
     };
     
-    // ============================================================
-    // VER PAPELERA (SOLO ADMIN)
-    // ============================================================
-    
     window.showTrash = function() {
         if (!window.isAdmin || !window.isAdmin()) {
             Utils.showNotification('Solo el administrador puede acceder a la papelera', 'warning');
@@ -491,100 +412,32 @@
         window.setFilter('trash');
     };
     
-    // ============================================================
-    // EXPORTAR FORMULARIO (SOLO ADMIN)
-    // ============================================================
-    
-    window.exportForm = function(formId) {
+    window.duplicateFormAction = async function(formId) {
         if (!window.isAdmin || !window.isAdmin()) {
-            Utils.showNotification('Solo el administrador puede exportar formularios', 'warning');
+            Utils.showNotification('Solo el administrador puede duplicar formularios', 'warning');
             return;
         }
-        
-        const form = window.formsManager.cache.find(f => f.id === formId);
-        if (!form) {
-            Utils.showNotification('Formulario no encontrado', 'error');
-            return;
-        }
-        
-        const data = {
-            title: form.title,
-            description: form.description || '',
-            questions: form.questions || [],
-            config: form.config || {},
-            allowmultiple: form.allowmultiple || false,
-            showanswers: form.showanswers || false
-        };
-        
-        const json = JSON.stringify(data, null, 2);
-        const blob = new Blob([json], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `${form.slug || 'formulario'}.json`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        Utils.showNotification('📄 Formulario exportado correctamente', 'success');
-    };
-    
-    // ============================================================
-    // IMPORTAR FORMULARIO (SOLO ADMIN)
-    // ============================================================
-    
-    window.importForm = function() {
-        if (!window.isAdmin || !window.isAdmin()) {
-            Utils.showNotification('Solo el administrador puede importar formularios', 'warning');
-            return;
-        }
-        
-        const input = document.createElement('input');
-        input.type = 'file';
-        input.accept = '.json';
-        input.onchange = async function(e) {
-            const file = e.target.files[0];
-            if (!file) return;
-            
-            try {
-                const text = await file.text();
-                const data = JSON.parse(text);
-                
-                if (!data.title || !data.questions) {
-                    Utils.showNotification('Archivo inválido', 'error');
-                    return;
-                }
-                
-                const title = prompt('Título para el formulario importado:', data.title);
-                if (!title) return;
-                
-                const newForm = await window.formsManager.save(
-                    null, title, data.questions, Utils.generateSlug(title)
-                );
-                
-                if (data.config) {
-                    await window.formsManager.updateConfig(newForm.id, data.config);
-                }
-                if (data.allowmultiple !== undefined || data.showanswers !== undefined) {
-                    await window.formsManager.updateMeta(newForm.id, {
-                        allowMultiple: data.allowmultiple || false,
-                        showAnswers: data.showanswers || false,
-                        description: data.description || ''
-                    });
-                }
-                
-                Utils.showNotification('✅ Formulario importado correctamente', 'success');
-                window.renderDashboard();
-                
-            } catch (error) {
-                Utils.showNotification('❌ Error al importar: ' + error.message, 'error');
+        try {
+            Utils.showNotification('Duplicando formulario...', 'info');
+            const form = window.formsManager.cache.find(f => f.id === formId);
+            if (!form) {
+                Utils.showNotification('Formulario no encontrado', 'error');
+                return;
             }
-        };
-        input.click();
+            const newTitle = prompt('Título para el formulario duplicado:', `${form.title} (copia)`);
+            if (newTitle === null) return;
+            if (!newTitle.trim()) {
+                Utils.showNotification('El título es obligatorio', 'warning');
+                return;
+            }
+            await window.formsManager.duplicate(formId, newTitle.trim());
+            Utils.showNotification('✅ Formulario duplicado correctamente', 'success');
+            window.renderDashboard();
+        } catch (error) {
+            console.error('Error al duplicar:', error);
+            Utils.showNotification('❌ Error al duplicar: ' + error.message, 'error');
+        }
     };
-    
-    // ============================================================
-    // VOLVER AL DASHBOARD DESDE CUALQUIER FILTRO
-    // ============================================================
     
     window.backToDashboard = function() {
         window.setFilter('all');

@@ -1,5 +1,5 @@
 // ============================================================
-// RESPONSES - Manejo de respuestas
+// RESPONSES - Manejo de respuestas en Supabase
 // ============================================================
 
 class ResponsesManager {
@@ -7,6 +7,16 @@ class ResponsesManager {
         this.supabase = supabase;
         this.cache = [];
         this.isLoading = false;
+    }
+
+    // ============================================================
+    // GENERAR ID DE TEXTO
+    // ============================================================
+
+    generateId() {
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 8);
+        return `resp_${timestamp}_${random}`;
     }
 
     // ============================================================
@@ -19,53 +29,40 @@ class ResponsesManager {
         
         try {
             const now = new Date().toISOString();
+            const newId = this.generateId();
             
             const response = {
-                id: Utils.generateId(),
+                id: newId,
                 form_id: formId,
                 answers: answers.map(a => ({
                     question: a.question,
                     value: a.value?.trim() || ''
                 })).filter(a => a.value !== ''),
-                created_at: now
+                created_at: now,
+                correction: null
             };
             
             console.log('📝 Guardando respuesta:', response);
             
-            if (this.supabase) {
-                const { error } = await this.supabase
-                    .from('responses')
-                    .insert([response]);
-                    
-                if (error) {
-                    console.error('❌ Supabase error:', error);
-                    throw error;
-                }
-            } else {
-                this.saveToLocalStorage(response);
+            const { data, error } = await this.supabase
+                .from('responses')
+                .insert([response])
+                .select('*');
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                throw error;
             }
             
-            this.cache.push(response);
-            return response;
+            const savedResponse = data?.[0] || response;
+            savedResponse.correction = null;
+            
+            this.cache.push(savedResponse);
+            return savedResponse;
             
         } catch (error) {
             console.error('❌ Error saving response:', error);
             throw error;
-        }
-    }
-
-    // ============================================================
-    // GUARDAR EN LOCAL STORAGE (OFFLINE MODE)
-    // ============================================================
-
-    saveToLocalStorage(response) {
-        try {
-            const key = 'formpro_responses_offline';
-            let responses = JSON.parse(localStorage.getItem(key) || '[]');
-            responses.push(response);
-            localStorage.setItem(key, JSON.stringify(responses));
-        } catch (e) {
-            console.warn('Error saving to localStorage:', e);
         }
     }
 
@@ -80,28 +77,18 @@ class ResponsesManager {
         this.isLoading = true;
         
         try {
-            let data = [];
+            const { data, error } = await this.supabase
+                .from('responses')
+                .select('*')
+                .eq('form_id', formId)
+                .order('created_at', { ascending: false });
             
-            if (this.supabase) {
-                const { data: supabaseData, error } = await this.supabase
-                    .from('responses')
-                    .select('id, form_id, answers, created_at')
-                    .eq('form_id', formId)
-                    .order('created_at', { ascending: false });
-                
-                if (error) {
-                    console.error('❌ Supabase error:', error);
-                    throw error;
-                }
-                data = supabaseData || [];
-            } else {
-                const key = 'formpro_responses_offline';
-                const all = JSON.parse(localStorage.getItem(key) || '[]');
-                data = all.filter(r => r.form_id === formId);
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                throw error;
             }
             
-            // Procesar datos - cargar corrección desde storage separado
-            this.cache = data.map(r => {
+            this.cache = (data || []).map(r => {
                 let answers = r.answers;
                 if (typeof answers === 'string') {
                     try {
@@ -112,13 +99,19 @@ class ResponsesManager {
                 }
                 if (!Array.isArray(answers)) answers = [];
                 
-                // Cargar corrección desde localStorage (no desde Supabase)
-                let correction = this.getCorrectionFromStorage(r.id);
+                let correction = r.correction;
+                if (typeof correction === 'string') {
+                    try {
+                        correction = JSON.parse(correction);
+                    } catch (e) {
+                        correction = null;
+                    }
+                }
                 
                 return {
                     ...r,
                     answers: answers,
-                    correction: correction
+                    correction: correction || null
                 };
             });
             
@@ -133,7 +126,57 @@ class ResponsesManager {
     }
 
     // ============================================================
-    // CORREGIR RESPUESTA - Guarda en localStorage separado
+    // OBTENER UNA RESPUESTA POR ID
+    // ============================================================
+
+    async getById(responseId) {
+        if (!responseId) return null;
+        
+        try {
+            const { data, error } = await this.supabase
+                .from('responses')
+                .select('*')
+                .eq('id', responseId)
+                .single();
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                return null;
+            }
+            
+            if (data) {
+                let answers = data.answers;
+                if (typeof answers === 'string') {
+                    try {
+                        answers = JSON.parse(answers);
+                    } catch (e) {
+                        answers = [];
+                    }
+                }
+                if (!Array.isArray(answers)) answers = [];
+                
+                let correction = data.correction;
+                if (typeof correction === 'string') {
+                    try {
+                        correction = JSON.parse(correction);
+                    } catch (e) {
+                        correction = null;
+                    }
+                }
+                
+                data.answers = answers;
+                data.correction = correction || null;
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error fetching response:', error);
+            return null;
+        }
+    }
+
+    // ============================================================
+    // CORREGIR RESPUESTA - Guarda en columna correction de responses
     // ============================================================
 
     async correct(responseId, correction) {
@@ -141,19 +184,45 @@ class ResponsesManager {
         if (!correction) throw new Error('Datos de corrección requeridos');
         
         try {
+            // Asegurar que todos los valores sean válidos para JSON
+            const answers = correction.answers || [];
+            const scores = correction.scores || [];
+            const details = correction.details || [];
+            
+            // Convertir valores null a false para evitar problemas con JSON
+            const cleanAnswers = answers.map(a => a === null ? false : a);
+            
             const correctionData = {
-                answers: correction.answers || [],
-                scores: correction.scores || [],
-                details: correction.details || [],
+                answers: cleanAnswers,
+                scores: scores.map(s => parseFloat(s) || 0),
+                details: details.map(d => String(d || '')),
                 score: parseFloat(correction.score) || 0,
                 total: parseInt(correction.total) || 0,
-                comment: correction.comment?.trim() || '',
+                comment: String(correction.comment || '').trim(),
                 completed: true,
                 correctedAt: correction.correctedAt || new Date().toISOString()
             };
             
-            // Guardar corrección en localStorage (Supabase no tiene columna correction)
-            this.saveCorrectionToStorage(responseId, correctionData);
+            console.log('📝 Guardando corrección en columna correction:', responseId);
+            console.log('📝 Datos:', JSON.stringify(correctionData, null, 2));
+            
+            // Verificar que el objeto sea válido para JSON
+            const testJson = JSON.stringify(correctionData);
+            if (!testJson) {
+                throw new Error('Datos de corrección inválidos');
+            }
+            
+            const { data, error } = await this.supabase
+                .from('responses')
+                .update({ correction: correctionData })
+                .eq('id', responseId)
+                .select('*');
+            
+            if (error) {
+                console.error('❌ Supabase error al guardar corrección:', error);
+                console.error('❌ Error details:', error.message, error.details, error.hint);
+                throw error;
+            }
             
             // Actualizar cache
             const index = this.cache.findIndex(r => r.id === responseId);
@@ -161,44 +230,7 @@ class ResponsesManager {
                 this.cache[index].correction = correctionData;
             }
             
-            // Si hay Supabase, también guardar la corrección en una tabla separada o en un campo JSON
-            if (this.supabase) {
-                try {
-                    // Opción 1: Actualizar la respuesta con un campo correction (si existe en la tabla)
-                    // Si no existe, usamos la opción 2
-                    
-                    // Opción 2: Guardar en una tabla separada 'corrections'
-                    const { error } = await this.supabase
-                        .from('corrections')
-                        .upsert({
-                            response_id: responseId,
-                            correction_data: correctionData,
-                            updated_at: new Date().toISOString()
-                        }, { onConflict: 'response_id' });
-                    
-                    if (error) {
-                        console.warn('⚠️ No se pudo guardar en tabla corrections:', error);
-                        // Si falla, intentamos actualizar la respuesta directamente
-                        try {
-                            const { error: updateError } = await this.supabase
-                                .from('responses')
-                                .update({ 
-                                    correction: correctionData 
-                                })
-                                .eq('id', responseId);
-                            
-                            if (updateError) {
-                                console.warn('⚠️ No se pudo actualizar correction en responses:', updateError);
-                            }
-                        } catch (e2) {
-                            console.warn('⚠️ Error en fallback:', e2);
-                        }
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Error guardando en Supabase:', e);
-                }
-            }
-            
+            console.log('✅ Corrección guardada correctamente en responses.correction:', responseId);
             return true;
             
         } catch (error) {
@@ -208,32 +240,35 @@ class ResponsesManager {
     }
 
     // ============================================================
-    // GUARDAR CORRECCIÓN EN LOCAL STORAGE
+    // ELIMINAR CORRECCIÓN DE UNA RESPUESTA
     // ============================================================
 
-    saveCorrectionToStorage(responseId, correctionData) {
+    async removeCorrection(responseId) {
+        if (!responseId) throw new Error('ID de respuesta requerido');
+        
         try {
-            const key = 'formpro_corrections';
-            let corrections = JSON.parse(localStorage.getItem(key) || '{}');
-            corrections[responseId] = correctionData;
-            localStorage.setItem(key, JSON.stringify(corrections));
-            console.log('✅ Corrección guardada en localStorage:', responseId);
-        } catch (e) {
-            console.warn('Error saving correction to localStorage:', e);
-        }
-    }
-
-    // ============================================================
-    // OBTENER CORRECCIÓN DE LOCAL STORAGE
-    // ============================================================
-
-    getCorrectionFromStorage(responseId) {
-        try {
-            const key = 'formpro_corrections';
-            const corrections = JSON.parse(localStorage.getItem(key) || '{}');
-            return corrections[responseId] || null;
-        } catch (e) {
-            return null;
+            const { error } = await this.supabase
+                .from('responses')
+                .update({ correction: null })
+                .eq('id', responseId);
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                throw error;
+            }
+            
+            // Actualizar cache
+            const index = this.cache.findIndex(r => r.id === responseId);
+            if (index !== -1) {
+                this.cache[index].correction = null;
+            }
+            
+            console.log('✅ Corrección eliminada:', responseId);
+            return true;
+            
+        } catch (error) {
+            console.error('❌ Error removing correction:', error);
+            throw error;
         }
     }
 
@@ -269,27 +304,46 @@ class ResponsesManager {
         if (!formId) return;
         
         try {
-            if (this.supabase) {
-                const { error } = await this.supabase
-                    .from('responses')
-                    .delete()
-                    .eq('form_id', formId);
-                    
-                if (error) {
-                    console.error('❌ Supabase error:', error);
-                    throw error;
-                }
-            } else {
-                const key = 'formpro_responses_offline';
-                let responses = JSON.parse(localStorage.getItem(key) || '[]');
-                responses = responses.filter(r => r.form_id !== formId);
-                localStorage.setItem(key, JSON.stringify(responses));
+            const { error } = await this.supabase
+                .from('responses')
+                .delete()
+                .eq('form_id', formId);
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                throw error;
             }
             
             this.cache = this.cache.filter(r => r.form_id !== formId);
             
         } catch (error) {
             console.error('❌ Error deleting responses:', error);
+            throw error;
+        }
+    }
+
+    // ============================================================
+    // ELIMINAR UNA RESPUESTA ESPECÍFICA
+    // ============================================================
+
+    async deleteResponse(responseId) {
+        if (!responseId) return;
+        
+        try {
+            const { error } = await this.supabase
+                .from('responses')
+                .delete()
+                .eq('id', responseId);
+            
+            if (error) {
+                console.error('❌ Supabase error:', error);
+                throw error;
+            }
+            
+            this.cache = this.cache.filter(r => r.id !== responseId);
+            
+        } catch (error) {
+            console.error('❌ Error deleting response:', error);
             throw error;
         }
     }
@@ -317,4 +371,4 @@ class ResponsesManager {
 }
 
 window.ResponsesManager = ResponsesManager;
-console.log('✅ ResponsesManager cargado - Correcciones en localStorage');
+console.log('✅ ResponsesManager cargado - Usando columna correction en responses');

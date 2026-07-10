@@ -84,15 +84,11 @@
         }
         
         let html = `
-            <!-- HEADER -->
+            <!-- HEADER - SIN BOTÓN EXPORTAR -->
             <div class="responses-header">
-                <button onclick="goBack()" class="btn-ghost">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Volver
-                </button>
-                <h1 class="page-title">
-                    <i data-lucide="bar-chart-2" class="w-6 h-6 text-purple-500"></i>
-                    Respuestas - ${Utils.escapeHtml(form.title)}
+                <h1 class="page-title" style="font-size:24px;">
+                    <i data-lucide="clipboard-list" class="w-6 h-6 text-purple-500"></i>
+                    Corrección de Exámenes - ${Utils.escapeHtml(form.title)}
                 </h1>
             </div>
             
@@ -231,7 +227,7 @@
                             </div>
                         ` : ''}
                         
-                        <!-- ACCIONES -->
+                        <!-- ACCIONES - SOLO CORREGIR Y EXPORTAR -->
                         <div class="response-actions">
                             <button onclick="openCorrectionModal('${response.id}', '${formId}')" class="btn-primary">
                                 <i data-lucide="${isCorrected ? 'eye' : 'edit-3'}" class="w-4 h-4"></i>
@@ -550,8 +546,11 @@
         const comment = formData.get('comment') || '';
         const gradeInfo = getGradeInfo(totalScore, totalQuestions);
         
+        // Asegurar que los valores null se conviertan a false para JSON
+        const cleanAnswers = answers.map(a => a === null ? false : a);
+        
         const correction = {
-            answers: answers,
+            answers: cleanAnswers,
             scores: scores,
             details: details,
             score: Math.round(totalScore * 100) / 100,
@@ -598,68 +597,67 @@
     };
     
     // ============================================================
-    // EXPORTAR CORRECCIÓN INDIVIDUAL (dentro de cada tarjeta)
-    // ============================================================
+// EXPORTAR CORRECCIÓN INDIVIDUAL - FORMATO LIMPIO
+// ============================================================
+
+window.exportCorrection = function(responseId) {
+    const response = window.responsesManager.cache.find(r => r.id === responseId);
+    if (!response) {
+        Utils.showNotification('Error: Respuesta no encontrada', 'error');
+        return;
+    }
     
-    window.exportCorrection = function(responseId) {
-        const response = window.responsesManager.cache.find(r => r.id === responseId);
-        if (!response) {
-            Utils.showNotification('Error: Respuesta no encontrada', 'error');
-            return;
-        }
+    const form = window.formsManager.cache.find(f => f.id === response.form_id);
+    if (!form) return;
+    
+    const nameAnswer = response.answers.find(a => a.question === 'respondent_name');
+    const studentName = nameAnswer ? nameAnswer.value : 'Anónimo';
+    const correction = response.correction || {};
+    const gradeInfo = getGradeInfo(correction.score || 0, correction.total || 0);
+    
+    let text = `=== CORRECCIÓN DE EXAMEN ===\n\n`;
+    text += `📚 Formulario: ${form.title}\n`;
+    text += `👤 Estudiante: ${studentName}\n`;
+    text += `📅 Fecha: ${Utils.formatDate(response.created_at)}\n`;
+    text += `\n--- RESULTADOS ---\n`;
+    text += `📊 Nota: ${gradeInfo.grade.toFixed(2)} / 10\n`;
+    text += `📊 Calificación: ${gradeInfo.emoji} ${gradeInfo.label}\n\n`;
+    text += `--- RESPUESTAS ---\n\n`;
+    
+    const questions = form.questions || [];
+    const answers = response.answers.filter(a => a.question !== 'respondent_name');
+    const scores = correction.scores || [];
+    
+    answers.forEach((a, i) => {
+        const q = questions[i] || { title: `Pregunta ${i + 1}` };
+        const score = scores[i] !== undefined ? scores[i] : 0;
+        const isCorrect = correction.answers && correction.answers[i] !== undefined ? correction.answers[i] : null;
+        let status = '⬜ PENDIENTE';
+        if (isCorrect === true) status = '✅ CORRECTA';
+        else if (isCorrect === false) status = '❌ INCORRECTA';
+        else if (score > 0 && score < 1) status = `🟡 PARCIAL (${score.toFixed(2)})`;
         
-        const form = window.formsManager.cache.find(f => f.id === response.form_id);
-        if (!form) return;
-        
-        const nameAnswer = response.answers.find(a => a.question === 'respondent_name');
-        const studentName = nameAnswer ? nameAnswer.value : 'Anónimo';
-        const correction = response.correction || {};
-        const gradeInfo = getGradeInfo(correction.score || 0, correction.total || 0);
-        
-        let text = `=== CORRECCIÓN DE EXAMEN ===\n\n`;
-        text += `📚 Formulario: ${form.title}\n`;
-        text += `👤 Estudiante: ${studentName}\n`;
-        text += `📅 Fecha: ${Utils.formatDate(response.created_at)}\n`;
-        text += `\n--- RESULTADOS ---\n`;
-        text += `📊 Total obtenido: ${(correction.score || 0).toFixed(2)}\n`;
-        text += `📊 Total posible: ${(correction.total || 0).toFixed(2)}\n`;
-        text += `📊 Nota: ${gradeInfo.grade.toFixed(2)} / 10\n`;
-        text += `📊 Calificación: ${gradeInfo.emoji} ${gradeInfo.label}\n\n`;
-        text += `--- RESPUESTAS ---\n\n`;
-        
-        const questions = form.questions || [];
-        const answers = response.answers.filter(a => a.question !== 'respondent_name');
-        const scores = correction.scores || [];
-        
-        answers.forEach((a, i) => {
-            const q = questions[i] || { title: `Pregunta ${i + 1}` };
-            const score = scores[i] !== undefined ? scores[i] : 0;
-            const isCorrect = correction.answers && correction.answers[i] !== undefined ? correction.answers[i] : null;
-            let status = '⬜ PENDIENTE';
-            if (isCorrect === true) status = '✅ CORRECTA';
-            else if (isCorrect === false) status = '❌ INCORRECTA';
-            else if (score > 0 && score < 1) status = `🟡 PARCIAL (${score.toFixed(2)})`;
-            
-            text += `${i + 1}. ${q.title}\n`;
-            text += `   Respuesta: ${a.value || '(sin respuesta)'}\n`;
-            text += `   Puntuación: ${score.toFixed(2)} / 1.00\n`;
-            text += `   Estado: ${status}\n\n`;
-        });
-        
-        if (correction.comment) {
-            text += `--- COMENTARIO ---\n${correction.comment}\n\n`;
-        }
-        
-        const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `correccion-${studentName}-${form.slug || 'examen'}.txt`;
-        a.click();
-        URL.revokeObjectURL(url);
-        
-        Utils.showNotification('📄 Corrección exportada', 'success');
-    };
+        text += `${i + 1}. ${q.title}\n`;
+        text += `   Respuesta: ${a.value || '(sin respuesta)'}\n`;
+        text += `   Puntuación: ${score.toFixed(2)} / 1.00\n`;
+        text += `   Estado: ${status}\n\n`;
+    });
+    
+    if (correction.comment) {
+        text += `--- COMENTARIO ---\n${correction.comment}\n\n`;
+    }
+    
+    // Crear y descargar archivo
+    const blob = new Blob([text], { type: 'text/plain;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `correccion-${studentName}-${form.slug || 'examen'}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    Utils.showNotification('📄 Corrección exportada', 'success');
+};
     
     // ============================================================
     // CERRAR MODAL CON ESC

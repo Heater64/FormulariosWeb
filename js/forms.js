@@ -1,8 +1,8 @@
 // ============================================================
-// RESPONSES - Manejo de respuestas con localStorage
+// FORMS - CRUD de formularios usando SOLO tabla forms
 // ============================================================
 
-class ResponsesManager {
+class FormsManager {
     constructor(supabase) {
         this.supabase = supabase;
         this.cache = [];
@@ -10,342 +10,521 @@ class ResponsesManager {
     }
 
     // ============================================================
-    // GUARDAR RESPUESTA
+    // GENERAR ID DE TEXTO
     // ============================================================
 
-    async save(formId, answers, metadata = {}) {
-        if (!formId) throw new Error('ID de formulario requerido');
-        if (!answers || answers.length === 0) throw new Error('Respuestas requeridas');
-        
-        try {
-            const now = new Date().toISOString();
-            
-            const response = {
-                id: Utils.generateId(),
-                form_id: formId,
-                answers: answers.map(a => ({
-                    question: a.question,
-                    value: a.value?.trim() || ''
-                })).filter(a => a.value !== ''),
-                created_at: now
-            };
-            
-            console.log('📝 Guardando respuesta:', response);
-            
-            if (this.supabase) {
-                const { data, error } = await this.supabase
-                    .from('responses')
-                    .insert([response])
-                    .select('*');
-                
-                if (error) {
-                    console.error('❌ Supabase error:', error);
-                    // Si falla, intentar guardar localmente
-                    this.saveToLocalStorage(response);
-                } else {
-                    const savedResponse = data?.[0] || response;
-                    this.cache.push(savedResponse);
-                    return savedResponse;
-                }
-            }
-            
-            // Fallback a localStorage
-            this.saveToLocalStorage(response);
-            this.cache.push(response);
-            return response;
-            
-        } catch (error) {
-            console.error('❌ Error saving response:', error);
-            throw error;
-        }
+    generateId() {
+        // Generar un ID único de texto: timestamp + random
+        const timestamp = Date.now().toString(36);
+        const random = Math.random().toString(36).substring(2, 8);
+        return `form_${timestamp}_${random}`;
     }
 
     // ============================================================
-    // GUARDAR EN LOCAL STORAGE (OFFLINE MODE)
+    // OBTENER TODOS LOS FORMULARIOS
     // ============================================================
 
-    saveToLocalStorage(response) {
-        try {
-            const key = 'formpro_responses_offline';
-            let responses = JSON.parse(localStorage.getItem(key) || '[]');
-            // Evitar duplicados
-            responses = responses.filter(r => r.id !== response.id);
-            responses.push(response);
-            localStorage.setItem(key, JSON.stringify(responses));
-            console.log('📝 Respuesta guardada en localStorage');
-        } catch (e) {
-            console.warn('Error saving to localStorage:', e);
-        }
-    }
-
-    // ============================================================
-    // OBTENER RESPUESTAS POR FORMULARIO
-    // ============================================================
-
-    async getByForm(formId) {
-        if (!formId) return [];
-        if (this.isLoading) return this.cache.filter(r => r.form_id === formId);
-        
+    async getAll() {
+        if (this.isLoading) return this.cache;
         this.isLoading = true;
         
         try {
-            let data = [];
+            const { data, error } = await this.supabase
+                .from('forms')
+                .select('*')
+                .order('created_at', { ascending: false });
             
-            if (this.supabase) {
-                try {
-                    const { data: supabaseData, error } = await this.supabase
-                        .from('responses')
-                        .select('*')
-                        .eq('form_id', formId)
-                        .order('created_at', { ascending: false });
-                    
-                    if (error) {
-                        console.error('❌ Supabase error:', error);
-                    } else {
-                        data = supabaseData || [];
-                    }
-                } catch (e) {
-                    console.warn('⚠️ Error fetching from Supabase:', e);
-                }
+            if (error) {
+                console.error('Supabase error:', error);
+                throw error;
             }
             
-            // Si no hay datos de Supabase, usar localStorage
-            if (data.length === 0) {
-                const key = 'formpro_responses_offline';
-                const all = JSON.parse(localStorage.getItem(key) || '[]');
-                data = all.filter(r => r.form_id === formId);
-            }
-            
-            // Procesar datos - cargar corrección desde storage separado
-            this.cache = data.map(r => {
-                let answers = r.answers;
-                if (typeof answers === 'string') {
+            this.cache = (data || []).map(form => {
+                let questions = form.questions;
+                if (typeof questions === 'string') {
                     try {
-                        answers = JSON.parse(answers);
+                        questions = JSON.parse(questions);
                     } catch (e) {
-                        answers = [];
+                        questions = [];
                     }
                 }
-                if (!Array.isArray(answers)) answers = [];
+                if (!Array.isArray(questions)) questions = [];
                 
-                // Cargar corrección desde localStorage
-                let correction = this.getCorrectionFromStorage(r.id);
+                let config = form.config;
+                if (typeof config === 'string') {
+                    try {
+                        config = JSON.parse(config);
+                    } catch (e) {
+                        config = {};
+                    }
+                }
+                if (!config || typeof config !== 'object') config = {};
                 
                 return {
-                    ...r,
-                    answers: answers,
-                    correction: correction
+                    ...form,
+                    questions: questions,
+                    config: config,
+                    allowmultiple: form.allowmultiple === true || form.allowmultiple === 'true',
+                    showanswers: form.showanswers === true || form.showanswers === 'true'
                 };
             });
             
             return this.cache;
-            
         } catch (error) {
-            console.error('❌ Error fetching responses:', error);
-            return this.cache.filter(r => r.form_id === formId);
+            console.error('Error fetching forms:', error);
+            if (typeof Utils !== 'undefined') {
+                Utils.showNotification('Error al cargar formularios: ' + (error.message || 'Error desconocido'), 'error');
+            }
+            return this.cache;
         } finally {
             this.isLoading = false;
         }
     }
 
     // ============================================================
-    // CORREGIR RESPUESTA - Guarda en localStorage
+    // OBTENER FORMULARIO POR ID
     // ============================================================
 
-    async correct(responseId, correction) {
-        if (!responseId) throw new Error('ID de respuesta requerido');
-        if (!correction) throw new Error('Datos de corrección requeridos');
+    async getById(id) {
+        if (!id) return null;
         
         try {
-            const correctionData = {
-                answers: correction.answers || [],
-                scores: correction.scores || [],
-                details: correction.details || [],
-                score: parseFloat(correction.score) || 0,
-                total: parseInt(correction.total) || 0,
-                comment: correction.comment?.trim() || '',
-                completed: true,
-                correctedAt: correction.correctedAt || new Date().toISOString()
-            };
+            const { data, error } = await this.supabase
+                .from('forms')
+                .select('*')
+                .eq('id', id)
+                .single();
             
-            // Guardar corrección en localStorage
-            this.saveCorrectionToStorage(responseId, correctionData);
-            
-            // Actualizar cache
-            const index = this.cache.findIndex(r => r.id === responseId);
-            if (index !== -1) {
-                this.cache[index].correction = correctionData;
+            if (error) {
+                console.error('Supabase error:', error);
+                throw error;
             }
             
-            // Si hay Supabase, intentar guardar también allí
-            if (this.supabase) {
-                try {
-                    // Intentar actualizar la respuesta con la corrección
-                    const { error } = await this.supabase
-                        .from('responses')
-                        .update({ 
-                            correction: correctionData 
-                        })
-                        .eq('id', responseId);
-                    
-                    if (error) {
-                        console.warn('⚠️ No se pudo actualizar correction en Supabase:', error.message);
+            if (data) {
+                let questions = data.questions;
+                if (typeof questions === 'string') {
+                    try {
+                        questions = JSON.parse(questions);
+                    } catch (e) {
+                        questions = [];
                     }
-                } catch (e) {
-                    console.warn('⚠️ Error guardando en Supabase:', e);
                 }
+                if (!Array.isArray(questions)) questions = [];
+                
+                let config = data.config;
+                if (typeof config === 'string') {
+                    try {
+                        config = JSON.parse(config);
+                    } catch (e) {
+                        config = {};
+                    }
+                }
+                if (!config || typeof config !== 'object') config = {};
+                
+                data.questions = questions;
+                data.config = config;
+                data.allowmultiple = data.allowmultiple === true || data.allowmultiple === 'true';
+                data.showanswers = data.showanswers === true || data.showanswers === 'true';
             }
             
-            console.log('✅ Corrección guardada:', responseId);
-            return true;
-            
+            return data;
         } catch (error) {
-            console.error('❌ Error correcting response:', error);
-            throw error;
-        }
-    }
-
-    // ============================================================
-    // GUARDAR CORRECCIÓN EN LOCAL STORAGE
-    // ============================================================
-
-    saveCorrectionToStorage(responseId, correctionData) {
-        try {
-            const key = 'formpro_corrections';
-            let corrections = JSON.parse(localStorage.getItem(key) || '{}');
-            corrections[responseId] = correctionData;
-            localStorage.setItem(key, JSON.stringify(corrections));
-            console.log('✅ Corrección guardada en localStorage:', responseId);
-        } catch (e) {
-            console.warn('Error saving correction to localStorage:', e);
-        }
-    }
-
-    // ============================================================
-    // OBTENER CORRECCIÓN DE LOCAL STORAGE
-    // ============================================================
-
-    getCorrectionFromStorage(responseId) {
-        try {
-            const key = 'formpro_corrections';
-            const corrections = JSON.parse(localStorage.getItem(key) || '{}');
-            return corrections[responseId] || null;
-        } catch (e) {
+            console.error('Error fetching form:', error);
             return null;
         }
     }
 
     // ============================================================
-    // OBTENER ESTADÍSTICAS DE UN FORMULARIO
+    // OBTENER FORMULARIO POR SLUG
     // ============================================================
 
-    async getStats(formId) {
-        const responses = await this.getByForm(formId);
-        const corrected = responses.filter(r => r.correction?.completed);
-        const pending = responses.filter(r => !r.correction?.completed);
+    async getBySlug(slug) {
+        if (!slug) return null;
         
-        let averageScore = 0;
-        if (corrected.length > 0) {
-            const scores = corrected.map(r => r.correction.score || 0);
-            averageScore = Math.round(scores.reduce((a, b) => a + b, 0) / scores.length * 100) / 100;
+        try {
+            const { data, error } = await this.supabase
+                .from('forms')
+                .select('*')
+                .eq('slug', slug)
+                .single();
+            
+            if (error) {
+                console.error('Supabase error:', error);
+                throw error;
+            }
+            
+            if (data) {
+                let questions = data.questions;
+                if (typeof questions === 'string') {
+                    try {
+                        questions = JSON.parse(questions);
+                    } catch (e) {
+                        questions = [];
+                    }
+                }
+                if (!Array.isArray(questions)) questions = [];
+                
+                let config = data.config;
+                if (typeof config === 'string') {
+                    try {
+                        config = JSON.parse(config);
+                    } catch (e) {
+                        config = {};
+                    }
+                }
+                if (!config || typeof config !== 'object') config = {};
+                
+                data.questions = questions;
+                data.config = config;
+                data.allowmultiple = data.allowmultiple === true || data.allowmultiple === 'true';
+                data.showanswers = data.showanswers === true || data.showanswers === 'true';
+            }
+            
+            return data;
+        } catch (error) {
+            console.error('Error fetching form by slug:', error);
+            return null;
         }
-        
-        return {
-            total: responses.length,
-            corrected: corrected.length,
-            pending: pending.length,
-            averageScore: averageScore,
-            lastResponse: responses.length > 0 ? responses[0].created_at : null
-        };
     }
 
     // ============================================================
-    // ELIMINAR RESPUESTAS DE UN FORMULARIO
+    // GUARDAR FORMULARIO (CREAR O ACTUALIZAR)
     // ============================================================
 
-    async deleteByForm(formId) {
-        if (!formId) return;
+    async save(id, title, questions, slug, config = {}) {
+        if (!title?.trim()) {
+            throw new Error('El título es obligatorio');
+        }
+        
+        if (!questions || questions.length === 0) {
+            throw new Error('Debes añadir al menos una pregunta');
+        }
+        
+        const invalidQuestions = questions.filter(q => !q.title?.trim());
+        if (invalidQuestions.length > 0) {
+            throw new Error('Todas las preguntas deben tener título');
+        }
         
         try {
-            if (this.supabase) {
-                try {
-                    const { error } = await this.supabase
-                        .from('responses')
-                        .delete()
-                        .eq('form_id', formId);
-                    
-                    if (error) {
-                        console.warn('Supabase delete error:', error);
-                    }
-                } catch (e) {
-                    console.warn('Error deleting from Supabase:', e);
+            let baseSlug = slug || Utils.generateSlug(title);
+            let finalSlug = baseSlug;
+            let counter = 1;
+            
+            const slugExists = (slugToCheck) => {
+                return this.cache.some(f => f.slug === slugToCheck && f.id !== id);
+            };
+            
+            if (slugExists(baseSlug)) {
+                while (slugExists(finalSlug)) {
+                    finalSlug = `${baseSlug}-${counter}`;
+                    counter++;
                 }
             }
             
-            // Eliminar de localStorage
-            const key = 'formpro_responses_offline';
-            let responses = JSON.parse(localStorage.getItem(key) || '[]');
-            responses = responses.filter(r => r.form_id !== formId);
-            localStorage.setItem(key, JSON.stringify(responses));
-            
-            // Eliminar correcciones
-            const corrKey = 'formpro_corrections';
-            let corrections = JSON.parse(localStorage.getItem(corrKey) || '{}');
-            const responsesToDelete = this.cache.filter(r => r.form_id === formId);
-            responsesToDelete.forEach(r => {
-                delete corrections[r.id];
+            // Limpiar preguntas para guardar
+            const cleanQuestions = questions.map(q => {
+                const clean = {
+                    id: q.id || this.generateId(),
+                    type: q.type || 'text',
+                    title: q.title || '',
+                    required: q.required === true
+                };
+                
+                if (q.options && q.options.length > 0) clean.options = q.options;
+                if (q.correctAnswer !== undefined && q.correctAnswer !== '') clean.correctAnswer = q.correctAnswer;
+                if (q.correctAnswers !== undefined && q.correctAnswers !== '') clean.correctAnswers = q.correctAnswers;
+                if (q.leftItems && q.leftItems.length > 0) clean.leftItems = q.leftItems;
+                if (q.rightItems && q.rightItems.length > 0) clean.rightItems = q.rightItems;
+                if (q.matchPairs) clean.matchPairs = q.matchPairs;
+                if (q.orderItems && q.orderItems.length > 0) clean.orderItems = q.orderItems;
+                if (q.correctOrder) clean.correctOrder = q.correctOrder;
+                if (q.clues) clean.clues = q.clues;
+                if (q.imageUrl) clean.imageUrl = q.imageUrl;
+                if (q.placeholder) clean.placeholder = q.placeholder;
+                
+                return clean;
             });
-            localStorage.setItem(corrKey, JSON.stringify(corrections));
             
-            this.cache = this.cache.filter(r => r.form_id !== formId);
+            // Preparar config para guardar
+            const cleanConfig = {
+                timeLimit: parseInt(config.timeLimit) || 0,
+                maxAttempts: parseInt(config.maxAttempts) || 1,
+                openDate: config.openDate || null,
+                closeDate: config.closeDate || null,
+                shuffleQuestions: !!config.shuffleQuestions,
+                shuffleOptions: !!config.shuffleOptions,
+                onePerPage: !!config.onePerPage,
+                showProgress: !!config.showProgress,
+                allowBack: !!config.allowBack,
+                showGradeAutomatically: !!config.showGradeAutomatically,
+                showAnswersOnFinish: !!config.showAnswersOnFinish,
+                showOnlyScore: !!config.showOnlyScore
+            };
             
+            let result;
+            
+            if (id) {
+                // ACTUALIZAR
+                console.log('📝 Actualizando formulario:', id);
+                const { data, error } = await this.supabase
+                    .from('forms')
+                    .update({
+                        title: title.trim(),
+                        questions: cleanQuestions,
+                        slug: finalSlug,
+                        config: cleanConfig
+                    })
+                    .eq('id', id)
+                    .select('*');
+                
+                if (error) {
+                    console.error('Update error:', error);
+                    throw error;
+                }
+                result = data?.[0];
+                
+                if (!result) {
+                    // Si no se encontró el registro, crear uno nuevo
+                    const newId = this.generateId();
+                    console.log('🆕 Formulario no encontrado, creando nuevo con ID:', newId);
+                    const { data: insertData, error: insertError } = await this.supabase
+                        .from('forms')
+                        .insert([{
+                            id: newId,
+                            title: title.trim(),
+                            questions: cleanQuestions,
+                            slug: finalSlug,
+                            config: cleanConfig
+                        }])
+                        .select('*');
+                    
+                    if (insertError) {
+                        console.error('Insert error after update fail:', insertError);
+                        throw insertError;
+                    }
+                    result = insertData?.[0];
+                }
+            } else {
+                // CREAR NUEVO - generar ID de texto
+                const newId = this.generateId();
+                console.log('🆕 Creando nuevo formulario con ID:', newId);
+                
+                const { data, error } = await this.supabase
+                    .from('forms')
+                    .insert([{
+                        id: newId,
+                        title: title.trim(),
+                        questions: cleanQuestions,
+                        slug: finalSlug,
+                        config: cleanConfig
+                    }])
+                    .select('*');
+                
+                if (error) {
+                    console.error('Insert error:', error);
+                    console.error('Error details:', error.message, error.details, error.hint);
+                    throw error;
+                }
+                result = data?.[0];
+            }
+            
+            if (!result) {
+                throw new Error('No se pudo guardar el formulario');
+            }
+            
+            // Procesar resultado
+            let questionsResult = result.questions;
+            if (typeof questionsResult === 'string') {
+                try {
+                    questionsResult = JSON.parse(questionsResult);
+                } catch (e) {
+                    questionsResult = [];
+                }
+            }
+            if (!Array.isArray(questionsResult)) questionsResult = [];
+            
+            let configResult = result.config;
+            if (typeof configResult === 'string') {
+                try {
+                    configResult = JSON.parse(configResult);
+                } catch (e) {
+                    configResult = {};
+                }
+            }
+            if (!configResult || typeof configResult !== 'object') configResult = {};
+            
+            result.questions = questionsResult;
+            result.config = configResult;
+            result.allowmultiple = result.allowmultiple === true || result.allowmultiple === 'true';
+            result.showanswers = result.showanswers === true || result.showanswers === 'true';
+            
+            // Actualizar cache
+            const index = this.cache.findIndex(f => f.id === result.id);
+            if (index !== -1) {
+                this.cache[index] = { ...this.cache[index], ...result };
+            } else {
+                this.cache.push(result);
+            }
+            
+            console.log('✅ Formulario guardado:', result.id, result.title);
+            return result;
         } catch (error) {
-            console.error('❌ Error deleting responses:', error);
+            console.error('Error saving form:', error);
             throw error;
         }
     }
 
     // ============================================================
-    // ELIMINAR UNA RESPUESTA ESPECÍFICA
+    // ACTUALIZAR METADATOS
     // ============================================================
 
-    async deleteResponse(responseId) {
-        if (!responseId) return;
+    async updateMeta(id, meta) {
+        if (!id) throw new Error('ID de formulario requerido');
         
         try {
-            if (this.supabase) {
-                try {
-                    const { error } = await this.supabase
-                        .from('responses')
-                        .delete()
-                        .eq('id', responseId);
-                    
-                    if (error) {
-                        console.warn('Supabase delete error:', error);
-                    }
-                } catch (e) {
-                    console.warn('Error deleting from Supabase:', e);
-                }
+            const updateData = {};
+            if (meta.description !== undefined) updateData.description = meta.description;
+            if (meta.allowMultiple !== undefined) updateData.allowmultiple = !!meta.allowMultiple;
+            if (meta.showAnswers !== undefined) updateData.showanswers = !!meta.showAnswers;
+            
+            if (Object.keys(updateData).length === 0) return true;
+            
+            const { error } = await this.supabase
+                .from('forms')
+                .update(updateData)
+                .eq('id', id);
+            
+            if (error) {
+                console.error('Update meta error:', error);
+                throw error;
             }
             
-            // Eliminar de localStorage
-            const key = 'formpro_responses_offline';
-            let responses = JSON.parse(localStorage.getItem(key) || '[]');
-            responses = responses.filter(r => r.id !== responseId);
-            localStorage.setItem(key, JSON.stringify(responses));
+            // Actualizar cache
+            const formIndex = this.cache.findIndex(f => f.id === id);
+            if (formIndex !== -1) {
+                this.cache[formIndex] = { 
+                    ...this.cache[formIndex], 
+                    ...updateData,
+                    allowmultiple: updateData.allowmultiple !== undefined ? updateData.allowmultiple : this.cache[formIndex].allowmultiple,
+                    showanswers: updateData.showanswers !== undefined ? updateData.showanswers : this.cache[formIndex].showanswers
+                };
+            }
             
-            // Eliminar corrección
-            const corrKey = 'formpro_corrections';
-            let corrections = JSON.parse(localStorage.getItem(corrKey) || '{}');
-            delete corrections[responseId];
-            localStorage.setItem(corrKey, JSON.stringify(corrections));
-            
-            this.cache = this.cache.filter(r => r.id !== responseId);
-            
+            return true;
         } catch (error) {
-            console.error('❌ Error deleting response:', error);
+            console.error('Error updating meta:', error);
             throw error;
         }
+    }
+
+    // ============================================================
+    // ACTUALIZAR CONFIGURACIÓN
+    // ============================================================
+
+    async updateConfig(id, config) {
+        if (!id) throw new Error('ID de formulario requerido');
+        if (!config || typeof config !== 'object') return true;
+        
+        try {
+            const cleanConfig = {
+                timeLimit: parseInt(config.timeLimit) || 0,
+                maxAttempts: parseInt(config.maxAttempts) || 1,
+                openDate: config.openDate || null,
+                closeDate: config.closeDate || null,
+                shuffleQuestions: !!config.shuffleQuestions,
+                shuffleOptions: !!config.shuffleOptions,
+                onePerPage: !!config.onePerPage,
+                showProgress: !!config.showProgress,
+                allowBack: !!config.allowBack,
+                showGradeAutomatically: !!config.showGradeAutomatically,
+                showAnswersOnFinish: !!config.showAnswersOnFinish,
+                showOnlyScore: !!config.showOnlyScore
+            };
+            
+            const { error } = await this.supabase
+                .from('forms')
+                .update({ config: cleanConfig })
+                .eq('id', id);
+            
+            if (error) {
+                console.error('Update config error:', error);
+                throw error;
+            }
+            
+            // Actualizar cache
+            const formIndex = this.cache.findIndex(f => f.id === id);
+            if (formIndex !== -1) {
+                this.cache[formIndex].config = cleanConfig;
+            }
+            
+            return true;
+        } catch (error) {
+            console.error('Error updating config:', error);
+            throw error;
+        }
+    }
+
+    // ============================================================
+    // ELIMINAR FORMULARIO
+    // ============================================================
+
+    async delete(id) {
+        if (!id) throw new Error('ID de formulario requerido');
+        
+        try {
+            // Eliminar respuestas asociadas
+            try {
+                await this.supabase
+                    .from('responses')
+                    .delete()
+                    .eq('form_id', id);
+            } catch (e) {
+                console.warn('Error deleting responses:', e);
+            }
+            
+            // Eliminar el formulario
+            const { error } = await this.supabase
+                .from('forms')
+                .delete()
+                .eq('id', id);
+            
+            if (error) {
+                console.error('Delete error:', error);
+                throw error;
+            }
+            
+            this.cache = this.cache.filter(f => f.id !== id);
+            return true;
+        } catch (error) {
+            console.error('Error deleting form:', error);
+            throw error;
+        }
+    }
+
+    // ============================================================
+    // DUPLICAR FORMULARIO
+    // ============================================================
+
+    async duplicate(formId, newTitle) {
+        const original = this.cache.find(f => f.id === formId);
+        if (!original) {
+            throw new Error('Formulario no encontrado');
+        }
+        
+        const title = newTitle || `${original.title} (copia)`;
+        const slug = Utils.generateSlug(title);
+        const questionsCopy = JSON.parse(JSON.stringify(original.questions || []));
+        const configCopy = JSON.parse(JSON.stringify(original.config || {}));
+        
+        const newForm = await this.save(null, title, questionsCopy, slug, configCopy);
+        
+        await this.updateMeta(newForm.id, {
+            allowMultiple: original.allowmultiple || false,
+            showAnswers: original.showanswers || false,
+            description: original.description || ''
+        });
+        
+        return newForm;
     }
 
     // ============================================================
@@ -361,14 +540,11 @@ class ResponsesManager {
     // RECARGAR DATOS
     // ============================================================
 
-    async refresh(formId) {
+    async refresh() {
         this.clearCache();
-        if (formId) {
-            return await this.getByForm(formId);
-        }
-        return [];
+        return await this.getAll();
     }
 }
 
-window.ResponsesManager = ResponsesManager;
-console.log('✅ ResponsesManager cargado - Correcciones en localStorage');
+window.FormsManager = FormsManager;
+console.log('✅ FormsManager cargado - Usando tabla forms con columna config');
