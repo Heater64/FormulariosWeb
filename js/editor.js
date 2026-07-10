@@ -810,16 +810,110 @@
         }
     };
     
-    window.removeQuestion = function(index) {
-        if (!window.isAdmin || !window.isAdmin()) {
-            Utils.showNotification('Solo el administrador puede eliminar preguntas', 'warning');
-            return;
+    // ============================================================
+// ELIMINAR PREGUNTA - CON CONFIRMACIÓN
+// ============================================================
+
+window.removeQuestion = function(index) {
+    if (!window.isAdmin || !window.isAdmin()) {
+        Utils.showNotification('Solo el administrador puede eliminar preguntas', 'warning');
+        return;
+    }
+    
+    // Obtener el título de la pregunta para mostrarlo en la confirmación
+    const question = window.tempQuestions[index];
+    const questionTitle = question?.title || 'Pregunta sin título';
+    const truncatedTitle = questionTitle.length > 40 ? questionTitle.substring(0, 40) + '...' : questionTitle;
+    
+    // Crear alerta personalizada
+    showConfirmDialog(
+        '🗑️ Eliminar pregunta',
+        `¿Estás seguro de que quieres eliminar la pregunta "${truncatedTitle}"?`,
+        'Eliminar',
+        'Cancelar',
+        function() {
+            // Confirmado - eliminar la pregunta
+            window.tempQuestions.splice(index, 1);
+            window.renderQuestions();
+            if (typeof window.onFormChange === 'function') window.onFormChange();
+            Utils.showNotification('✅ Pregunta eliminada', 'success', 1500);
+        },
+        function() {
+            // Cancelado - no hacer nada
+            Utils.showNotification('Eliminación cancelada', 'info', 1500);
         }
-        if (!confirm('¿Eliminar esta pregunta?')) return;
-        window.tempQuestions.splice(index, 1);
-        window.renderQuestions();
-        if (typeof window.onFormChange === 'function') window.onFormChange();
+    );
+};
+
+// ============================================================
+// DIALOGO DE CONFIRMACIÓN PERSONALIZADO
+// ============================================================
+
+function showConfirmDialog(title, message, confirmText, cancelText, onConfirm, onCancel) {
+    // Eliminar diálogos existentes
+    const existingDialog = document.querySelector('.confirm-dialog-overlay');
+    if (existingDialog) {
+        existingDialog.remove();
+    }
+    
+    const overlay = document.createElement('div');
+    overlay.className = 'confirm-dialog-overlay';
+    overlay.innerHTML = `
+        <div class="confirm-dialog">
+            <div class="confirm-dialog-icon">⚠️</div>
+            <h3 class="confirm-dialog-title">${title}</h3>
+            <p class="confirm-dialog-message">${message}</p>
+            <div class="confirm-dialog-actions">
+                <button class="btn-secondary confirm-dialog-cancel">${cancelText || 'Cancelar'}</button>
+                <button class="btn-danger confirm-dialog-confirm">${confirmText || 'Eliminar'}</button>
+            </div>
+        </div>
+    `;
+    
+    document.body.appendChild(overlay);
+    
+    // Animar entrada
+    setTimeout(() => {
+        overlay.classList.add('active');
+    }, 10);
+    
+    const confirmBtn = overlay.querySelector('.confirm-dialog-confirm');
+    const cancelBtn = overlay.querySelector('.confirm-dialog-cancel');
+    
+    // Cerrar y ejecutar acción
+    const closeDialog = (callback) => {
+        overlay.classList.remove('active');
+        overlay.classList.add('closing');
+        setTimeout(() => {
+            overlay.remove();
+            if (callback) callback();
+        }, 300);
     };
+    
+    confirmBtn.addEventListener('click', () => {
+        closeDialog(onConfirm);
+    });
+    
+    cancelBtn.addEventListener('click', () => {
+        closeDialog(onCancel);
+    });
+    
+    // Cerrar al hacer clic fuera
+    overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) {
+            closeDialog(onCancel);
+        }
+    });
+    
+    // Cerrar con ESC
+    const escHandler = (e) => {
+        if (e.key === 'Escape') {
+            closeDialog(onCancel);
+            document.removeEventListener('keydown', escHandler);
+        }
+    };
+    document.addEventListener('keydown', escHandler);
+}
     
     // ============================================================
     // COPIA Y PEGA DE PREGUNTAS
