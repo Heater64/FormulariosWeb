@@ -1,19 +1,40 @@
-// Configuración de Supabase
-// ⚠️ NUNCA subas esto a GitHub con tus credenciales reales
+// ============================================================
+// CONFIGURACIÓN DE SUPABASE
+// ============================================================
 
-// Para desarrollo local, usa variables de entorno
-// En producción, usa las variables de Vercel
+// ⚠️ IMPORTANTE: NUNCA subas credenciales reales a GitHub
+// Usa variables de entorno en Vercel para producción
 
-const SUPABASE_CONFIG = {
-    // En desarrollo: usa valores por defecto (los reemplazarás en producción)
+(function() {
+    'use strict';
     
-};
-
-// Si estás en Vercel, usa las variables de entorno
-if (process.env.NODE_ENV === 'production') {
-    SUPABASE_CONFIG.url = process.env.VERCEL_SUPABASE_URL || SUPABASE_CONFIG.url;
-    SUPABASE_CONFIG.anonKey = process.env.VERCEL_SUPABASE_ANON_KEY || SUPABASE_CONFIG.anonKey;
-}
-
-// Exportar configuración
-window.SUPABASE_CONFIG = SUPABASE_CONFIG;
+    // Función para obtener la configuración de manera segura
+    function getSupabaseConfig() {
+        // Valores por defecto
+        let url = 'https://josxcvncescqqlajahkh.supabase.co';
+        let anonKey = 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8';
+        
+        // Intentar obtener desde variables de entorno inyectadas
+        if (typeof window !== 'undefined') {
+            // Desde el servidor (Vercel)
+            if (window.__SUPABASE_URL) url = window.__SUPABASE_URL;
+            if (window.__SUPABASE_ANON_KEY) anonKey = window.__SUPABASE_ANON_KEY;
+            
+            // Desde ENV global
+            if (window.ENV) {
+                if (window.ENV.SUPABASE_URL) url = window.ENV.SUPABASE_URL;
+                if (window.ENV.SUPABASE_ANON_KEY) anonKey = window.ENV.SUPABASE_ANON_KEY;
+            }
+        }
+        
+        return { url, anonKey };
+    }
+    
+    // Cargar configuración
+    const supabaseConfig = getSupabaseConfig();
+    window.SUPABASE_CONFIG = supabaseConfig;
+    
+    console.log('🔧 Configuración de Supabase cargada');
+    console.log('📡 URL:', supabaseConfig.url);
+    console.log('🔑 Key:', supabaseConfig.anonKey ? supabaseConfig.anonKey.substring(0, 10) + '...' : 'NO DEFINIDA');
+})();

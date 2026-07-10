@@ -1,557 +1,635 @@
 // ============================================================
-// APP - Lógica principal de la aplicación
+// APP - Inicialización y navegación (SERVIDOR CENTRAL)
 // ============================================================
 
-// Inicializar Supabase
-const supabase = window.supabase.createClient(
-    SUPABASE_CONFIG.url,
-    SUPABASE_CONFIG.anonKey
-);
-
-// Inicializar managers
-const formsManager = new FormsManager(supabase);
-const responsesManager = new ResponsesManager(supabase);
-
-// Estado global
-let currentView = 'dashboard';
-let editingId = null;
-let tempQuestions = [];
-let currentFormId = null;
-
-// ============================================================
-// NAVEGACIÓN
-// ============================================================
-
-function showView(view, data) {
-    currentView = view;
+(function() {
+    'use strict';
     
-    document.querySelectorAll('[id^="view-"]').forEach(el => {
-        el.classList.add('hidden');
-    });
+    console.log('🚀 Iniciando FormPro...');
     
-    const target = document.getElementById(`view-${view}`);
-    if (target) target.classList.remove('hidden');
+    // ============================================================
+    // VERIFICAR CONFIGURACIÓN
+    // ============================================================
     
-    if (view === 'dashboard') renderDashboard();
-    if (view === 'editor') renderEditor();
-    if (view === 'form') renderFormView(data);
-    if (view === 'responses') renderResponses(data);
-}
-
-window.showView = showView;
-window.goBack = () => showView('dashboard');
-
-// ============================================================
-// DASHBOARD
-// ============================================================
-
-async function renderDashboard() {
-    const container = document.getElementById('formList');
-    container.innerHTML = `
-        <div class="text-center py-12">
-            <div class="loading mx-auto"></div>
-            <p class="mt-4 text-gray-400">Cargando formularios...</p>
-        </div>
-    `;
+    function checkSupabaseConfig() {
+        if (typeof window.SUPABASE_CONFIG === 'undefined') {
+            console.warn('⚠️ SUPABASE_CONFIG no encontrado, usando valores por defecto');
+            window.SUPABASE_CONFIG = {
+                url: 'https://josxcvncescqqlajahkh.supabase.co',
+                anonKey: 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8'
+            };
+        }
+        return true;
+    }
+    checkSupabaseConfig();
     
+    // ============================================================
+    // CREAR SUPABASE CLIENTE
+    // ============================================================
+    
+    let supabaseClient = null;
     try {
-        const forms = await formsManager.getAll();
-        
-        if (!forms || forms.length === 0) {
-            container.innerHTML = `
-                <div class="empty-state">
-                    <div class="icon">📝</div>
-                    <h3>No tienes formularios</h3>
-                    <p class="text-gray-400">Crea tu primer formulario ahora</p>
-                    <button onclick="showView('editor')" class="btn-blue mt-4">+ Crear formulario</button>
-                </div>
-            `;
-            return;
+        if (typeof supabase !== 'undefined' && supabase.createClient) {
+            supabaseClient = supabase.createClient(
+                window.SUPABASE_CONFIG.url,
+                window.SUPABASE_CONFIG.anonKey
+            );
+            console.log('✅ Supabase cliente creado correctamente');
+        } else {
+            console.warn('⚠️ Supabase no está disponible, usando modo offline');
         }
-        
-        let html = '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">';
-        forms.forEach(form => {
-            const qCount = form.questions?.length || 0;
-            const url = `${Utils.getCurrentURL()}?form=${form.id}`;
-            
-            html += `
-                <div class="card">
-                    <div class="flex justify-between items-start">
-                        <h3 class="font-semibold text-lg truncate">${Utils.escapeHtml(form.title || 'Sin título')}</h3>
-                        <span class="badge badge-blue">${qCount} preguntas</span>
-                    </div>
-                    <p class="text-xs text-gray-400 mt-1">${form.slug || ''}</p>
-                    <div class="flex flex-wrap gap-2 mt-4">
-                        <button onclick="showView('form', '${form.id}')" class="text-sm text-blue-500 hover:underline">📋 Ver</button>
-                        <button onclick="editForm('${form.id}')" class="text-sm text-green-500 hover:underline">✏️ Editar</button>
-                        <button onclick="showView('responses', '${form.id}')" class="text-sm text-purple-500 hover:underline">📊 Respuestas</button>
-                        <button onclick="shareForm('${form.id}')" class="share-btn">📱 Compartir</button>
-                        <button onclick="deleteForm('${form.id}')" class="btn-red">🗑️</button>
-                    </div>
-                </div>
-            `;
-        });
-        html += '</div>';
-        container.innerHTML = html;
-        
     } catch (error) {
-        container.innerHTML = `
-            <div class="empty-state">
-                <div class="icon">⚠️</div>
-                <h3>Error de conexión</h3>
-                <p class="text-gray-400">No se pudieron cargar los formularios</p>
-                <button onclick="renderDashboard()" class="btn-blue mt-4">Reintentar</button>
-            </div>
-        `;
-    }
-}
-
-// ============================================================
-// EDITOR
-// ============================================================
-
-function renderEditor() {
-    document.getElementById('editorTitle').textContent = editingId ? 'Editar Formulario' : 'Nuevo Formulario';
-    
-    if (editingId) {
-        const form = formsManager.cache.find(f => f.id === editingId);
-        if (form) {
-            document.getElementById('formTitle').value = form.title || '';
-            tempQuestions = JSON.parse(JSON.stringify(form.questions || []));
-        }
-    } else {
-        document.getElementById('formTitle').value = 'Mi formulario';
-        tempQuestions = [];
-    }
-    renderQuestions();
-}
-
-function renderQuestions() {
-    const container = document.getElementById('questionsContainer');
-    const counter = document.getElementById('questionCounter');
-    counter.textContent = `${tempQuestions.length} preguntas`;
-    
-    if (tempQuestions.length === 0) {
-        container.innerHTML = `
-            <div class="card text-center py-8 text-gray-400">
-                <p class="text-2xl mb-2">➕</p>
-                <p>Añade tu primera pregunta</p>
-                <p class="text-sm">Usa los botones de abajo</p>
-            </div>
-        `;
-        return;
+        console.error('❌ Error al crear cliente Supabase:', error);
+        supabaseClient = null;
     }
     
-    let html = '';
-    tempQuestions.forEach((q, index) => {
-        html += `
-            <div class="card">
-                <div class="flex items-start gap-3">
-                    <span class="text-gray-400 text-sm mt-2">${index + 1}.</span>
-                    <div class="flex-1">
-                        <input class="form-input text-base font-medium border-none bg-transparent p-0" 
-                               value="${Utils.escapeHtml(q.title || '')}" 
-                               placeholder="Escribe tu pregunta"
-                               onchange="updateQuestion(${index}, 'title', this.value)" />
-                        <div class="mt-3">
-                            ${getQuestionPreview(q, index)}
-                        </div>
-                    </div>
-                    <div class="flex gap-2">
-                        <select class="text-sm border rounded-lg px-2 py-1 bg-white" 
-                                onchange="updateQuestion(${index}, 'type', this.value)">
-                            ${['text', 'textarea', 'radio', 'checkbox', 'select'].map(t => 
-                                `<option value="${t}" ${q.type === t ? 'selected' : ''}>${t}</option>`
-                            ).join('')}
-                        </select>
-                        <button onclick="removeQuestion(${index})" class="text-red-400 hover:text-red-600">✕</button>
-                    </div>
-                </div>
-            </div>
-        `;
-    });
-    container.innerHTML = html;
-}
-
-function getQuestionPreview(q, index) {
-    switch(q.type) {
-        case 'text':
-            return `<input class="form-input bg-gray-50" placeholder="Respuesta corta" disabled />`;
-        case 'textarea':
-            return `<textarea class="form-input bg-gray-50" rows="3" placeholder="Respuesta larga" disabled></textarea>`;
-        case 'radio':
-        case 'checkbox':
-        case 'select':
-            const opts = q.options || ['Opción 1'];
-            const inputType = q.type === 'radio' ? 'radio' : q.type === 'checkbox' ? 'checkbox' : 'select';
-            
-            if (q.type === 'select') {
-                return `
-                    <select class="form-input bg-gray-50" disabled>
-                        ${opts.map(opt => `<option>${Utils.escapeHtml(opt)}</option>`).join('')}
-                    </select>
-                    <div class="mt-2 space-y-1">
-                        ${opts.map((opt, i) => `
-                            <div class="question-option">
-                                <input type="text" value="${Utils.escapeHtml(opt)}" 
-                                       onchange="updateOption(${index}, ${i}, this.value)" />
-                                <button onclick="removeOption(${index}, ${i})" class="text-red-300 text-xs">✕</button>
-                            </div>
-                        `).join('')}
-                        <button onclick="addOption(${index})" class="text-xs text-blue-500 mt-1">+ Añadir opción</button>
-                    </div>
-                `;
+    // ============================================================
+    // INICIALIZAR MANAGERS
+    // ============================================================
+    
+    let formsManager = null;
+    let responsesManager = null;
+    
+    function initManagers() {
+        try {
+            // Verificar que las clases existen
+            if (typeof FormsManager !== 'undefined') {
+                formsManager = new FormsManager(supabaseClient);
+                console.log('✅ FormsManager creado');
+            } else {
+                console.warn('⚠️ FormsManager no definido, creando placeholder');
+                // Crear un placeholder con métodos básicos
+                formsManager = {
+                    cache: [],
+                    isLoading: false,
+                    getAll: async function() { return this.cache; },
+                    getById: async function(id) { return this.cache.find(f => f.id === id) || null; },
+                    getBySlug: async function(slug) { return this.cache.find(f => f.slug === slug) || null; },
+                    save: async function(id, title, questions, slug) { 
+                        const newForm = { id: id || Utils.generateId(), title, questions, slug, created_at: new Date().toISOString() };
+                        this.cache.push(newForm);
+                        return newForm;
+                    },
+                    updateMeta: async function(id, meta) { return true; },
+                    updateConfig: async function(id, config) { return true; },
+                    delete: async function(id) { this.cache = this.cache.filter(f => f.id !== id); return true; },
+                    duplicate: async function(id, title) { return null; },
+                    clearCache: function() { this.cache = []; this.isLoading = false; },
+                    refresh: async function() { return this.cache; },
+                    getConfig: function(id) { return {}; }
+                };
             }
             
-            return `
-                <div class="space-y-1">
-                    ${opts.map((opt, i) => `
-                        <div class="question-option">
-                            <input type="${inputType}" disabled />
-                            <input type="text" value="${Utils.escapeHtml(opt)}" 
-                                   onchange="updateOption(${index}, ${i}, this.value)" />
-                            <button onclick="removeOption(${index}, ${i})" class="text-red-300 text-xs">✕</button>
+            if (typeof ResponsesManager !== 'undefined') {
+                responsesManager = new ResponsesManager(supabaseClient);
+                console.log('✅ ResponsesManager creado');
+            } else {
+                console.warn('⚠️ ResponsesManager no definido, creando placeholder');
+                responsesManager = {
+                    cache: [],
+                    isLoading: false,
+                    save: async function(formId, answers) { return { id: Utils.generateId(), form_id: formId, answers }; },
+                    getByForm: async function(formId) { return this.cache.filter(r => r.form_id === formId); },
+                    correct: async function(responseId, correction) { return true; },
+                    getStats: async function(formId) { return { total: 0, corrected: 0, pending: 0, averageScore: 0 }; },
+                    deleteByForm: async function(formId) { this.cache = this.cache.filter(r => r.form_id !== formId); },
+                    deleteResponse: async function(responseId) { this.cache = this.cache.filter(r => r.id !== responseId); },
+                    clearCache: function() { this.cache = []; this.isLoading = false; },
+                    refresh: async function(formId) { return this.cache; }
+                };
+            }
+        } catch (error) {
+            console.error('❌ Error al crear managers:', error);
+            // Crear objetos vacíos pero funcionales
+            formsManager = {
+                cache: [],
+                isLoading: false,
+                getAll: async function() { return this.cache; },
+                getById: async function(id) { return this.cache.find(f => f.id === id) || null; },
+                save: async function(id, title, questions, slug) { 
+                    const newForm = { id: id || Utils.generateId(), title, questions, slug };
+                    this.cache.push(newForm);
+                    return newForm;
+                },
+                updateMeta: async function(id, meta) { return true; },
+                updateConfig: async function(id, config) { return true; },
+                delete: async function(id) { this.cache = this.cache.filter(f => f.id !== id); return true; },
+                clearCache: function() { this.cache = []; this.isLoading = false; },
+                refresh: async function() { return this.cache; },
+                getConfig: function(id) { return {}; }
+            };
+            responsesManager = {
+                cache: [],
+                isLoading: false,
+                save: async function(formId, answers) { return { id: Utils.generateId(), form_id: formId, answers }; },
+                getByForm: async function(formId) { return this.cache.filter(r => r.form_id === formId); },
+                correct: async function(responseId, correction) { return true; },
+                getStats: async function(formId) { return { total: 0, corrected: 0, pending: 0, averageScore: 0 }; },
+                deleteByForm: async function(formId) { this.cache = this.cache.filter(r => r.form_id !== formId); },
+                clearCache: function() { this.cache = []; this.isLoading = false; },
+                refresh: async function(formId) { return this.cache; }
+            };
+        }
+    }
+    
+    // Inicializar managers inmediatamente
+    initManagers();
+    
+    // EXPONER MANAGERS GLOBALMENTE
+    window.formsManager = formsManager;
+    window.responsesManager = responsesManager;
+    
+    // ============================================================
+    // VERIFICAR QUE LOS MANAGERS EXISTEN
+    // ============================================================
+    
+    function ensureManagers() {
+        if (!window.formsManager) {
+            console.warn('⚠️ formsManager no existe, recreando...');
+            window.formsManager = formsManager || {
+                cache: [],
+                isLoading: false,
+                getAll: async function() { return this.cache; },
+                getById: async function(id) { return this.cache.find(f => f.id === id) || null; },
+                save: async function(id, title, questions, slug) { 
+                    const newForm = { id: id || Utils.generateId(), title, questions, slug, created_at: new Date().toISOString() };
+                    this.cache.push(newForm);
+                    return newForm;
+                },
+                updateMeta: async function(id, meta) { return true; },
+                updateConfig: async function(id, config) { return true; },
+                delete: async function(id) { this.cache = this.cache.filter(f => f.id !== id); return true; },
+                clearCache: function() { this.cache = []; this.isLoading = false; },
+                refresh: async function() { return this.cache; },
+                getConfig: function(id) { return {}; }
+            };
+        }
+        if (!window.responsesManager) {
+            console.warn('⚠️ responsesManager no existe, recreando...');
+            window.responsesManager = responsesManager || {
+                cache: [],
+                isLoading: false,
+                save: async function(formId, answers) { return { id: Utils.generateId(), form_id: formId, answers }; },
+                getByForm: async function(formId) { return this.cache.filter(r => r.form_id === formId); },
+                correct: async function(responseId, correction) { return true; },
+                getStats: async function(formId) { return { total: 0, corrected: 0, pending: 0, averageScore: 0 }; },
+                deleteByForm: async function(formId) { this.cache = this.cache.filter(r => r.form_id !== formId); },
+                clearCache: function() { this.cache = []; this.isLoading = false; },
+                refresh: async function(formId) { return this.cache; }
+            };
+        }
+    }
+    
+    // ============================================================
+    // ESTADO GLOBAL
+    // ============================================================
+    
+    let currentView = 'dashboard';
+    let isAppInitialized = false;
+    let editingId = null;
+    let tempQuestions = [];
+    let currentFormId = null;
+    
+    // Exponer estado global
+    window.editingId = editingId;
+    window.tempQuestions = tempQuestions;
+    window.currentFormId = currentFormId;
+    
+    // ============================================================
+    // NAVEGACIÓN (FUNCIÓN PRINCIPAL)
+    // ============================================================
+    
+    window.showView = function(view, data) {
+        // Asegurar que los managers existen
+        ensureManagers();
+        
+        currentView = view;
+        window.currentFormId = data || null;
+        
+        // Ocultar todas las vistas
+        document.querySelectorAll('#mainApp [id^="view-"]').forEach(el => {
+            el.classList.add('hidden');
+        });
+        
+        // Mostrar la vista seleccionada
+        const target = document.getElementById(`view-${view}`);
+        if (target) {
+            target.classList.remove('hidden');
+        }
+        
+        // Renderizar según vista
+        switch(view) {
+            case 'dashboard':
+                if (typeof window.renderDashboard === 'function') {
+                    window.renderDashboard();
+                }
+                break;
+            case 'editor':
+                if (typeof window.renderEditor === 'function') {
+                    window.renderEditor();
+                }
+                break;
+            case 'form':
+                if (data && typeof window.renderFormView === 'function') {
+                    window.renderFormView(data);
+                }
+                break;
+            case 'responses':
+                if (data && typeof window.renderResponses === 'function') {
+                    window.renderResponses(data);
+                }
+                break;
+            case 'stats':
+                if (data && typeof window.renderStatsView === 'function') {
+                    window.renderStatsView(data);
+                }
+                break;
+            case 'student':
+                if (typeof window.renderStudentDashboard === 'function') {
+                    const content = window.renderStudentDashboard();
+                    document.getElementById('studentContent').innerHTML = content;
+                }
+                break;
+            case 'profile':
+                if (typeof window.initProfile === 'function') {
+                    window.initProfile();
+                }
+                break;
+        }
+        
+        // Actualizar URL
+        if (window.history && window.history.replaceState) {
+            const url = view === 'dashboard' 
+                ? window.location.pathname 
+                : `${window.location.pathname}?view=${view}${data ? `&id=${data}` : ''}`;
+            window.history.replaceState({ view, data }, '', url);
+        }
+        
+        // Actualizar navbar según rol después de cambiar de vista
+        if (view === 'dashboard' || view === 'profile' || view === 'student') {
+            updateNavbarByRole();
+        }
+    };
+    
+    window.goBack = function() {
+        window.showView('dashboard');
+    };
+    
+    // ============================================================
+    // CARGA DE DATOS INICIALES
+    // ============================================================
+    
+    window.initApp = async function() {
+        if (isAppInitialized) return;
+        isAppInitialized = true;
+        
+        // Asegurar managers
+        ensureManagers();
+        
+        try {
+            // Verificar conexión a Supabase
+            if (supabaseClient) {
+                try {
+                    const { error } = await supabaseClient
+                        .from('forms')
+                        .select('count')
+                        .limit(1);
+                    
+                    if (error) {
+                        console.warn('⚠️ Error de conexión a Supabase:', error);
+                        if (typeof Utils !== 'undefined') {
+                            Utils.showNotification('⚠️ No se pudo conectar con la base de datos', 'warning');
+                        }
+                    } else {
+                        console.log('✅ Conexión a Supabase establecida');
+                    }
+                } catch (e) {
+                    console.warn('⚠️ Error de conexión:', e);
+                }
+            }
+        } catch (error) {
+            console.error('⚠️ Error de conexión:', error);
+        }
+        
+        // Cargar formularios
+        if (window.formsManager && typeof window.formsManager.getAll === 'function') {
+            try {
+                await window.formsManager.getAll();
+                console.log('✅ Formularios cargados:', window.formsManager.cache?.length || 0);
+            } catch (error) {
+                console.error('❌ Error cargando formularios:', error);
+                // Si falla, usar caché vacía
+                if (window.formsManager) {
+                    window.formsManager.cache = [];
+                }
+            }
+        } else {
+            console.warn('⚠️ formsManager no disponible para cargar datos');
+            // Crear un formsManager básico si no existe
+            if (!window.formsManager) {
+                window.formsManager = {
+                    cache: [],
+                    isLoading: false,
+                    getAll: async function() { return this.cache; },
+                    getById: async function(id) { return this.cache.find(f => f.id === id) || null; },
+                    save: async function(id, title, questions, slug) { 
+                        const newForm = { id: id || Utils.generateId(), title, questions, slug, created_at: new Date().toISOString() };
+                        this.cache.push(newForm);
+                        return newForm;
+                    },
+                    updateMeta: async function(id, meta) { return true; },
+                    updateConfig: async function(id, config) { return true; },
+                    delete: async function(id) { this.cache = this.cache.filter(f => f.id !== id); return true; },
+                    clearCache: function() { this.cache = []; this.isLoading = false; },
+                    refresh: async function() { return this.cache; },
+                    getConfig: function(id) { return {}; }
+                };
+            }
+            if (!window.responsesManager) {
+                window.responsesManager = {
+                    cache: [],
+                    isLoading: false,
+                    save: async function(formId, answers) { return { id: Utils.generateId(), form_id: formId, answers }; },
+                    getByForm: async function(formId) { return this.cache.filter(r => r.form_id === formId); },
+                    correct: async function(responseId, correction) { return true; },
+                    getStats: async function(formId) { return { total: 0, corrected: 0, pending: 0, averageScore: 0 }; },
+                    deleteByForm: async function(formId) { this.cache = this.cache.filter(r => r.form_id !== formId); },
+                    clearCache: function() { this.cache = []; this.isLoading = false; },
+                    refresh: async function(formId) { return this.cache; }
+                };
+            }
+        }
+        
+        // Actualizar navbar según rol
+        updateNavbarByRole();
+        
+        // Mostrar dashboard
+        window.showView('dashboard');
+    };
+    
+    // ============================================================
+    // ACTUALIZAR NAVBAR SEGÚN ROL
+    // ============================================================
+    
+    function updateNavbarByRole() {
+        const user = window.getCurrentUser ? window.getCurrentUser() : null;
+        const isAdmin = user?.role === 'admin';
+        const isAlumno = user?.role === 'alumno' || user?.role === 'student';
+        
+        // Mostrar/ocultar elementos del navbar
+        const navbarActions = document.querySelector('.navbar-actions');
+        if (!navbarActions) return;
+        
+        // Botón "Nuevo" - solo admin
+        const newBtn = navbarActions.querySelector('.btn-primary');
+        if (newBtn) {
+            newBtn.style.display = isAdmin ? '' : 'none';
+        }
+        
+        // Botón "Papelera" - solo admin
+        const trashBtn = navbarActions.querySelector('[onclick*="showTrash"]');
+        if (trashBtn) {
+            trashBtn.style.display = isAdmin ? '' : 'none';
+        }
+        
+        // Botón "Dashboard" - siempre visible para admin, oculto para alumno
+        const dashboardBtn = navbarActions.querySelector('[onclick*="showView(\'dashboard\')"]');
+        if (dashboardBtn) {
+            dashboardBtn.style.display = isAdmin ? '' : 'none';
+        }
+        
+        // Botón de "Mi Panel" para alumnos
+        const existingStudentBtn = navbarActions.querySelector('.student-dashboard-btn');
+        if (existingStudentBtn) existingStudentBtn.remove();
+        
+        if (isAlumno && !isAdmin) {
+            const studentBtn = document.createElement('button');
+            studentBtn.className = 'nav-btn student-dashboard-btn';
+            studentBtn.innerHTML = '<i data-lucide="graduation-cap" class="w-4 h-4"></i> Mi Panel';
+            studentBtn.onclick = () => window.showView('student');
+            // Insertar antes de Salir
+            const logoutBtn = navbarActions.querySelector('[onclick*="logout"]');
+            if (logoutBtn) {
+                navbarActions.insertBefore(studentBtn, logoutBtn);
+            } else {
+                navbarActions.appendChild(studentBtn);
+            }
+            setTimeout(() => {
+                if (typeof lucide !== 'undefined') lucide.createIcons();
+            }, 100);
+        }
+        
+        // Actualizar badge de rol
+        const existingRole = navbarActions.querySelector('.role-badge');
+        if (existingRole) existingRole.remove();
+        
+        if (user) {
+            const roleBadge = document.createElement('span');
+            roleBadge.className = `role-badge role-${user.role}`;
+            roleBadge.textContent = isAdmin ? '👑 Admin' : '🎓 Alumno';
+            navbarActions.insertBefore(roleBadge, navbarActions.firstChild);
+        }
+    }
+    
+    // ============================================================
+    // MANEJO DE PARÁMETROS URL
+    // ============================================================
+    
+    function handleUrlParams() {
+        // Asegurar managers
+        ensureManagers();
+        
+        const params = new URLSearchParams(window.location.search);
+        const view = params.get('view') || 'dashboard';
+        const id = params.get('id');
+        const form = params.get('form');
+        
+        // Enlace público de formulario
+        if (form) {
+            const loginScreen = document.getElementById('loginScreen');
+            const mainApp = document.getElementById('mainApp');
+            const navbar = document.querySelector('#mainApp nav');
+            
+            if (loginScreen) loginScreen.classList.add('hidden');
+            if (mainApp) mainApp.classList.remove('hidden');
+            if (navbar) navbar.style.display = 'none';
+            
+            document.querySelectorAll('.dashboard-only').forEach(el => {
+                if (el) el.style.display = 'none';
+            });
+            
+            if (window.formsManager && typeof window.formsManager.getById === 'function') {
+                window.formsManager.getById(form).then(formData => {
+                    if (formData) {
+                        window.showView('form', form);
+                    } else {
+                        document.getElementById('formViewContent').innerHTML = `
+                            <div class="card text-center py-12">
+                                <div class="text-4xl mb-4">⚠️</div>
+                                <h3 class="text-xl font-semibold text-red-500">Formulario no encontrado</h3>
+                                <p class="text-sm text-gray-400 mt-2">El enlace puede ser incorrecto o el formulario ha sido eliminado</p>
+                            </div>
+                        `;
+                        document.getElementById('view-form').classList.remove('hidden');
+                    }
+                }).catch(() => {
+                    document.getElementById('formViewContent').innerHTML = `
+                        <div class="card text-center py-12">
+                            <div class="text-4xl mb-4">⚠️</div>
+                            <h3 class="text-xl font-semibold text-red-500">Error al cargar el formulario</h3>
+                            <p class="text-sm text-gray-400 mt-2">No se pudo cargar el formulario solicitado</p>
                         </div>
-                    `).join('')}
-                    <button onclick="addOption(${index})" class="text-xs text-blue-500 mt-1">+ Añadir opción</button>
+                    `;
+                    document.getElementById('view-form').classList.remove('hidden');
+                });
+            }
+            return true;
+        }
+        
+        // Vistas normales - verificar permisos
+        const user = window.getCurrentUser ? window.getCurrentUser() : null;
+        const isAdmin = user?.role === 'admin';
+        
+        if (view === 'responses' && id) {
+            if (!isAdmin) {
+                Utils.showNotification('Solo el administrador puede ver respuestas', 'warning');
+                window.showView('dashboard');
+                return true;
+            }
+            window.showView('responses', id);
+            return true;
+        }
+        
+        if (view === 'stats' && id) {
+            if (!isAdmin) {
+                Utils.showNotification('Solo el administrador puede ver estadísticas', 'warning');
+                window.showView('dashboard');
+                return true;
+            }
+            window.showView('stats', id);
+            return true;
+        }
+        
+        if (view === 'editor') {
+            if (!isAdmin) {
+                Utils.showNotification('Solo el administrador puede crear o editar formularios', 'warning');
+                window.showView('dashboard');
+                return true;
+            }
+            if (id) window.editingId = id;
+            window.showView('editor');
+            return true;
+        }
+        
+        if (view === 'form' && id) {
+            window.showView('form', id);
+            return true;
+        }
+        
+        if (view === 'student') {
+            if (isAdmin) {
+                Utils.showNotification('El administrador no tiene panel de alumno', 'info');
+                window.showView('dashboard');
+                return true;
+            }
+            window.showView('student');
+            return true;
+        }
+        
+        if (view === 'profile') {
+            window.showView('profile');
+            return true;
+        }
+        
+        if (view === 'dashboard') {
+            window.showView('dashboard');
+            return true;
+        }
+        
+        return false;
+    }
+    
+    // ============================================================
+    // INICIALIZACIÓN COMPLETA
+    // ============================================================
+    
+    async function init() {
+        try {
+            // Asegurar que los managers existen
+            ensureManagers();
+            
+            // Verificar autenticación
+            const isAuthenticated = typeof window.checkAuth === 'function' ? window.checkAuth() : false;
+            
+            if (isAuthenticated) {
+                const loginScreen = document.getElementById('loginScreen');
+                const mainApp = document.getElementById('mainApp');
+                
+                if (loginScreen) loginScreen.classList.add('hidden');
+                if (mainApp) mainApp.classList.remove('hidden');
+                
+                await window.initApp();
+                handleUrlParams();
+            } else {
+                const loginScreen = document.getElementById('loginScreen');
+                const mainApp = document.getElementById('mainApp');
+                
+                if (loginScreen) loginScreen.classList.remove('hidden');
+                if (mainApp) mainApp.classList.add('hidden');
+                
+                const loginUser = document.getElementById('loginUser');
+                const loginPassword = document.getElementById('loginPassword');
+                if (loginUser) loginUser.value = 'admin';
+                if (loginPassword) loginPassword.value = 'admin123';
+            }
+        } catch (error) {
+            console.error('Error en init:', error);
+            document.body.innerHTML = `
+                <div style="text-align:center;padding:50px;font-family:sans-serif;">
+                    <h1 style="color:#EF4444;">⚠️ Error al iniciar la aplicación</h1>
+                    <p style="color:#6B7280;">${error.message || 'Error desconocido'}</p>
+                    <button onclick="location.reload()" style="margin-top:20px;padding:10px 20px;background:#3B82F6;color:white;border:none;border-radius:8px;cursor:pointer;">
+                        Recargar página
+                    </button>
                 </div>
             `;
-        default:
-            return `<input class="form-input bg-gray-50" placeholder="Respuesta" disabled />`;
-    }
-}
-
-// ============================================================
-// FUNCIONES GLOBALES DEL EDITOR
-// ============================================================
-
-window.addQuestion = function(type) {
-    const newQ = {
-        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
-        type: type,
-        title: 'Nueva pregunta',
-        required: false,
-        options: ['radio', 'checkbox', 'select'].includes(type) ? ['Opción 1'] : undefined
-    };
-    tempQuestions.push(newQ);
-    renderQuestions();
-};
-
-window.updateQuestion = function(index, field, value) {
-    if (tempQuestions[index]) {
-        tempQuestions[index][field] = value;
-    }
-};
-
-window.updateOption = function(qIndex, optIndex, value) {
-    if (tempQuestions[qIndex] && tempQuestions[qIndex].options) {
-        tempQuestions[qIndex].options[optIndex] = value;
-    }
-};
-
-window.addOption = function(index) {
-    if (tempQuestions[index]) {
-        if (!tempQuestions[index].options) tempQuestions[index].options = [];
-        tempQuestions[index].options.push(`Opción ${tempQuestions[index].options.length + 1}`);
-        renderQuestions();
-    }
-};
-
-window.removeOption = function(qIndex, optIndex) {
-    if (tempQuestions[qIndex] && tempQuestions[qIndex].options) {
-        tempQuestions[qIndex].options.splice(optIndex, 1);
-        if (tempQuestions[qIndex].options.length === 0) {
-            tempQuestions[qIndex].options = ['Opción 1'];
         }
-        renderQuestions();
-    }
-};
-
-window.removeQuestion = function(index) {
-    tempQuestions.splice(index, 1);
-    renderQuestions();
-};
-
-window.editForm = function(formId) {
-    editingId = formId;
-    showView('editor');
-};
-
-window.deleteForm = async function(formId) {
-    if (!confirm('¿Eliminar este formulario permanentemente?')) return;
-    try {
-        await formsManager.delete(formId);
-        Utils.showToast('✅ Formulario eliminado', 'success');
-        renderDashboard();
-    } catch (error) {
-        Utils.showToast('❌ Error al eliminar', 'error');
-    }
-};
-
-window.shareForm = function(formId) {
-    const form = formsManager.cache.find(f => f.id === formId);
-    if (!form) return;
-    
-    const url = `${Utils.getCurrentURL()}?form=${formId}`;
-    const text = `📝 ${form.title}\n\nCompleta este formulario:\n${url}`;
-    
-    if (navigator.share) {
-        navigator.share({ title: form.title, text: text, url: url })
-            .catch(() => Utils.copyToClipboard(url));
-    } else {
-        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    }
-};
-
-window.saveForm = async function() {
-    const title = document.getElementById('formTitle').value.trim() || 'Formulario sin título';
-    
-    if (tempQuestions.length === 0) {
-        Utils.showToast('⚠️ Añade al menos una pregunta', 'error');
-        return;
     }
     
-    const invalid = tempQuestions.some(q => !q.title || q.title.trim() === '');
-    if (invalid) {
-        Utils.showToast('⚠️ Todas las preguntas deben tener título', 'error');
-        return;
-    }
+    // ============================================================
+    // EVENTOS GLOBALES
+    // ============================================================
     
-    try {
-        const slug = Utils.generateSlug(title);
-        await formsManager.save(editingId, title, tempQuestions, slug);
-        
-        Utils.showToast('✅ Formulario guardado correctamente', 'success');
-        editingId = null;
-        tempQuestions = [];
-        showView('dashboard');
-    } catch (error) {
-        Utils.showToast('❌ Error al guardar: ' + error.message, 'error');
-    }
-};
-
-// ============================================================
-// VER FORMULARIO (para responder)
-// ============================================================
-
-async function renderFormView(formId) {
-    const form = formsManager.cache.find(f => f.id === formId);
-    if (!form) {
-        document.getElementById('formViewContent').innerHTML = `
-            <div class="card text-center py-12 text-red-400">
-                <p>Formulario no encontrado</p>
-            </div>
-        `;
-        return;
-    }
-    
-    currentFormId = formId;
-    const questions = form.questions || [];
-    
-    let html = `
-        <div class="card mb-6">
-            <h1 class="text-2xl font-bold">${Utils.escapeHtml(form.title)}</h1>
-            <p class="text-gray-400 text-sm mt-1">${questions.length} preguntas</p>
-        </div>
-        <form id="responseForm" class="space-y-4" onsubmit="submitResponse(event)">
-            <input type="hidden" name="formId" value="${form.id}" />
-    `;
-    
-    questions.forEach((q, index) => {
-        html += `
-            <div class="card">
-                <label class="font-medium block mb-2">
-                    ${Utils.escapeHtml(q.title || 'Pregunta sin título')}
-                    ${q.required ? '<span class="text-red-500">*</span>' : ''}
-                </label>
-                ${getQuestionInput(q, index)}
-            </div>
-        `;
+    document.addEventListener('keydown', function(e) {
+        if (e.key === 'Escape') {
+            const modal = document.getElementById('correctionModalOverlay');
+            if (modal) {
+                modal.remove();
+            }
+            const studentModal = document.getElementById('studentDashboardOverlay');
+            if (studentModal) {
+                studentModal.remove();
+            }
+            const editModal = document.getElementById('editUserModal');
+            if (editModal) {
+                editModal.remove();
+            }
+        }
     });
     
-    html += `
-            <button type="submit" class="btn-blue w-full py-4 text-lg">📤 Enviar respuestas</button>
-        </form>
-    `;
-    
-    document.getElementById('formViewContent').innerHTML = html;
-}
-
-function getQuestionInput(q, index) {
-    const name = `q${index}`;
-    switch(q.type) {
-        case 'text':
-            return `<input name="${name}" class="form-input" placeholder="Tu respuesta" />`;
-        case 'textarea':
-            return `<textarea name="${name}" class="form-input" rows="3" placeholder="Tu respuesta"></textarea>`;
-        case 'radio':
-            return (q.options || ['Opción 1']).map(opt => 
-                `<div class="flex items-center gap-2"><input type="radio" name="${name}" value="${Utils.escapeHtml(opt)}" /> ${Utils.escapeHtml(opt)}</div>`
-            ).join('');
-        case 'checkbox':
-            return (q.options || ['Opción 1']).map(opt => 
-                `<div class="flex items-center gap-2"><input type="checkbox" name="${name}" value="${Utils.escapeHtml(opt)}" /> ${Utils.escapeHtml(opt)}</div>`
-            ).join('');
-        case 'select':
-            return `
-                <select name="${name}" class="form-input">
-                    <option value="">Selecciona...</option>
-                    ${(q.options || ['Opción 1']).map(opt => `<option value="${Utils.escapeHtml(opt)}">${Utils.escapeHtml(opt)}</option>`).join('')}
-                </select>
-            `;
-        default:
-            return `<input name="${name}" class="form-input" placeholder="Tu respuesta" />`;
-    }
-}
-
-window.submitResponse = async function(event) {
-    event.preventDefault();
-    const form = event.target;
-    const formId = form.querySelector('[name="formId"]').value;
-    const formData = new FormData(form);
-    
-    const answers = [];
-    for (let [key, value] of formData.entries()) {
-        if (key !== 'formId' && value) {
-            answers.push({ question: key, value: value });
-        }
-    }
-    
-    if (answers.length === 0) {
-        Utils.showToast('⚠️ Responde al menos una pregunta', 'error');
-        return;
-    }
-    
-    try {
-        await responsesManager.save(formId, answers);
-        
-        document.getElementById('formViewContent').innerHTML = `
-            <div class="card text-center py-12">
-                <div class="text-6xl mb-4">✅</div>
-                <h2 class="text-2xl font-bold">¡Respuesta enviada!</h2>
-                <p class="text-gray-400 mt-2">Gracias por completar el formulario</p>
-                <button onclick="goBack()" class="btn-blue mt-4">Volver</button>
-            </div>
-        `;
-        Utils.showToast('✅ Respuesta enviada correctamente', 'success');
-    } catch (error) {
-        Utils.showToast('❌ Error al enviar: ' + error.message, 'error');
-    }
-};
-
-// ============================================================
-// VER RESPUESTAS
-// ============================================================
-
-async function renderResponses(formId) {
-    const form = formsManager.cache.find(f => f.id === formId);
-    if (!form) {
-        document.getElementById('responsesContent').innerHTML = `
-            <div class="card text-center py-12 text-red-400">
-                <p>Formulario no encontrado</p>
-            </div>
-        `;
-        return;
-    }
-    
-    const responses = await responsesManager.getByForm(formId);
-    const questions = form.questions || [];
-    
-    let html = `
-        <div class="card mb-6">
-            <h2 class="text-xl font-bold">${Utils.escapeHtml(form.title)}</h2>
-            <p class="text-gray-400">${responses.length} respuestas recibidas</p>
-        </div>
-    `;
-    
-    if (responses.length === 0) {
-        html += `<div class="card text-center py-12 text-gray-400">📭 Aún no hay respuestas</div>`;
+    // Cargar cuando el DOM esté listo
+    if (document.readyState === 'loading') {
+        document.addEventListener('DOMContentLoaded', init);
     } else {
-        html += `
-            <div class="grid md:grid-cols-3 gap-4 mb-6">
-                <div class="card text-center">
-                    <p class="text-3xl font-bold">${responses.length}</p>
-                    <p class="text-sm text-gray-400">Total respuestas</p>
-                </div>
-                <div class="card text-center">
-                    <p class="text-3xl font-bold">${questions.length}</p>
-                    <p class="text-sm text-gray-400">Preguntas</p>
-                </div>
-                <div class="card text-center">
-                    <p class="text-3xl font-bold">${new Date(form.created_at).toLocaleDateString()}</p>
-                    <p class="text-sm text-gray-400">Creado</p>
-                </div>
-            </div>
-        `;
-        
-        html += `<div class="space-y-3">`;
-        responses.forEach((r, index) => {
-            html += `
-                <div class="card">
-                    <div class="flex justify-between items-start">
-                        <div>
-                            <p class="text-sm font-medium text-gray-700">Respuesta #${responses.length - index}</p>
-                            <p class="text-xs text-gray-400">${new Date(r.created_at).toLocaleString()}</p>
-                        </div>
-                        <span class="badge badge-green">Completado</span>
-                    </div>
-                    <div class="mt-2 space-y-1 text-sm">
-                        ${r.answers.map(a => `
-                            <div><span class="text-gray-400">${Utils.escapeHtml(a.question)}:</span> ${Utils.escapeHtml(a.value)}</div>
-                        `).join('')}
-                    </div>
-                </div>
-            `;
-        });
-        html += `</div>`;
+        init();
     }
     
-    document.getElementById('responsesContent').innerHTML = html;
-}
-
-// ============================================================
-// INICIALIZACIÓN
-// ============================================================
-
-async function init() {
-    // Verificar conexión
-    try {
-        const { data, error } = await supabase.from('forms').select('count').limit(1);
-        if (error) throw error;
-        document.getElementById('statusText').textContent = 'online';
-        document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-green-400 inline-block';
-    } catch (error) {
-        document.getElementById('statusText').textContent = 'offline';
-        document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-red-400 inline-block';
-        Utils.showToast('⚠️ No se pudo conectar con Supabase', 'error');
-    }
+    console.log('🚀 FormPro v2.0 - Iniciado correctamente');
+    console.log('👤 Usuarios: admin/admin123, alumno/alumno123');
+    console.log('📊 Estado:', {
+        supabase: !!supabaseClient,
+        formsManager: !!window.formsManager,
+        responsesManager: !!window.responsesManager
+    });
     
-    // Detectar si venimos de un enlace compartido
-    const params = new URLSearchParams(window.location.search);
-    const formId = params.get('form');
-    
-    if (formId) {
-        await formsManager.getAll();
-        const form = formsManager.cache.find(f => f.id === formId);
-        if (form) {
-            showView('form', formId);
-        } else {
-            showView('dashboard');
-            Utils.showToast('⚠️ Este formulario no existe', 'error');
-        }
-    } else {
-        showView('dashboard');
-    }
-    
-    // Limpiar URL
-    if (window.history && window.history.replaceState) {
-        window.history.replaceState({}, document.title, window.location.pathname);
-    }
-}
-
-// Iniciar cuando el DOM esté listo
-document.addEventListener('DOMContentLoaded', init);
-
-console.log('🚀 FormPro v2.0 - Estructura profesional');
-console.log('📦 Base de datos: Supabase');
-console.log('🌍 Accesible desde cualquier lugar');
+})();

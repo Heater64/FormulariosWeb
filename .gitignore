@@ -1,8 +1,29 @@
-# .gitignore
+# Dependencias
 node_modules/
+package-lock.json
+yarn.lock
+
+# Variables de entorno
 .env
 .env.local
+.env.production
+
+# Archivos del sistema
 .DS_Store
+Thumbs.db
 *.log
+
+# Editores
 .vscode/
 .idea/
+*.swp
+*.swo
+
+# Construcción
+dist/
+build/
+.next/
+out/
+
+# Vercel
+.vercel/

@@ -1,0 +1,847 @@
+/* ============================================================
+   EDITOR
+   ============================================================ */
+
+.editor-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 24px;
+    flex-wrap: wrap;
+}
+
+.editor-header-actions {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+}
+
+.editor-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+}
+
+.editor-title-input {
+    width: 100%;
+    font-size: 24px;
+    font-weight: 700;
+    border: none;
+    background: transparent;
+    color: var(--gray-900);
+    padding: 0;
+}
+
+.editor-title-input:focus {
+    outline: none;
+}
+
+.editor-title-input::placeholder {
+    color: var(--gray-400);
+}
+
+.editor-meta {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-top: 8px;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.editor-question-counter {
+    font-size: 14px;
+    color: var(--gray-400);
+}
+
+/* ============================================================
+   QUESTIONS CONTAINER
+   ============================================================ */
+
+.questions-container {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-top: 16px;
+}
+
+.question-card {
+    background: white;
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+}
+
+.question-card:hover {
+    border-color: var(--gray-300);
+    box-shadow: var(--shadow-md);
+}
+
+.question-card-header {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+.question-number {
+    color: var(--gray-400);
+    font-size: 14px;
+    font-weight: 500;
+    min-width: 24px;
+    padding-top: 2px;
+}
+
+.question-content {
+    flex: 1;
+    min-width: 200px;
+}
+
+.question-title-input {
+    width: 100%;
+    font-size: 16px;
+    font-weight: 500;
+    border: none;
+    background: transparent;
+    color: var(--gray-800);
+    padding: 0;
+}
+
+.question-title-input:focus {
+    outline: none;
+}
+
+.question-title-input::placeholder {
+    color: var(--gray-400);
+}
+
+.question-preview {
+    margin-top: 12px;
+}
+
+.question-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    align-items: flex-end;
+    flex-wrap: wrap;
+}
+
+.question-actions-row {
+    display: flex;
+    gap: 2px;
+    align-items: center;
+}
+
+.question-actions-row .btn-ghost {
+    padding: 2px 6px;
+    font-size: 11px;
+    border-radius: 4px;
+    color: var(--gray-400);
+}
+
+.question-actions-row .btn-ghost:hover {
+    background: var(--gray-100);
+    color: var(--gray-700);
+}
+
+/* ============================================================
+   QUESTION OPTIONS
+   ============================================================ */
+
+.question-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-top: 4px;
+}
+
+.question-option input[type="text"] {
+    flex: 1;
+    padding: 6px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 8px;
+    font-size: 14px;
+    transition: var(--transition);
+    background: white;
+}
+
+.question-option input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
+}
+
+.question-option .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 4px;
+}
+
+.question-option .remove-btn:hover {
+    color: var(--error);
+}
+
+/* ============================================================
+   TOOLBAR REDISEÑADO
+   ============================================================ */
+
+.question-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    padding: 16px 20px;
+    background: white;
+    border-radius: var(--radius-lg);
+    margin-top: 16px;
+    border: 1px solid var(--gray-200);
+    box-shadow: var(--shadow);
+}
+
+.toolbar-section {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 4px;
+    padding-right: 12px;
+    border-right: 1px solid var(--gray-200);
+}
+
+.toolbar-section:last-child {
+    border-right: none;
+    padding-right: 0;
+}
+
+.toolbar-section-title {
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--gray-400);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    padding-right: 6px;
+    flex-shrink: 0;
+}
+
+.toolbar-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 10px;
+    background: var(--gray-50);
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--gray-600);
+    cursor: pointer;
+    transition: var(--transition);
+    white-space: nowrap;
+}
+
+.toolbar-btn:hover {
+    background: var(--primary-light);
+    border-color: var(--primary);
+    color: var(--primary);
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(0, 122, 255, 0.12);
+}
+
+.toolbar-btn .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+/* ============================================================
+   EDITOR ACTIONS
+   ============================================================ */
+
+.editor-actions {
+    margin-top: 24px;
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+}
+
+/* ============================================================
+   MATCH / ORDER / IDENTIFY
+   ============================================================ */
+
+.match-container {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-top: 8px;
+}
+
+.match-column {
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    padding: 12px 16px;
+}
+
+.match-column-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-400);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.match-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+}
+
+.match-item input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.match-item input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.match-item .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 4px;
+}
+
+.match-item .remove-btn:hover {
+    color: var(--error);
+}
+
+.match-pairs-input {
+    margin-top: 12px;
+}
+
+.match-pairs-input .form-input {
+    font-size: 13px;
+    padding: 6px 12px;
+}
+
+.order-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 0;
+}
+
+.order-item .order-number {
+    color: var(--gray-400);
+    font-size: 13px;
+    min-width: 24px;
+}
+
+.order-item input[type="text"] {
+    flex: 1;
+    padding: 4px 8px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    font-size: 13px;
+}
+
+.order-item input[type="text"]:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+.order-item .remove-btn {
+    color: var(--gray-400);
+    background: none;
+    border: none;
+    cursor: pointer;
+    font-size: 12px;
+    padding: 0 4px;
+}
+
+.order-item .remove-btn:hover {
+    color: var(--error);
+}
+
+.identify-clues {
+    margin-top: 8px;
+}
+
+.identify-clues textarea {
+    font-size: 14px;
+    padding: 10px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: var(--radius);
+    width: 100%;
+    min-height: 60px;
+    resize: vertical;
+    font-family: inherit;
+}
+
+.identify-clues textarea:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.08);
+}
+
+.identify-answer-input {
+    margin-top: 8px;
+}
+
+.identify-answer-input input {
+    font-size: 14px;
+    padding: 6px 12px;
+    border: 1px solid var(--gray-200);
+    border-radius: 6px;
+    width: 100%;
+    max-width: 300px;
+}
+
+.identify-answer-input input:focus {
+    outline: none;
+    border-color: var(--primary);
+}
+
+/* ============================================================
+   IMAGE PREVIEW
+   ============================================================ */
+
+.image-preview {
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    padding: 12px;
+    border: 1px solid var(--gray-200);
+}
+
+.image-placeholder {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 80px;
+    background: white;
+    border-radius: 8px;
+    border: 1px dashed var(--gray-300);
+    color: var(--gray-400);
+}
+
+.preview-image {
+    max-width: 100%;
+    max-height: 150px;
+    border-radius: 8px;
+    object-fit: contain;
+    background: white;
+}
+
+/* ============================================================
+   MODAL DE CONFIGURACIÓN DEL EXAMEN
+   ============================================================ */
+
+.exam-config-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(8px);
+    z-index: 1000;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+    animation: fadeInModal 0.3s ease;
+}
+
+.exam-config-modal-overlay.active {
+    display: flex;
+}
+
+.exam-config-modal-overlay.closing {
+    animation: fadeOutModal 0.3s ease forwards;
+}
+
+@keyframes fadeInModal {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+@keyframes fadeOutModal {
+    from { opacity: 1; }
+    to { opacity: 0; }
+}
+
+.exam-config-modal {
+    background: white;
+    border-radius: 24px;
+    max-width: 700px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 25px 60px rgba(0, 0, 0, 0.3);
+    animation: slideUpModal 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    overflow: hidden;
+}
+
+@keyframes slideUpModal {
+    from { transform: translateY(30px); opacity: 0; }
+    to { transform: translateY(0); opacity: 1; }
+}
+
+.exam-config-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 20px 28px;
+    border-bottom: 1px solid var(--gray-200);
+    flex-shrink: 0;
+}
+
+.exam-config-modal-header h2 {
+    font-size: 20px;
+    font-weight: 700;
+    color: var(--gray-900);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.exam-config-modal-close {
+    background: none;
+    border: none;
+    color: var(--gray-400);
+    cursor: pointer;
+    padding: 8px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.exam-config-modal-close:hover {
+    background: var(--gray-100);
+    color: var(--gray-600);
+}
+
+.exam-config-modal-body {
+    padding: 24px 28px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.exam-config-modal-footer {
+    display: flex;
+    gap: 12px;
+    justify-content: flex-end;
+    padding: 16px 28px;
+    border-top: 1px solid var(--gray-200);
+    flex-shrink: 0;
+    background: var(--gray-50);
+}
+
+/* Config sections */
+.config-section {
+    margin-bottom: 24px;
+    padding-bottom: 24px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.config-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+    padding-bottom: 0;
+}
+
+.config-section-title {
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 12px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.config-section-subtitle {
+    font-size: 13px;
+    color: var(--gray-400);
+    margin-bottom: 12px;
+}
+
+.config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+}
+
+.config-grid-1 {
+    grid-template-columns: 1fr;
+}
+
+.config-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.config-group label {
+    font-size: 13px;
+    font-weight: 500;
+    color: var(--gray-600);
+}
+
+.config-group .config-input {
+    padding: 8px 12px;
+    border: 2px solid var(--gray-200);
+    border-radius: var(--radius);
+    font-size: 14px;
+    transition: var(--transition);
+    background: white;
+    width: 100%;
+}
+
+.config-group .config-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+}
+
+.config-group .config-hint {
+    font-size: 11px;
+    color: var(--gray-400);
+}
+
+/* Toggles en el modal */
+.modal-toggle-container {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    cursor: pointer;
+    font-size: 13px;
+    color: var(--gray-700);
+    user-select: none;
+    padding: 6px 10px;
+    border-radius: 8px;
+    transition: var(--transition);
+}
+
+.modal-toggle-container:hover {
+    background: var(--gray-50);
+}
+
+.modal-toggle-container .toggle-switch {
+    position: relative;
+    width: 40px;
+    height: 22px;
+    background: var(--gray-300);
+    border-radius: 50px;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+
+.modal-toggle-container .toggle-switch.active {
+    background: var(--primary);
+}
+
+.modal-toggle-container .toggle-switch::after {
+    content: '';
+    position: absolute;
+    top: 2px;
+    left: 2px;
+    width: 18px;
+    height: 18px;
+    background: white;
+    border-radius: 50%;
+    transition: var(--transition);
+    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+}
+
+.modal-toggle-container .toggle-switch.active::after {
+    left: 20px;
+}
+
+.modal-toggle-container .toggle-label {
+    flex: 1;
+}
+
+.modal-toggle-container .toggle-desc {
+    font-size: 11px;
+    color: var(--gray-400);
+    display: block;
+    font-weight: 400;
+}
+
+.config-options-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 4px;
+}
+
+/* ============================================================
+   EXAM INFO BANNER
+   ============================================================ */
+
+.exam-info-banner {
+    background: #F0F9FF;
+    border-radius: var(--radius);
+    padding: 12px 18px;
+    margin-bottom: 16px;
+    border: 1px solid #BAE6FD;
+}
+
+.exam-info-grid {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+.exam-info-item {
+    font-size: 12px;
+    color: #0369A1;
+    background: white;
+    padding: 2px 10px;
+    border-radius: 12px;
+    border: 1px solid #BAE6FD;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+
+@media (max-width: 768px) {
+    .exam-config-modal {
+        max-width: 100%;
+        margin: 10px;
+        border-radius: 16px;
+    }
+    
+    .exam-config-modal-header {
+        padding: 16px 20px;
+    }
+    
+    .exam-config-modal-body {
+        padding: 16px 20px;
+    }
+    
+    .exam-config-modal-footer {
+        padding: 12px 20px;
+    }
+    
+    .config-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .config-options-grid {
+        grid-template-columns: 1fr;
+    }
+    
+    .editor-header-actions {
+        width: 100%;
+        justify-content: flex-end;
+        margin-top: 8px;
+    }
+    
+    .auto-save-indicator {
+        font-size: 10px;
+        padding: 2px 8px;
+    }
+    
+    .question-toolbar {
+        padding: 12px 14px;
+        gap: 8px;
+    }
+    
+    .toolbar-section {
+        padding-right: 8px;
+        gap: 4px;
+        border-right: none;
+        border-bottom: 1px solid var(--gray-100);
+        padding-bottom: 6px;
+        width: 100%;
+    }
+    
+    .toolbar-section:last-child {
+        border-bottom: none;
+        padding-bottom: 0;
+    }
+    
+    .toolbar-section-title {
+        width: 100%;
+        margin-bottom: 2px;
+    }
+    
+    .toolbar-btn {
+        font-size: 10px;
+        padding: 4px 8px;
+    }
+    
+    .match-container {
+        grid-template-columns: 1fr;
+        gap: 12px;
+    }
+    
+    .editor-card {
+        padding: 16px 20px;
+    }
+    
+    .editor-title-input {
+        font-size: 20px;
+    }
+    
+    .editor-meta {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 8px;
+    }
+}
+
+@media (max-width: 480px) {
+    .exam-config-modal-header h2 {
+        font-size: 17px;
+    }
+    
+    .exam-config-modal-body {
+        padding: 12px 16px;
+    }
+    
+    .modal-toggle-container {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    .question-card {
+        padding: 14px 16px;
+    }
+    
+    .editor-title-input {
+        font-size: 18px;
+    }
+    
+    .editor-header-actions {
+        flex-wrap: wrap;
+        gap: 4px;
+    }
+    
+    .auto-save-indicator {
+        font-size: 9px;
+        padding: 2px 6px;
+    }
+    
+    .question-actions-row .btn-ghost {
+        padding: 2px 4px;
+        font-size: 10px;
+    }
+}
