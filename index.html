@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>FormPro Cloud</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <style>
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        .btn-blue {
+            background: #007AFF;
+            color: white;
+            border-radius: 980px;
+            padding: 12px 24px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+        .btn-blue:hover { background: #0055CC; transform: scale(1.02); }
+        .btn-blue:active { transform: scale(0.98); }
+        .btn-red {
+            background: #FF3B30;
+            color: white;
+            border-radius: 980px;
+            padding: 8px 16px;
+            font-weight: 500;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+            font-size: 13px;
+        }
+        .btn-red:hover { background: #D63031; }
+        .card {
+            background: white;
+            border-radius: 20px;
+            padding: 24px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+            border: 1px solid #f0f0f0;
+            transition: all 0.2s;
+        }
+        .card:hover { box-shadow: 0 8px 30px rgba(0,0,0,0.08); }
+        .form-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid #e5e5e5;
+            border-radius: 12px;
+            transition: all 0.2s;
+            font-size: 16px;
+        }
+        .form-input:focus {
+            outline: none;
+            border-color: #007AFF;
+            box-shadow: 0 0 0 3px rgba(0,122,255,0.1);
+        }
+        .share-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 50px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 13px;
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+        }
+        .share-btn:hover { background: #128C7E; }
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 50px;
+            font-size: 12px;
+            font-weight: 500;
+        }
+        .badge-blue { background: #E8F2FF; color: #007AFF; }
+        .badge-green { background: #E8F5E9; color: #2E7D32; }
+        .badge-purple { background: #F3E5F5; color: #7B1FA2; }
+        .badge-red { background: #FFEBEE; color: #C62828; }
+        .loading {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #007AFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .hidden { display: none !important; }
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: #333;
+            color: white;
+            padding: 16px 24px;
+            border-radius: 16px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.2);
+            z-index: 999;
+            animation: slideUp 0.3s ease;
+        }
+        .toast-success { background: #2E7D32; }
+        .toast-error { background: #C62828; }
+        @keyframes slideUp {
+            from { transform: translateY(100px); opacity: 0; }
+            to { transform: translateY(0); opacity: 1; }
+        }
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+        }
+        .empty-state .icon { font-size: 64px; margin-bottom: 16px; }
+        .empty-state h3 { font-size: 20px; font-weight: 600; color: #333; margin-bottom: 8px; }
+        .empty-state p { color: #999; }
+        .question-option {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-top: 6px;
+        }
+        .question-option input[type="text"] {
+            flex: 1;
+            padding: 8px 12px;
+            border: 1px solid #e5e5e5;
+            border-radius: 8px;
+            font-size: 14px;
+        }
+        .question-option input[type="text"]:focus {
+            outline: none;
+            border-color: #007AFF;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+
+<!-- ============================================ -->
+<!-- NAVBAR -->
+<!-- ============================================ -->
+<nav class="glass fixed top-0 left-0 right-0 z-50 px-6 py-4 border-b border-gray-100/50">
+    <div class="max-w-6xl mx-auto flex justify-between items-center">
+        <span class="text-2xl font-bold text-gray-900">✦ FormPro</span>
+        <div class="flex gap-3 items-center">
+            <span id="statusDot" class="w-2 h-2 rounded-full bg-green-400 inline-block"></span>
+            <span id="statusText" class="text-sm text-gray-400">online</span>
+            <button onclick="showView('dashboard')" class="text-sm text-gray-600 hover:text-gray-900">Dashboard</button>
+            <button onclick="showView('editor')" class="btn-blue text-sm py-2 px-4">+ Nuevo</button>
+        </div>
+    </div>
+</nav>
+
+<!-- ============================================ -->
+<!-- CONTENIDO PRINCIPAL -->
+<!-- ============================================ -->
+<div class="pt-24 pb-12 max-w-6xl mx-auto px-4">
+
+    <!-- ========== VISTA: DASHBOARD ========== -->
+    <div id="view-dashboard">
+        <div class="flex justify-between items-center mb-6">
+            <h1 class="text-3xl font-bold text-gray-900">Mis Formularios</h1>
+            <button onclick="showView('editor')" class="btn-blue text-sm py-2 px-4">+ Crear</button>
+        </div>
+        <div id="formList">
+            <div class="text-center py-12">
+                <div class="loading mx-auto"></div>
+                <p class="mt-4 text-gray-400">Cargando formularios...</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== VISTA: EDITOR ========== -->
+    <div id="view-editor" class="hidden">
+        <div class="flex items-center gap-3 mb-6">
+            <button onclick="cancelEdit()" class="text-gray-400 hover:text-gray-600">← Volver</button>
+            <h1 class="text-2xl font-bold text-gray-900">
+                <span id="editorTitle">Nuevo Formulario</span>
+            </h1>
+        </div>
+        
+        <div class="card">
+            <input id="formTitle" class="form-input text-2xl font-semibold border-none bg-transparent p-0" 
+                   placeholder="Título del formulario" value="Mi formulario" />
+            <p class="text-sm text-gray-400 mt-2" id="questionCounter">0 preguntas</p>
+        </div>
+
+        <div id="questionsContainer" class="space-y-3 mt-4"></div>
+
+        <div class="flex flex-wrap gap-2 p-4 bg-white/50 rounded-2xl mt-4">
+            <button onclick="addQuestion('text')" class="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-sm">✏️ Texto</button>
+            <button onclick="addQuestion('textarea')" class="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-sm">📝 Párrafo</button>
+            <button onclick="addQuestion('radio')" class="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-sm">⭕ Opción única</button>
+            <button onclick="addQuestion('checkbox')" class="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-sm">☑️ Opción múltiple</button>
+            <button onclick="addQuestion('select')" class="px-4 py-2 rounded-full border border-gray-200 hover:bg-gray-50 text-sm">📋 Desplegable</button>
+        </div>
+
+        <div class="flex gap-3 mt-6">
+            <button onclick="saveForm()" class="btn-blue flex-1 py-3 text-lg">💾 Guardar Formulario</button>
+        </div>
+    </div>
+
+    <!-- ========== VISTA: VER FORMULARIO ========== -->
+    <div id="view-form" class="hidden">
+        <div class="flex items-center gap-3 mb-6">
+            <button onclick="goBack()" class="text-gray-400 hover:text-gray-600">← Volver</button>
+        </div>
+        <div id="formViewContent"></div>
+    </div>
+
+    <!-- ========== VISTA: RESPUESTAS ========== -->
+    <div id="view-responses" class="hidden">
+        <div class="flex items-center gap-3 mb-6">
+            <button onclick="goBack()" class="text-gray-400 hover:text-gray-600">← Volver</button>
+            <h1 class="text-2xl font-bold text-gray-900">📊 Respuestas</h1>
+        </div>
+        <div id="responsesContent"></div>
+    </div>
+</div>
+
+<!-- ============================================ -->
+<!-- TOAST NOTIFICACIONES -->
+<!-- ============================================ -->
+<div id="toast" class="hidden toast"></div>
+
+<!-- ============================================ -->
+<!-- JAVASCRIPT -->
+<!-- ============================================ -->
+<script>
+// ============================================================
+// 1. CONFIGURACIÓN DE SUPABASE
+// ============================================================
+
+// ⚠️ REEMPLAZA ESTAS DOS VARIABLES CON TUS DATOS DE SUPABASE ⚠️
+const SUPABASE_URL = 'https://josxcvncescqqlajahkh.supabase.co';
+const SUPABASE_ANON_KEY = 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8';
+
+// Inicializar Supabase (solo una vez)
+const _supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ============================================================
+// 2. ESTADO GLOBAL
+// ============================================================
+
+let currentView = 'dashboard';
+let editingId = null;
+let tempQuestions = [];
+let currentFormId = null;
+let formsCache = [];
+
+// ============================================================
+// 3. FUNCIONES DE BASE DE DATOS
+// ============================================================
+
+// Obtener todos los formularios
+async function fetchForms() {
+    try {
+        const { data, error } = await _supabase
+            .from('forms')
+            .select('*')
+            .order('created_at', { ascending: false });
+        
+        if (error) throw error;
+        formsCache = data || [];
+        return data;
+    } catch (error) {
+        console.error('Error fetching forms:', error);
+        showToast('Error al cargar formularios', 'error');
+        return [];
+    }
+}
+
+// Guardar formulario (crear o actualizar)
+async function saveFormToDB(id, title, questions, slug) {
+    try {
+        const formData = {
+            id: id || crypto.randomUUID(),
+            title: title,
+            questions: questions,
+            slug: slug || generateSlug(title)
+        };
+
+        if (id) {
+            // Actualizar
+            const { error } = await _supabase
+                .from('forms')
+                .update(formData)
+                .eq('id', id);
+            if (error) throw error;
+        } else {
+            // Crear
+            const { error } = await _supabase
+                .from('forms')
+                .insert([formData]);
+            if (error) throw error;
+        }
+        
+        return formData;
+    } catch (error) {
+        console.error('Error saving form:', error);
+        throw error;
+    }
+}
+
+// Eliminar formulario
+async function deleteFormFromDB(id) {
+    try {
+        const { error } = await _supabase
+            .from('forms')
+            .delete()
+            .eq('id', id);
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('Error deleting form:', error);
+        throw error;
+    }
+}
+
+// Guardar respuesta
+async function saveResponse(formId, answers) {
+    try {
+        const { error } = await _supabase
+            .from('responses')
+            .insert([{
+                id: crypto.randomUUID(),
+                form_id: formId,
+                answers: answers
+            }]);
+        if (error) throw error;
+        return true;
+    } catch (error) {
+        console.error('Error saving response:', error);
+        throw error;
+    }
+}
+
+// Obtener respuestas de un formulario
+async function fetchResponses(formId) {
+    try {
+        const { data, error } = await _supabase
+            .from('responses')
+            .select('*')
+            .eq('form_id', formId)
+            .order('created_at', { ascending: false });
+        if (error) throw error;
+        return data || [];
+    } catch (error) {
+        console.error('Error fetching responses:', error);
+        return [];
+    }
+}
+
+// ============================================================
+// 4. NAVEGACIÓN
+// ============================================================
+
+function showView(view, data) {
+    currentView = view;
+    
+    // Ocultar todas
+    document.querySelectorAll('[id^="view-"]').forEach(el => {
+        el.classList.add('hidden');
+    });
+    
+    // Mostrar la vista
+    const target = document.getElementById(`view-${view}`);
+    if (target) target.classList.remove('hidden');
+    
+    // Cargar datos
+    if (view === 'dashboard') renderDashboard();
+    if (view === 'editor') renderEditor();
+    if (view === 'form') renderFormView(data);
+    if (view === 'responses') renderResponses(data);
+}
+
+function goBack() {
+    showView('dashboard');
+}
+
+function cancelEdit() {
+    editingId = null;
+    tempQuestions = [];
+    showView('dashboard');
+}
+
+// ============================================================
+// 5. DASHBOARD
+// ============================================================
+
+async function renderDashboard() {
+    const container = document.getElementById('formList');
+    
+    try {
+        const forms = await fetchForms();
+        
+        if (!forms || forms.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <div class="icon">📝</div>
+                    <h3>No tienes formularios</h3>
+                    <p class="text-gray-400">Crea tu primer formulario ahora</p>
+                    <button onclick="showView('editor')" class="btn-blue mt-4">+ Crear formulario</button>
+                </div>
+            `;
+            return;
+        }
+        
+        let html = '<div class="grid md:grid-cols-2 lg:grid-cols-3 gap-4">';
+        forms.forEach(form => {
+            const qCount = form.questions?.length || 0;
+            const url = `${window.location.origin}${window.location.pathname}?form=${form.id}`;
+            
+            html += `
+                <div class="card">
+                    <div class="flex justify-between items-start">
+                        <h3 class="font-semibold text-lg truncate">${form.title || 'Sin título'}</h3>
+                        <span class="badge badge-blue">${qCount} preguntas</span>
+                    </div>
+                    <p class="text-xs text-gray-400 mt-1">${form.slug || ''}</p>
+                    <div class="flex flex-wrap gap-2 mt-4">
+                        <button onclick="openForm('${form.id}')" class="text-sm text-blue-500 hover:underline">📋 Ver</button>
+                        <button onclick="editForm('${form.id}')" class="text-sm text-green-500 hover:underline">✏️ Editar</button>
+                        <button onclick="viewResponses('${form.id}')" class="text-sm text-purple-500 hover:underline">📊 Respuestas</button>
+                        <button onclick="shareForm('${form.id}')" class="share-btn">📱 Compartir</button>
+                        <button onclick="deleteForm('${form.id}')" class="btn-red">🗑️</button>
+                    </div>
+                </div>
+            `;
+        });
+        html += '</div>';
+        container.innerHTML = html;
+        
+    } catch (error) {
+        container.innerHTML = `
+            <div class="empty-state">
+                <div class="icon">⚠️</div>
+                <h3>Error de conexión</h3>
+                <p class="text-gray-400">No se pudieron cargar los formularios</p>
+                <button onclick="renderDashboard()" class="btn-blue mt-4">Reintentar</button>
+            </div>
+        `;
+    }
+}
+
+// ============================================================
+// 6. EDITOR
+// ============================================================
+
+function renderEditor() {
+    document.getElementById('editorTitle').textContent = editingId ? 'Editar Formulario' : 'Nuevo Formulario';
+    
+    if (editingId) {
+        const form = formsCache.find(f => f.id === editingId);
+        if (form) {
+            document.getElementById('formTitle').value = form.title || '';
+            tempQuestions = JSON.parse(JSON.stringify(form.questions || []));
+        }
+    } else {
+        document.getElementById('formTitle').value = 'Mi formulario';
+        tempQuestions = [];
+    }
+    renderQuestions();
+}
+
+function renderQuestions() {
+    const container = document.getElementById('questionsContainer');
+    const counter = document.getElementById('questionCounter');
+    counter.textContent = `${tempQuestions.length} preguntas`;
+    
+    if (tempQuestions.length === 0) {
+        container.innerHTML = `
+            <div class="card text-center py-8 text-gray-400">
+                <p class="text-2xl mb-2">➕</p>
+                <p>Añade tu primera pregunta</p>
+                <p class="text-sm">Usa los botones de abajo</p>
+            </div>
+        `;
+        return;
+    }
+    
+    let html = '';
+    tempQuestions.forEach((q, index) => {
+        html += `
+            <div class="card">
+                <div class="flex items-start gap-3">
+                    <span class="text-gray-400 text-sm mt-2">${index + 1}.</span>
+                    <div class="flex-1">
+                        <input class="form-input text-base font-medium border-none bg-transparent p-0" 
+                               value="${escapeHtml(q.title || '')}" 
+                               placeholder="Escribe tu pregunta"
+                               onchange="updateQuestion(${index}, 'title', this.value)" />
+                        <div class="mt-3">
+                            ${getQuestionPreview(q, index)}
+                        </div>
+                    </div>
+                    <div class="flex gap-2">
+                        <select class="text-sm border rounded-lg px-2 py-1 bg-white" 
+                                onchange="updateQuestion(${index}, 'type', this.value)">
+                            ${['text', 'textarea', 'radio', 'checkbox', 'select'].map(t => 
+                                `<option value="${t}" ${q.type === t ? 'selected' : ''}>${t}</option>`
+                            ).join('')}
+                        </select>
+                        <button onclick="removeQuestion(${index})" class="text-red-400 hover:text-red-600">✕</button>
+                    </div>
+                </div>
+            </div>
+        `;
+    });
+    container.innerHTML = html;
+}
+
+function getQuestionPreview(q, index) {
+    switch(q.type) {
+        case 'text':
+            return `<input class="form-input bg-gray-50" placeholder="Respuesta corta" disabled />`;
+        case 'textarea':
+            return `<textarea class="form-input bg-gray-50" rows="3" placeholder="Respuesta larga" disabled></textarea>`;
+        case 'radio':
+        case 'checkbox':
+        case 'select':
+            const opts = q.options || ['Opción 1'];
+            const inputType = q.type === 'radio' ? 'radio' : q.type === 'checkbox' ? 'checkbox' : 'select';
+            
+            if (q.type === 'select') {
+                return `
+                    <select class="form-input bg-gray-50" disabled>
+                        ${opts.map(opt => `<option>${escapeHtml(opt)}</option>`).join('')}
+                    </select>
+                    <div class="mt-2 space-y-1">
+                        ${opts.map((opt, i) => `
+                            <div class="question-option">
+                                <input type="text" value="${escapeHtml(opt)}" 
+                                       onchange="updateOption(${index}, ${i}, this.value)" />
+                                <button onclick="removeOption(${index}, ${i})" class="text-red-300 text-xs">✕</button>
+                            </div>
+                        `).join('')}
+                        <button onclick="addOption(${index})" class="text-xs text-blue-500 mt-1">+ Añadir opción</button>
+                    </div>
+                `;
+            }
+            
+            return `
+                <div class="space-y-1">
+                    ${opts.map((opt, i) => `
+                        <div class="question-option">
+                            <input type="${inputType}" disabled />
+                            <input type="text" value="${escapeHtml(opt)}" 
+                                   onchange="updateOption(${index}, ${i}, this.value)" />
+                            <button onclick="removeOption(${index}, ${i})" class="text-red-300 text-xs">✕</button>
+                        </div>
+                    `).join('')}
+                    <button onclick="addOption(${index})" class="text-xs text-blue-500 mt-1">+ Añadir opción</button>
+                </div>
+            `;
+        default:
+            return `<input class="form-input bg-gray-50" placeholder="Respuesta" disabled />`;
+    }
+}
+
+// Funciones del editor
+window.addQuestion = function(type) {
+    const newQ = {
+        id: Date.now().toString() + Math.random().toString(36).substr(2, 4),
+        type: type,
+        title: 'Nueva pregunta',
+        required: false,
+        options: ['radio', 'checkbox', 'select'].includes(type) ? ['Opción 1'] : undefined
+    };
+    tempQuestions.push(newQ);
+    renderQuestions();
+};
+
+window.updateQuestion = function(index, field, value) {
+    if (tempQuestions[index]) {
+        tempQuestions[index][field] = value;
+    }
+};
+
+window.updateOption = function(qIndex, optIndex, value) {
+    if (tempQuestions[qIndex] && tempQuestions[qIndex].options) {
+        tempQuestions[qIndex].options[optIndex] = value;
+    }
+};
+
+window.addOption = function(index) {
+    if (tempQuestions[index]) {
+        if (!tempQuestions[index].options) tempQuestions[index].options = [];
+        tempQuestions[index].options.push(`Opción ${tempQuestions[index].options.length + 1}`);
+        renderQuestions();
+    }
+};
+
+window.removeOption = function(qIndex, optIndex) {
+    if (tempQuestions[qIndex] && tempQuestions[qIndex].options) {
+        tempQuestions[qIndex].options.splice(optIndex, 1);
+        if (tempQuestions[qIndex].options.length === 0) {
+            tempQuestions[qIndex].options = ['Opción 1'];
+        }
+        renderQuestions();
+    }
+};
+
+window.removeQuestion = function(index) {
+    tempQuestions.splice(index, 1);
+    renderQuestions();
+};
+
+window.saveForm = async function() {
+    const title = document.getElementById('formTitle').value.trim() || 'Formulario sin título';
+    
+    if (tempQuestions.length === 0) {
+        showToast('⚠️ Añade al menos una pregunta', 'error');
+        return;
+    }
+    
+    // Validar preguntas
+    const invalid = tempQuestions.some(q => !q.title || q.title.trim() === '');
+    if (invalid) {
+        showToast('⚠️ Todas las preguntas deben tener título', 'error');
+        return;
+    }
+    
+    try {
+        const slug = generateSlug(title);
+        const formData = await saveFormToDB(editingId, title, tempQuestions, slug);
+        
+        showToast('✅ Formulario guardado correctamente', 'success');
+        editingId = null;
+        tempQuestions = [];
+        showView('dashboard');
+    } catch (error) {
+        showToast('❌ Error al guardar: ' + error.message, 'error');
+    }
+};
+
+// ============================================================
+// 7. VER FORMULARIO (para responder)
+// ============================================================
+
+async function renderFormView(formId) {
+    const form = formsCache.find(f => f.id === formId);
+    if (!form) {
+        document.getElementById('formViewContent').innerHTML = `
+            <div class="card text-center py-12 text-red-400">
+                <p>Formulario no encontrado</p>
+            </div>
+        `;
+        return;
+    }
+    
+    currentFormId = formId;
+    const questions = form.questions || [];
+    
+    let html = `
+        <div class="card mb-6">
+            <h1 class="text-2xl font-bold">${escapeHtml(form.title)}</h1>
+            <p class="text-gray-400 text-sm mt-1">${questions.length} preguntas</p>
+        </div>
+        <form id="responseForm" class="space-y-4" onsubmit="submitResponse(event)">
+            <input type="hidden" name="formId" value="${form.id}" />
+    `;
+    
+    questions.forEach((q, index) => {
+        html += `
+            <div class="card">
+                <label class="font-medium block mb-2">
+                    ${escapeHtml(q.title || 'Pregunta sin título')}
+                    ${q.required ? '<span class="text-red-500">*</span>' : ''}
+                </label>
+                ${getQuestionInput(q, index)}
+            </div>
+        `;
+    });
+    
+    html += `
+            <button type="submit" class="btn-blue w-full py-4 text-lg">📤 Enviar respuestas</button>
+        </form>
+    `;
+    
+    document.getElementById('formViewContent').innerHTML = html;
+}
+
+function getQuestionInput(q, index) {
+    const name = `q${index}`;
+    switch(q.type) {
+        case 'text':
+            return `<input name="${name}" class="form-input" placeholder="Tu respuesta" />`;
+        case 'textarea':
+            return `<textarea name="${name}" class="form-input" rows="3" placeholder="Tu respuesta"></textarea>`;
+        case 'radio':
+            return (q.options || ['Opción 1']).map(opt => 
+                `<div class="flex items-center gap-2"><input type="radio" name="${name}" value="${escapeHtml(opt)}" /> ${escapeHtml(opt)}</div>`
+            ).join('');
+        case 'checkbox':
+            return (q.options || ['Opción 1']).map(opt => 
+                `<div class="flex items-center gap-2"><input type="checkbox" name="${name}" value="${escapeHtml(opt)}" /> ${escapeHtml(opt)}</div>`
+            ).join('');
+        case 'select':
+            return `
+                <select name="${name}" class="form-input">
+                    <option value="">Selecciona...</option>
+                    ${(q.options || ['Opción 1']).map(opt => `<option value="${escapeHtml(opt)}">${escapeHtml(opt)}</option>`).join('')}
+                </select>
+            `;
+        default:
+            return `<input name="${name}" class="form-input" placeholder="Tu respuesta" />`;
+    }
+}
+
+window.submitResponse = async function(event) {
+    event.preventDefault();
+    const form = event.target;
+    const formId = form.querySelector('[name="formId"]').value;
+    const formData = new FormData(form);
+    
+    const answers = [];
+    for (let [key, value] of formData.entries()) {
+        if (key !== 'formId' && value) {
+            answers.push({ question: key, value: value });
+        }
+    }
+    
+    if (answers.length === 0) {
+        showToast('⚠️ Responde al menos una pregunta', 'error');
+        return;
+    }
+    
+    try {
+        await saveResponse(formId, answers);
+        
+        document.getElementById('formViewContent').innerHTML = `
+            <div class="card text-center py-12">
+                <div class="text-6xl mb-4">✅</div>
+                <h2 class="text-2xl font-bold">¡Respuesta enviada!</h2>
+                <p class="text-gray-400 mt-2">Gracias por completar el formulario</p>
+                <button onclick="goBack()" class="btn-blue mt-4">Volver</button>
+            </div>
+        `;
+        showToast('✅ Respuesta enviada correctamente', 'success');
+    } catch (error) {
+        showToast('❌ Error al enviar: ' + error.message, 'error');
+    }
+};
+
+// ============================================================
+// 8. VER RESPUESTAS
+// ============================================================
+
+async function renderResponses(formId) {
+    const form = formsCache.find(f => f.id === formId);
+    if (!form) {
+        document.getElementById('responsesContent').innerHTML = `
+            <div class="card text-center py-12 text-red-400">
+                <p>Formulario no encontrado</p>
+            </div>
+        `;
+        return;
+    }
+    
+    const responses = await fetchResponses(formId);
+    const questions = form.questions || [];
+    
+    let html = `
+        <div class="card mb-6">
+            <h2 class="text-xl font-bold">${escapeHtml(form.title)}</h2>
+            <p class="text-gray-400">${responses.length} respuestas recibidas</p>
+        </div>
+    `;
+    
+    if (responses.length === 0) {
+        html += `<div class="card text-center py-12 text-gray-400">📭 Aún no hay respuestas</div>`;
+    } else {
+        // Estadísticas
+        html += `
+            <div class="grid md:grid-cols-3 gap-4 mb-6">
+                <div class="card text-center">
+                    <p class="text-3xl font-bold">${responses.length}</p>
+                    <p class="text-sm text-gray-400">Total respuestas</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-3xl font-bold">${questions.length}</p>
+                    <p class="text-sm text-gray-400">Preguntas</p>
+                </div>
+                <div class="card text-center">
+                    <p class="text-3xl font-bold">${new Date(form.created_at).toLocaleDateString()}</p>
+                    <p class="text-sm text-gray-400">Creado</p>
+                </div>
+            </div>
+        `;
+        
+        // Lista de respuestas
+        html += `<div class="space-y-3">`;
+        responses.forEach((r, index) => {
+            html += `
+                <div class="card">
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <p class="text-sm font-medium text-gray-700">Respuesta #${responses.length - index}</p>
+                            <p class="text-xs text-gray-400">${new Date(r.created_at).toLocaleString()}</p>
+                        </div>
+                        <span class="badge badge-green">Completado</span>
+                    </div>
+                    <div class="mt-2 space-y-1 text-sm">
+                        ${r.answers.map(a => `
+                            <div><span class="text-gray-400">${escapeHtml(a.question)}:</span> ${escapeHtml(a.value)}</div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        });
+        html += `</div>`;
+    }
+    
+    document.getElementById('responsesContent').innerHTML = html;
+}
+
+// ============================================================
+// 9. ACCIONES DEL DASHBOARD
+// ============================================================
+
+window.openForm = function(formId) {
+    showView('form', formId);
+};
+
+window.editForm = function(formId) {
+    editingId = formId;
+    showView('editor');
+};
+
+window.viewResponses = function(formId) {
+    showView('responses', formId);
+};
+
+window.deleteForm = async function(formId) {
+    if (!confirm('¿Eliminar este formulario permanentemente?')) return;
+    try {
+        await deleteFormFromDB(formId);
+        showToast('✅ Formulario eliminado', 'success');
+        renderDashboard();
+    } catch (error) {
+        showToast('❌ Error al eliminar', 'error');
+    }
+};
+
+window.shareForm = function(formId) {
+    const form = formsCache.find(f => f.id === formId);
+    if (!form) return;
+    
+    const url = `${window.location.origin}${window.location.pathname}?form=${formId}`;
+    const text = `📝 ${form.title}\n\nCompleta este formulario:\n${url}`;
+    
+    if (navigator.share) {
+        navigator.share({ title: form.title, text: text, url: url })
+            .catch(() => copyToClipboard(url));
+    } else {
+        window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    }
+};
+
+function copyToClipboard(text) {
+    if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+            showToast('✅ Enlace copiado al portapapeles', 'success');
+        });
+    } else {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showToast('✅ Enlace copiado al portapapeles', 'success');
+    }
+}
+
+// ============================================================
+// 10. FUNCIONES UTILITARIAS
+// ============================================================
+
+function generateSlug(title) {
+    return title
+        .toLowerCase()
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .replace(/[^a-z0-9]+/g, '-')
+        .replace(/^-+|-+$/g, '')
+        .substring(0, 50);
+}
+
+function escapeHtml(text) {
+    if (!text) return '';
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+function showToast(message, type = 'success') {
+    const toast = document.getElementById('toast');
+    toast.textContent = message;
+    toast.className = `toast toast-${type}`;
+    toast.classList.remove('hidden');
+    
+    setTimeout(() => {
+        toast.classList.add('hidden');
+    }, 4000);
+}
+
+// ============================================================
+// 11. INICIALIZACIÓN
+// ============================================================
+
+async function init() {
+    // Verificar conexión con Supabase
+    try {
+        const { data, error } = await _supabase.from('forms').select('count').limit(1);
+        if (error) throw error;
+        document.getElementById('statusText').textContent = 'online';
+        document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-green-400 inline-block';
+    } catch (error) {
+        document.getElementById('statusText').textContent = 'offline';
+        document.getElementById('statusDot').className = 'w-2 h-2 rounded-full bg-red-400 inline-block';
+        showToast('⚠️ No se pudo conectar con Supabase', 'error');
+    }
+    
+    // Detectar si venimos de un enlace compartido
+    const params = new URLSearchParams(window.location.search);
+    const formId = params.get('form');
+    
+    if (formId) {
+        await fetchForms();
+        const form = formsCache.find(f => f.id === formId);
+        if (form) {
+            showView('form', formId);
+        } else {
+            showView('dashboard');
+            showToast('⚠️ Este formulario no existe', 'error');
+        }
+    } else {
+        showView('dashboard');
+    }
+    
+    // Limpiar URL
+    if (window.history && window.history.replaceState) {
+        window.history.replaceState({}, document.title, window.location.pathname);
+    }
+}
+
+// Iniciar la aplicación
+init();
+
+console.log('🚀 FormPro con Supabase funcionando!');
+console.log('📦 Base de datos en la nube');
+console.log('🌍 Accesible desde cualquier lugar');
+</script>
+
+</body>
+</html>
