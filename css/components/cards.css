@@ -1,0 +1,142 @@
+/* ============================================================
+   TARJETAS
+   Elemento principal. Todas iguales, blancas, 16px,
+   sombra suave, textura de papel casi imperceptible.
+   Patrón: icono arriba · título · descripción · acción
+   ============================================================ */
+
+.card {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: var(--spacing-lg);
+    position: relative;
+}
+
+/* Textura de papel muy sutil */
+.card::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+    pointer-events: none;
+    opacity: var(--paper-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+}
+
+.card > * { position: relative; z-index: 1; }
+
+/* Tarjeta de característica (icono · título · descripción · acción) */
+.feature-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    padding: var(--spacing-lg);
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    text-decoration: none;
+    color: var(--text);
+    transition: var(--transition);
+    position: relative;
+    overflow: hidden;
+}
+.feature-card::after {
+    content: "";
+    position: absolute; inset: 0; border-radius: inherit;
+    pointer-events: none; opacity: var(--paper-opacity);
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='p'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='2'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23p)'/%3E%3C/svg%3E");
+    mix-blend-mode: multiply;
+}
+.feature-card > * { position: relative; z-index: 1; }
+.feature-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-md); border-color: var(--primary-line); }
+
+.feature-card .fc-icon {
+    width: 48px; height: 48px;
+    display: grid; place-items: center;
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-radius: 14px;
+    margin-bottom: 4px;
+}
+.feature-card .fc-icon svg { width: 26px; height: 26px; }
+.feature-card .fc-title { font-size: 1.2rem; font-weight: 600; color: var(--text); }
+.feature-card .fc-desc { font-size: 0.95rem; color: var(--text-soft); line-height: 1.5; }
+.feature-card .fc-action {
+    margin-top: 6px;
+    display: inline-flex; align-items: center; gap: 6px;
+    color: var(--primary); font-weight: 600; font-size: 0.95rem;
+}
+.feature-card .fc-action svg { width: 18px; height: 18px; transition: var(--transition); }
+.feature-card:hover .fc-action svg { transform: translateX(3px); }
+
+/* Cuadrícula de tarjetas con mucho aire */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: var(--spacing-lg);
+}
+
+/* Tarjeta de lista (exámenes, alumnos...) */
+.list-card {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow);
+    padding: var(--spacing-lg);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    position: relative;
+}
+.list-card .lc-title { font-size: 1.15rem; font-weight: 600; color: var(--text); }
+.list-card .lc-meta { color: var(--text-soft); font-size: 0.95rem; }
+.list-card .lc-actions { margin-top: var(--spacing-sm); display: flex; gap: var(--spacing-sm); flex-wrap: wrap; }
+
+/* Separador fino arena */
+.card-divider { border: none; border-top: 1px solid var(--sand); margin: var(--spacing-md) 0; }
+
+/* ============================================================
+   SKELETON LOADERS
+   ============================================================ */
+@keyframes skeleton-pulse {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+.skeleton {
+    background: var(--gray-200);
+    border-radius: var(--radius-sm);
+    animation: skeleton-pulse 1.5s ease-in-out infinite;
+}
+
+.skeleton-text {
+    height: 14px;
+    margin-bottom: 8px;
+    width: 100%;
+}
+
+.skeleton-text-short { width: 60%; }
+
+.skeleton-title {
+    height: 20px;
+    margin-bottom: 12px;
+    width: 80%;
+}
+
+.skeleton-card {
+    height: 120px;
+    border-radius: var(--radius-lg);
+    margin-bottom: 12px;
+}
+
+.skeleton-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    flex-shrink: 0;
+}

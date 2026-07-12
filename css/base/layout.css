@@ -1,0 +1,424 @@
+/* ============================================================
+   LAYOUT - Carcasa de la aplicación
+   Top bar (logo · notificaciones · perfil)
+   Bottom nav (5 secciones, siempre visibles)
+   Columna de contenido tranquila y ancha en blanco
+   ============================================================ */
+
+* {
+    box-sizing: border-box;
+}
+
+html {
+    font-size: var(--font-size-base);
+    scroll-behavior: smooth;
+}
+
+body {
+    font-family: var(--font-family);
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.7;
+    min-height: 100vh;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    /* Textura de papel muy sutil */
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.35'/%3E%3C/svg%3E");
+    background-blend-mode: multiply;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-heading); letter-spacing: -0.4px; }
+
+/* ============================================================
+   TOP BAR
+   ============================================================ */
+.topbar {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: var(--topbar-h);
+    z-index: 100;
+    background: rgba(244, 238, 226, 0.90);
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    border-bottom: 1px solid var(--sand);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 var(--spacing-md);
+    max-width: 100%;
+}
+
+.topbar-brand {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 1.2rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+    text-decoration: none;
+}
+
+.topbar-brand .brand-mark {
+    width: 40px;
+    height: 40px;
+    display: grid;
+    place-items: center;
+    background: var(--primary-soft);
+    border-radius: 12px;
+    color: var(--primary);
+}
+
+.topbar-brand .brand-mark svg { width: 20px; height: 20px; }
+
+.topbar-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-sm);
+}
+
+.topbar-icon-btn {
+    position: relative;
+    width: 42px;
+    height: 42px;
+    display: grid;
+    place-items: center;
+    border-radius: 12px;
+    background: transparent;
+    color: var(--text-soft);
+    cursor: pointer;
+    transition: var(--transition);
+    border: 1px solid transparent;
+}
+
+.topbar-icon-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.topbar-icon-btn .badge-count {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    min-width: 16px;
+    height: 16px;
+    padding: 0 4px;
+    border-radius: 9999px;
+    background: var(--error);
+    color: #fff;
+    font-size: 10px;
+    font-weight: 700;
+    display: grid;
+    place-items: center;
+    line-height: 1;
+}
+
+.topbar-profile {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 12px 4px 4px;
+    border-radius: 9999px;
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    cursor: pointer;
+    transition: var(--transition);
+    color: var(--text);
+    font-size: 0.9rem;
+}
+
+.topbar-profile:hover { background: var(--primary-soft); }
+
+.topbar-profile .avatar {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    background: var(--primary);
+    color: var(--on-primary);
+    display: grid;
+    place-items: center;
+    font-weight: 600;
+    font-size: 0.85rem;
+}
+
+/* ============================================================
+   BOTTOM NAV - 5 secciones
+   ============================================================ */
+.bottomnav {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: var(--bottomnav-h);
+    z-index: 100;
+    background: rgba(255, 253, 249, 0.94);
+    backdrop-filter: blur(12px) saturate(1.1);
+    -webkit-backdrop-filter: blur(12px) saturate(1.1);
+    border-top: 1px solid var(--sand);
+    display: flex;
+    align-items: stretch;
+    gap: 4px;
+    padding: 8px 10px calc(8px + env(safe-area-inset-bottom));
+    max-width: 640px;
+    margin: 0 auto;
+    box-shadow: 0 -4px 20px rgba(58, 42, 26, 0.05);
+}
+
+.bottomnav-item {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 5px;
+    border: none;
+    background: transparent;
+    color: var(--text-faint);
+    cursor: pointer;
+    border-radius: 16px;
+    transition: var(--transition);
+    text-decoration: none;
+    padding: 8px 2px;
+    min-height: 60px;
+}
+
+.bottomnav-item svg {
+    width: 26px;
+    height: 26px;
+    stroke-width: 2;
+    transition: var(--transition);
+}
+
+.bottomnav-item span {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.1px;
+}
+
+.bottomnav-item:hover { color: var(--text-soft); }
+
+.bottomnav-item.active {
+    color: var(--primary);
+    background: var(--primary-soft);
+}
+
+.bottomnav-item.active svg {
+    transform: translateY(-2px);
+    stroke-width: 2.4;
+}
+
+/* ============================================================
+   APP MAIN - columna de lectura tranquila
+   ============================================================ */
+.app-main {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: calc(var(--topbar-h) + var(--spacing-xl)) var(--spacing-lg) calc(var(--bottomnav-h) + var(--spacing-2xl));
+    min-height: 100vh;
+}
+
+.app-main.wide { max-width: 1100px; }
+
+/* ============================================================
+   PAGE HEADER (usado por páginas secundarias)
+   ============================================================ */
+.page-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: var(--spacing-md);
+    margin-bottom: var(--spacing-xl);
+    flex-wrap: wrap;
+}
+.page-title {
+    font-size: var(--font-size-2xl);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.5px;
+}
+.page-subtitle { color: var(--text-soft); font-size: var(--font-size-sm); margin-top: 4px; }
+.page-actions { display: flex; align-items: center; gap: var(--spacing-sm); flex-wrap: wrap; }
+
+/* ============================================================
+   PAGE INTRO (saludo tipo libro)
+   ============================================================ */
+.page-greeting {
+    font-size: var(--font-size-3xl);
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.15;
+    letter-spacing: -0.6px;
+}
+
+.page-greeting .name { color: var(--primary); }
+
+.page-sub {
+    color: var(--text-soft);
+    font-size: var(--font-size-lg);
+    margin-top: 10px;
+    max-width: 46ch;
+}
+
+.section-illustration {
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin: var(--spacing-lg) 0;
+    color: var(--illust-stroke);
+}
+
+.section-illustration svg {
+    width: 120px;
+    height: 120px;
+}
+
+/* Separador fino en color arena */
+.divider {
+    border: none;
+    border-top: 1px solid var(--sand);
+    margin: var(--spacing-lg) 0;
+}
+
+/* Encabezado de sección dentro de página */
+.section-head {
+    margin: var(--spacing-2xl) 0 var(--spacing-md);
+}
+
+.section-head h2 {
+    font-size: var(--font-size-xl);
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -0.3px;
+}
+
+.section-head p {
+    color: var(--text-soft);
+    font-size: var(--font-size-sm);
+    margin-top: 2px;
+}
+
+/* ============================================================
+   SEARCH (calmado)
+   ============================================================ */
+.search-container {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.search-icon {
+    position: absolute;
+    left: 14px;
+    width: 18px;
+    height: 18px;
+    color: var(--text-faint);
+    pointer-events: none;
+}
+
+.search-input {
+    padding: 12px 16px 12px 42px;
+    border: 1px solid var(--sand);
+    border-radius: 9999px;
+    font-size: 1rem;
+    width: 100%;
+    transition: var(--transition);
+    background: var(--surface);
+    color: var(--text);
+}
+
+.search-input:focus {
+    outline: none;
+    border-color: var(--primary-line);
+    box-shadow: var(--shadow-focus);
+}
+
+.search-input::placeholder { color: var(--text-faint); }
+
+/* ============================================================
+   LOADING
+   ============================================================ */
+.loading-state {
+    text-align: center;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    color: var(--text-soft);
+}
+
+.loading-spinner {
+    display: inline-block;
+    width: 32px;
+    height: 32px;
+    border: 3px solid var(--sand);
+    border-top-color: var(--primary);
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+    margin-bottom: var(--spacing-md);
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ============================================================
+   EMPTY STATE
+   ============================================================ */
+.empty-state {
+    text-align: center;
+    padding: var(--spacing-3xl) var(--spacing-lg);
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+}
+
+.empty-state-icon {
+    font-size: 2.75rem;
+    margin-bottom: var(--spacing-md);
+}
+
+.empty-state-title {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.empty-state-subtitle { color: var(--text-soft); }
+
+/* ============================================================
+   COMPATIBILIDAD: ocultar barra antigua y alias de contenido
+   ============================================================ */
+
+/* La barra antigua queda oculta; la carcasa nueva se inyecta desde JS */
+.navbar { display: none !important; }
+
+/* El contenido existente usa .main-content */
+.main-content {
+    max-width: var(--content-max);
+    margin: 0 auto;
+    padding: calc(var(--topbar-h) + var(--spacing-xl)) var(--spacing-lg) calc(var(--bottomnav-h) + var(--spacing-2xl));
+    min-height: 100vh;
+}
+.main-content.wide { max-width: 1100px; }
+
+/* ============================================================
+   PANEL DE NOTIFICACIONES (dropdown debajo de la campana)
+   ============================================================ */
+.notif-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    width: 320px;
+    max-width: 88vw;
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow-lg);
+    padding: var(--spacing-sm);
+    z-index: 150;
+}
+.notif-panel-item { display: flex; gap: 10px; align-items: flex-start; padding: 12px; border-radius: var(--radius-sm); }
+.notif-panel-item:hover { background: var(--surface-alt); }
+.notif-panel-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--primary); margin-top: 6px; flex-shrink: 0; }
+.notif-panel-title { font-weight: 600; color: var(--text); font-size: 0.95rem; }
+.notif-panel-sub { color: var(--text-soft); font-size: 0.85rem; }
+.notif-panel-empty { padding: 20px; text-align: center; color: var(--text-soft); }

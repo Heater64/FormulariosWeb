@@ -1,0 +1,189 @@
+/* ============================================================
+   PROFILE
+   ============================================================ */
+
+.profile-container {
+    max-width: 700px;
+    margin: 0 auto;
+}
+
+.profile-card {
+    background: var(--surface);
+    border-radius: var(--radius-xl);
+    padding: var(--spacing-xl);
+    box-shadow: var(--shadow);
+    border: 1px solid var(--sand);
+}
+
+/* Top: avatar + name + edit */
+.profile-top {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-lg);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--sand);
+}
+.profile-avatar-wrap {
+    width: 80px;
+    height: 80px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+}
+.profile-avatar-letter {
+    font-size: 2rem;
+    font-weight: 800;
+    color: #fff;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+}
+.profile-top-info { flex: 1; min-width: 0; }
+.profile-name {
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+}
+.profile-username {
+    display: block;
+    color: var(--text-faint);
+    font-size: 0.9rem;
+    margin-top: 2px;
+}
+.profile-top-info .role-badge {
+    display: inline-block;
+    margin-top: 4px;
+}
+.profile-edit-btn {
+    width: 44px;
+    height: 44px;
+    border-radius: 50%;
+    border: 1px solid var(--sand);
+    background: var(--surface);
+    color: var(--text-soft);
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: var(--transition);
+    flex-shrink: 0;
+}
+.profile-edit-btn:hover {
+    background: var(--primary-soft);
+    color: var(--primary);
+    border-color: var(--primary-line);
+}
+
+/* Stats row */
+.profile-stats {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--spacing-sm);
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--sand);
+}
+.profile-stat {
+    text-align: center;
+    padding: var(--spacing-sm) 0;
+    background: var(--surface-alt);
+    border-radius: var(--radius);
+    border: 1px solid var(--sand);
+}
+.profile-stat-num {
+    display: block;
+    font-size: 1.5rem;
+    font-weight: 800;
+    color: var(--text);
+    letter-spacing: -1px;
+}
+.profile-stat-label {
+    display: block;
+    font-size: 0.75rem;
+    color: var(--text-faint);
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-top: 2px;
+}
+
+/* Sections */
+.profile-section {
+    margin-bottom: var(--spacing-lg);
+    padding-bottom: var(--spacing-lg);
+    border-bottom: 1px solid var(--sand);
+}
+.profile-section:last-of-type { border-bottom: none; margin-bottom: 0; padding-bottom: 0; }
+
+.profile-section-title {
+    font-size: 1rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: var(--spacing-md);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+.profile-section-title i { color: var(--primary); width: 20px; height: 20px; }
+
+.profile-field {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: 8px 0;
+    flex-wrap: wrap;
+}
+.profile-field-label {
+    font-weight: 500;
+    color: var(--text-faint);
+    min-width: 140px;
+    font-size: 0.85rem;
+}
+.profile-field-value {
+    flex: 1;
+    color: var(--text);
+    font-size: 0.95rem;
+    font-weight: 600;
+}
+
+/* Academic activity */
+.profile-academic {
+    display: flex;
+    flex-direction: column;
+    gap: var(--spacing-sm);
+}
+.profile-academic-item {
+    display: flex;
+    align-items: center;
+    gap: var(--spacing-md);
+    padding: var(--spacing-sm) var(--spacing-md);
+    background: var(--surface-alt);
+    border-radius: var(--radius-sm);
+    border: 1px solid var(--sand);
+    font-size: 0.9rem;
+    color: var(--text);
+}
+.profile-academic-item i { width: 20px; height: 20px; flex-shrink: 0; }
+.profile-academic-item strong { font-weight: 800; margin-right: 4px; }
+
+/* Actions */
+.profile-actions {
+    display: flex;
+    gap: var(--spacing-sm);
+    margin-top: var(--spacing-lg);
+}
+
+@media (max-width: 640px) {
+    .profile-card { padding: var(--spacing-lg); }
+    .profile-top { flex-wrap: wrap; gap: var(--spacing-md); }
+    .profile-avatar-wrap { width: 64px; height: 64px; }
+    .profile-avatar-letter { font-size: 1.5rem; }
+    .profile-name { font-size: 1.2rem; }
+    .profile-stats { grid-template-columns: repeat(2, 1fr); }
+    .profile-stat-num { font-size: 1.2rem; }
+    .profile-field-label { min-width: 100px; }
+    .profile-actions { flex-direction: column; }
+}

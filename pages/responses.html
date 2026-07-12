@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5" />
+    <title>Estudio Bíblico - Corrección</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<!-- ====== MAIN CONTENT ====== -->
+<main class="main-content">
+    <div id="responsesContent">
+        <div class="loading-state">
+            <div class="loading-spinner"></div>
+            <p>Cargando respuestas...</p>
+        </div>
+    </div>
+</main>
+
+<!-- ====== NOTIFICACIONES ====== -->
+<div id="notificationContainer" class="notification-container"></div>
+
+<!-- ====== JAVASCRIPT ====== -->
+<script src="../js/core/config.js"></script>
+<script src="../js/core/utils.js"></script>
+<script src="../js/core/app.js"></script>
+<script src="../js/auth/users.js"></script>
+<script src="../js/auth/auth.js"></script>
+<script src="../js/shared/forms.js"></script>
+<script src="../js/shared/responses.js"></script>
+<script src="../js/shared/organization.js"></script>
+<script src="../js/admin/responses-view.js"></script>
+<script src="../js/admin/correccion-panel.js"></script>
+<script src="../js/admin/export.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = window.checkAuth();
+        if (!user) return;
+        
+        // Verificar permisos (solo admin/owner)
+        if (!window.isAdmin()) {
+            window.showNotification('No tienes permisos para ver correcciones', 'error');
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        
+        window.updateNavbar();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        
+        // Obtener ID del formulario de la URL
+        const params = new URLSearchParams(window.location.search);
+        const formId = params.get('form');
+        
+        if (!formId) {
+            document.getElementById('responsesContent').innerHTML = `
+                <div class="empty-state">
+                    <div class="empty-state-icon"><i data-lucide="alert-triangle"></i></div>
+                    <h3 class="empty-state-title">No se especificó un examen</h3>
+                    <a href="admin.html" class="btn-primary mt-4">← Volver a admin</a>
+                </div>
+            `;
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+            return;
+        }
+        
+        if (typeof window.renderResponses === 'function') {
+            window.renderResponses(formId);
+        }
+    });
+</script>
+
+    <script src="../js/core/system.js"></script>
+
+<!-- Panel de corrección se inyecta dinámicamente por correccion-panel.js -->
+</body>
+</html>

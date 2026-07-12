@@ -1,0 +1,26 @@
+/* ============================================================
+   ILUSTRACIONES
+   Acuarela en tonos tierra, trazo grueso, sin detalle.
+   Cada pantalla tiene una ilustración discreta.
+   ============================================================ */
+
+.section-illustration {
+    display: flex;
+    justify-content: center;
+    margin: var(--spacing-lg) 0;
+}
+.section-illustration svg {
+    width: 132px;
+    height: 132px;
+    opacity: 0.92;
+}
+
+/* Marca pequeña en la top bar */
+.brand-mark svg { width: 20px; height: 20px; }
+
+/* Iconos de lucide heredan grosor uniforme */
+.lucide, [data-lucide] { stroke-width: 2; }
+
+/* Ajuste fino: iconos de navegación siempre iguales */
+.bottomnav-item svg,
+.topbar-icon-btn svg { stroke-width: 2; }

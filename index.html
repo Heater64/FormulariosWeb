@@ -2,503 +2,180 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>FormsB</title>
-    
-    <script src="https://cdn.tailwindcss.com"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <title>Estudio Bíblico · Plataforma de Estudio Guiado</title>
+
+    <!-- ====== CSS ====== -->
+    <link rel="stylesheet" href="css/style.css" />
+
+    <!-- ====== ICONS ====== -->
     <script src="https://unpkg.com/lucide@latest"></script>
-    
-    <!-- CSS -->
-    <link rel="stylesheet" href="css/variables.css" />
-    <link rel="stylesheet" href="css/components.css" />
-    <link rel="stylesheet" href="css/auth.css" />
-    <link rel="stylesheet" href="css/dashboard.css" />
-    <link rel="stylesheet" href="css/editor.css" />
-    <link rel="stylesheet" href="css/responses.css" />
-    <link rel="stylesheet" href="css/stats.css" />
-    <link rel="stylesheet" href="css/ux.css" />
-    <link rel="stylesheet" href="css/organization.css" />
-    <link rel="stylesheet" href="css/mobile.css" />
-    <link rel="stylesheet" href="css/profile.css" />
-    <link rel="stylesheet" href="css/form-view.css" />
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
 </head>
 <body>
 
-<!-- ============================================================
-     LOGIN
-     ============================================================ -->
-<div id="loginScreen" class="login-container">
-    <div class="login-card">
-        <div class="login-header">
-            <div class="login-logo">
-                <i data-lucide="sparkles" class="w-10 h-10 text-blue-500"></i>
+<div class="auth-shell">
+
+    <!-- ============================================= -->
+    <!-- FORMULARIO                                    -->
+    <!-- ============================================= -->
+    <div class="auth-form-side">
+        <div class="auth-card">
+
+            <div class="auth-brand">
+                <span class="auth-brand-mark"><i data-lucide="book-open"></i></span>
+                <span>
+                    <span class="auth-brand-name">Estudio Bíblico</span><br />
+                    <span class="auth-brand-tag">Plataforma de Estudio Guiado</span>
+                </span>
             </div>
-            <h1 class="login-title">FormsB</h1>
-            <p class="login-subtitle">Accede a tu panel de control</p>
-        </div>
-        
-        <form id="loginForm" onsubmit="handleLogin(event)" class="login-form">
-            <div class="form-group">
-                <label class="form-label">
-                    <i data-lucide="user" class="w-4 h-4"></i>
-                    Usuario o Email
-                </label>
-                <input type="text" id="loginUser" class="form-input" placeholder="Introduce tu usuario" value="admin" required />
+
+            <div>
+                <h1 class="auth-welcome">Bienvenido</h1>
+                <p class="auth-welcome-sub">Inicia sesión para continuar</p>
             </div>
-            <div class="form-group">
-                <label class="form-label">
-                    <i data-lucide="lock" class="w-4 h-4"></i>
-                    Contraseña
-                </label>
-                <input type="password" id="loginPassword" class="form-input" placeholder="Introduce tu contraseña" value="admin123" required />
+
+            <div class="auth-alert error" id="loginError">
+                <i data-lucide="alert-circle"></i><span id="loginErrorText"></span>
             </div>
-            <button type="submit" class="btn-primary btn-full">
-                <i data-lucide="log-in" class="w-5 h-5"></i>
-                Iniciar sesión
-            </button>
-        </form>
-        
-        <div class="login-footer">
-            <p class="text-xs text-gray-400">
-                👑 Admin: admin / admin123 &nbsp;|&nbsp; 🎓 Alumno: alumno / alumno123
+            <div class="auth-alert success" id="loginSuccess">
+                <i data-lucide="check-circle"></i><span id="loginSuccessText"></span>
+            </div>
+
+            <form class="auth-form" id="loginForm">
+                <div class="auth-field">
+                    <label for="loginUser"><i data-lucide="user"></i> Usuario</label>
+                    <div class="auth-input-wrap">
+                        <i data-lucide="user-round"></i>
+                        <input type="text" id="loginUser" placeholder="Tu nombre de usuario" required autocomplete="username" />
+                    </div>
+                </div>
+                <div class="auth-field">
+                    <label for="loginPass"><i data-lucide="lock"></i> Contraseña</label>
+                    <div class="auth-input-wrap">
+                        <i data-lucide="key-round"></i>
+                        <input type="password" id="loginPass" placeholder="Tu contraseña" required autocomplete="current-password" />
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginSubmitBtn">
+                    <i data-lucide="log-in"></i> Iniciar sesión
+                </button>
+            </form>
+
+            <div class="auth-quick">
+                <p class="auth-quick-title">Acceso rápido de demostración</p>
+                <div class="auth-quick-grid">
+                    <button type="button" class="auth-quick-chip" data-user="owner" data-pass="owner123">
+                        <span class="chip-ico owner"><i data-lucide="crown"></i></span>
+                        <span class="chip-text">
+                            <span class="chip-role">Owner</span>
+                            <span class="chip-cred">owner · owner123</span>
+                        </span>
+                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
+                    </button>
+                    <button type="button" class="auth-quick-chip" data-user="admin1" data-pass="admin123">
+                        <span class="chip-ico admin"><i data-lucide="shield"></i></span>
+                        <span class="chip-text">
+                            <span class="chip-role">Administrador</span>
+                            <span class="chip-cred">admin1 · admin123</span>
+                        </span>
+                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
+                    </button>
+                    <button type="button" class="auth-quick-chip" data-user="alumno" data-pass="alumno123">
+                        <span class="chip-ico alumno"><i data-lucide="user-round"></i></span>
+                        <span class="chip-text">
+                            <span class="chip-role">Alumno</span>
+                            <span class="chip-cred">alumno · alumno123</span>
+                        </span>
+                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
+                    </button>
+                </div>
+            </div>
+
+            <p class="auth-foot">
+                <i data-lucide="book-marked"></i>
+                Estudio Bíblico · <span id="footerYear"></span>
             </p>
         </div>
     </div>
+
+    <!-- ============================================= -->
+    <!-- PANEL DE BIENVENIDA (escritorio)              -->
+    <!-- ============================================= -->
+    <aside class="auth-panel">
+        <div class="auth-panel-inner">
+            <div class="auth-panel-icon"><i data-lucide="scroll-text"></i></div>
+            <h2>Una herramienta que <span class="hl">provoca</span> la lectura de la Biblia</h2>
+            <p>
+                La plataforma nunca sustituye la lectura de la Biblia: la guía y la refuerza.
+                Cada actividad empieza con la Biblia abierta y termina repasando lo que necesita más atención.
+            </p>
+            <div class="auth-panel-features">
+                <div class="auth-panel-feature"><i data-lucide="book-open"></i> Lectura guiada</div>
+                <div class="auth-panel-feature"><i data-lucide="help-circle"></i> Recordatorio activo</div>
+                <div class="auth-panel-feature"><i data-lucide="brain"></i> Memorización</div>
+                <div class="auth-panel-feature"><i data-lucide="line-chart"></i> Progreso visual</div>
+            </div>
+        </div>
+    </aside>
+
 </div>
 
-<!-- ============================================================
-     MAIN APP
-     ============================================================ -->
-<div id="mainApp" class="hidden">
-
-    <!-- NAVBAR -->
-    <nav class="navbar">
-        <div class="navbar-container">
-            <div class="navbar-brand">
-                <i data-lucide="sparkles" class="w-6 h-6 text-blue-500"></i>
-                <span class="text-xl font-bold text-gray-900">FormsB</span>
-                <span id="saveIndicator" class="save-indicator hidden">
-                    <i data-lucide="check-circle" class="w-4 h-4 text-green-500"></i>
-                    Guardado
-                </span>
-            </div>
-            <div class="navbar-actions">
-                <button onclick="showView('dashboard')" class="nav-btn">
-                    <i data-lucide="layout-dashboard" class="w-4 h-4"></i>
-                    Dashboard
-                </button>
-                <button onclick="showTrash()" class="nav-btn" title="Papelera">
-                    <i data-lucide="trash-2" class="w-4 h-4"></i>
-                    Papelera
-                </button>
-                <button onclick="showView('editor')" class="btn-primary btn-sm">
-                    <i data-lucide="plus" class="w-4 h-4"></i>
-                    Nuevo
-                </button>
-                <button onclick="showProfile()" class="nav-btn" title="Perfil">
-                    <i data-lucide="user-circle" class="w-4 h-4"></i>
-                    <span>Perfil</span>
-                </button>
-                <button onclick="logout()" class="nav-btn text-red-400 hover:text-red-600">
-                    <i data-lucide="log-out" class="w-4 h-4"></i>
-                    Salir
-                </button>
-            </div>
-        </div>
-    </nav>
-
-    <!-- CONTENIDO PRINCIPAL -->
-    <main class="main-content">
-
-        <!-- DASHBOARD -->
-        <div id="view-dashboard" class="view-container">
-            <div class="page-header">
-                <div>
-                    <h1 class="page-title">Mis Formularios</h1>
-                    <p class="page-subtitle">Gestiona todos tus formularios desde un solo lugar</p>
-                </div>
-                <div class="page-actions">
-                    <div class="search-container">
-                        <i data-lucide="search" class="search-icon"></i>
-                        <input type="text" id="searchInput" class="search-input" placeholder="Buscar formulario..." oninput="filterForms()" />
-                    </div>
-                    <button onclick="showView('editor')" class="btn-primary">
-                        <i data-lucide="plus" class="w-5 h-5"></i>
-                        Crear
-                    </button>
-                </div>
-            </div>
-            <div id="formList" class="forms-grid">
-                <div class="loading-state">
-                    <div class="loading-spinner"></div>
-                    <p class="text-gray-400">Cargando formularios...</p>
-                </div>
-            </div>
-        </div>
-
-        <!-- EDITOR -->
-        <div id="view-editor" class="view-container hidden">
-            <div class="editor-header">
-                <button onclick="handleBackNavigation()" class="btn-ghost" id="backButton">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Volver
-                </button>
-                <h1 class="page-title" id="editorTitle">Nuevo Formulario</h1>
-                <div class="editor-header-actions">
-                    <button onclick="openExamConfig()" class="btn-secondary btn-sm" title="Configuración del examen">
-                        <i data-lucide="settings" class="w-4 h-4"></i>
-                        Ajustes
-                    </button>
-                    <span id="autoSaveIndicator" class="auto-save-indicator">⏳ Sin guardar</span>
-                    <button onclick="undoAction()" class="btn-ghost btn-sm" title="Deshacer (Ctrl+Z)" id="undoBtn">
-                        <i data-lucide="undo-2" class="w-4 h-4"></i>
-                    </button>
-                    <button onclick="redoAction()" class="btn-ghost btn-sm" title="Rehacer (Ctrl+Y)" id="redoBtn">
-                        <i data-lucide="redo-2" class="w-4 h-4"></i>
-                    </button>
-                </div>
-            </div>
-            
-            <div class="editor-card">
-                <input id="formTitle" class="editor-title-input" placeholder="Título del formulario" value="Mi formulario" oninput="onFormChange()" />
-                <div class="editor-meta">
-                    <span class="editor-question-counter" id="questionCounter">0 preguntas</span>
-                    <label class="toggle-container">
-                        <span class="toggle-switch" id="allowMultipleToggle"></span>
-                        <span>Permitir múltiples respuestas</span>
-                        <input type="checkbox" id="allowMultiple" style="display:none" onchange="onFormChange()" />
-                    </label>
-                    <label class="toggle-container">
-                        <span class="toggle-switch" id="showAnswersToggle"></span>
-                        <span>Mostrar respuestas correctas</span>
-                        <input type="checkbox" id="showAnswers" style="display:none" onchange="onFormChange()" />
-                    </label>
-                </div>
-            </div>
-
-            <div id="questionsContainer" class="questions-container"></div>
-
-            <!-- TOOLBAR -->
-            <div class="question-toolbar">
-                <div class="toolbar-section">
-                    <span class="toolbar-section-title">📝 Texto</span>
-                    <button onclick="addQuestion('text')" class="toolbar-btn" title="Completar versículo o frase (Ctrl+T)">
-                        <i data-lucide="type" class="w-4 h-4"></i> Completar
-                    </button>
-                    <button onclick="addQuestion('textarea')" class="toolbar-btn" title="Respuesta desarrollada (Ctrl+A)">
-                        <i data-lucide="file-text" class="w-4 h-4"></i> Respuesta abierta
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <span class="toolbar-section-title">🎯 Opciones</span>
-                    <button onclick="addQuestion('radio')" class="toolbar-btn" title="Seleccionar una opción (Ctrl+O)">
-                        <i data-lucide="circle" class="w-4 h-4"></i> Opción múltiple
-                    </button>
-                    <button onclick="addQuestion('checkbox')" class="toolbar-btn" title="Seleccionar varias opciones (Ctrl+M)">
-                        <i data-lucide="square" class="w-4 h-4"></i> Seleccionar varias
-                    </button>
-                    <button onclick="addQuestion('truefalse')" class="toolbar-btn" title="Verdadero o Falso (Ctrl+V)">
-                        <i data-lucide="check-circle" class="w-4 h-4"></i> Verdadero/Falso
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <span class="toolbar-section-title">🔗 Relacionar</span>
-                    <button onclick="addQuestion('match')" class="toolbar-btn" title="Relacionar columnas (Ctrl+R)">
-                        <i data-lucide="link-2" class="w-4 h-4"></i> Relacionar columnas
-                    </button>
-                    <button onclick="addQuestion('order')" class="toolbar-btn" title="Ordenar elementos (Ctrl+E)">
-                        <i data-lucide="list-ordered" class="w-4 h-4"></i> Ordenar
-                    </button>
-                </div>
-                
-                <div class="toolbar-section">
-                    <span class="toolbar-section-title">👤 Identificar</span>
-                    <button onclick="addQuestion('identify')" class="toolbar-btn" title="Identificar personaje (Ctrl+I)">
-                        <i data-lucide="user-search" class="w-4 h-4"></i> Identificar personaje
-                    </button>
-                    <button onclick="addQuestion('number')" class="toolbar-btn" title="Respuesta numérica (Ctrl+N)">
-                        <i data-lucide="hash" class="w-4 h-4"></i> Número
-                    </button>
-                    <button onclick="addQuestion('image')" class="toolbar-btn" title="Pregunta con imagen (Ctrl+G)">
-                        <i data-lucide="image" class="w-4 h-4"></i> Imagen
-                    </button>
-                </div>
-            </div>
-
-            <div class="editor-actions">
-                <button onclick="saveForm()" class="btn-primary btn-lg" id="saveButton">
-                    <i data-lucide="save" class="w-5 h-5"></i>
-                    Guardar Formulario
-                </button>
-            </div>
-        </div>
-
-        <!-- VER FORMULARIO (para responder) -->
-        <div id="view-form" class="view-container hidden">
-            <div id="formViewContent"></div>
-        </div>
-
-        <!-- RESPUESTAS Y CORRECCIÓN -->
-        <div id="view-responses" class="view-container hidden">
-            <div class="responses-header">
-                <button onclick="goBack()" class="btn-ghost">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Volver
-                </button>
-                <h1 class="page-title">
-                    <i data-lucide="bar-chart-2" class="w-6 h-6 text-purple-500"></i>
-                    Respuestas
-                </h1>
-                <div style="display:flex;gap:8px;flex-wrap:wrap;">
-                    <button onclick="autoCorrectAllResponses(currentFormId)" class="btn-secondary btn-sm" title="Corregir automáticamente todas las respuestas pendientes">
-                        <i data-lucide="bot" class="w-4 h-4"></i>
-                        Auto-corregir todas
-                    </button>
-                    <button onclick="exportAllStats(currentFormId)" class="btn-secondary btn-sm" id="exportStatsBtn">
-                        <i data-lucide="download" class="w-4 h-4"></i>
-                        Exportar
-                    </button>
-                </div>
-            </div>
-            <div id="responsesContent"></div>
-        </div>
-
-        <!-- ESTADÍSTICAS -->
-        <div id="view-stats" class="view-container hidden">
-            <div class="stats-header" style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
-                <button onclick="goBack()" class="btn-ghost">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Volver
-                </button>
-                <h1 class="page-title">
-                    <i data-lucide="bar-chart-3" class="w-6 h-6 text-green-500"></i>
-                    Estadísticas
-                </h1>
-            </div>
-            <div id="statsContent"></div>
-        </div>
-
-        <!-- PANEL DEL ALUMNO -->
-        <div id="view-student" class="view-container hidden">
-            <div class="student-header">
-                <button onclick="goBack()" class="btn-ghost">
-                    <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                    Volver
-                </button>
-                <h1 class="page-title">
-                    <i data-lucide="graduation-cap" class="w-6 h-6 text-blue-500"></i>
-                    Mi Panel
-                </h1>
-            </div>
-            <div id="studentContent"></div>
-        </div>
-
-        <!-- PERFIL Y AJUSTES -->
-        <div id="view-profile" class="view-container hidden">
-            <div class="profile-container">
-                <div style="display:flex;align-items:center;gap:12px;margin-bottom:24px;flex-wrap:wrap;">
-                    <button onclick="goBack()" class="btn-ghost">
-                        <i data-lucide="arrow-left" class="w-5 h-5"></i>
-                        Volver
-                    </button>
-                    <h1 class="page-title">
-                        <i data-lucide="settings" class="w-6 h-6 text-gray-500"></i>
-                        Ajustes
-                    </h1>
-                </div>
-                <div id="profileContent"></div>
-            </div>
-        </div>
-
-    </main>
-</div>
-
-<!-- ============================================================
-     MODAL DE CONFIGURACIÓN DEL EXAMEN
-     ============================================================ -->
-<div id="examConfigModal" class="exam-config-modal-overlay">
-    <div class="exam-config-modal">
-        <div class="exam-config-modal-header">
-            <h2>
-                <i data-lucide="settings" class="w-6 h-6 text-gray-500"></i>
-                Configuración del examen
-            </h2>
-            <button onclick="closeExamConfig()" class="exam-config-modal-close">
-                <i data-lucide="x" class="w-6 h-6"></i>
-            </button>
-        </div>
-        
-        <div class="exam-config-modal-body">
-            <!-- TIEMPO Y FECHAS -->
-            <div class="config-section">
-                <div class="config-section-title">⏱️ Tiempo y fechas</div>
-                <div class="config-grid">
-                    <div class="config-group">
-                        <label for="config_timeLimit">Tiempo límite (minutos)</label>
-                        <input type="number" id="config_timeLimit" class="config-input" min="0" value="0" />
-                        <span class="config-hint">0 = sin límite</span>
-                    </div>
-                    <div class="config-group">
-                        <label for="config_maxAttempts">Intentos máximos</label>
-                        <input type="number" id="config_maxAttempts" class="config-input" min="1" value="1" />
-                        <span class="config-hint">Número de veces que puede responder</span>
-                    </div>
-                    <div class="config-group">
-                        <label for="config_openDate">Fecha de apertura</label>
-                        <input type="datetime-local" id="config_openDate" class="config-input" />
-                        <span class="config-hint">Dejar vacío para sin restricción</span>
-                    </div>
-                    <div class="config-group">
-                        <label for="config_closeDate">Fecha de cierre</label>
-                        <input type="datetime-local" id="config_closeDate" class="config-input" />
-                        <span class="config-hint">Dejar vacío para sin restricción</span>
-                    </div>
-                </div>
-            </div>
-            
-            <!-- EXPERIENCIA DEL EXAMEN -->
-            <div class="config-section">
-                <div class="config-section-title">🎯 Experiencia del examen</div>
-                <div class="config-options-grid">
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_shuffleQuestions"></span>
-                        <span class="toggle-label">
-                            🎲 Aleatorizar preguntas
-                            <span class="toggle-desc">Mezcla el orden de las preguntas</span>
-                        </span>
-                        <input type="checkbox" id="config_shuffleQuestions" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_shuffleOptions"></span>
-                        <span class="toggle-label">
-                            🎲 Aleatorizar opciones
-                            <span class="toggle-desc">Mezcla el orden de las respuestas</span>
-                        </span>
-                        <input type="checkbox" id="config_shuffleOptions" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_onePerPage"></span>
-                        <span class="toggle-label">
-                            📄 Una pregunta por página
-                            <span class="toggle-desc">Muestra una pregunta a la vez</span>
-                        </span>
-                        <input type="checkbox" id="config_onePerPage" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_showProgress"></span>
-                        <span class="toggle-label">
-                            📊 Mostrar barra de progreso
-                            <span class="toggle-desc">Indica el avance del examen</span>
-                        </span>
-                        <input type="checkbox" id="config_showProgress" style="display:none" />
-                    </label>
-                </div>
-            </div>
-            
-            <!-- RESULTADOS -->
-            <div class="config-section">
-                <div class="config-section-title">📊 Resultados</div>
-                <div class="config-options-grid">
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_showGradeAutomatically"></span>
-                        <span class="toggle-label">
-                            📊 Mostrar nota automáticamente
-                            <span class="toggle-desc">Muestra la nota al finalizar</span>
-                        </span>
-                        <input type="checkbox" id="config_showGradeAutomatically" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_showAnswersOnFinish"></span>
-                        <span class="toggle-label">
-                            📖 Mostrar respuestas al finalizar
-                            <span class="toggle-desc">Muestra las respuestas correctas</span>
-                        </span>
-                        <input type="checkbox" id="config_showAnswersOnFinish" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_showOnlyScore"></span>
-                        <span class="toggle-label">
-                            📊 Mostrar solo puntuación
-                            <span class="toggle-desc">Oculta respuestas detalladas</span>
-                        </span>
-                        <input type="checkbox" id="config_showOnlyScore" style="display:none" />
-                    </label>
-                    <label class="modal-toggle-container">
-                        <span class="toggle-switch" id="config_toggle_allowBack"></span>
-                        <span class="toggle-label">
-                            ↩️ Permitir volver atrás
-                            <span class="toggle-desc">Permite revisar preguntas anteriores</span>
-                        </span>
-                        <input type="checkbox" id="config_allowBack" style="display:none" />
-                    </label>
-                </div>
-            </div>
-        </div>
-        
-        <div class="exam-config-modal-footer">
-            <button onclick="closeExamConfig()" class="btn-secondary">Cancelar</button>
-            <button onclick="saveConfigFromModal()" class="btn-primary">
-                <i data-lucide="save" class="w-4 h-4"></i>
-                Guardar configuración
-            </button>
-        </div>
-    </div>
-</div>
-
-<!-- ============================================================
-     MODAL DE CORRECCIÓN (se genera dinámicamente)
-     ============================================================ -->
-<div id="correctionModalContainer"></div>
-
-<!-- NOTIFICACIONES -->
+<!-- ====== NOTIFICACIONES ====== -->
 <div id="notificationContainer" class="notification-container"></div>
 
-<!-- ============================================================
-     JAVASCRIPT - TODOS LOS ARCHIVOS EN ORDEN
-     ============================================================ -->
-
-<!-- 1. Configuración y utilidades -->
-<script src="js/config.js"></script>
-<script src="js/utils.js"></script>
-
-<!-- 2. CRUD de datos -->
-<script src="js/forms.js"></script>
-<script src="js/responses.js"></script>
-
-<!-- 3. Sistema de usuarios -->
-<script src="js/users.js"></script>
-
-<!-- 4. Autenticación -->
-<script src="js/auth.js"></script>
-
-<!-- 5. Funcionalidades principales -->
-<script src="js/dashboard.js"></script>
-<script src="js/editor.js"></script>
-<script src="js/form-view.js"></script>
-<script src="js/responses-view.js"></script>
-
-<!-- 6. Estadísticas y organización -->
-<script src="js/stats.js"></script>
-<script src="js/organization.js"></script>
-
-<!-- 7. Perfil y ajustes -->
-<script src="js/profile.js"></script>
-
-<!-- 8. UX - Drag & Drop, Autoguardado, Atajos -->
-<script src="js/ux.js"></script>
-
-<!-- 9. Inicialización de la App -->
-<script src="js/app.js"></script>
+<!-- ====== JAVASCRIPT ====== -->
+<script src="js/core/config.js"></script>
+<script src="js/core/utils.js"></script>
+<script src="js/core/app.js"></script>
+<script src="js/auth/users.js"></script>
+<script src="js/auth/auth.js"></script>
+<script src="js/core/system.js"></script>
 
 <script>
-    document.addEventListener('DOMContentLoaded', function() {
-        lucide.createIcons();
-    });
+    (function () {
+        'use strict';
+
+        document.addEventListener('DOMContentLoaded', function () {
+            const sesion = window.getCurrentUser ? window.getCurrentUser() : null;
+            if (sesion && sesion.username) {
+                window.location.href = (window.System ? window.System.page('dashboard.html') : 'pages/dashboard.html');
+                return;
+            }
+
+            const u = document.getElementById('loginUser');
+            const p = document.getElementById('loginPass');
+            if (u) u.value = 'admin1';
+            if (p) p.value = 'admin123';
+
+            const form = document.getElementById('loginForm');
+            if (form) {
+                form.addEventListener('submit', function (e) {
+                    if (typeof window.handleLogin === 'function') {
+                        window.handleLogin(e);
+                    } else {
+                        console.error('Sistema de login no disponible');
+                    }
+                });
+            }
+
+            document.querySelectorAll('.auth-quick-chip').forEach(function (chip) {
+                chip.addEventListener('click', function () {
+                    if (u) u.value = chip.getAttribute('data-user');
+                    if (p) p.value = chip.getAttribute('data-pass');
+                    if (form) form.requestSubmit
+                        ? form.requestSubmit()
+                        : form.dispatchEvent(new Event('submit', { cancelable: true }));
+                });
+            });
+
+            const fy = document.getElementById('footerYear');
+            if (fy) fy.textContent = new Date().getFullYear();
+
+            if (typeof lucide !== 'undefined') lucide.createIcons();
+        });
+    })();
 </script>
 
 </body>

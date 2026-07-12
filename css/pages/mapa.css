@@ -1,0 +1,168 @@
+/* ============================================================
+   MAPA - Mapa interactivo de la Biblia
+   ============================================================ */
+
+.page-title svg { width: 1.1em; height: 1.1em; vertical-align: -0.15em; }
+
+.mapa-resumen {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: var(--spacing-lg) var(--spacing-xl);
+    border: 1px solid var(--sand);
+    box-shadow: var(--shadow);
+    margin-bottom: var(--spacing-lg);
+}
+
+.mapa-resumen-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.mapa-resumen-header h3 {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 17px;
+    font-weight: 800;
+    color: var(--text);
+}
+
+.mapa-resumen-header h3 svg { width: 22px; height: 22px; color: var(--primary); flex-shrink: 0; }
+
+.mapa-testamento {
+    margin-bottom: 24px;
+}
+
+.mapa-testamento-titulo {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 18px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 14px;
+    padding-bottom: 6px;
+    border-bottom: 2px solid var(--sand);
+}
+
+.mapa-testamento-titulo svg { width: 20px; height: 20px; color: var(--primary); flex-shrink: 0; }
+
+.mapa-seccion {
+    margin-bottom: 16px;
+}
+
+.mapa-seccion-titulo {
+    font-size: 13px;
+    font-weight: 800;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    color: var(--text-faint);
+    margin-bottom: 10px;
+}
+
+.mapa-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 10px;
+}
+
+.mapa-libro {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+    cursor: pointer;
+    transition: var(--transition);
+    position: relative;
+}
+
+.mapa-libro:hover {
+    border-color: var(--primary);
+    background: var(--primary-light);
+    transform: translateY(-1px);
+}
+
+.mapa-libro.estudiado {
+    background: var(--secondary-soft);
+    border-color: var(--secondary);
+}
+
+.mapa-libro-icono {
+    display: flex;
+    align-items: center;
+    color: var(--text-faint);
+}
+
+.mapa-libro-icono svg { width: 18px; height: 18px; }
+.mapa-libro.estudiado .mapa-libro-icono { color: var(--secondary); }
+
+.mapa-libro-nombre {
+    font-size: 14px;
+    font-weight: 700;
+    color: var(--text);
+    flex: 1;
+}
+
+.mapa-libro-badge {
+    font-size: 11px;
+    font-weight: 700;
+    background: var(--success);
+    color: white;
+    border-radius: 12px;
+    padding: 1px 8px;
+}
+
+/* Detalle de capítulos en modal */
+.mapa-capitulos {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 6px;
+}
+
+.mapa-capitulo-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 14px 16px;
+    background: var(--surface-alt);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+}
+
+.mapa-capitulo-item strong {
+    color: var(--text);
+}
+
+/* ============================================================
+   RESPONSIVE - MAPA
+   ============================================================ */
+@media (max-width: 768px) {
+    .mapa-grid {
+        grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+    }
+
+    .mapa-libro {
+        padding: 10px 12px;
+    }
+
+    .mapa-libro-nombre {
+        font-size: 13px;
+    }
+}
+
+@media (max-width: 480px) {
+    .mapa-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .mapa-resumen {
+        padding: var(--spacing-md) var(--spacing-lg);
+    }
+}

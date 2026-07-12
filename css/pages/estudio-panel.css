@@ -1,0 +1,657 @@
+/* ============================================================
+   ESTUDIO-PANEL - Flujo inmersivo (sin distracciones)
+   Introducción → Lectura → Preguntas → Resumen
+   ============================================================ */
+
+/* ===== MODO INMERSIVO ===== */
+body.estudio-flow .topbar,
+body.estudio-flow .bottomnav { display: none !important; }
+
+body.estudio-flow .main-content {
+    max-width: 720px;
+    padding: 0 20px;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+}
+
+/* ===== TOPBAR MINIMALISTA ===== */
+.flow-topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 0;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-topbar-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flow-btn-back {
+    background: transparent;
+    border: none;
+    color: var(--text-soft);
+    cursor: pointer;
+    padding: 6px 10px;
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    transition: var(--transition);
+}
+
+.flow-btn-back:hover { color: var(--text); background: var(--gray-50); }
+
+.flow-topbar-title {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--text-faint);
+}
+
+.flow-topbar-step {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: var(--primary);
+    background: var(--primary-soft);
+    padding: 3px 12px;
+    border-radius: 9999px;
+}
+
+/* ===== CONTENEDOR CENTRAL ===== */
+.flow-container {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding-bottom: 60px;
+}
+
+/* ============================================================
+   INTRODUCCIÓN DEL CAPÍTULO
+   ============================================================ */
+.flow-intro {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    animation: flowFadeIn 0.35s ease;
+}
+
+@keyframes flowFadeIn {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.flow-intro-header {
+    text-align: center;
+    padding: 32px 24px 20px;
+}
+
+.flow-intro-icon {
+    font-size: 3rem;
+    margin-bottom: 8px;
+}
+
+.flow-intro-libro {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 4px;
+}
+
+.flow-intro-capitulo {
+    font-size: 1.8rem;
+    font-weight: 800;
+    color: var(--text);
+    line-height: 1.2;
+    margin-bottom: 4px;
+}
+
+.flow-intro-titulo {
+    font-size: 1.1rem;
+    font-weight: 600;
+    color: var(--text-soft);
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-intro-body {
+    padding: 0 24px 24px;
+}
+
+.flow-intro-objetivo {
+    background: var(--primary-soft);
+    border: 1px solid var(--primary-line);
+    border-radius: var(--radius-md);
+    padding: 16px 20px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-intro-objetivo-label {
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: var(--primary);
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+    margin-bottom: 6px;
+}
+
+.flow-intro-objetivo-texto {
+    font-size: 1rem;
+    color: var(--text);
+    line-height: 1.5;
+}
+
+.flow-intro-detalles {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 10px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-intro-detalle {
+    text-align: center;
+    padding: 12px;
+    background: var(--surface-alt);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+}
+
+.flow-intro-detalle-icono {
+    font-size: 1.5rem;
+    margin-bottom: 4px;
+}
+
+.flow-intro-detalle-valor {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.flow-intro-detalle-label {
+    font-size: 0.75rem;
+    color: var(--text-faint);
+}
+
+.flow-intro-frase {
+    text-align: center;
+    font-size: 0.95rem;
+    color: var(--text-soft);
+    font-style: italic;
+    line-height: 1.5;
+    margin-bottom: var(--spacing-lg);
+    padding: 0 12px;
+}
+
+/* ============================================================
+   LECTURA
+   ============================================================ */
+.flow-lectura {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    padding: 32px 28px;
+    animation: flowFadeIn 0.35s ease;
+}
+
+.flow-lectura-titulo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: var(--spacing-md);
+    text-align: center;
+    line-height: 1.2;
+}
+
+.flow-lectura-texto {
+    font-size: 1.1rem;
+    line-height: 1.7;
+    color: var(--text-soft);
+    text-align: center;
+    max-width: 52ch;
+    margin: 0 auto var(--spacing-lg);
+}
+
+.flow-lectura-ayuda {
+    text-align: center;
+    font-size: 0.9rem;
+    color: var(--text-faint);
+    margin-bottom: var(--spacing-lg);
+}
+
+/* ===== NOTAS EN LECTURA (acordeón) ===== */
+.flow-lectura-notas-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 10px;
+    background: transparent;
+    border: 1px dashed var(--sand);
+    border-radius: var(--radius-sm);
+    color: var(--text-soft);
+    font-size: 0.9rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: var(--transition);
+    margin-bottom: var(--spacing-md);
+}
+
+.flow-lectura-notas-toggle:hover {
+    border-color: var(--primary-line);
+    background: var(--primary-soft);
+    color: var(--primary);
+}
+
+.flow-lectura-notas-area {
+    display: none;
+    margin-bottom: var(--spacing-md);
+}
+
+.flow-lectura-notas-area.open { display: block; }
+
+.flow-lectura-notas-area textarea {
+    width: 100%;
+    min-height: 110px;
+    padding: 14px 16px;
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+    font-family: var(--font-family);
+    font-size: 1rem;
+    background: var(--surface-alt);
+    color: var(--text);
+    resize: vertical;
+}
+
+.flow-lectura-notas-area textarea:focus {
+    outline: none;
+    border-color: var(--primary-line);
+    box-shadow: var(--shadow-focus);
+}
+
+/* ============================================================
+   PREGUNTAS
+   ============================================================ */
+.flow-preguntas {
+    animation: flowFadeIn 0.35s ease;
+}
+
+.flow-preguntas-intro {
+    text-align: center;
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    padding: 24px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-preguntas-intro p {
+    font-size: 1.05rem;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
+.flow-pregunta-card {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-md);
+    padding: var(--spacing-md) var(--spacing-lg);
+    margin-bottom: 14px;
+    transition: border-color 0.2s ease;
+}
+
+.flow-pregunta-card.correcta {
+    border-color: var(--success);
+    background: var(--success-soft);
+}
+
+.flow-pregunta-card.incorrecta {
+    border-color: var(--error);
+    background: var(--error-soft);
+}
+
+.flow-pregunta-titulo {
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--text);
+    margin-bottom: 12px;
+    line-height: 1.4;
+}
+
+.flow-pregunta-input {
+    width: 100%;
+    padding: 12px 14px;
+    font-size: 1rem;
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+    background: var(--surface);
+    color: var(--text);
+    font-family: var(--font-family);
+}
+
+.flow-pregunta-input:focus {
+    outline: none;
+    border-color: var(--primary-line);
+    box-shadow: var(--shadow-focus);
+}
+
+.flow-pregunta-input.correcto {
+    border-color: var(--success);
+    background: var(--success-soft);
+}
+
+.flow-pregunta-input.incorrecto {
+    border-color: var(--error);
+    background: var(--error-soft);
+}
+
+.flow-pregunta-opciones {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.flow-pregunta-opcion {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius);
+    cursor: pointer;
+    font-size: 1rem;
+    color: var(--text);
+    transition: var(--transition);
+}
+
+.flow-pregunta-opcion:hover {
+    border-color: var(--primary-line);
+    background: var(--primary-soft);
+}
+
+.flow-pregunta-opcion input {
+    width: 18px; height: 18px;
+    accent-color: var(--primary);
+}
+
+.flow-pregunta-opcion.correcta {
+    border-color: var(--success);
+    background: var(--success-soft);
+}
+
+.flow-pregunta-opcion.incorrecta {
+    border-color: var(--error);
+    background: var(--error-soft);
+}
+
+.flow-pregunta-resultado {
+    margin-top: 12px;
+    padding: 10px 14px;
+    border-radius: var(--radius-sm);
+    font-size: 0.95rem;
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.flow-pregunta-resultado.correcta {
+    background: var(--success-soft);
+    color: var(--success-deep);
+}
+
+.flow-pregunta-resultado.incorrecta {
+    background: var(--error-soft);
+    color: var(--error);
+}
+
+.flow-pregunta-explicacion {
+    margin-top: 8px;
+    padding: 10px 14px;
+    background: var(--gray-50);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+    font-size: 0.9rem;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
+/* ============================================================
+   RESUMEN
+   ============================================================ */
+.flow-resumen {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-lg);
+    box-shadow: var(--shadow-md);
+    overflow: hidden;
+    animation: flowFadeIn 0.35s ease;
+}
+
+.flow-resumen-header {
+    text-align: center;
+    padding: 32px 24px 20px;
+}
+
+.flow-resumen-icono {
+    font-size: 3.5rem;
+    margin-bottom: 8px;
+}
+
+.flow-resumen-titulo {
+    font-size: 1.6rem;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.flow-resumen-ref {
+    font-size: 1rem;
+    color: var(--text-soft);
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-resumen-stats {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+    padding: 0 24px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-resumen-stat {
+    text-align: center;
+    padding: 14px;
+    background: var(--surface-alt);
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+}
+
+.flow-resumen-stat .numero {
+    font-size: 1.8rem;
+    font-weight: 900;
+    line-height: 1;
+}
+
+.flow-resumen-stat .numero.green { color: var(--success); }
+.flow-resumen-stat .numero.red { color: var(--error); }
+.flow-resumen-stat .numero.primary { color: var(--primary); }
+
+.flow-resumen-stat .etiqueta {
+    font-size: 0.8rem;
+    color: var(--text-faint);
+    margin-top: 4px;
+}
+
+.flow-resumen-mensaje {
+    text-align: center;
+    padding: 0 24px;
+    margin-bottom: var(--spacing-lg);
+    font-size: 1rem;
+    color: var(--text-soft);
+    line-height: 1.5;
+}
+
+.flow-resumen-detalles {
+    padding: 0 24px;
+    margin-bottom: var(--spacing-lg);
+}
+
+.flow-resumen-detalle-pregunta {
+    padding: 10px 14px;
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-sm);
+    margin-bottom: 8px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.flow-resumen-detalle-pregunta .icono {
+    flex-shrink: 0;
+    font-size: 1.1rem;
+    margin-top: 1px;
+}
+
+.flow-resumen-detalle-pregunta .info { flex: 1; }
+
+.flow-resumen-detalle-pregunta .q-text {
+    font-size: 0.9rem;
+    color: var(--text);
+    font-weight: 600;
+    margin-bottom: 2px;
+}
+
+.flow-resumen-detalle-pregunta .q-respuestas {
+    font-size: 0.82rem;
+    color: var(--text-soft);
+}
+
+.flow-resumen-detalle-pregunta .q-respuestas .tuya { color: var(--text); }
+.flow-resumen-detalle-pregunta .q-respuestas .correcta-msg { color: var(--success-deep); font-weight: 600; }
+
+.flow-resumen-acciones {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 0 24px 24px;
+}
+
+.flow-resumen-acciones .btn-primary,
+.flow-resumen-acciones .btn-secondary,
+.flow-resumen-acciones .btn-ghost {
+    padding: 14px;
+    font-size: 1.05rem;
+    justify-content: center;
+}
+
+/* ============================================================
+   BOTONES GRANDES (reutilizados en todo el flujo)
+   ============================================================ */
+.flow-btn-primary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 16px 24px;
+    background: var(--primary);
+    color: white;
+    font-size: 1.1rem;
+    font-weight: 700;
+    border: none;
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.flow-btn-primary:hover { background: var(--primary-deep); }
+.flow-btn-primary:active { transform: scale(0.98); }
+.flow-btn-primary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.flow-btn-secondary {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 14px 24px;
+    background: var(--surface);
+    color: var(--text);
+    font-size: 1rem;
+    font-weight: 600;
+    border: 1px solid var(--sand);
+    border-radius: var(--radius-md);
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.flow-btn-secondary:hover { border-color: var(--gray-300); background: var(--gray-50); }
+.flow-btn-secondary:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.flow-btn-ghost {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    width: 100%;
+    padding: 12px;
+    background: transparent;
+    color: var(--text-soft);
+    font-size: 0.95rem;
+    font-weight: 600;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+}
+
+.flow-btn-ghost:hover { color: var(--text); }
+.flow-btn-ghost:focus-visible { outline: 2px solid var(--primary); outline-offset: 2px; }
+
+.flow-spacer {
+    height: 12px;
+}
+
+/* ============================================================
+   RESPONSIVE
+   ============================================================ */
+@media (max-width: 768px) {
+    body.estudio-flow .main-content {
+        padding: 0 12px;
+    }
+
+    .flow-intro-header { padding: 24px 16px 16px; }
+    .flow-intro-capitulo { font-size: 1.5rem; }
+    .flow-intro-body { padding: 0 16px 16px; }
+    .flow-intro-detalles { grid-template-columns: repeat(3, 1fr); gap: 6px; }
+
+    .flow-lectura { padding: 24px 16px; }
+    .flow-lectura-titulo { font-size: 1.3rem; }
+
+    .flow-resumen-header { padding: 24px 16px 16px; }
+    .flow-resumen-stats { padding: 0 16px; gap: 6px; }
+    .flow-resumen-detalles { padding: 0 16px; }
+    .flow-resumen-acciones { padding: 0 16px 16px; }
+}
+
+@media (max-width: 480px) {
+    .flow-intro-capitulo { font-size: 1.3rem; }
+    .flow-intro-detalles { grid-template-columns: 1fr; }
+    .flow-intro-detalle { display: flex; align-items: center; gap: 12px; text-align: left; padding: 10px; }
+
+    .flow-pregunta-card { padding: var(--spacing-sm) var(--spacing-md); }
+
+    .flow-resumen-stats { grid-template-columns: repeat(2, 1fr); }
+    .flow-resumen-stat .numero { font-size: 1.4rem; }
+}

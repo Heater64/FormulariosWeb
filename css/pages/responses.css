@@ -1,0 +1,238 @@
+/* ============================================================
+   RESPONSES - Corrección de exámenes
+   ============================================================ */
+
+.responses-header {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    margin-bottom: 20px;
+    flex-wrap: wrap;
+}
+
+.responses-header .page-title {
+    font-size: 22px;
+}
+
+.responses-list {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+/* ============================================================
+   RESPONSE CARD
+   ============================================================ */
+.response-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    transition: var(--transition);
+}
+
+.response-card:hover {
+    box-shadow: var(--shadow-md);
+}
+
+.response-card.corrected {
+    border-left: 4px solid var(--success);
+}
+
+.response-card.pending {
+    border-left: 4px solid var(--warning);
+}
+
+.response-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 14px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--gray-100);
+}
+
+.response-user-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.response-avatar {
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    font-size: 16px;
+    flex-shrink: 0;
+}
+
+.response-card-name {
+    font-weight: 600;
+    color: var(--gray-800);
+}
+
+.response-card-date {
+    font-size: 12px;
+    color: var(--gray-400);
+}
+
+.response-status {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* ============================================================
+   ANSWERS
+   ============================================================ */
+.response-answers-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 12px;
+}
+
+.response-answer-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 6px 12px;
+    border-radius: 8px;
+    background: var(--gray-50);
+    font-size: 13px;
+    transition: var(--transition);
+}
+
+.response-answer-item:hover {
+    background: var(--gray-100);
+}
+
+.response-answer-item.correct-answer {
+    background: var(--success-soft);
+    border-left: 3px solid var(--success);
+}
+
+.response-answer-item.incorrect-answer {
+    background: var(--error-soft);
+    border-left: 3px solid var(--error);
+}
+
+.response-answer-item.pending-answer {
+    background: var(--warning-soft);
+    border-left: 3px solid var(--warning);
+}
+
+.response-answer-question {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    color: var(--gray-600);
+}
+
+.response-q-number {
+    font-weight: 600;
+    color: var(--gray-400);
+}
+
+.response-answer-value {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-weight: 500;
+}
+
+.response-status-icon {
+    font-size: 14px;
+}
+
+.response-score {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--gray-400);
+    background: var(--gray-100);
+    padding: 1px 8px;
+    border-radius: 10px;
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+.response-actions {
+    display: flex;
+    gap: 8px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-100);
+    flex-wrap: wrap;
+}
+
+/* ============================================================
+   RESPONSIVE - RESPONSES
+   ============================================================ */
+@media (max-width: 768px) {
+    .responses-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .responses-header .page-title {
+        font-size: 18px;
+    }
+    
+    .response-card {
+        padding: 14px 16px;
+    }
+    
+    .response-card-header {
+        flex-direction: column;
+        align-items: flex-start;
+    }
+    
+    .response-answer-item {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 4px;
+    }
+    
+    .response-answer-value {
+        flex-wrap: wrap;
+    }
+}
+
+@media (max-width: 480px) {
+    .response-card {
+        padding: 10px 12px;
+    }
+    
+    .response-answer-item {
+        font-size: 12px;
+        padding: 4px 8px;
+    }
+    
+    .response-actions {
+        flex-direction: column;
+    }
+    
+    .response-actions .btn-primary,
+    .response-actions .btn-secondary {
+        width: 100%;
+        justify-content: center;
+    }
+}
+
+/* ============================================================
+   ICONOS LUCIDE
+   ============================================================ */
+.empty-state-icon .lucide {
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--text-faint);
+}

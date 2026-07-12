@@ -1,0 +1,46 @@
+/* ============================================================
+   NOTIFICACIONES (toast)
+   Esquina inferior, discreta, crema.
+   ============================================================ */
+
+.notification-container {
+    position: fixed;
+    bottom: calc(var(--bottomnav-h) + 16px);
+    right: 16px;
+    z-index: 300;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    max-width: 360px;
+}
+
+.notification {
+    background: var(--surface);
+    border: 1px solid var(--sand);
+    border-left: 4px solid var(--primary);
+    border-radius: var(--radius-sm);
+    box-shadow: var(--shadow-md);
+    padding: 14px 16px;
+    opacity: 0;
+    transform: translateX(50px);
+    transition: opacity var(--transition), transform var(--transition);
+}
+
+.notification-info { border-left-color: var(--primary); }
+.notification-success { border-left-color: var(--success); }
+.notification-warning { border-left-color: var(--warning); }
+.notification-error { border-left-color: var(--error); }
+
+.notification-content {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+}
+
+.notification-icon { font-size: 1.1rem; line-height: 1.4; }
+.notification-message { flex: 1; color: var(--text); font-size: 0.95rem; }
+.notification-close {
+    background: transparent; border: none; color: var(--text-faint);
+    cursor: pointer; font-size: 0.9rem; padding: 0 2px;
+}
+.notification-close:hover { color: var(--text); }

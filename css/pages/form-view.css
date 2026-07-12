@@ -1,0 +1,423 @@
+/* ============================================================
+   FORM-VIEW - Ver/responder examen
+   ============================================================ */
+
+.form-view-container {
+    max-width: 800px;
+    margin: 0 auto;
+}
+
+/* ============================================================
+   HEADER
+   ============================================================ */
+.form-view-header {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 24px 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 20px;
+}
+
+.form-view-header-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+}
+
+.form-view-title {
+    font-size: 26px;
+    font-weight: 700;
+    color: var(--gray-900);
+}
+
+.form-view-subtitle {
+    color: var(--gray-500);
+    font-size: 14px;
+    margin-top: 4px;
+}
+
+.form-view-meta {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 12px;
+    padding-top: 12px;
+    border-top: 1px solid var(--gray-100);
+}
+
+/* ============================================================
+   FORM
+   ============================================================ */
+.form-view-name-field {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 16px;
+}
+
+.form-view-label {
+    display: block;
+    font-weight: 600;
+    color: var(--gray-700);
+    margin-bottom: 6px;
+    font-size: 14px;
+}
+
+.form-view-question {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    margin-bottom: 14px;
+}
+
+.form-view-question-header {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+}
+
+.form-view-question-number {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--gray-400);
+}
+
+.form-view-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 0;
+}
+
+.form-view-option input[type="radio"],
+.form-view-option input[type="checkbox"] {
+    width: 18px;
+    height: 18px;
+    accent-color: var(--primary);
+    flex-shrink: 0;
+}
+
+.form-view-hint {
+    font-size: 13px;
+    padding: 8px 12px;
+    background: var(--primary-soft);
+    border-radius: 8px;
+    border: 1px solid var(--primary-line);
+    color: var(--primary);
+    margin-top: 10px;
+}
+
+/* ============================================================
+   TF OPTIONS
+   ============================================================ */
+.tf-options {
+    display: flex;
+    gap: 16px;
+    margin-top: 4px;
+}
+
+.tf-options label {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    border-radius: var(--radius);
+    border: 2px solid var(--gray-200);
+    cursor: pointer;
+    transition: var(--transition);
+    font-weight: 500;
+}
+
+.tf-options label:hover {
+    border-color: var(--gray-300);
+    background: var(--gray-50);
+}
+
+.tf-options label:has(input:checked) {
+    border-color: var(--primary);
+    background: var(--primary-light);
+}
+
+.tf-options input[type="radio"] {
+    display: none;
+}
+
+/* ============================================================
+   ACTIONS
+   ============================================================ */
+.form-view-actions {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 20px 24px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    margin-top: 16px;
+}
+
+.form-view-actions .btn-primary {
+    width: 100%;
+    justify-content: center;
+    padding: 14px;
+    font-size: 16px;
+}
+
+/* ============================================================
+   RESPONSIVE - FORM-VIEW
+   ============================================================ */
+@media (max-width: 768px) {
+    .form-view-header {
+        padding: 16px 18px;
+    }
+    
+    .form-view-title {
+        font-size: 22px;
+    }
+    
+    .form-view-name-field {
+        padding: 14px 16px;
+    }
+    
+    .form-view-question {
+        padding: 14px 16px;
+    }
+    
+    .tf-options {
+        flex-direction: column;
+        gap: 8px;
+    }
+    
+    .tf-options label {
+        justify-content: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .form-view-title {
+        font-size: 18px;
+    }
+    
+    .form-view-label {
+        font-size: 13px;
+    }
+    
+    .form-view-option {
+        font-size: 14px;
+    }
+}
+
+/* ============================================================
+   ICONOS LUCIDE
+   ============================================================ */
+.form-view-meta span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.form-view-meta .lucide {
+    width: 16px;
+    height: 16px;
+    color: var(--primary);
+}
+
+.form-view-meta .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.form-view-meta .badge .lucide {
+    width: 14px;
+    height: 14px;
+}
+
+.empty-state-icon .lucide {
+    width: 2.75rem;
+    height: 2.75rem;
+    color: var(--text-faint);
+}
+
+.result-icon .lucide {
+    width: 2.5rem;
+    height: 2.5rem;
+    color: var(--on-primary);
+}
+
+.result-detalle-icon .lucide {
+    width: 18px;
+    height: 18px;
+}
+
+.result-detalle.correct .result-detalle-icon .lucide {
+    color: var(--success);
+}
+
+.result-detalle.incorrect .result-detalle-icon .lucide {
+    color: var(--error);
+}
+
+/* ============================================================
+   PANTALLA PREVIA AL EXAMEN
+   ============================================================ */
+.exam-pre-screen {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    min-height: 60vh;
+}
+
+.exam-pre-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    text-align: center;
+    width: 100%;
+}
+
+.exam-pre-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--primary-light);
+    color: var(--primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.exam-pre-icon svg { width: 28px; height: 28px; }
+
+.exam-pre-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 8px;
+}
+
+.exam-pre-status { margin-bottom: 12px; }
+
+.exam-pre-desc {
+    font-size: 14px;
+    color: var(--text-soft);
+    margin-bottom: 16px;
+    line-height: 1.5;
+}
+
+.exam-pre-info {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-bottom: 20px;
+    padding: 16px;
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    text-align: left;
+}
+
+.exam-pre-info-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 14px;
+    color: var(--text);
+}
+
+.exam-pre-info-item svg {
+    width: 18px;
+    height: 18px;
+    color: var(--primary);
+    flex-shrink: 0;
+}
+
+/* ============================================================
+   PANTALLA FINAL (EXAMEN ENVIADO)
+   ============================================================ */
+.exam-success-screen {
+    max-width: 560px;
+    margin: 0 auto;
+    display: flex;
+    align-items: center;
+    min-height: 50vh;
+}
+
+.exam-success-card {
+    background: var(--surface);
+    border-radius: var(--radius-lg);
+    padding: 32px 28px;
+    box-shadow: var(--shadow);
+    border: 1px solid var(--gray-200);
+    text-align: center;
+    width: 100%;
+}
+
+.exam-success-icon {
+    width: 56px;
+    height: 56px;
+    border-radius: 50%;
+    background: var(--success-soft);
+    color: var(--success-deep);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin: 0 auto 16px;
+}
+
+.exam-success-icon svg { width: 28px; height: 28px; }
+
+.exam-success-title {
+    font-size: 22px;
+    font-weight: 800;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.exam-success-subtitle {
+    font-size: 14px;
+    color: var(--text-soft);
+    margin-bottom: 16px;
+}
+
+.exam-success-details {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    margin-bottom: 16px;
+    padding: 16px;
+    background: var(--gray-50);
+    border-radius: var(--radius);
+    text-align: left;
+}
+
+.exam-success-detail {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 14px;
+}
+
+.exam-success-label {
+    color: var(--text-faint);
+    font-weight: 500;
+}
+
+.exam-success-msg {
+    font-size: 13px;
+    color: var(--text-faint);
+    margin-bottom: 16px;
+    padding: 8px 12px;
+    background: #FFF8E1;
+    border-radius: var(--radius-sm);
+    border: 1px solid #FFE082;
+}

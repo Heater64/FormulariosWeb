@@ -1,0 +1,233 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5" />
+    <title>Estudio Bíblico - Editor</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+</head>
+<body>
+
+<!-- ====== MAIN CONTENT ====== -->
+<main class="main-content">
+    <div class="editor-header">
+        <a href="dashboard.html" class="btn-ghost">
+            <i data-lucide="arrow-left" class="w-5 h-5"></i>
+            Volver
+        </a>
+        <h1 class="page-title" id="editorTitle">Nuevo Examen</h1>
+        <div class="editor-header-actions">
+            <button onclick="openExamConfig()" class="btn-secondary btn-sm">
+                <i data-lucide="settings" class="w-4 h-4"></i>
+                Ajustes
+            </button>
+            <span id="autoSaveIndicator" class="auto-save-indicator">Sin guardar</span>
+            <button onclick="undoAction()" class="btn-ghost btn-sm"><i data-lucide="undo-2" class="w-4 h-4"></i></button>
+            <button onclick="redoAction()" class="btn-ghost btn-sm"><i data-lucide="redo-2" class="w-4 h-4"></i></button>
+        </div>
+        <div id="editorStatusBadge" class="editor-status-badge"></div>
+    </div>
+    
+    <div class="editor-card">
+        <input id="formTitle" class="editor-title-input" placeholder="Título del examen" value="Mi examen" oninput="onFormChange()" />
+        <div class="editor-meta">
+            <span class="editor-question-counter" id="questionCounter">0 preguntas</span>
+            <label class="toggle-container">
+                <span class="toggle-switch" id="allowMultipleToggle"></span>
+                <span>Permitir múltiples respuestas</span>
+                <input type="checkbox" id="allowMultiple" style="display:none" onchange="onFormChange()" />
+            </label>
+            <label class="toggle-container">
+                <span class="toggle-switch" id="showAnswersToggle"></span>
+                <span>Mostrar respuestas correctas</span>
+                <input type="checkbox" id="showAnswers" style="display:none" onchange="onFormChange()" />
+            </label>
+            <div class="editor-meta-field">
+                <label class="form-label" style="font-size:13px">Tipo</label>
+                <select id="examTypeSelect" class="form-input" style="width:auto;font-size:13px;padding:4px 8px" onchange="onFormChange()">
+                    <option value="libre">Libre</option>
+                    <option value="oficial">Oficial</option>
+                </select>
+            </div>
+            <div class="editor-meta-field">
+                <label class="form-label" style="font-size:13px">Evaluación</label>
+                <select id="evaluationSelect" class="form-input" style="width:auto;font-size:13px;padding:4px 8px" onchange="onFormChange()">
+                    <option value="">Sin evaluación</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <div id="questionsContainer" class="questions-container"></div>
+
+    <div class="question-toolbar">
+        <div class="toolbar-section">
+            <span class="toolbar-section-title">Texto</span>
+            <button onclick="addQuestion('text')" class="toolbar-btn"><i data-lucide="type" class="w-4 h-4"></i> Completar</button>
+            <button onclick="addQuestion('textarea')" class="toolbar-btn"><i data-lucide="file-text" class="w-4 h-4"></i> Abierta</button>
+        </div>
+        <div class="toolbar-section">
+            <span class="toolbar-section-title">Opciones</span>
+            <button onclick="addQuestion('radio')" class="toolbar-btn"><i data-lucide="circle" class="w-4 h-4"></i> Opción única</button>
+            <button onclick="addQuestion('checkbox')" class="toolbar-btn"><i data-lucide="square" class="w-4 h-4"></i> Varias</button>
+            <button onclick="addQuestion('truefalse')" class="toolbar-btn"><i data-lucide="check-circle" class="w-4 h-4"></i> V/F</button>
+        </div>
+        <div class="toolbar-section">
+            <span class="toolbar-section-title">Relacionar</span>
+            <button onclick="addQuestion('match')" class="toolbar-btn"><i data-lucide="link-2" class="w-4 h-4"></i> Relacionar</button>
+            <button onclick="addQuestion('order')" class="toolbar-btn"><i data-lucide="list-ordered" class="w-4 h-4"></i> Ordenar</button>
+        </div>
+        <div class="toolbar-section">
+            <span class="toolbar-section-title">Identificar</span>
+            <button onclick="addQuestion('identify')" class="toolbar-btn"><i data-lucide="user-search" class="w-4 h-4"></i> Personaje</button>
+            <button onclick="addQuestion('number')" class="toolbar-btn"><i data-lucide="hash" class="w-4 h-4"></i> Número</button>
+            <button onclick="addQuestion('image')" class="toolbar-btn"><i data-lucide="image" class="w-4 h-4"></i> Imagen</button>
+        </div>
+    </div>
+
+    <div class="editor-actions">
+        <button onclick="saveForm('borrador')" class="btn-secondary btn-lg" id="saveDraftButton">
+            <i data-lucide="save" class="w-5 h-5"></i>
+            Guardar Borrador
+        </button>
+        <button onclick="saveForm('publicado')" class="btn-primary btn-lg" id="publishButton">
+            <i data-lucide="globe" class="w-5 h-5"></i>
+            Publicar
+        </button>
+    </div>
+</main>
+
+<!-- ====== MODAL CONFIG ====== -->
+<div id="examConfigModal" class="exam-config-modal-overlay">
+    <div class="exam-config-modal">
+        <div class="exam-config-modal-header">
+            <h2><i data-lucide="settings" class="w-5 h-5"></i> Configuración</h2>
+            <button onclick="closeExamConfig()" class="exam-config-modal-close"><i data-lucide="x" class="w-6 h-6"></i></button>
+        </div>
+        <div class="exam-config-modal-body">
+            <div class="config-section">
+                <div class="config-section-title"><i data-lucide="timer" class="w-4 h-4"></i> Tiempo</div>
+                <div class="config-grid">
+                    <div class="config-group">
+                        <label>Tiempo límite (min)</label>
+                        <input type="number" id="config_timeLimit" class="config-input" min="0" value="0" />
+                        <span class="config-hint">0 = sin límite</span>
+                    </div>
+                    <div class="config-group">
+                        <label>Intentos máximos</label>
+                        <input type="number" id="config_maxAttempts" class="config-input" min="1" value="1" />
+                    </div>
+                </div>
+            </div>
+            <div class="config-section">
+                <div class="config-section-title"><i data-lucide="target" class="w-4 h-4"></i> Experiencia</div>
+                <div class="config-options-grid">
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_shuffleQuestions"></span>
+                        <span class="toggle-label"><i data-lucide="shuffle" class="w-4 h-4"></i> Aleatorizar preguntas</span>
+                        <input type="checkbox" id="config_shuffleQuestions" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_shuffleOptions"></span>
+                        <span class="toggle-label"><i data-lucide="shuffle" class="w-4 h-4"></i> Aleatorizar opciones</span>
+                        <input type="checkbox" id="config_shuffleOptions" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_showProgress"></span>
+                        <span class="toggle-label"><i data-lucide="bar-chart-3" class="w-4 h-4"></i> Mostrar progreso</span>
+                        <input type="checkbox" id="config_showProgress" style="display:none" />
+                    </label>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-section-title"><i data-lucide="calendar" class="w-4 h-4"></i> Disponibilidad</div>
+                <div class="config-grid">
+                    <div class="config-group">
+                        <label>Fecha de apertura</label>
+                        <input type="datetime-local" id="config_openDate" class="config-input" />
+                    </div>
+                    <div class="config-group">
+                        <label>Fecha de cierre</label>
+                        <input type="datetime-local" id="config_closeDate" class="config-input" />
+                    </div>
+                </div>
+            </div>
+
+            <div class="config-section">
+                <div class="config-section-title"><i data-lucide="clipboard-list" class="w-4 h-4"></i> Navegación y finalización</div>
+                <div class="config-options-grid">
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_onePerPage"></span>
+                        <span class="toggle-label"><i data-lucide="file-text" class="w-4 h-4"></i> Una pregunta por página</span>
+                        <input type="checkbox" id="config_onePerPage" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_allowBack"></span>
+                        <span class="toggle-label"><i data-lucide="undo-2" class="w-4 h-4"></i> Permitir volver atrás</span>
+                        <input type="checkbox" id="config_allowBack" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_showGradeAutomatically"></span>
+                        <span class="toggle-label"><i data-lucide="zap" class="w-4 h-4"></i> Mostrar nota automáticamente</span>
+                        <input type="checkbox" id="config_showGradeAutomatically" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_showAnswersOnFinish"></span>
+                        <span class="toggle-label"><i data-lucide="check-circle" class="w-4 h-4"></i> Mostrar respuestas al finalizar</span>
+                        <input type="checkbox" id="config_showAnswersOnFinish" style="display:none" />
+                    </label>
+                    <label class="modal-toggle-container">
+                        <span class="toggle-switch" id="config_toggle_showOnlyScore"></span>
+                        <span class="toggle-label"><i data-lucide="calculator" class="w-4 h-4"></i> Mostrar solo la puntuación</span>
+                        <input type="checkbox" id="config_showOnlyScore" style="display:none" />
+                    </label>
+                </div>
+            </div>
+        </div>
+        <div class="exam-config-modal-footer">
+            <button onclick="closeExamConfig()" class="btn-secondary">Cancelar</button>
+            <button onclick="saveConfigFromModal()" class="btn-primary">Guardar</button>
+        </div>
+    </div>
+</div>
+
+<!-- ====== NOTIFICACIONES ====== -->
+<div id="notificationContainer" class="notification-container"></div>
+
+<!-- ====== JAVASCRIPT ====== -->
+<script src="../js/core/config.js"></script>
+<script src="../js/core/utils.js"></script>
+<script src="../js/core/app.js"></script>
+<script src="../js/auth/users.js"></script>
+<script src="../js/auth/auth.js"></script>
+<script src="../js/shared/forms.js"></script>
+<script src="../js/shared/responses.js"></script>
+<script src="../js/shared/organization.js"></script>
+<script src="../js/shared/ux.js"></script>
+<script src="../js/editor/editor.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = window.checkAuth();
+        if (!user) return;
+        
+        // Verificar permisos
+        if (!window.isEditor()) {
+            window.showNotification('No tienes permisos para crear exámenes', 'error');
+            window.location.href = 'dashboard.html';
+            return;
+        }
+        
+        window.updateNavbar();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        if (typeof window.renderEditor === 'function') window.renderEditor();
+    });
+</script>
+
+    <script src="../js/core/system.js"></script>
+</body>
+</html>

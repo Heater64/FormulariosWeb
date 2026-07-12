@@ -1,0 +1,117 @@
+/* ============================================================
+   VARIABLES CSS · Sistema de diseño "Estudio tranquilo" (v2)
+   Tierra cálido · mucho aire · alto contraste · legible
+   Sans-serif grande · pensado para leer con calma
+   ============================================================ */
+
+:root {
+    /* ---- Fondo y superficies ---- */
+    --bg: #F4EEE2;            /* Crema cálido (nunca blanco puro) */
+    --surface: #FFFDF9;       /* Tarjetas: blanco tostado */
+    --surface-alt: #FBF6EC;   /* Superficie alternativa */
+    --sand: #E6DCC9;          /* Líneas y bordes finos (arena) */
+    --sand-deep: #D8CBB2;
+
+    /* ---- Texto (más contraste que v1) ---- */
+    --text: #2A2016;          /* Texto principal, marrón casi negro */
+    --text-soft: #6A5D4B;     /* Subtítulos / ayuda */
+    --text-faint: #9A8B74;    /* Texto muy secundario */
+    --on-primary: #FDF8EF;    /* Texto sobre marrón */
+
+    /* ---- Color principal: marrón cálido más rico ---- */
+    --primary: #7A4A28;
+    --primary-hover: #5E3820;
+    --primary-dark: #4A2C18;
+    --primary-light: #EFE3D3;  /* Tinte suave del primario */
+    --primary-soft: #EFE3D3;   /* Fondo suave del primario */
+    --primary-line: #C7AE90;
+
+    /* ---- Acento: terracota (personalidad, usar poco) ---- */
+    --accent: #C06B3E;
+    --accent-hover: #A85631;
+    --accent-soft: #F6E5D8;
+
+    /* ---- Color secundario: verde oliva (solo positivo) ---- */
+    --secondary: #5E7A57;
+    --secondary-hover: #4A6345;
+    --secondary-soft: #E7EEE3;
+
+    /* ---- Estados ---- */
+    --success: #5E7A57;
+    --success-soft: #E7EEE3;
+    --success-deep: #3C5238;
+
+    --error: #A84439;
+    --error-soft: #F4E4E1;
+    --error-deep: #782B24;
+
+    --warning: #B0803B;
+    --warning-soft: #F4E8D3;
+    --warning-deep: #7E5A28;
+
+    --info: #7A4A28;
+    --info-soft: #EFE3D3;
+
+    /* ---- Escala de arena (en vez de grises) ---- */
+    --gray-50: #F4EEE2;
+    --gray-100: #EEE6D8;
+    --gray-200: #E4D9C6;
+    --gray-300: #D3C4A9;
+    --gray-400: #B2A184;
+    --gray-500: #9A8B74;
+    --gray-600: #6A5D4B;
+    --gray-700: #473E31;
+    --gray-800: #33291F;
+    --gray-900: #2A2016;
+
+    /* ---- Bordes: redondeados y amables ---- */
+    --radius: 18px;
+    --radius-sm: 12px;
+    --radius-md: 18px;
+    --radius-lg: 24px;
+    --radius-xl: 28px;
+    --radius-full: 9999px;
+
+    /* ---- Sombras: suaves y cálidas ---- */
+    --shadow-sm: 0 1px 2px rgba(58, 42, 26, 0.05);
+    --shadow: 0 2px 6px rgba(58, 42, 26, 0.05);
+    --shadow-md: 0 6px 16px rgba(58, 42, 26, 0.07);
+    --shadow-lg: 0 14px 34px rgba(58, 42, 26, 0.10);
+    --shadow-focus: 0 0 0 4px rgba(122, 74, 40, 0.18);
+
+    /* ---- Transiciones ---- */
+    --transition: 180ms cubic-bezier(0.4, 0, 0.2, 1);
+    --transition-soft: 240ms cubic-bezier(0.4, 0, 0.2, 1);
+
+    /* ---- Espaciado generoso (más aire) ---- */
+    --spacing-xs: 6px;
+    --spacing-sm: 10px;
+    --spacing-md: 18px;
+    --spacing-lg: 28px;
+    --spacing-xl: 40px;
+    --spacing-2xl: 56px;
+    --spacing-3xl: 80px;
+
+    /* ---- Tipografía: sans-serif grande, cálida, muy legible ---- */
+    --font-family: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-heading: 'Nunito', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    --font-size-base: 18px;
+    --font-size-sm: 16px;
+    --font-size-lg: 20px;
+    --font-size-xl: 24px;
+    --font-size-2xl: 31px;
+    --font-size-3xl: 40px;
+
+    /* ---- Texturas e ilustración ---- */
+    --paper-opacity: 0.03;
+    --illust-stroke: #7A4A28;
+    --illust-fill-1: #E7D9C4;
+    --illust-fill-2: #D8C3A4;
+    --illust-fill-3: #C9B59C;
+    --illust-accent: #5E7A57;
+
+    /* ---- Medidas de la carcasa (chrome), más grandes ---- */
+    --topbar-h: 68px;
+    --bottomnav-h: 84px;
+    --content-max: 720px;
+}

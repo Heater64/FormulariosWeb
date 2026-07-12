@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.5" />
+    <title>Estudio Bíblico - Exámenes</title>
+    <link rel="stylesheet" href="../css/style.css" />
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+
+<main class="main-content">
+
+    <div class="page-header">
+        <div>
+            <h1 class="page-title"><i data-lucide="clipboard-list"></i> Mis exámenes</h1>
+            <p class="page-subtitle">Ordenados para que avances con calma.</p>
+        </div>
+        <div class="page-actions">
+            <a href="editor.html" class="btn btn-primary" id="crearExamenBtn" style="display:none;">
+                <i data-lucide="plus"></i>
+                Nuevo examen
+            </a>
+        </div>
+    </div>
+
+    <div id="examenesContent">
+        <div class="exam-filtros" id="examFiltros">
+            <button class="exam-filtro active" data-filter="todos" onclick="window.filtrarExamenes('todos')">
+                <i data-lucide="layers"></i> Todos
+            </button>
+
+            <button class="exam-filtro" data-filter="completados" onclick="window.filtrarExamenes('completados')">
+                <i data-lucide="check-circle"></i> Completados
+            </button>
+            <button class="exam-filtro" data-filter="pendientes" onclick="window.filtrarExamenes('pendientes')">
+                <i data-lucide="hourglass"></i> Pendientes
+            </button>
+        </div>
+
+        <div class="exam-grid" id="examenesGrid">
+            <div class="skeleton skeleton-card" style="height:180px"></div>
+            <div class="skeleton skeleton-card" style="height:180px"></div>
+            <div class="skeleton skeleton-card" style="height:180px"></div>
+        </div>
+    </div>
+</main>
+
+<div id="notificationContainer" class="notification-container"></div>
+
+<script src="../js/core/config.js"></script>
+<script src="../js/core/utils.js"></script>
+<script src="../js/core/app.js"></script>
+<script src="../js/auth/users.js"></script>
+<script src="../js/auth/auth.js"></script>
+<script src="../js/shared/forms.js"></script>
+<script src="../js/shared/responses.js"></script>
+<script src="../js/shared/organization.js"></script>
+<script src="../js/usuario/examenes.js"></script>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const user = window.checkAuth();
+        if (!user) return;
+        window.updateNavbar();
+        if (typeof lucide !== 'undefined') lucide.createIcons();
+        const ce = document.getElementById('crearExamenBtn');
+        if (ce && typeof window.isEditor === 'function' && window.isEditor()) ce.style.display = '';
+        if (typeof window.renderExamenes === 'function') window.renderExamenes();
+    });
+</script>
+
+    <script src="../js/core/system.js"></script>
+</body>
+</html>
