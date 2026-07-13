@@ -14,6 +14,7 @@
         completados.forEach(p => { if (p.capitulos?.libro_id) librosCompletados.add(p.capitulos.libro_id); });
         const antiguos = (libros || []).filter(l => l.testamento === 'antiguo');
         const nuevos = (libros || []).filter(l => l.testamento === 'nuevo');
+        const totalCapitulosBiblia = (libros || []).reduce((sum, l) => sum + (l.num_capitulos || 0), 0);
         const racha = window.progresoLectura.calcularRacha(completados);
         const ultimo = completados.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura))[0];
         let ultimoLibro = null, ultimoCap = null;
@@ -25,18 +26,18 @@
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
             <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div>
-            <div class="o-grid-tarjetas" style="grid-template-columns:repeat(4,1fr)">
+              <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas">
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Leídos</p><p class="u-texto-lg u-fw-700">${completados.length}</p></div>
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros</p><p class="u-texto-lg u-fw-700">${librosCompletados.size}/${(libros||[]).length}</p></div>
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-lg u-fw-700">${racha} días</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-lg u-fw-700">${Math.round((completados.length / 1189) * 100)}%</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-lg u-fw-700">${Math.round((completados.length / totalCapitulosBiblia) * 100)}%</p></div>
             </div>
             ${ultimoLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso" style="cursor:pointer" id="continuarLectura"><div class="o-flecha o-flecha--between"><div><span class="u-fs-sm u-color-texto-secundario">Continuar leyendo</span><p class="u-fw-600">${ultimoLibro.nombre} ${ultimoCap}</p></div><span>→</span></div></div>` : ''}
             <div class="o-pila"><h3>Antiguo Testamento</h3><div id="listaAT" class="o-grid-tarjetas"></div></div>
             <div class="o-pila"><h3>Nuevo Testamento</h3><div id="listaNT" class="o-grid-tarjetas"></div></div>
           </div>`;
         if (ultimoLibro) {
-          raiz.querySelector('#continuarLectura').onclick = () => router.navegar(`/leer/${ultimoLibro.id}/${ultimoCap}`);
+          raiz.querySelector('#continuarLectura').onclick = () => router.navegar(`/estudio/sesion/${ultimoLibro.id}/${ultimoCap}`);
         }
         const renderLibro = (l) => {
           const leidos = completados.filter(p => p.capitulos?.libro_id === l.id).length;
@@ -50,7 +51,7 @@
         raiz.querySelector('#listaAT').innerHTML = antiguos.map(renderLibro).join('');
         raiz.querySelector('#listaNT').innerHTML = nuevos.map(renderLibro).join('');
         raiz.querySelectorAll('[data-libro]').forEach(el => {
-          el.addEventListener('click', () => router.navegar(`/leer/${el.dataset.libro}/1`));
+          el.addEventListener('click', () => router.navegar(`/estudio/libro/${el.dataset.libro}`));
         });
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     }

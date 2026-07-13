@@ -4,13 +4,13 @@
   window.memorizacionRepository = {
     async listarTarjetas(usuarioId) {
       if (!sb()) return [];
-      const { data } = await sb().from('tarjetas_memorizacion').select('*, versiculos!versiculo_id(numero, texto, capitulo_id, capitulos!capitulo_id(libro_id, numero))').eq('usuario_id', usuarioId).eq('activa', true).order('proximo_repaso');
+      const { data } = await sb().from('tarjetas_memorizacion').select('*, versiculos!versiculo_id(numero, texto, capitulo_id, capitulos!capitulo_id(libro_id, numero, libros_biblicos!libro_id(nombre)))').eq('usuario_id', usuarioId).eq('activa', true).order('proximo_repaso');
       return data || [];
     },
     async tarjetasPendientes(usuarioId) {
       if (!sb()) return [];
       const ahora = new Date().toISOString();
-      const { data } = await sb().from('tarjetas_memorizacion').select('*, versiculos!versiculo_id(numero, texto, capitulo_id, capitulos!capitulo_id(libro_id, numero))').eq('usuario_id', usuarioId).eq('activa', true).lte('proximo_repaso', ahora).order('proximo_repaso');
+      const { data } = await sb().from('tarjetas_memorizacion').select('*, versiculos!versiculo_id(numero, texto, capitulo_id, capitulos!capitulo_id(libro_id, numero, libros_biblicos!libro_id(nombre)))').eq('usuario_id', usuarioId).eq('activa', true).lte('proximo_repaso', ahora).order('proximo_repaso');
       return data || [];
     },
     async agregarTarjeta(usuarioId, versiculoId) {

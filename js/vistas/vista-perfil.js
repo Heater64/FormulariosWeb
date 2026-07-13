@@ -16,8 +16,9 @@
             <div class="tarjeta-capitulo"><span class="u-fs-sm u-color-texto-secundario">Miembro desde</span><p>${window.helpers.formatearFecha(usuario.creado_en) || '—'}</p></div>
           </div>
           <div class="o-pila"><h4>Preferencias</h4>
-            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Alto contraste</span><label class="switch"><input type="checkbox" id="chkContraste" ${prefs.alto_contraste ? 'checked' : ''}><span class="slider"></span></label></div></div>
-            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Letra grande</span><label class="switch"><input type="checkbox" id="chkLetra" ${prefs.letra_grande ? 'checked' : ''}><span class="slider"></span></label></div></div>
+            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Alto contraste</span><label class="switch"><input type="checkbox" id="chkContraste" ${prefs.alto_contraste ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Aumenta el contraste con texto negro, bordes negros y colores vivos para facilitar la lectura.</p></div>
+            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Letra grande</span><label class="switch"><input type="checkbox" id="chkLetra" ${prefs.letra_grande ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Aumenta el tamaño del texto en toda la aplicación.</p></div>
+            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Tema claro</span><label class="switch"><input type="checkbox" id="chkTema" ${prefs.tema === 'claro' ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Fuerza la apariencia clara (blanco). Desactívalo para usar el tema oscuro. Es distinto de <strong>Alto contraste</strong>, que además pone bordes negros y colores vivos para facilitar la lectura.</p></div>
           </div>
           ${['admin', 'owner'].includes(usuario.rol) ? `<button class="btn-secundario" id="btnAdmin" style="width:100%;justify-content:center">${window.Iconos.render('settings')} Panel de Administración</button>` : ''}
           ${usuario.rol === 'owner' ? `<button class="btn-secundario u-mt-1" id="btnOwner" style="width:100%;justify-content:center">${window.Iconos.render('building-2')} Panel de Propietario</button>` : ''}
@@ -34,6 +35,11 @@
       };
       raiz.querySelector('#chkContraste').addEventListener('change', function() { document.documentElement.classList.toggle('alto-contraste', this.checked); togglePref('alto_contraste', this.checked); });
       raiz.querySelector('#chkLetra').addEventListener('change', function() { document.documentElement.classList.toggle('letra-grande', this.checked); togglePref('letra_grande', this.checked); });
+      raiz.querySelector('#chkTema').addEventListener('change', function() {
+        const tema = this.checked ? 'claro' : 'oscuro';
+        document.documentElement.dataset.tema = tema;
+        togglePref('tema', tema);
+      });
       if (prefs.alto_contraste) document.documentElement.classList.add('alto-contraste');
       if (prefs.letra_grande) document.documentElement.classList.add('letra-grande');
       const btnAdmin = raiz.querySelector('#btnAdmin');

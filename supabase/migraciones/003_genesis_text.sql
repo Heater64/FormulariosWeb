@@ -200,5 +200,5 @@ INSERT INTO versiculos (capitulo_id, numero, texto) VALUES
 (v_cap_id, 22, 'Y lo hizo Noé; hizo conforme a todo lo que Dios le mandó.')
 ON CONFLICT (capitulo_id, numero) DO NOTHING;
 
-SELECT '✅ Génesis 1-6 insertado' AS mensaje;
+RAISE NOTICE 'Génesis 1-6 insertado';
 END $$;

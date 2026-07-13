@@ -34,6 +34,12 @@
         if (usuario.preferencias.alto_contraste) document.documentElement.classList.add('alto-contraste');
         if (usuario.preferencias.letra_grande) document.documentElement.classList.add('letra-grande');
       }
+      const tema = usuario?.preferencias?.tema;
+      if (tema === 'claro' || tema === 'oscuro') {
+        document.documentElement.dataset.tema = tema;
+      } else {
+        delete document.documentElement.dataset.tema;
+      }
     },
     _verificarSesion() {
       const usuario = store.obtener('usuario');
@@ -56,7 +62,8 @@
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();
-      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${rutaActual === i.ruta ? ' barra-nav-inferior__item--activo' : ''}" data-nav><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
+      const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/'));
+      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
       window.Iconos.actualizar();
       nav.querySelectorAll('[data-nav]').forEach(el => {
         el.addEventListener('click', e => { e.preventDefault(); router.navegar(el.getAttribute('href').replace('#!', '')); });
@@ -66,7 +73,9 @@
       router.registrar('/', { montar: () => { const u = store.obtener('usuario'); u ? router.reemplazar('/estudio') : router.reemplazar('/login'); } });
       router.registrar('/login', window.vistaLogin);
       router.registrar('/estudio', window.vistaEstudio);
-      router.registrar('/leer/:libro/:capitulo', window.vistaLeer);
+      router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
+      router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
+      router.registrar('/leer/:libro/:capitulo', window.vistaSesionEstudio);
       router.registrar('/mapa', window.vistaMapa);
       router.registrar('/examenes', window.vistaExamenes);
       router.registrar('/tomar/:id', window.vistaExamenTomar);

@@ -34,7 +34,12 @@ class Router {
         if (!raiz) return;
         raiz.innerHTML = '';
         this._vistaActual = config.vista;
-        if (this._vistaActual.montar) await this._vistaActual.montar(raiz, params);
+        if (this._vistaActual && this._vistaActual.montar) {
+          await this._vistaActual.montar(raiz, params);
+        } else {
+          console.warn('Vista no disponible para la ruta:', ruta);
+          raiz.innerHTML = `<div class="o-contenedor u-mt-4 u-texto-centrado o-pila"><h2>Vista no disponible</h2><p class="u-color-texto-secundario u-fs-sm">Es necesario recargar para obtener la última versión.</p><button class="btn-primario" onclick="location.reload()">Recargar</button></div>`;
+        }
         store.actualizar('rutaActual', ruta);
         if (window.Iconos) window.Iconos.actualizar();
         return;

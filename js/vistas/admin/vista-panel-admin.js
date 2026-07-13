@@ -25,7 +25,7 @@
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-lg u-fw-700">${stats.usuarios}</p></div>
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Grupos</p><p class="u-texto-lg u-fw-700">${grupos.length}</p></div>
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Exámenes</p><p class="u-texto-lg u-fw-700">${stats.examenes}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Lecturas</p><p class="u-texto-lg u-fw-700">${stats.lecturas}</p></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-lg u-fw-700">${stats.lecturas}</p></div>
           </div>
           <div class="o-pila" id="adminSecciones">
             <div class="seccion-admin">

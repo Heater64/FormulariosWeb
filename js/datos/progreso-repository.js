@@ -31,6 +31,19 @@
       if (!sb()) return 0;
       const { data } = await sb().from('progreso_lectura').select('fecha_lectura').eq('usuario_id', usuarioId).not('fecha_lectura', 'is', null).order('fecha_lectura', { ascending: false });
       return window.progresoLectura.calcularRacha(data || []);
+    },
+    async marcarEstudioCompletado(usuarioId, capituloId) {
+      if (!sb()) return;
+      await sb().from('progreso_lectura').upsert({
+        usuario_id: usuarioId, capitulo_id: capituloId,
+        estudio_completado: true, completado: true, leido: true
+      }, { onConflict: 'usuario_id,capitulo_id' });
+    },
+    async obtenerPreguntasSistema(capituloId) {
+      if (!sb() || !capituloId) return [];
+      const { data } = await sb().from('preguntas_sistema')
+        .select('*').eq('capitulo_id', capituloId).eq('activa', true).order('orden');
+      return data || [];
     }
   };
 })();

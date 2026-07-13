@@ -57,7 +57,7 @@
               }).join('')}
               <textarea id="obs_${int.id}" rows="2" placeholder="Observaciones...">${int.observaciones || ''}</textarea>
               <div class="o-flecha" style="gap:var(--espaciado-sm)">
-                <input type="number" id="nota_${int.id}" value="${int.nota || aciertos * 100 / preguntas.length || 0}" min="0" max="100" step="0.01" style="width:80px">
+                <input type="number" id="nota_${int.id}" value="${int.nota != null ? int.nota : (preguntas.length ? aciertos * 100 / preguntas.length : 0)}" min="0" max="100" step="0.01" style="width:80px">
                 <span class="u-fs-sm">%</span>
                 <button class="btn-primario btn-calificar" data-intento="${int.id}">Guardar calificación</button>
               </div>

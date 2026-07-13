@@ -9,8 +9,15 @@
       try {
         const examen = await window.examenesRepository.obtener(params.id);
         if (!examen) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
+        const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
+        if (!examen.publicado && !esProfesor) {
+          raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está publicado.</p></div>'; return;
+        }
         const preguntas = typeof examen.preguntas === 'string' ? JSON.parse(examen.preguntas) : examen.preguntas;
-        let intento = (await window.examenesRepository.misIntentos(usuario.id)).find(i => i.examen_id === params.id && i.estado === 'en_progreso');
+        const misIntentos = await window.examenesRepository.misIntentos(usuario.id);
+        const terminado = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
+        if (terminado) { this._renderYaCompletado(raiz, examen, terminado); return; }
+        let intento = misIntentos.find(i => i.examen_id === params.id && i.estado === 'en_progreso');
         if (!intento) {
           intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso' });
         }
@@ -50,17 +57,32 @@
         this._guardarRespuesta(cont, intento, preguntas, usuario);
         const respuestasFinales = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
         const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
+        const esLibre = preguntas.some(p => p.tipo === 'respuesta_corta' || p.tipo === 'completar');
         await window.examenesRepository.guardarIntento({
           id: intento.id, respuestas: JSON.stringify(respuestasFinales),
           puntuacion: resultado.porcentaje,
-          estado: resultado.tipo === 'respuesta_corta' || resultado.tipo === 'completar' ? 'completado' : 'calificado',
-          nota: resultado.tipo !== 'respuesta_corta' && resultado.tipo !== 'completar' ? resultado.nota : null,
-          corregido: resultado.tipo !== 'respuesta_corta' && resultado.tipo !== 'completar',
+          estado: esLibre ? 'completado' : 'calificado',
+          nota: esLibre ? null : resultado.nota,
+          corregido: !esLibre,
           fecha_completado: new Date().toISOString()
         });
         await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id);
         router.navegar('/examenes');
       };
+    },
+    _renderYaCompletado(raiz, examen, intento) {
+      const nota = intento.corregido && intento.nota != null
+        ? `<p class="u-fw-700" style="color:${intento.nota >= 70 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}%</p>`
+        : '<p class="u-color-texto-secundario">Pendiente de calificación</p>';
+      raiz.innerHTML = `
+        <div class="o-contenedor o-pila o-pila--lg u-mt-3" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+          <div class="tarjeta-capitulo tarjeta-capitulo--completado">
+            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(examen.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">Completado</span></div>
+            ${nota}
+          </div>
+          <button class="btn-secundario" id="btnVolver">Volver a exámenes</button>
+        </div>`;
+      raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
     },
     _renderRespuesta(pregunta, rActual, idx) {
       if (pregunta.tipo === 'multiple') {

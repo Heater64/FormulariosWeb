@@ -24,7 +24,7 @@
           <div class="o-grid-tarjetas" style="grid-template-columns:repeat(4,1fr)">
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-lg u-fw-700">${stats.usuarios}</p></div>
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Exámenes</p><p class="u-texto-lg u-fw-700">${stats.examenes}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Lecturas</p><p class="u-texto-lg u-fw-700">${stats.lecturas}</p></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-lg u-fw-700">${stats.lecturas}</p></div>
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Tarjetas</p><p class="u-texto-lg u-fw-700">${stats.tarjetas}</p></div>
           </div>
           <div class="o-pila"><h3>${window.Iconos.render('users')} Grupos (${grupos.length})</h3>

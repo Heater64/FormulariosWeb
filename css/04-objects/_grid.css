@@ -3,3 +3,13 @@
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--espaciado-md);
 }
+
+.o-grid-tarjetas--estadisticas {
+  grid-template-columns: repeat(4, 1fr);
+}
+
+@media (max-width: 560px) {
+  .o-grid-tarjetas--estadisticas {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

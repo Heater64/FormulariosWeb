@@ -48,17 +48,24 @@
       await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });
     },
     async statsGenerales() {
-      if (!sb()) return {};
-      const usuarios = await sb().from('perfiles').select('id', { count: 'exact', head: true });
-      const examenes = await sb().from('examenes_personalizados').select('id', { count: 'exact', head: true });
-      const progreso = await sb().from('progreso_lectura').select('id', { count: 'exact', head: true });
-      const tarjetas = await sb().from('tarjetas_memorizacion').select('id', { count: 'exact', head: true });
-      return {
-        usuarios: usuarios.count || 0,
-        examenes: examenes.count || 0,
-        lecturas: progreso.count || 0,
-        tarjetas: tarjetas.count || 0
-      };
+      if (!sb()) return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0 };
+      try {
+        const [usuarios, examenes, progreso, tarjetas] = await Promise.all([
+          sb().from('perfiles').select('id', { count: 'exact', head: true }),
+          sb().from('examenes_personalizados').select('id', { count: 'exact', head: true }),
+          sb().from('progreso_lectura').select('id', { count: 'exact', head: true }),
+          sb().from('tarjetas_memorizacion').select('id', { count: 'exact', head: true })
+        ]);
+        return {
+          usuarios: usuarios.count || 0,
+          examenes: examenes.count || 0,
+          lecturas: progreso.count || 0,
+          tarjetas: tarjetas.count || 0
+        };
+      } catch (e) {
+        console.error('Error al obtener estadísticas generales:', e);
+        return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0 };
+      }
     }
   };
 })();

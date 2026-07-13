@@ -47,8 +47,10 @@
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-capitulo.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-libro.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-progreso.css">
+  <link rel="stylesheet" href="css/05-componentes/_barra-accion.css">
   <link rel="stylesheet" href="css/05-componentes/_modal.css">
   <link rel="stylesheet" href="css/05-componentes/_pregunta-examen.css">
+  <link rel="stylesheet" href="css/05-componentes/_tarjeta-pregunta.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
 
   <!-- CSS: Utilities -->
@@ -92,7 +94,8 @@
   <!-- JS: Views -->
   <script src="js/vistas/vista-login.js"></script>
   <script src="js/vistas/vista-estudio.js"></script>
-  <script src="js/vistas/vista-leer.js"></script>
+  <script src="js/vistas/vista-capitulos.js"></script>
+  <script src="js/vistas/vista-sesion-estudio.js"></script>
   <script src="js/vistas/vista-mapa.js"></script>
   <script src="js/vistas/vista-examenes.js"></script>
   <script src="js/vistas/vista-examen-editor.js"></script>
@@ -106,34 +109,35 @@
   <script src="js/vistas/admin/vista-owner.js"></script>
 
   <!-- JS: App Shell -->
-  <!-- JS: App Shell -->
   <script src="js/core/index.js"></script>
 
   <!-- JS: Instalación PWA -->
   <script>
     let deferredPrompt = null;
-    const installBtn = document.createElement('div');
-    installBtn.id = 'installPwaBtn';
-    installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">⬇ Instalar app</button>';
-    document.body.appendChild(installBtn);
-    const btn = installBtn.querySelector('.btn-instalar');
+    document.addEventListener('DOMContentLoaded', () => {
+      const installBtn = document.createElement('div');
+      installBtn.id = 'installPwaBtn';
+      installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">⬇ Instalar app</button>';
+      document.body.appendChild(installBtn);
+      const btn = installBtn.querySelector('.btn-instalar');
 
-    window.addEventListener('beforeinstallprompt', e => {
-      e.preventDefault();
-      deferredPrompt = e;
-      btn.style.display = 'flex';
+      window.addEventListener('beforeinstallprompt', e => {
+        e.preventDefault();
+        deferredPrompt = e;
+        btn.style.display = 'flex';
+      });
+
+      btn.addEventListener('click', async () => {
+        if (!deferredPrompt) return;
+        deferredPrompt.prompt();
+        const { outcome } = await deferredPrompt.userChoice;
+        console.log('Instalación:', outcome);
+        deferredPrompt = null;
+        btn.style.display = 'none';
+      });
+
+      window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
     });
-
-    btn.addEventListener('click', async () => {
-      if (!deferredPrompt) return;
-      deferredPrompt.prompt();
-      const { outcome } = await deferredPrompt.userChoice;
-      console.log('Instalación:', outcome);
-      deferredPrompt = null;
-      btn.style.display = 'none';
-    });
-
-    window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
   </script>
 
   <!-- JS: Service Worker (producción) -->

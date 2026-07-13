@@ -9,7 +9,6 @@
       try {
         const examenes = await window.examenesRepository.listar(usuario);
         const misIntentos = await window.examenesRepository.misIntentos(usuario.id);
-        const intentados = new Set(misIntentos.map(i => i.examen_id));
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
             <div class="o-flecha o-flecha--between">
@@ -33,18 +32,22 @@
         cont.innerHTML = examenes.map(ex => {
           const miIntento = misIntentos.find(i => i.examen_id === ex.id);
           const calif = miIntento && miIntento.corregido ? miIntento.nota : null;
-          const pendiente = miIntento && miIntento.estado === 'en_progreso';
+          const enProgreso = miIntento && miIntento.estado === 'en_progreso';
           const completado = miIntento && (miIntento.estado === 'completado' || miIntento.estado === 'calificado');
-          return `<div class="tarjeta-capitulo ${ex.publicado && !esProfesor ? 'tarjeta-capitulo--en-progreso' : ''}" data-examen="${ex.id}">
-            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(ex.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">${ex.estado}</span></div>
+          const estado = esProfesor ? ex.estado
+            : completado ? (miIntento.corregido ? 'Calificado' : 'Pendiente de calificación')
+            : enProgreso ? 'En progreso'
+            : 'Disponible';
+          return `<div class="tarjeta-capitulo ${enProgreso ? 'tarjeta-capitulo--en-progreso' : ''}" data-examen="${ex.id}">
+            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(ex.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">${estado}</span></div>
             ${ex.descripcion ? `<p class="u-fs-sm u-color-texto-secundario">${window.helpers.escapeHtml(ex.descripcion)}</p>` : ''}
             <div class="o-flecha o-flecha--between u-mt-2">
               <span class="u-fs-xs u-color-texto-terciario">${ex.fecha_limite ? 'Límite: ' + window.helpers.formatearFecha(ex.fecha_limite) : ''}</span>
               <div style="display:flex;gap:var(--espaciado-xs)">
                 ${calif !== null ? `<span class="u-fw-700" style="color:${calif >= 70 ? 'var(--color-exito)' : 'var(--color-error)'}">${calif}%</span>` : ''}
-                ${esProfesor ? `<button class="btn-secundario btn-ver-resultados" data-id="${ex.id}" style="font-size:var(--texto-xs)">Resultados</button><button class="btn-secundario btn-editar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Editar</button>` : ''}
-                ${ex.publicado && !completado ? `<button class="btn-primario btn-iniciar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">${pendiente ? 'Continuar' : 'Comenzar'}</button>` : ''}
-                ${!ex.publicado && esProfesor ? `<button class="btn-secundario btn-publicar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Publicar</button>` : ''}
+                ${esProfesor && ex.publicado ? `<button class="btn-secundario btn-ver-resultados" data-id="${ex.id}" style="font-size:var(--texto-xs)">Resultados</button><button class="btn-secundario btn-editar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Editar</button>` : ''}
+                ${esProfesor && !ex.publicado ? `<button class="btn-secundario btn-publicar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Publicar</button>` : ''}
+                ${!esProfesor && ex.publicado && !completado ? `<button class="btn-primario btn-iniciar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">${enProgreso ? 'Continuar' : 'Comenzar'}</button>` : ''}
               </div>
             </div>
           </div>`;

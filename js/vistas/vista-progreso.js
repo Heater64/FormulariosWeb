@@ -8,14 +8,14 @@
       const sb = window.supabaseClient;
       if (!sb) return;
       try {
-        const { data: progreso } = await sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id);
+        const { data: progreso } = await sb.from('progreso_lectura').select('*, capitulos(libro_id)').eq('usuario_id', usuario.id);
         const leidos = (progreso || []).filter(p => p.completado);
         const librosCompletados = new Set(leidos.map(p => p.capitulos?.libro_id).filter(Boolean));
         const { count: examenesCount } = await sb.from('intentos_examen_personalizado').select('id', { count: 'exact', head: true }).eq('alumno_id', usuario.id);
         const tarjetas = await window.memorizacionRepository.contarTarjetas(usuario.id);
         const repasos = await window.memorizacionRepository.totalRepasos(usuario.id);
         const racha = window.progresoLectura.calcularRacha(leidos);
-        const { data: logrosUsuario } = await sb.from('logros_usuario').select('*, logros!logro_id(*)').eq('usuario_id', usuario.id);
+        const { data: logrosUsuario } = await sb.from('logros_usuario').select('*, logros(*)').eq('usuario_id', usuario.id);
         const progresoData = {
           capitulosLeidos: leidos.length, librosCompletados: librosCompletados.size,
           racha, examenesCompletados: examenesCount || 0, tarjetasCreadas: tarjetas,

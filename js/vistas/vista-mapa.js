@@ -29,7 +29,7 @@
           </div>
         </div>`;
       raiz.querySelectorAll('[data-libro-id]').forEach(el => {
-        el.addEventListener('click', () => router.navegar(`/leer/${el.dataset.libroId}/1`));
+        el.addEventListener('click', () => router.navegar(`/estudio/sesion/${el.dataset.libroId}/1`));
       });
     },
     _renderLibro(libro, progreso) {

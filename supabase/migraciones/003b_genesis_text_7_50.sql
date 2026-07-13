@@ -1647,5 +1647,5 @@ INSERT INTO versiculos (capitulo_id, numero, texto) VALUES
 ON CONFLICT (capitulo_id, numero) DO NOTHING;
 
 
-SELECT '✅ Génesis 7-50 insertado' AS mensaje;
+RAISE NOTICE 'Génesis 7-50 insertado';
 END $$;

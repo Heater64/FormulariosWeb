@@ -41,13 +41,13 @@
           <div class="tarjeta-memorizacion__contenido" id="cardFront">
             <p class="u-color-texto-terciario u-fs-sm">Referencia</p>
             <p class="u-texto-lg u-fw-600" style="margin:var(--espaciado-md) 0">
-              ${cap ? `${window.helpers.escapeHtml(t.libros_biblicos?.nombre || '')} ${cap.numero}:${v.numero}` : 'Versículo'}
+              ${cap ? `${window.helpers.escapeHtml(v.capitulos?.libros_biblicos?.nombre || '')} ${cap.numero}:${v.numero}` : 'Versículo'}
             </p>
             <p class="u-color-texto-secundario u-fs-sm">¿Puedes recordar el texto?</p>
             <button class="btn-primario" id="btnRevelar" style="width:100%;justify-content:center">Revelar texto</button>
           </div>
           <div class="tarjeta-memorizacion__contenido" id="cardBack" style="display:none">
-            <p class="u-color-texto-terciario u-fs-sm">${cap ? `${window.helpers.escapeHtml(t.libros_biblicos?.nombre || '')} ${cap.numero}:${v.numero}` : ''}</p>
+            <p class="u-color-texto-terciario u-fs-sm">${cap ? `${window.helpers.escapeHtml(v.capitulos?.libros_biblicos?.nombre || '')} ${cap.numero}:${v.numero}` : ''}</p>
             <p class="texto-biblico" style="margin:var(--espaciado-md) 0;line-height:var(--altura-linea-lectura)">${window.helpers.escapeHtml(v?.texto || '')}</p>
             <p class="u-fs-xs u-color-texto-terciario u-mb-2">¿Qué tan bien lo recordaste?</p>
             <div class="o-grid" style="grid-template-columns:repeat(5,1fr);gap:var(--espaciado-xs)">
