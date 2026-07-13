@@ -1,0 +1,10 @@
+h1, h2, h3, h4, h5, h6 {
+  line-height: var(--altura-linea-titulo);
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+h1 { font-size: var(--texto-3xl); }
+h2 { font-size: var(--texto-2xl); }
+h3 { font-size: var(--texto-xl); }
+h4 { font-size: var(--texto-lg); }

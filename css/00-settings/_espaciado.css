@@ -1,0 +1,10 @@
+:root {
+  --espaciado-xxs: clamp(2px, 0.5vw, 4px);
+  --espaciado-xs: clamp(6px, 1vw, 8px);
+  --espaciado-sm: clamp(10px, 1.5vw, 12px);
+  --espaciado-md: clamp(14px, 2vw, 16px);
+  --espaciado-lg: clamp(20px, 2.5vw, 24px);
+  --espaciado-xl: clamp(28px, 3vw, 32px);
+  --espaciado-2xl: clamp(40px, 4vw, 48px);
+  --espaciado-3xl: clamp(56px, 5vw, 64px);
+}

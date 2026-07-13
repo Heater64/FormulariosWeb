@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FormsBiblicos — Panel Admin</title>
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>📖</text></svg>">
+  <link rel="stylesheet" href="../css/00-settings/_tokens.css">
+  <link rel="stylesheet" href="../css/00-settings/_colores.css">
+  <link rel="stylesheet" href="../css/02-generic/_reset.css">
+  <link rel="stylesheet" href="../css/03-elements/_body.css">
+  <link rel="stylesheet" href="../css/03-elements/_heading.css">
+  <link rel="stylesheet" href="../css/03-elements/_paragraph.css">
+  <link rel="stylesheet" href="../css/03-elements/_button.css">
+  <link rel="stylesheet" href="../css/04-objects/_contenedor.css">
+  <link rel="stylesheet" href="../css/04-objects/_pila.css">
+  <link rel="stylesheet" href="../css/04-objects/_grid.css">
+  <link rel="stylesheet" href="../css/04-objects/_flecha.css">
+  <link rel="stylesheet" href="../css/05-componentes/_boton-primario.css">
+  <link rel="stylesheet" href="../css/05-componentes/_boton-secundario.css">
+  <link rel="stylesheet" href="../css/05-componentes/_tarjeta-capitulo.css">
+  <link rel="stylesheet" href="../css/06-utilidades/_utilidades.css">
+  <link rel="stylesheet" href="../css/06-utilidades/_accesibilidad.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../js/core/store.js"></script>
+  <script src="../js/core/eventBus.js"></script>
+  <script src="../js/core/router.js"></script>
+  <script src="../js/datos/supabase-client.js"></script>
+  <script src="../js/datos/auth-repository.js"></script>
+  <script src="../js/dominio/progreso-lectura.js"></script>
+  <script src="../js/dominio/repeticion-espaciada.js"></script>
+  <script src="../js/vistas/admin/vista-panel-admin.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const usuario = store.obtener('usuario');
+      if (!usuario) { window.location.href = 'login.html'; return; }
+      window.vistaPanelAdmin.montar(document.getElementById('app-root'));
+    });
+  </script>
+</head>
+<body>
+  <main id="app-root"></main>
+</body>
+</html>

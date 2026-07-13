@@ -1,0 +1,18 @@
+.btn-secundario {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto);
+  border: 1.5px solid var(--color-borde);
+  padding: var(--espaciado-sm) var(--espaciado-lg);
+  border-radius: var(--radio-md);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  min-height: var(--toque-minimo);
+}
+
+.btn-secundario:hover {
+  background: var(--color-borde);
+}
+
+.btn-secundario:active {
+  transform: scale(0.97);
+}

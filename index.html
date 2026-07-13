@@ -1,182 +1,156 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <title>Estudio Bíblico · Plataforma de Estudio Guiado</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <meta name="theme-color" content="#1e1e2e">
 
-    <!-- ====== CSS ====== -->
-    <link rel="stylesheet" href="css/style.css" />
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
+  <link rel="apple-touch-icon" href="assets/iconos/icon-192.svg">
 
-    <!-- ====== ICONS ====== -->
-    <script src="https://unpkg.com/lucide@latest"></script>
+  <link rel="manifest" href="manifest.json">
 
-    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <title>FormsBiblicos</title>
+  <link rel="icon" href="assets/iconos/icon-192.svg" type="image/svg+xml">
+
+  <!-- CSS: Settings -->
+  <link rel="stylesheet" href="css/00-settings/_tokens.css">
+  <link rel="stylesheet" href="css/00-settings/_colores.css">
+  <link rel="stylesheet" href="css/00-settings/_tipografia.css">
+  <link rel="stylesheet" href="css/00-settings/_espaciado.css">
+  <link rel="stylesheet" href="css/01-tools/_funciones.css">
+
+  <!-- CSS: Generic -->
+  <link rel="stylesheet" href="css/02-generic/_reset.css">
+
+  <!-- CSS: Elements -->
+  <link rel="stylesheet" href="css/03-elements/_body.css">
+  <link rel="stylesheet" href="css/03-elements/_heading.css">
+  <link rel="stylesheet" href="css/03-elements/_paragraph.css">
+  <link rel="stylesheet" href="css/03-elements/_button.css">
+  <link rel="stylesheet" href="css/03-elements/_input.css">
+  <link rel="stylesheet" href="css/03-elements/_link.css">
+
+  <!-- CSS: Objects -->
+  <link rel="stylesheet" href="css/04-objects/_contenedor.css">
+  <link rel="stylesheet" href="css/04-objects/_pila.css">
+  <link rel="stylesheet" href="css/04-objects/_grid.css">
+  <link rel="stylesheet" href="css/04-objects/_flecha.css">
+
+  <!-- CSS: Components -->
+  <link rel="stylesheet" href="css/05-componentes/_boton-primario.css">
+  <link rel="stylesheet" href="css/05-componentes/_boton-secundario.css">
+  <link rel="stylesheet" href="css/05-componentes/_barra-navegacion-inferior.css">
+  <link rel="stylesheet" href="css/05-componentes/_tarjeta-capitulo.css">
+  <link rel="stylesheet" href="css/05-componentes/_tarjeta-libro.css">
+  <link rel="stylesheet" href="css/05-componentes/_barra-progreso.css">
+  <link rel="stylesheet" href="css/05-componentes/_modal.css">
+  <link rel="stylesheet" href="css/05-componentes/_pregunta-examen.css">
+  <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
+
+  <!-- CSS: Utilities -->
+  <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
+  <link rel="stylesheet" href="css/05-componentes/_btn-calidad.css">
+  <link rel="stylesheet" href="css/05-componentes/_seccion-admin.css">
+  <link rel="stylesheet" href="css/05-componentes/_switch.css">
+  <link rel="stylesheet" href="css/05-componentes/_instalar.css">
+
+  <!-- CSS: Utilities -->
+  <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
+  <link rel="stylesheet" href="css/06-utilidades/_colores.css">
+  <link rel="stylesheet" href="css/06-utilidades/_accesibilidad.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+  <!-- JS: Utilities -->
+  <script src="js/utilidades/dom-helpers.js"></script>
+
+  <!-- JS: Core -->
+  <script src="js/core/store.js"></script>
+  <script src="js/core/eventBus.js"></script>
+  <script src="js/core/router.js"></script>
+
+  <!-- JS: Data Repositories -->
+  <script src="js/datos/supabase-client.js"></script>
+  <script src="js/datos/auth-repository.js"></script>
+  <script src="js/datos/progreso-repository.js"></script>
+  <script src="js/datos/examenes-repository.js"></script>
+  <script src="js/datos/memorizacion-repository.js"></script>
+  <script src="js/datos/admin-repository.js"></script>
+
+  <!-- JS: Domain Logic -->
+  <script src="js/dominio/progreso-lectura.js"></script>
+  <script src="js/dominio/repeticion-espaciada.js"></script>
+  <script src="js/dominio/puntuacion-examen.js"></script>
+  <script src="js/dominio/logros.js"></script>
+
+  <!-- JS: Views -->
+  <script src="js/vistas/vista-login.js"></script>
+  <script src="js/vistas/vista-estudio.js"></script>
+  <script src="js/vistas/vista-leer.js"></script>
+  <script src="js/vistas/vista-mapa.js"></script>
+  <script src="js/vistas/vista-examenes.js"></script>
+  <script src="js/vistas/vista-examen-editor.js"></script>
+  <script src="js/vistas/vista-examen-tomar.js"></script>
+  <script src="js/vistas/vista-examen-corregir.js"></script>
+  <script src="js/vistas/vista-calificaciones.js"></script>
+  <script src="js/vistas/vista-memorizacion.js"></script>
+  <script src="js/vistas/vista-progreso.js"></script>
+  <script src="js/vistas/vista-perfil.js"></script>
+  <script src="js/vistas/admin/vista-panel-admin.js"></script>
+  <script src="js/vistas/admin/vista-owner.js"></script>
+
+  <!-- JS: App Shell -->
+  <!-- JS: App Shell -->
+  <script src="js/core/index.js"></script>
+
+  <!-- JS: Instalación PWA -->
+  <script>
+    let deferredPrompt = null;
+    const installBtn = document.createElement('div');
+    installBtn.id = 'installPwaBtn';
+    installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">⬇ Instalar app</button>';
+    document.body.appendChild(installBtn);
+    const btn = installBtn.querySelector('.btn-instalar');
+
+    window.addEventListener('beforeinstallprompt', e => {
+      e.preventDefault();
+      deferredPrompt = e;
+      btn.style.display = 'flex';
+    });
+
+    btn.addEventListener('click', async () => {
+      if (!deferredPrompt) return;
+      deferredPrompt.prompt();
+      const { outcome } = await deferredPrompt.userChoice;
+      console.log('Instalación:', outcome);
+      deferredPrompt = null;
+      btn.style.display = 'none';
+    });
+
+    window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
+  </script>
+
+  <!-- JS: Service Worker (producción) -->
+  <script>
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('/sw.js').catch(e => console.warn('SW:', e.message));
+    }
+  </script>
+
+  <!-- JS: Feedback háptico -->
+  <script>
+    document.addEventListener('click', e => {
+      if ('vibrate' in navigator && e.target.closest('button, a, [role="button"], .btn-primario, .btn-secundario, .btn-instalar'))
+        navigator.vibrate(8);
+    }, { passive: true });
+  </script>
 </head>
 <body>
-
-<div class="auth-shell">
-
-    <!-- ============================================= -->
-    <!-- FORMULARIO                                    -->
-    <!-- ============================================= -->
-    <div class="auth-form-side">
-        <div class="auth-card">
-
-            <div class="auth-brand">
-                <span class="auth-brand-mark"><i data-lucide="book-open"></i></span>
-                <span>
-                    <span class="auth-brand-name">Estudio Bíblico</span><br />
-                    <span class="auth-brand-tag">Plataforma de Estudio Guiado</span>
-                </span>
-            </div>
-
-            <div>
-                <h1 class="auth-welcome">Bienvenido</h1>
-                <p class="auth-welcome-sub">Inicia sesión para continuar</p>
-            </div>
-
-            <div class="auth-alert error" id="loginError">
-                <i data-lucide="alert-circle"></i><span id="loginErrorText"></span>
-            </div>
-            <div class="auth-alert success" id="loginSuccess">
-                <i data-lucide="check-circle"></i><span id="loginSuccessText"></span>
-            </div>
-
-            <form class="auth-form" id="loginForm">
-                <div class="auth-field">
-                    <label for="loginUser"><i data-lucide="user"></i> Usuario</label>
-                    <div class="auth-input-wrap">
-                        <i data-lucide="user-round"></i>
-                        <input type="text" id="loginUser" placeholder="Tu nombre de usuario" required autocomplete="username" />
-                    </div>
-                </div>
-                <div class="auth-field">
-                    <label for="loginPass"><i data-lucide="lock"></i> Contraseña</label>
-                    <div class="auth-input-wrap">
-                        <i data-lucide="key-round"></i>
-                        <input type="password" id="loginPass" placeholder="Tu contraseña" required autocomplete="current-password" />
-                    </div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-full btn-lg" id="loginSubmitBtn">
-                    <i data-lucide="log-in"></i> Iniciar sesión
-                </button>
-            </form>
-
-            <div class="auth-quick">
-                <p class="auth-quick-title">Acceso rápido de demostración</p>
-                <div class="auth-quick-grid">
-                    <button type="button" class="auth-quick-chip" data-user="owner" data-pass="owner123">
-                        <span class="chip-ico owner"><i data-lucide="crown"></i></span>
-                        <span class="chip-text">
-                            <span class="chip-role">Owner</span>
-                            <span class="chip-cred">owner · owner123</span>
-                        </span>
-                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
-                    </button>
-                    <button type="button" class="auth-quick-chip" data-user="admin1" data-pass="admin123">
-                        <span class="chip-ico admin"><i data-lucide="shield"></i></span>
-                        <span class="chip-text">
-                            <span class="chip-role">Administrador</span>
-                            <span class="chip-cred">admin1 · admin123</span>
-                        </span>
-                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
-                    </button>
-                    <button type="button" class="auth-quick-chip" data-user="alumno" data-pass="alumno123">
-                        <span class="chip-ico alumno"><i data-lucide="user-round"></i></span>
-                        <span class="chip-text">
-                            <span class="chip-role">Alumno</span>
-                            <span class="chip-cred">alumno · alumno123</span>
-                        </span>
-                        <span class="chip-arrow"><i data-lucide="arrow-right"></i></span>
-                    </button>
-                </div>
-            </div>
-
-            <p class="auth-foot">
-                <i data-lucide="book-marked"></i>
-                Estudio Bíblico · <span id="footerYear"></span>
-            </p>
-        </div>
-    </div>
-
-    <!-- ============================================= -->
-    <!-- PANEL DE BIENVENIDA (escritorio)              -->
-    <!-- ============================================= -->
-    <aside class="auth-panel">
-        <div class="auth-panel-inner">
-            <div class="auth-panel-icon"><i data-lucide="scroll-text"></i></div>
-            <h2>Una herramienta que <span class="hl">provoca</span> la lectura de la Biblia</h2>
-            <p>
-                La plataforma nunca sustituye la lectura de la Biblia: la guía y la refuerza.
-                Cada actividad empieza con la Biblia abierta y termina repasando lo que necesita más atención.
-            </p>
-            <div class="auth-panel-features">
-                <div class="auth-panel-feature"><i data-lucide="book-open"></i> Lectura guiada</div>
-                <div class="auth-panel-feature"><i data-lucide="help-circle"></i> Recordatorio activo</div>
-                <div class="auth-panel-feature"><i data-lucide="brain"></i> Memorización</div>
-                <div class="auth-panel-feature"><i data-lucide="line-chart"></i> Progreso visual</div>
-            </div>
-        </div>
-    </aside>
-
-</div>
-
-<!-- ====== NOTIFICACIONES ====== -->
-<div id="notificationContainer" class="notification-container"></div>
-
-<!-- ====== JAVASCRIPT ====== -->
-<script src="js/core/config.js"></script>
-<script src="js/core/utils.js"></script>
-<script src="js/core/app.js"></script>
-<script src="js/auth/users.js"></script>
-<script src="js/auth/auth.js"></script>
-<script src="js/core/system.js"></script>
-
-<script>
-    (function () {
-        'use strict';
-
-        document.addEventListener('DOMContentLoaded', function () {
-            const sesion = window.getCurrentUser ? window.getCurrentUser() : null;
-            if (sesion && sesion.username) {
-                window.location.href = (window.System ? window.System.page('dashboard.html') : 'pages/dashboard.html');
-                return;
-            }
-
-            const u = document.getElementById('loginUser');
-            const p = document.getElementById('loginPass');
-            if (u) u.value = 'admin1';
-            if (p) p.value = 'admin123';
-
-            const form = document.getElementById('loginForm');
-            if (form) {
-                form.addEventListener('submit', function (e) {
-                    if (typeof window.handleLogin === 'function') {
-                        window.handleLogin(e);
-                    } else {
-                        console.error('Sistema de login no disponible');
-                    }
-                });
-            }
-
-            document.querySelectorAll('.auth-quick-chip').forEach(function (chip) {
-                chip.addEventListener('click', function () {
-                    if (u) u.value = chip.getAttribute('data-user');
-                    if (p) p.value = chip.getAttribute('data-pass');
-                    if (form) form.requestSubmit
-                        ? form.requestSubmit()
-                        : form.dispatchEvent(new Event('submit', { cancelable: true }));
-                });
-            });
-
-            const fy = document.getElementById('footerYear');
-            if (fy) fy.textContent = new Date().getFullYear();
-
-            if (typeof lucide !== 'undefined') lucide.createIcons();
-        });
-    })();
-</script>
-
+  <main id="app-root"></main>
+  <nav id="barra-navegacion" class="barra-nav-inferior"></nav>
 </body>
 </html>

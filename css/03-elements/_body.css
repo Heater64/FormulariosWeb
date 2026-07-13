@@ -1,0 +1,22 @@
+body {
+  font-family: var(--fuente-base);
+  font-size: var(--texto-base);
+  color: var(--color-texto);
+  background: var(--color-fondo);
+  padding-top: env(safe-area-inset-top);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+  padding-left: env(safe-area-inset-left);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+button, nav, [role="button"], .barra-nav-inferior, .btn-primario, .btn-secundario {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+p, h1, h2, h3, h4, span, .versiculo-texto {
+  user-select: text;
+  -webkit-user-select: text;
+}

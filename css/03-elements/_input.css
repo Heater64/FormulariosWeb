@@ -1,0 +1,36 @@
+input[type="text"],
+input[type="email"],
+input[type="password"],
+input[type="search"],
+input[type="number"],
+select,
+textarea {
+  width: 100%;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: var(--texto-base);
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  -webkit-appearance: none;
+  appearance: none;
+}
+
+input:focus, select:focus, textarea:focus {
+  outline: none;
+  border-color: var(--color-borde-foco);
+  box-shadow: 0 0 0 3px var(--color-acento-soft);
+}
+
+input::placeholder, textarea::placeholder {
+  color: var(--color-texto-terciario);
+}
+
+label {
+  display: block;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  margin-bottom: var(--espaciado-xxs);
+}

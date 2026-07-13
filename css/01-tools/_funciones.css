@@ -1,0 +1,6 @@
+/* Tools — funciones CSS reutilizables (reservado para @property y calculos fluidos) */
+:root {
+  --fluid-sm: clamp(0.75rem, 0.7rem + 0.25vw, 0.875rem);
+  --fluid-md: clamp(0.875rem, 0.8rem + 0.375vw, 1rem);
+  --fluid-lg: clamp(1rem, 0.9rem + 0.5vw, 1.25rem);
+}

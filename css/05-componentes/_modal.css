@@ -1,0 +1,46 @@
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-superficie-modal);
+  padding: var(--espaciado-lg);
+  animation: fadeIn 200ms ease;
+}
+
+.modal {
+  width: 100%;
+  max-width: 480px;
+  max-height: 90vh;
+  overflow-y: auto;
+  background: var(--color-fondo-tarjeta);
+  border-radius: var(--radio-xl);
+  box-shadow: var(--sombra-lg);
+  padding: var(--espaciado-xl);
+  animation: slideUp 300ms ease;
+}
+
+.modal__titulo {
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  margin-bottom: var(--espaciado-md);
+}
+
+.modal__acciones {
+  display: flex;
+  gap: var(--espaciado-xs);
+  justify-content: flex-end;
+  margin-top: var(--espaciado-lg);
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { opacity: 0; transform: translateY(20px); }
+  to { opacity: 1; transform: translateY(0); }
+}

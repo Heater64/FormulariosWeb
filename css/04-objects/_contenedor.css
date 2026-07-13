@@ -1,0 +1,14 @@
+.o-contenedor {
+  width: 100%;
+  max-width: 768px;
+  margin: 0 auto;
+  padding: 0 var(--espaciado-lg);
+}
+
+.o-contenedor--estrecho {
+  max-width: 480px;
+}
+
+.o-contenedor--ancho {
+  max-width: 1024px;
+}

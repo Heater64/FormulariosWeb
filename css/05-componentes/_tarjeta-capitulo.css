@@ -1,0 +1,48 @@
+.tarjeta-capitulo {
+  display: block;
+  padding: var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  transition: all var(--transicion-normal);
+}
+
+.tarjeta-capitulo:hover {
+  box-shadow: var(--sombra-md);
+  border-color: var(--color-acento-soft);
+}
+
+.tarjeta-capitulo:active {
+  transform: scale(0.98);
+}
+
+.tarjeta-capitulo__referencia {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--color-texto);
+  margin-bottom: var(--espaciado-xxs);
+}
+
+.tarjeta-capitulo__progreso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  margin-top: var(--espaciado-xs);
+}
+
+.tarjeta-capitulo--completado {
+  border-color: var(--color-exito);
+  border-left: 4px solid var(--color-exito);
+}
+
+.tarjeta-capitulo--completado .tarjeta-capitulo__referencia::after {
+  content: " ✅";
+  font-size: var(--texto-sm);
+}
+
+.tarjeta-capitulo--en-progreso {
+  border-left: 4px solid var(--color-acento);
+}

@@ -1,0 +1,10 @@
+.o-pila {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+}
+
+.o-pila--xs { gap: var(--espaciado-xs); }
+.o-pila--sm { gap: var(--espaciado-sm); }
+.o-pila--lg { gap: var(--espaciado-lg); }
+.o-pila--xl { gap: var(--espaciado-xl); }

@@ -1,0 +1,25 @@
+.btn-primario {
+  background: var(--color-acento);
+  color: #fff;
+  padding: var(--espaciado-sm) var(--espaciado-lg);
+  border-radius: var(--radio-md);
+  font-weight: 700;
+  font-size: var(--texto-sm);
+  min-height: var(--toque-minimo);
+  box-shadow: 0 1px 3px rgba(37,99,235,0.3);
+}
+
+.btn-primario:hover {
+  background: var(--color-acento-hover);
+  box-shadow: 0 2px 6px rgba(37,99,235,0.4);
+}
+
+.btn-primario:active {
+  transform: scale(0.97);
+}
+
+.btn-primario--disabled,
+.btn-primario:disabled {
+  opacity: 0.5;
+  pointer-events: none;
+}

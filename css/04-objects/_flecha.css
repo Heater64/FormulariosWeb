@@ -1,0 +1,17 @@
+.o-flecha {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+}
+
+.o-flecha--wrap {
+  flex-wrap: wrap;
+}
+
+.o-flecha--between {
+  justify-content: space-between;
+}
+
+.o-flecha--centro {
+  justify-content: center;
+}

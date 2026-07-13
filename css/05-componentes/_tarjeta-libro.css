@@ -1,0 +1,49 @@
+.tarjeta-libro {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  transition: all var(--transicion-normal);
+  cursor: pointer;
+}
+
+.tarjeta-libro:hover {
+  box-shadow: var(--sombra-md);
+}
+
+.tarjeta-libro:active {
+  transform: scale(0.98);
+}
+
+.tarjeta-libro__nombre {
+  font-weight: 700;
+  font-size: var(--texto-base);
+  color: var(--color-texto);
+}
+
+.tarjeta-libro__progreso {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.tarjeta-libro__barra {
+  height: 4px;
+  background: var(--color-gris-200);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.tarjeta-libro__barra--lleno {
+  height: 100%;
+  background: var(--color-exito);
+  border-radius: 2px;
+  transition: width var(--transicion-normal);
+}
+
+.tarjeta-libro--completado {
+  border-color: var(--color-exito);
+}

@@ -1,0 +1,67 @@
+:root {
+  --color-acento: #2563EB;
+  --color-acento-hover: #1D4ED8;
+  --color-acento-soft: #DBEAFE;
+  --color-texto: #1E293B;
+  --color-texto-secundario: #64748B;
+  --color-texto-terciario: #94A3B8;
+  --color-fondo: #FFFFFF;
+  --color-fondo-alt: #F8FAFC;
+  --color-fondo-tarjeta: #FFFFFF;
+  --color-borde: #E2E8F0;
+  --color-borde-foco: #2563EB;
+  --color-exito: #10B981;
+  --color-exito-soft: #D1FAE5;
+  --color-error: #EF4444;
+  --color-error-soft: #FEE2E2;
+  --color-aviso: #F59E0B;
+  --color-aviso-soft: #FEF3C7;
+  --color-superficie-modal: rgba(0,0,0,0.4);
+  --fuente-base: -apple-system, "Segoe UI", Roboto, sans-serif;
+  --fuente-mono: "SF Mono", "Fira Code", "Cascadia Code", monospace;
+  --texto-xs: 0.75rem;
+  --texto-sm: 0.875rem;
+  --texto-base: 1rem;
+  --texto-lg: 1.125rem;
+  --texto-xl: 1.25rem;
+  --texto-2xl: 1.5rem;
+  --texto-3xl: 1.875rem;
+  --espaciado-xxs: 4px;
+  --espaciado-xs: 8px;
+  --espaciado-sm: 12px;
+  --espaciado-md: 16px;
+  --espaciado-lg: 24px;
+  --espaciado-xl: 32px;
+  --espaciado-2xl: 48px;
+  --espaciado-3xl: 64px;
+  --radio-sm: 6px;
+  --radio-md: 10px;
+  --radio-lg: 14px;
+  --radio-xl: 20px;
+  --radio-pill: 9999px;
+  --sombra-sm: 0 1px 2px rgba(0,0,0,0.05);
+  --sombra-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
+  --sombra-lg: 0 10px 15px -3px rgba(0,0,0,0.08), 0 4px 6px -2px rgba(0,0,0,0.04);
+  --transicion-rapida: 200ms ease;
+  --transicion-normal: 300ms ease;
+  --toque-minimo: 44px;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --color-texto: #F1F5F9;
+    --color-texto-secundario: #94A3B8;
+    --color-texto-terciario: #64748B;
+    --color-fondo: #0F172A;
+    --color-fondo-alt: #1E293B;
+    --color-fondo-tarjeta: #1E293B;
+    --color-borde: #334155;
+    --color-acento-soft: #1E3A5F;
+    --color-exito-soft: #064E3B;
+    --color-error-soft: #7F1D1D;
+    --color-aviso-soft: #78350F;
+    --sombra-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --sombra-md: 0 4px 6px -1px rgba(0,0,0,0.3);
+    --sombra-lg: 0 10px 15px -3px rgba(0,0,0,0.3);
+  }
+}

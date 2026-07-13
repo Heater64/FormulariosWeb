@@ -1,0 +1,10 @@
+.seccion-admin {
+  padding: var(--espaciado-md);
+  background: var(--color-fondo);
+  border-radius: var(--radio-lg);
+  border: 1px solid var(--color-borde);
+}
+
+.seccion-admin h3 {
+  margin-bottom: var(--espaciado-sm);
+}

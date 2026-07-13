@@ -1,0 +1,25 @@
+button {
+  min-height: var(--toque-minimo);
+  min-width: var(--toque-minimo);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border-radius: var(--radio-md);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  transition: all var(--transicion-rapida);
+  touch-action: manipulation;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+button:active {
+  transform: scale(0.97);
+}
+
+button:focus-visible {
+  outline: 2px solid var(--color-borde-foco);
+  outline-offset: 2px;
+}
