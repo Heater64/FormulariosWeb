@@ -21,3 +21,22 @@
 .btn-calidad:active {
   transform: translateY(0);
 }
+
+/* Calificación simplificada de memorización (2-3 opciones, cap. 14 del doc) */
+.o-grid--calidad {
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espaciado-sm);
+}
+.btn-calidad__num {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  line-height: 1;
+}
+.btn-calidad__label {
+  font-size: var(--texto-xs);
+  margin-top: 2px;
+  text-align: center;
+}
+.btn-calidad--no { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
+.btn-calidad--dificil { background: #fef3c7; color: #d97706; border-color: #fde68a; }
+.btn-calidad--facil { background: #d1fae5; color: #059669; border-color: #a7f3d0; }

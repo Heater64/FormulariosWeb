@@ -14,12 +14,39 @@
       return data || [];
     },
     async agregarTarjeta(usuarioId, versiculoId) {
-      if (!sb()) return null;
-      const { data, error } = await sb().from('tarjetas_memorizacion').upsert({
-        usuario_id: usuarioId, versiculo_id: versiculoId
-      }, { onConflict: 'usuario_id,versiculo_id' }).select().single();
-      if (error) throw error;
-      return data;
+      const datos = { usuario_id: usuarioId, versiculo_id: versiculoId };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('upsert', 'tarjetas_memorizacion', datos, { onConflict: 'usuario_id,versiculo_id' });
+        return { versiculo_id: versiculoId, pendiente: true };
+      }
+      try {
+        const { data, error } = await sb().from('tarjetas_memorizacion').upsert(datos, { onConflict: 'usuario_id,versiculo_id' }).select().single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        window.colaSync.encolar('upsert', 'tarjetas_memorizacion', datos, { onConflict: 'usuario_id,versiculo_id' });
+        return { versiculo_id: versiculoId, pendiente: true };
+      }
+    },
+    async versiculosDelCapitulo(capituloId) {
+      if (!sb()) return [];
+      const { data } = await sb().from('versiculos').select('id, numero, texto').eq('capitulo_id', capituloId).order('numero').limit(15);
+      return data || [];
+    },
+    async agregarTarjetaManual(usuarioId, { referencia, texto }) {
+      const datos = { usuario_id: usuarioId, referencia: referencia || '', texto: texto || '', activa: true };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('insert', 'tarjetas_memorizacion', datos);
+        return { referencia, texto, pendiente: true };
+      }
+      try {
+        const { data, error } = await sb().from('tarjetas_memorizacion').insert(datos).select().single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        window.colaSync.encolar('insert', 'tarjetas_memorizacion', datos);
+        return { referencia, texto, pendiente: true };
+      }
     },
     async actualizarTarjeta(tarjeta) {
       if (!sb()) return;

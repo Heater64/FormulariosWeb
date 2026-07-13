@@ -3,11 +3,19 @@
   const sb = () => window.supabaseClient;
   window.progresoRepository = {
     async marcarLeido(usuarioId, capituloId) {
-      if (!sb()) return;
-      await sb().from('progreso_lectura').upsert({
+      const datos = {
         usuario_id: usuarioId, capitulo_id: capituloId,
         leido: true, completado: true, fecha_lectura: new Date().toISOString()
-      }, { onConflict: 'usuario_id,capitulo_id' });
+      };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('upsert', 'progreso_lectura', datos, { onConflict: 'usuario_id,capitulo_id' });
+        return;
+      }
+      try {
+        await sb().from('progreso_lectura').upsert(datos, { onConflict: 'usuario_id,capitulo_id' });
+      } catch (e) {
+        window.colaSync.encolar('upsert', 'progreso_lectura', datos, { onConflict: 'usuario_id,capitulo_id' });
+      }
     },
     async obtenerProgreso(usuarioId) {
       if (!sb()) return [];
@@ -33,11 +41,20 @@
       return window.progresoLectura.calcularRacha(data || []);
     },
     async marcarEstudioCompletado(usuarioId, capituloId) {
-      if (!sb()) return;
-      await sb().from('progreso_lectura').upsert({
+      const datos = {
         usuario_id: usuarioId, capitulo_id: capituloId,
-        estudio_completado: true, completado: true, leido: true
-      }, { onConflict: 'usuario_id,capitulo_id' });
+        estudio_completado: true, completado: true, leido: true,
+        fecha_lectura: new Date().toISOString()
+      };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('upsert', 'progreso_lectura', datos, { onConflict: 'usuario_id,capitulo_id' });
+        return;
+      }
+      try {
+        await sb().from('progreso_lectura').upsert(datos, { onConflict: 'usuario_id,capitulo_id' });
+      } catch (e) {
+        window.colaSync.encolar('upsert', 'progreso_lectura', datos, { onConflict: 'usuario_id,capitulo_id' });
+      }
     },
     async obtenerPreguntasSistema(capituloId) {
       if (!sb() || !capituloId) return [];

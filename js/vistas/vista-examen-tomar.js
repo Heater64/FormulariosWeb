@@ -16,13 +16,17 @@
         const preguntas = typeof examen.preguntas === 'string' ? JSON.parse(examen.preguntas) : examen.preguntas;
         const misIntentos = await window.examenesRepository.misIntentos(usuario.id);
         const terminado = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
-        if (terminado) { this._renderYaCompletado(raiz, examen, terminado); return; }
+        if (terminado) { this._renderResultados(raiz, examen, preguntas, terminado, usuario); return; }
         let intento = misIntentos.find(i => i.examen_id === params.id && i.estado === 'en_progreso');
         if (!intento) {
           intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso' });
         }
         const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
-        this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario);
+        if (intento.estado === 'completado' || intento.estado === 'calificado') {
+          this._renderResultados(raiz, examen, preguntas, intento, respuestas, usuario);
+        } else {
+          this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario);
+        }
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`;
       }
@@ -70,19 +74,61 @@
         router.navegar('/examenes');
       };
     },
-    _renderYaCompletado(raiz, examen, intento) {
+    _renderResultados(raiz, examen, preguntas, intento, usuario) {
+      const usuarioEsProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
+      if (!usuarioEsProfesor && examen.publicado === false && intento.corregido === false) {
+        raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está publicado.</p></div>'; return;
+      }
+      const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
+      const esLibre = preguntas.some(p => p.tipo === 'respuesta_corta' || p.tipo === 'completar');
+      const correccionVisible = intento.corregido || !esLibre;
+      let aciertos = 0;
+      preguntas.forEach(p => { if (window.puntuacionExamen.esCorrecta(respuestas[p.id], p.respuesta_correcta, p.tipo)) aciertos++; });
       const nota = intento.corregido && intento.nota != null
-        ? `<p class="u-fw-700" style="color:${intento.nota >= 70 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}%</p>`
-        : '<p class="u-color-texto-secundario">Pendiente de calificación</p>';
+        ? `<p class="u-fw-700" style="font-size:1.25rem;color:${intento.nota >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}</p>`
+        : `<p class="u-fw-600">Aciertos: ${aciertos}/${preguntas.length} (${Math.round((aciertos / preguntas.length) * 100)}%)</p>`;
+      const estadoTexto = intento.corregido ? 'Corregido' : (esLibre ? 'Pendiente de calificación' : 'Calificado automáticamente');
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg u-mt-3" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
-          <div class="tarjeta-capitulo tarjeta-capitulo--completado">
-            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(examen.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">Completado</span></div>
-            ${nota}
+          <div class="o-flecha o-flecha--between">
+            <button class="btn-secundario" id="btnVolver">← Volver</button>
+            <span class="u-fs-xs u-color-texto-terciario">${estadoTexto}</span>
           </div>
-          <button class="btn-secundario" id="btnVolver">Volver a exámenes</button>
+          <div class="tarjeta-capitulo tarjeta-capitulo--completado">
+            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(examen.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">Resultados</span></div>
+            ${nota}
+            ${intento.observaciones ? `<div class="u-mt-2 u-p-2" style="background:var(--color-acento-soft);border-radius:var(--radio-sm)"><p class="u-fs-xs u-color-texto-secundario">Observación del profesor:</p><p class="u-fs-sm">${window.helpers.escapeHtml(intento.observaciones)}</p></div>` : ''}
+          </div>
+          ${correccionVisible ? `<div class="o-pila" id="desgloseResultados"></div>` : '<p class="u-color-texto-terciario u-fs-sm">La corrección estará disponible cuando el profesor califique el examen.</p>'}
         </div>`;
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
+      if (!correccionVisible) return;
+      const correccionMap = (intento.correccion && typeof intento.correccion === 'string') ? JSON.parse(intento.correccion) : (intento.correccion || {});
+      const cont = raiz.querySelector('#desgloseResultados');
+      cont.innerHTML = preguntas.map((p, i) => {
+        const rUser = respuestas[p.id] !== undefined ? respuestas[p.id] : '(sin respuesta)';
+        const corr = correccionMap[p.id];
+        const correcta = window.puntuacionExamen.esCorrecta(respuestas[p.id], p.respuesta_correcta, p.tipo);
+        const mostrarCheck = p.tipo !== 'respuesta_corta' && p.tipo !== 'completar' ? (correcta ? window.Iconos.render('check') : window.Iconos.render('x')) : '';
+        const respuestaUsuarioHtml = p.tipo === 'multiple' || p.tipo === 'verdadero_falso'
+          ? (p.tipo === 'verdadero_falso' ? (rUser === 'true' ? 'Verdadero' : rUser === 'false' ? 'Falso' : rUser) : (this._textoOpcion(p, rUser)))
+          : window.helpers.escapeHtml(rUser);
+        return `<div class="u-fs-sm u-mb-1" style="padding:var(--espaciado-sm);background:var(--color-fondo);border-radius:var(--radio-sm);border-left:3px solid ${correcta ? 'var(--color-exito)' : 'var(--color-error)'}">
+          <p class="u-fw-600">${i + 1}. ${window.helpers.escapeHtml(p.texto)}</p>
+          <p>Tu respuesta: <strong>${respuestaUsuarioHtml}</strong> ${mostrarCheck}</p>
+          ${(p.tipo === 'respuesta_corta' || p.tipo === 'completar') && !correcta ? `<p class="u-color-texto-secundario">Correcta: ${window.helpers.escapeHtml(p.respuesta_correcta)}</p>` : ''}
+          ${(p.tipo === 'multiple' || p.tipo === 'verdadero_falso') && !correcta ? `<p class="u-color-texto-secundario">Correcta: ${window.helpers.escapeHtml(this._textoOpcion(p, p.respuesta_correcta))}</p>` : ''}
+          ${p.explicacion ? `<p class="u-fs-xs u-color-texto-terciario u-mt-1">${window.helpers.escapeHtml(p.explicacion)}</p>` : ''}
+          ${corr && corr.comentario ? `<p class="u-fs-xs u-color-acento u-mt-1">${window.Iconos.render('message-square')} Profesor: ${window.helpers.escapeHtml(corr.comentario)}</p>` : ''}
+        </div>`;
+      }).join('');
+      window.Iconos.actualizar();
+    },
+    _textoOpcion(pregunta, valor) {
+      if (pregunta.tipo === 'verdadero_falso') return valor === 'true' ? 'Verdadero' : 'Falso';
+      const idx = parseInt(valor, 10);
+      if (!isNaN(idx) && pregunta.opciones && pregunta.opciones[idx] !== undefined) return pregunta.opciones[idx];
+      return valor;
     },
     _renderRespuesta(pregunta, rActual, idx) {
       if (pregunta.tipo === 'multiple') {

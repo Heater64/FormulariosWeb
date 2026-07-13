@@ -21,6 +21,22 @@
       if (!sb()) return;
       await sb().from('grupos').delete().eq('id', id);
     },
+    async crearUsuario({ nombre_completo, username, password, rol, grupo_id }) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data, error } = await sb().from('perfiles').insert({
+        nombre_completo: nombre_completo,
+        username: username,
+        password: password,
+        rol: rol || 'usuario',
+        grupo_id: grupo_id || null,
+        activo: true
+      }).select().single();
+      if (error) {
+        if (/duplicate|unique|ya existe/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
+        throw error;
+      }
+      return data;
+    },
     async asignarGrupo(usuarioId, grupoId) {
       if (!sb()) return;
       await sb().from('perfiles').update({ grupo_id: grupoId }).eq('id', usuarioId);
@@ -32,6 +48,30 @@
     async cambiarRol(usuarioId, rol) {
       if (!sb()) return;
       await sb().from('perfiles').update({ rol }).eq('id', usuarioId);
+    },
+    async eliminarUsuario(usuarioId) {
+      if (!sb()) return;
+      // Limpiar referencias RESTRICT antes de borrar el perfil
+      await sb().from('auditoria').delete().eq('actor_id', usuarioId);
+      await sb().from('calificaciones').delete().eq('alumno_id', usuarioId);
+      await sb().from('calificaciones').delete().eq('corregido_por', usuarioId);
+      await sb().from('examenes_personalizados').update({ creado_por: null }).eq('creado_por', usuarioId);
+      await sb().from('evaluaciones').update({ creado_por: null }).eq('creado_por', usuarioId);
+      await sb().from('grupos').update({ admin_id: null }).eq('admin_id', usuarioId);
+      const { error } = await sb().from('perfiles').delete().eq('id', usuarioId);
+      if (error) throw error;
+    },
+    async actualizarUsuario(usuarioId, { nombre_completo, username, rol, grupo_id, password }) {
+      if (!sb()) return;
+      const updates = {
+        nombre_completo: nombre_completo,
+        username: username,
+        rol: rol,
+        grupo_id: grupo_id || null
+      };
+      if (password !== undefined && password !== '') updates.password = password;
+      const { error } = await sb().from('perfiles').update(updates).eq('id', usuarioId);
+      if (error) throw error;
     },
     async listarExamenes() {
       if (!sb()) return [];

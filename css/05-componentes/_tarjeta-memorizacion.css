@@ -36,3 +36,110 @@
   color: var(--color-aviso);
   font-weight: 600;
 }
+
+/* Banner de repaso pendiente en el panel de estudio */
+.banner-repaso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md) var(--espaciado-lg);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  border: 1px solid var(--color-acento);
+  border-radius: var(--radio-lg);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform 0.15s ease, opacity 0.15s ease;
+}
+.banner-repaso:hover { transform: translateY(-1px); opacity: 0.95; }
+.banner-repaso span:nth-of-type(1) { flex: 1; }
+.banner-repaso__flecha { font-size: var(--texto-lg); }
+
+/* Oferta de memorización al completar un capítulo */
+.tarjeta-memorizar-oferta {
+  width: 100%;
+  max-width: 360px;
+  margin: var(--espaciado-lg) auto 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  text-align: left;
+}
+.tarjeta-memorizar-oferta__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  font-weight: 600;
+  color: var(--color-texto);
+}
+.tarjeta-memorizar-oferta textarea.cuestion__input { resize: vertical; }
+
+.tarjeta-memorizar-oferta__sugerencias {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+}
+.chip-versiculo {
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border: 1px solid var(--color-borde);
+  border-radius: 999px;
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+.chip-versiculo:hover { border-color: var(--color-acento); color: var(--color-acento); }
+.chip-versiculo:disabled { opacity: 0.6; cursor: default; }
+
+/* Indicador de sincronización offline */
+.fb-sync {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%);
+  z-index: 60;
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border-radius: 999px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-md);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+.fb-sync--pendiente { color: var(--color-aviso); border-color: var(--color-aviso); }
+
+/* Toast de notificación de repaso pendiente (cap. 14 del doc) */
+.toast-repaso {
+  position: fixed;
+  top: calc(var(--espaciado-md) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  width: min(92vw, 380px);
+  padding: var(--espaciado-md) var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-acento);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-md);
+  cursor: pointer;
+  animation: toast-aparece 0.25s ease;
+}
+@keyframes toast-aparece { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.toast-repaso__icono { color: var(--color-acento); display: flex; }
+.toast-repaso__cuerpo { flex: 1; }
+.toast-repaso__titulo { font-weight: 700; color: var(--color-texto); margin: 0; }
+.toast-repaso__texto { font-size: var(--texto-sm); color: var(--color-texto-secundario); margin: 2px 0 0; }
+.toast-repaso__cerrar {
+  background: transparent; border: none; color: var(--color-texto-terciario);
+  font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0 var(--espaciado-xs);
+}

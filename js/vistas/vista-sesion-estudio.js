@@ -24,7 +24,8 @@
           idx: 0,
           respondido: false,
           falladasRonda: [],
-          resInicial: { aciertos: 0, fallos: 0, falladas: [] }
+          resInicial: { aciertos: 0, fallos: 0, falladas: [] },
+          fsm: window.maquinaEstudio.estados.NO_INICIADO
         };
         this._renderInicio();
       } catch (e) {
@@ -58,7 +59,7 @@
             <button class="btn-primario" id="btnEmpezar">${window.Iconos.render('play')} Empezar</button>
           </div>
         </div>`;
-      raiz.querySelector('#btnEmpezar').onclick = () => this._renderLeer();
+      raiz.querySelector('#btnEmpezar').onclick = () => { this._transicion('INICIAR'); this._renderLeer(); };
       window.Iconos.actualizar();
     },
 
@@ -79,6 +80,7 @@
       raiz.querySelector('#btnLeido').onclick = async (e) => {
         const btn = e.currentTarget;
         btn.disabled = true; btn.innerHTML = window.Iconos.render('check') + ' Guardando...';
+        this._transicion('LEER');
         await window.progresoRepository.marcarLeido(store.obtener('usuario').id, this.estado.capId);
         window.Iconos.actualizar();
         this._iniciarEstudio();
@@ -261,6 +263,7 @@
     _finRonda() {
       const e = this.estado;
       if (e.ronda === 'inicial') {
+        this._transicion('EVALUAR');
         this._renderResumen();
       } else if (e.falladasRonda.length === 0) {
         this._completar();
@@ -304,7 +307,7 @@
           </div>
         </div>`;
       if (hayErrores) {
-        raiz.querySelector('#btnRepasar').onclick = () => this._iniciarRepaso();
+        raiz.querySelector('#btnRepasar').onclick = () => { this._transicion('REPASAR'); this._iniciarRepaso(); };
       } else {
         raiz.querySelector('#btnFinalizar').onclick = () => this._completar();
       }
@@ -332,7 +335,7 @@
             <button class="btn-primario" id="btnRepetir">${window.Iconos.render('refresh-cw')} Repetir repaso (${restantes})</button>
           </div>
         </div>`;
-      raiz.querySelector('#btnRepetir').onclick = () => this._iniciarRepaso();
+      raiz.querySelector('#btnRepetir').onclick = () => { this._transicion('REPETIR'); this._iniciarRepaso(); };
       window.Iconos.actualizar();
     },
 
@@ -351,26 +354,115 @@
       return 'Eres increíble!!';
     },
 
-    _completar() {
+    _transicion(evento) {
+      try {
+        this.estado.fsm = window.maquinaEstudio.siguiente(this.estado.fsm, evento);
+      } catch (err) { console.warn('[FSM estudio]', err.message); }
+    },
+
+    async _completar() {
       const e = this.estado;
       e.estudioCompletado = true;
-      window.progresoRepository.marcarEstudioCompletado(store.obtener('usuario').id, e.capId).catch(() => {});
+      this._transicion('COMPLETAR');
+      const usuario = store.obtener('usuario');
+      window.progresoRepository.marcarEstudioCompletado(usuario.id, e.capId).catch(() => {});
       const haySiguiente = e.capituloNum < e.numCaps;
       const { raiz } = e;
+      const I = window.Iconos.render;
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg u-texto-centrado" style="padding-top:var(--espaciado-3xl);padding-bottom:calc(160px + env(safe-area-inset-bottom));min-height:100dvh;align-items:center">
-          <div class="cuestion-resumen__icono cuestion-resumen__icono--ok" style="width:96px;height:96px">${window.Iconos.render('check-circle')}</div>
+          <div class="cuestion-resumen__icono cuestion-resumen__icono--ok" style="width:96px;height:96px">${I('check-circle')}</div>
           <h2>¡Capítulo completado!</h2>
           <p class="u-color-texto-secundario" style="max-width:320px">Has completado el estudio de ${e.libro.nombre} ${e.capituloNum}.</p>
           <div class="barra-accion">
             ${haySiguiente
-              ? `<button class="btn-primario" id="btnSig">${window.Iconos.render('arrow-right')} Siguiente capítulo</button>`
-              : `<button class="btn-primario" id="btnLibro">${window.Iconos.render('book-open')} Volver al libro</button>`}
+              ? `<button class="btn-primario" id="btnSig">${I('arrow-right')} Siguiente capítulo</button>`
+              : `<button class="btn-primario" id="btnLibro">${I('book-open')} Volver al libro</button>`}
+          </div>
+          <div class="tarjeta-memorizar-oferta" id="ofertaMemoria">
+            <div class="tarjeta-memorizar-oferta__titulo">${I('bookmark')} ¿Memorizar un versículo de este capítulo?</div>
+            <div class="tarjeta-memorizar-oferta__sugerencias" id="memSugerencias"></div>
+            <input class="cuestion__input" id="memRef" placeholder="Referencia (ej. ${e.libro.nombre} ${e.capituloNum}:16)" maxlength="60" style="text-align:center">
+            <textarea class="cuestion__input" id="memTexto" placeholder="Escribe el texto del versículo a memorizar" rows="3"></textarea>
+            <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-sm)">
+              <button class="btn-secundario" id="btnOmitirMem">Omitir</button>
+              <button class="btn-primario" id="btnGuardarVers">${I('plus')} Guardar versículo</button>
+            </div>
           </div>
         </div>`;
       if (haySiguiente) raiz.querySelector('#btnSig').onclick = () => router.navegar(`/estudio/sesion/${e.libroId}/${e.capituloNum + 1}`);
       else raiz.querySelector('#btnLibro').onclick = () => router.navegar(`/estudio/libro/${e.libroId}`);
+      const oferta = raiz.querySelector('#ofertaMemoria');
+      if (oferta) {
+        const ref = oferta.querySelector('#memRef');
+        const txt = oferta.querySelector('#memTexto');
+        const guardar = oferta.querySelector('#btnGuardarVers');
+        oferta.querySelector('#btnOmitirMem').onclick = () => oferta.remove();
+        guardar.onclick = async () => {
+          if (!txt.value.trim()) { txt.focus(); return; }
+          guardar.disabled = true;
+          guardar.innerHTML = I('check') + ' Guardando...';
+          await window.memorizacionRepository.agregarTarjetaManual(usuario.id, {
+            referencia: ref.value.trim(), texto: txt.value.trim()
+          }).catch(() => {});
+          oferta.innerHTML = `<div class="u-texto-centrado o-pila" style="align-items:center"><p style="font-size:2rem;color:var(--color-exito);display:flex;justify-content:center">${I('check-circle')}</p><p class="u-fw-600">¡Versículo guardado!</p><p class="u-fs-xs u-color-texto-terciario">Lo encontrarás en Memoria para repasarlo.</p></div>`;
+        };
+        const sugerencias = oferta.querySelector('#memSugerencias');
+        try {
+          const vers = await window.memorizacionRepository.versiculosDelCapitulo(e.capId);
+          if (vers.length) {
+            sugerencias.innerHTML = '<p class="u-fs-xs u-color-texto-terciario u-mb-1">O elige uno de este capítulo:</p>' +
+              vers.map(v => `<button type="button" class="chip-versiculo" data-id="${v.id}" data-ref="${e.libro.nombre} ${e.capituloNum}:${v.numero}">${e.libro.nombre} ${e.capituloNum}:${v.numero}</button>`).join('');
+            sugerencias.querySelectorAll('.chip-versiculo').forEach(chip => {
+              chip.onclick = async () => {
+                chip.disabled = true;
+                chip.textContent = I('check') + ' ' + chip.dataset.ref;
+                await window.memorizacionRepository.agregarTarjeta(usuario.id, chip.dataset.id).catch(() => {});
+                oferta.innerHTML = `<div class="u-texto-centrado o-pila" style="align-items:center"><p style="font-size:2rem;color:var(--color-exito);display:flex;justify-content:center">${I('check-circle')}</p><p class="u-fw-600">¡Versículo guardado!</p><p class="u-fs-xs u-color-texto-terciario">Lo encontrarás en Memoria para repasarlo.</p></div>`;
+              };
+            });
+          }
+        } catch (e) {}
+      }
       window.Iconos.actualizar();
+
+      try {
+        const { data: todoProg } = await window.supabaseClient
+          .from('progreso_lectura').select('fecha_lectura').eq('usuario_id', usuario.id);
+        const nuevaRacha = window.progresoLectura.calcularRacha(todoProg || []);
+        const anteriorRacha = parseInt(localStorage.getItem('fb_racha') || '0', 10);
+        if (nuevaRacha > anteriorRacha) {
+          localStorage.setItem('fb_racha', String(nuevaRacha));
+          if (!haySiguiente) this._celebrar('trophy', '¡Libro completado!');
+          else this._celebrar('flame', '¡Racha de ' + nuevaRacha + ' días!');
+        } else if (!haySiguiente) {
+          this._celebrar('trophy', '¡Libro completado!');
+        }
+      } catch (err) { if (!haySiguiente) this._celebrar('trophy', '¡Libro completado!'); }
+    },
+
+    _celebrar(icono, titulo) {
+      const overlay = document.createElement('div');
+      overlay.className = 'celebracion';
+      const colores = ['#FB923C', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+      let confeti = '';
+      for (let i = 0; i < 70; i++) {
+        const left = Math.random() * 100;
+        const color = colores[Math.floor(Math.random() * colores.length)];
+        const dur = 1.8 + Math.random() * 1.8;
+        const delay = Math.random() * 0.6;
+        const ancho = 7 + Math.random() * 6;
+        const alto = 12 + Math.random() * 8;
+        confeti += `<span class="celebracion__confeti" style="left:${left}%;width:${ancho}px;height:${alto}px;background:${color};animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
+      }
+      overlay.innerHTML = `
+        <div class="celebracion__emblema">
+          <div class="celebracion__icono">${window.Iconos.render(icono)}</div>
+          <div class="celebracion__titulo">${titulo}</div>
+        </div>
+        ${confeti}`;
+      document.body.appendChild(overlay);
+      setTimeout(() => overlay.remove(), 2800);
     }
   };
 })();

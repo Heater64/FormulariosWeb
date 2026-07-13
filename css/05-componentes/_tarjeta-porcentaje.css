@@ -1,0 +1,59 @@
+.tarjeta-porcentaje {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-md);
+  background: linear-gradient(135deg, #EFF6FF 0%, #DBEAFE 100%);
+  border: 1px solid #BFDBFE;
+  border-radius: var(--radio-xl);
+  box-shadow: var(--sombra-sm);
+  transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
+}
+
+@media (hover: hover) {
+  .tarjeta-porcentaje:hover {
+    transform: translateY(-3px);
+    box-shadow: var(--sombra-lg);
+    border-color: #93C5FD;
+  }
+}
+
+.tarjeta-porcentaje__info {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.tarjeta-porcentaje__barra {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radio-pill);
+  background: #BFDBFE;
+  overflow: hidden;
+}
+
+.tarjeta-porcentaje__lleno {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: linear-gradient(90deg, var(--color-acento), #10B981);
+  transition: width var(--transicion-normal);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-tema="claro"]) .tarjeta-porcentaje {
+    background: linear-gradient(135deg, #1E3A5F, #312E81);
+    border-color: #3730A3;
+  }
+  :root:not([data-tema="claro"]) .tarjeta-porcentaje__barra {
+    background: #312E81;
+  }
+}
+
+:root[data-tema="oscuro"] .tarjeta-porcentaje {
+  background: linear-gradient(135deg, #1E3A5F, #312E81);
+  border-color: #3730A3;
+}
+
+:root[data-tema="oscuro"] .tarjeta-porcentaje__barra {
+  background: #312E81;
+}

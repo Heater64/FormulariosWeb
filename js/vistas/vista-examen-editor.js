@@ -7,16 +7,35 @@
       if (!usuario || !['admin', 'editor', 'owner'].includes(usuario.rol)) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p></div>'; return;
       }
-      const editando = params && params.id && params.id !== 'nuevo';
-      let examen = { titulo: '', descripcion: '', grupo_id: usuario.grupo_id, creado_por: usuario.id, preguntas: [preguntaVacia()], publicado: false, estado: 'borrador', puntos_totales: 0 };
+      const raw = (window.location.hash || '').replace(/^#!\/?/, '');
+      const [pathPart, queryPart] = raw.split('?');
+      const idParam = (pathPart.split('/')[1] || 'nuevo').split('?')[0];
+      const q = new URLSearchParams(queryPart || '');
+      const evaluacionParam = q.get('evaluacion');
+      const editando = idParam && idParam !== 'nuevo';
+      let examen = { titulo: '', descripcion: '', grupo_id: usuario.grupo_id, creado_por: usuario.id, preguntas: [preguntaVacia()], publicado: false, estado: 'borrador', puntos_totales: 0, evaluacion_id: evaluacionParam || null };
       if (editando) {
-        const existente = await window.examenesRepository.obtener(params.id);
-        if (existente) examen = existente;
+        const existente = await window.examenesRepository.obtener(idParam);
+        if (existente) {
+          examen = existente;
+          if (typeof examen.preguntas === 'string') {
+            try { examen.preguntas = JSON.parse(examen.preguntas); } catch (e) { examen.preguntas = []; }
+          }
+          if (!Array.isArray(examen.preguntas)) examen.preguntas = [];
+        }
       }
+      let evaluaciones = [];
+      try { evaluaciones = await window.examenesRepository.listarEvaluaciones(usuario.grupo_id); } catch (e) { evaluaciones = []; }
       this._examen = examen;
-      this._renderizar(raiz, examen, editando);
+      this._evaluaciones = evaluaciones;
+      this._editando = editando;
+      this._renderizar(raiz, examen, editando, evaluaciones);
     },
-    _renderizar(raiz, examen, editando) {
+    _renderizar(raiz, examen, editando, evaluaciones) {
+      const evalSeleccionada = examen.evaluacion_id || '';
+      const opcionesEval = (evaluaciones || []).map(e =>
+        `<option value="${e.id}" ${e.id === evalSeleccionada ? 'selected' : ''}>${window.helpers.escapeHtml(e.titulo)}</option>`
+      ).join('');
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
           <div class="o-flecha o-flecha--between">
@@ -29,6 +48,14 @@
             <input type="text" id="examenTitulo" value="${window.helpers.escapeHtml(examen.titulo)}" placeholder="Ej: Examen Levítico 1-10">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Descripción</label>
             <textarea id="examenDescripcion" rows="2" placeholder="Instrucciones para los alumnos">${window.helpers.escapeHtml(examen.descripcion || '')}</textarea>
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Evaluación</label>
+            <div class="o-flecha" style="gap:var(--espaciado-xs)">
+              <select id="examenEvaluacion" style="flex:1">
+                <option value="">— Sin evaluación —</option>
+                ${opcionesEval}
+              </select>
+              ${editando ? '' : '<button class="btn-secundario" id="btnCrearEval">+ Nueva</button>'}
+            </div>
           </div>
           <div class="o-pila">
             <div class="o-flecha o-flecha--between">
@@ -37,13 +64,36 @@
             </div>
             <div id="preguntasContainer" class="o-pila"></div>
           </div>
-          <div class="o-flecha" style="position:fixed;bottom:80px;left:0;right:0;justify-content:center;gap:var(--espaciado-md);padding:var(--espaciado-sm);background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);border-top:1px solid var(--color-borde)">
+          <div class="o-flecha" style="justify-content:center;gap:var(--espaciado-md);margin-top:var(--espaciado-lg);padding-bottom:120px">
             <button class="btn-secundario" id="btnGuardarBorrador">Guardar borrador</button>
             <button class="btn-primario" id="btnPublicar">Publicar</button>
           </div>
         </div>`;
       this._renderizarPreguntas(raiz, examen.preguntas);
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
+      const btnCrearEval = raiz.querySelector('#btnCrearEval');
+      if (btnCrearEval) {
+        btnCrearEval.onclick = async () => {
+          const datos = await window.helpers.formulario({
+            titulo: 'Crear evaluación',
+            mensaje: 'Define el período de evaluación.',
+            campos: [
+              { nombre: 'titulo', etiqueta: 'Nombre', valor: 'Nueva evaluación', requerido: true, placeholder: '1.ª Evaluación' },
+              { nombre: 'asignatura', etiqueta: 'Asignatura (opcional)', valor: '', placeholder: 'Génesis' }
+            ],
+            textoConfirmar: 'Crear'
+          });
+          if (!datos) return;
+          try {
+            const u = await window.authRepository.asegurarGrupo(store.obtener('usuario'));
+            const ev = await window.examenesRepository.crearEvaluacion({
+              grupoId: u.grupo_id, creadoPor: u.id,
+              titulo: datos.titulo.trim() || 'Nueva evaluación', asignatura: (datos.asignatura || '').trim()
+            });
+            router.navegar('/editor/nuevo?evaluacion=' + ev.id);
+          } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        };
+      }
       raiz.querySelector('#btnAgregarPregunta').onclick = () => {
         examen.preguntas.push(preguntaVacia());
         this._renderizarPreguntas(raiz, examen.preguntas);
@@ -163,14 +213,20 @@
       const examen = this._examen;
       const titulo = raiz.querySelector('#examenTitulo')?.value || examen.titulo;
       const descripcion = raiz.querySelector('#examenDescripcion')?.value || examen.descripcion;
-      if (!titulo.trim()) { alert('El título es obligatorio'); return; }
+      if (!titulo.trim()) { window.helpers.mostrarAlerta('El título es obligatorio', 'advertencia'); return; }
       const preguntasValidas = examen.preguntas.filter(p => p.texto.trim());
-      if (preguntasValidas.length === 0) { alert('Agrega al menos una pregunta'); return; }
+      if (preguntasValidas.length === 0) { window.helpers.mostrarAlerta('Agrega al menos una pregunta', 'advertencia'); return; }
       try {
+        const usuario = await window.authRepository.asegurarGrupo(store.obtener('usuario'));
+        examen.grupo_id = usuario.grupo_id;
+        examen.creado_por = usuario.id;
+        const evaluacion_id = raiz.querySelector('#examenEvaluacion')?.value || null;
+        examen.evaluacion_id = evaluacion_id;
         const datos = {
           id: examen.id || undefined,
           grupo_id: examen.grupo_id,
           creado_por: examen.creado_por,
+          evaluacion_id: examen.evaluacion_id,
           titulo: titulo.trim(),
           descripcion: descripcion.trim(),
           preguntas: JSON.stringify(preguntasValidas.map(p => ({
@@ -181,14 +237,17 @@
           publicado: publicar,
           estado: publicar ? 'publicado' : 'borrador'
         };
-        await window.examenesRepository.guardar(datos);
+        const guardado = await window.examenesRepository.guardar(datos);
+        if (publicar && guardado && guardado.id) {
+          await window.examenesRepository.publicar(guardado.id);
+        }
         await window.adminRepository.registrarAuditoria(
           publicar ? 'examen:publicar' : 'examen:guardar',
           `Examen "${titulo.trim()}" (${preguntasValidas.length} preguntas)`,
           examen.creado_por, examen.grupo_id
         );
         router.navegar('/examenes');
-      } catch (e) { alert('Error al guardar: ' + e.message); }
+      } catch (e) { window.helpers.mostrarAlerta('Error al guardar: ' + e.message, 'error'); }
     }
   };
 })();

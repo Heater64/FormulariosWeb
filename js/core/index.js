@@ -2,19 +2,22 @@
   'use strict';
   const APP = {
     init() {
+      if (window.preferencias) window.preferencias.aplicar();
       this._recuperarSesion();
       this._inicializarRutas();
       this._renderizarBarraNavegacion();
       this._aplicarPreferencias();
+      if (window.colaSync) window.colaSync.iniciar();
       this._verificarSesion();
       window.eventBus.suscribir('auth:login', (usuario) => {
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
         this._renderizarBarraNavegacion();
+        this._notificarRepasos();
         router.reemplazar('/estudio');
       });
       window.eventBus.suscribir('auth:logout', () => {
         localStorage.removeItem('fb_usuario');
-        document.documentElement.classList.remove('alto-contraste', 'letra-grande');
+        if (window.preferencias) window.preferencias.aplicar();
         this._renderizarBarraNavegacion();
         router.reemplazar('/login');
       });
@@ -30,16 +33,17 @@
     },
     _aplicarPreferencias() {
       const usuario = store.obtener('usuario');
-      if (usuario?.preferencias) {
-        if (usuario.preferencias.alto_contraste) document.documentElement.classList.add('alto-contraste');
-        if (usuario.preferencias.letra_grande) document.documentElement.classList.add('letra-grande');
+      const prefs = usuario?.preferencias;
+      if (prefs) {
+        if (window.preferencias) {
+          window.preferencias.guardar({
+            tema: (prefs.tema === 'claro' || prefs.tema === 'oscuro') ? prefs.tema : null,
+            alto_contraste: !!prefs.alto_contraste,
+            letra_grande: !!prefs.letra_grande
+          });
+        }
       }
-      const tema = usuario?.preferencias?.tema;
-      if (tema === 'claro' || tema === 'oscuro') {
-        document.documentElement.dataset.tema = tema;
-      } else {
-        delete document.documentElement.dataset.tema;
-      }
+      if (window.preferencias) window.preferencias.aplicar();
     },
     _verificarSesion() {
       const usuario = store.obtener('usuario');
@@ -48,6 +52,36 @@
       if (!usuario && !esLogin) { router.reemplazar('/login'); return; }
       if (usuario && esLogin) { router.reemplazar('/estudio'); return; }
       router._ejecutar();
+    },
+    async _notificarRepasos() {
+      const usuario = store.obtener('usuario');
+      if (!usuario) return;
+      const hoy = new Date().toISOString().slice(0, 10);
+      if (localStorage.getItem('fb_toast_repaso') === hoy) return;
+      try {
+        const pendientes = await window.memorizacionRepository.tarjetasPendientes(usuario.id);
+        if (pendientes && pendientes.length > 0) this._mostrarToastRepaso(pendientes.length);
+      } catch (e) {}
+    },
+    _mostrarToastRepaso(n) {
+      if (document.getElementById('toast-repaso')) return;
+      const t = document.createElement('div');
+      t.id = 'toast-repaso';
+      t.className = 'toast-repaso';
+      t.innerHTML = `<span class="toast-repaso__icono">${window.Iconos.render('brain')}</span>
+        <div class="toast-repaso__cuerpo">
+          <p class="toast-repaso__titulo">Repaso de memorización</p>
+          <p class="toast-repaso__texto">Tienes ${n} versículo${n === 1 ? '' : 's'} para repasar hoy.</p>
+        </div>
+        <button class="toast-repaso__cerrar" aria-label="Cerrar">×</button>`;
+      t.addEventListener('click', (ev) => {
+        if (ev.target.closest('.toast-repaso__cerrar')) { t.remove(); return; }
+        router.navegar('/memorizacion');
+        t.remove();
+      });
+      document.body.appendChild(t);
+      localStorage.setItem('fb_toast_repaso', new Date().toISOString().slice(0, 10));
+      setTimeout(() => { if (t) t.remove(); }, 9000);
     },
     _renderizarBarraNavegacion() {
       const nav = document.getElementById('barra-navegacion');
