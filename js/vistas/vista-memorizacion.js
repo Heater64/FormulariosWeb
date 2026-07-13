@@ -15,7 +15,7 @@
     _renderizar(raiz, tarjetas, total, repasos, usuario) {
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
-          <h2>🧠 Memorización</h2>
+          <h2>${window.Iconos.render('brain')} Memorización</h2>
           <div class="o-grid-tarjetas">
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Pendientes hoy</p><p class="u-texto-xl u-fw-700">${tarjetas.length}</p></div>
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Total tarjetas</p><p class="u-texto-xl u-fw-700">${total}</p></div>
@@ -24,7 +24,7 @@
           <div id="tarjetaActual" class="o-pila" style="min-height:300px"></div>
           ${tarjetas.length === 0 ? `
             <div class="u-texto-centrado o-pila u-mt-4" style="align-items:center">
-              <p style="font-size:3rem">🎉</p>
+              <p style="font-size:3rem;color:var(--color-exito);display:flex;justify-content:center">${window.Iconos.render('party-popper')}</p>
               <p class="u-color-texto-secundario">¡No hay tarjetas pendientes hoy!</p>
               <p class="u-fs-xs u-color-texto-terciario">Lee un capítulo y agrega versículos a memorizar</p>
               <button class="btn-primario" onclick="router.navegar('/estudio')">Ir a estudiar</button>
@@ -87,7 +87,7 @@
           } else {
             cont.innerHTML = `
               <div class="u-texto-centrado o-pila" style="align-items:center;padding:var(--espaciado-xl) 0">
-                <p style="font-size:3rem">🎉</p>
+                <p style="font-size:3rem;color:var(--color-exito);display:flex;justify-content:center">${window.Iconos.render('party-popper')}</p>
                 <p class="u-texto-lg u-fw-600">¡Completaste todas las tarjetas!</p>
                 <p class="u-color-texto-secundario u-fs-sm">Vuelve mañana para más repasos</p>
                 <button class="btn-primario" onclick="router.navegar('/estudio')">Seguir estudiando</button>

@@ -41,7 +41,7 @@
           <div class="tarjeta-capitulo ${int.corregido ? 'tarjeta-capitulo--completado' : ''}" data-intento="${int.id}">
             <div class="o-flecha o-flecha--between">
               <span class="u-fw-600">${int.perfiles?.nombre_completo || 'Alumno'}</span>
-              <span class="u-fs-sm ${int.corregido ? 'u-color-exito' : 'u-color-acento'}">${int.corregido ? '✓ Corregido' : '⏳ Pendiente'}</span>
+              <span class="u-fs-sm ${int.corregido ? 'u-color-exito' : 'u-color-acento'}">${int.corregido ? window.Iconos.render('check-check') + ' Corregido' : window.Iconos.render('clock') + ' Pendiente'}</span>
             </div>
             <p class="u-fs-sm u-color-texto-secundario">Estado: ${int.estado} · ${parcial ? 'Nota: ' + int.nota + '%' : aciertos + '/' + preguntas.length + ' automáticas'}</p>
             <div class="o-pila u-mt-2" id="detalle_${int.id}" style="${int.corregido ? '' : 'display:none'}">
@@ -50,7 +50,7 @@
                 const correcta = window.puntuacionExamen.esCorrecta(resp[p.id], p.respuesta_correcta, p.tipo);
                 return `<div class="u-fs-sm u-mb-1" style="padding:var(--espaciado-xs);background:var(--color-fondo);border-radius:var(--radio-sm)">
                   <p class="u-fw-600">${pi+1}. ${window.helpers.escapeHtml(p.texto)}</p>
-                  <p>Respuesta: <strong>${window.helpers.escapeHtml(rUser)}</strong> ${p.tipo !== 'respuesta_corta' && p.tipo !== 'completar' ? (correcta ? '✅' : '❌') : ''}</p>
+                  <p>Respuesta: <strong>${window.helpers.escapeHtml(rUser)}</strong> ${p.tipo !== 'respuesta_corta' && p.tipo !== 'completar' ? (correcta ? window.Iconos.render('check') : window.Iconos.render('x')) : ''}</p>
                   ${p.tipo === 'respuesta_corta' || p.tipo === 'completar' ? `<p class="u-color-texto-terciario">Correcta: ${window.helpers.escapeHtml(p.respuesta_correcta)}</p>` : ''}
                   ${p.explicacion ? `<p class="u-fs-xs u-color-texto-terciario">${window.helpers.escapeHtml(p.explicacion)}</p>` : ''}
                 </div>`;

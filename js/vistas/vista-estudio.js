@@ -24,7 +24,7 @@
         }
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
-            <div class="o-flecha o-flecha--between"><h2>📖 Estudio Guiado</h2><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div>
+            <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div>
             <div class="o-grid-tarjetas" style="grid-template-columns:repeat(4,1fr)">
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Leídos</p><p class="u-texto-lg u-fw-700">${completados.length}</p></div>
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros</p><p class="u-texto-lg u-fw-700">${librosCompletados.size}/${(libros||[]).length}</p></div>

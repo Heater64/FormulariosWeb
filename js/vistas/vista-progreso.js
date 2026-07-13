@@ -24,18 +24,18 @@
         const nuevosLogros = await window.logrosDominio.verificarYOtorgar(usuario.id, progresoData);
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
-            <div class="o-flecha o-flecha--between"><h2>📊 Progreso</h2><span class="u-fs-sm u-color-texto-terciario">@${usuario.username}</span></div>
+            <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('bar-chart-3')} Progreso</h2><span class="u-fs-sm u-color-texto-terciario">@${usuario.username}</span></div>
             <div class="o-grid-tarjetas" style="grid-template-columns:repeat(4,1fr)">
               <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos</p><p class="u-texto-xl u-fw-700">${leidos.length}</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">🔥 Racha</p><p class="u-texto-xl u-fw-700">${racha} días</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">📝 Exámenes</p><p class="u-texto-xl u-fw-700">${examenesCount || 0}</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">🧠 Tarjetas</p><p class="u-texto-xl u-fw-700">${tarjetas}</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">${window.Iconos.render('flame')} Racha</p><p class="u-texto-xl u-fw-700">${racha} días</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">${window.Iconos.render('clipboard-check')} Exámenes</p><p class="u-texto-xl u-fw-700">${examenesCount || 0}</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">${window.Iconos.render('brain')} Tarjetas</p><p class="u-texto-xl u-fw-700">${tarjetas}</p></div>
             </div>
-            <div class="o-pila"><h3>🏅 Logros (${(logrosUsuario||[]).length})</h3>
-              ${nuevosLogros.length > 0 ? `<div class="o-pila u-mb-2" style="background:var(--color-exito-soft,#d1fae5);border-radius:var(--radio-md);padding:var(--espaciado-sm)"><p class="u-fs-sm u-fw-600 u-color-exito">🎉 Nuevos logros desbloqueados:</p>${nuevosLogros.map(l => `<span class="u-fs-sm">${l.icono} ${l.nombre}</span>`).join(', ')}</div>` : ''}
+            <div class="o-pila"><h3>${window.Iconos.render('medal')} Logros (${(logrosUsuario||[]).length})</h3>
+              ${nuevosLogros.length > 0 ? `<div class="o-pila u-mb-2" style="background:var(--color-exito-soft,#d1fae5);border-radius:var(--radio-md);padding:var(--espaciado-sm)"><p class="u-fs-sm u-fw-600 u-color-exito">${window.Iconos.render('party-popper')} Nuevos logros desbloqueados:</p>${nuevosLogros.map(l => `<span class="u-fs-sm">${window.Iconos.render(l.icono)} ${l.nombre}</span>`).join(', ')}</div>` : ''}
               <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fill,minmax(120px,1fr))">
                 ${(logrosUsuario||[]).length === 0 ? '<p class="u-color-texto-terciario u-fs-sm">Completa capítulos y exámenes para ganar logros</p>' :
-                  logrosUsuario.map(lu => `<div class="tarjeta-capitulo u-texto-centrado" title="${lu.logros?.descripcion || ''}"><p style="font-size:2rem">${lu.logros?.icono || '🏆'}</p><p class="u-fs-xs u-fw-600">${lu.logros?.nombre || ''}</p></div>`).join('')}
+                  logrosUsuario.map(lu => `<div class="tarjeta-capitulo u-texto-centrado" title="${lu.logros?.descripcion || ''}"><p style="font-size:2rem;display:flex;justify-content:center">${window.Iconos.render(lu.logros?.icono || 'trophy')}</p><p class="u-fs-xs u-fw-600">${lu.logros?.nombre || ''}</p></div>`).join('')}
               </div>
             </div>
           </div>`;

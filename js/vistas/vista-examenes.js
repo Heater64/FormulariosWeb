@@ -13,7 +13,7 @@
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
             <div class="o-flecha o-flecha--between">
-              <h2>📝 Exámenes</h2>
+              <h2>${window.Iconos.render('clipboard-check')} Exámenes</h2>
               <div style="display:flex;gap:var(--espaciado-xs)">
                 ${esProfesor ? '<button class="btn-primario" id="btnNuevoExamen">+ Nuevo</button>' : ''}
                 ${esProfesor ? '<button class="btn-secundario" id="btnCalificaciones">Notas</button>' : ''}
@@ -27,7 +27,7 @@
         }
         const cont = raiz.querySelector('#listaExamenes');
         if (examenes.length === 0) {
-          cont.innerHTML = '<div class="u-texto-centrado o-pila u-mt-4" style="align-items:center"><p style="font-size:3rem">📝</p><p class="u-color-texto-secundario">No hay exámenes disponibles</p></div>';
+          cont.innerHTML = `<div class="u-texto-centrado o-pila u-mt-4" style="align-items:center"><p style="font-size:3rem;color:var(--color-texto-terciario);display:flex;justify-content:center">${window.Iconos.render('clipboard-check')}</p><p class="u-color-texto-secundario">No hay exámenes disponibles</p></div>`;
           return;
         }
         cont.innerHTML = examenes.map(ex => {

@@ -1,10 +1,10 @@
 :root {
-  --espaciado-xxs: clamp(2px, 0.5vw, 4px);
-  --espaciado-xs: clamp(6px, 1vw, 8px);
-  --espaciado-sm: clamp(10px, 1.5vw, 12px);
-  --espaciado-md: clamp(14px, 2vw, 16px);
-  --espaciado-lg: clamp(20px, 2.5vw, 24px);
-  --espaciado-xl: clamp(28px, 3vw, 32px);
-  --espaciado-2xl: clamp(40px, 4vw, 48px);
-  --espaciado-3xl: clamp(56px, 5vw, 64px);
+  --espaciado-xxs: clamp(4px, 0.6vw, 6px);
+  --espaciado-xs: clamp(8px, 1vw, 10px);
+  --espaciado-sm: clamp(12px, 1.6vw, 14px);
+  --espaciado-md: clamp(16px, 2.2vw, 18px);
+  --espaciado-lg: clamp(22px, 2.8vw, 26px);
+  --espaciado-xl: clamp(30px, 3.4vw, 36px);
+  --espaciado-2xl: clamp(44px, 4.4vw, 52px);
+  --espaciado-3xl: clamp(60px, 5.4vw, 72px);
 }

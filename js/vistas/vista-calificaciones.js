@@ -15,7 +15,7 @@
     async _renderizar(raiz, examenes, usuario) {
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg)">
-          <h2>📊 Libro de Calificaciones</h2>
+          <h2>${window.Iconos.render('graduation-cap')} Libro de Calificaciones</h2>
           <div id="califLista" class="o-pila"></div>
         </div>`;
       const cont = raiz.querySelector('#califLista');

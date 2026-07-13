@@ -49,14 +49,15 @@
       const usuario = store.obtener('usuario');
       if (!usuario) { nav.innerHTML = ''; return; }
       const items = [
-        { ruta: '/estudio', icono: '📖', texto: 'Estudio' },
-        { ruta: '/examenes', icono: '📝', texto: 'Exámenes' },
-        { ruta: '/memorizacion', icono: '🧠', texto: 'Memoria' },
-        { ruta: '/progreso', icono: '📊', texto: 'Progreso' },
-        { ruta: '/perfil', icono: '👤', texto: 'Perfil' }
+        { ruta: '/estudio', icono: 'book-open', texto: 'Estudio' },
+        { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
+        { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
+        { ruta: '/progreso', icono: 'pie-chart', texto: 'Progreso' },
+        { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();
-      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${rutaActual === i.ruta ? ' barra-nav-inferior__item--activo' : ''}" data-nav><span>${i.icono}</span><span>${i.texto}</span></a>`).join('');
+      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${rutaActual === i.ruta ? ' barra-nav-inferior__item--activo' : ''}" data-nav><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
+      window.Iconos.actualizar();
       nav.querySelectorAll('[data-nav]').forEach(el => {
         el.addEventListener('click', e => { e.preventDefault(); router.navegar(el.getAttribute('href').replace('#!', '')); });
       });

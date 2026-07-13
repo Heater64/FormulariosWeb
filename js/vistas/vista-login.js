@@ -7,7 +7,7 @@
         <div class="o-contenedor o-contenedor--estrecho" style="padding-top:20vh">
           <div class="o-pila o-pila--lg">
             <div class="u-texto-centrado">
-              <h1 style="font-size:2.5rem">📖</h1>
+              <h1 style="font-size:2.5rem;color:var(--color-acento);display:flex;justify-content:center">${window.Iconos.render('book-open')}</h1>
               <h2>FormsBiblicos</h2>
               <p class="u-color-texto-secundario u-mb-3">Plataforma de estudio bíblico guiado</p>
             </div>

@@ -57,7 +57,7 @@
         <div class="tarjeta-capitulo" data-pregidx="${i}" style="border-left:3px solid var(--color-acento)">
           <div class="o-flecha o-flecha--between u-mb-1">
             <span class="u-fw-600 u-fs-sm">Pregunta ${i + 1}</span>
-            <button class="btn-eliminar-preg" data-idx="${i}" style="background:none;border:none;color:var(--color-error);cursor:pointer;font-size:1.2rem">✕</button>
+            <button class="btn-eliminar-preg" data-idx="${i}" style="background:none;border:none;color:var(--color-error);cursor:pointer;display:inline-flex">${window.Iconos.render('x')}</button>
           </div>
           <textarea class="u-mb-1" data-campo="texto" data-idx="${i}" rows="2" placeholder="Escribe la pregunta...">${window.helpers.escapeHtml(p.texto)}</textarea>
           <div class="o-flecha o-flecha--between u-mb-1">
@@ -85,6 +85,7 @@
         el.addEventListener('change', () => this._sincronizarPreguntas(raiz));
         el.addEventListener('input', () => this._sincronizarPreguntas(raiz));
       });
+      window.Iconos.actualizar();
       cont.querySelectorAll('.btn-eliminar-preg').forEach(btn => {
         btn.onclick = (e) => {
           e.stopPropagation();
@@ -119,7 +120,7 @@
         <div class="o-flecha o-flecha--between u-mb-1" style="gap:var(--espaciado-xs)">
           <span class="u-fs-xs u-color-texto-terciario" style="min-width:20px">${String.fromCharCode(65 + oi)}.</span>
           <input type="text" data-opcion="${idx}" data-oidx="${oi}" value="${window.helpers.escapeHtml(o)}" placeholder="Opción ${String.fromCharCode(65 + oi)}" style="flex:1">
-          <button class="btn-quitar-opcion" data-idx="${idx}" data-oidx="${oi}" style="background:none;border:none;color:var(--color-error);cursor:pointer">✕</button>
+          <button class="btn-quitar-opcion" data-idx="${idx}" data-oidx="${oi}" style="background:none;border:none;color:var(--color-error);cursor:pointer;display:inline-flex">${window.Iconos.render('x')}</button>
         </div>
       `).join('') + `<button class="btn-agregar-opcion" data-idx="${idx}" style="background:none;border:none;color:var(--color-acento);cursor:pointer;font-size:var(--texto-xs)">+ Agregar opción</button>`;
     },

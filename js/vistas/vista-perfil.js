@@ -19,8 +19,8 @@
             <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Alto contraste</span><label class="switch"><input type="checkbox" id="chkContraste" ${prefs.alto_contraste ? 'checked' : ''}><span class="slider"></span></label></div></div>
             <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Letra grande</span><label class="switch"><input type="checkbox" id="chkLetra" ${prefs.letra_grande ? 'checked' : ''}><span class="slider"></span></label></div></div>
           </div>
-          ${['admin', 'owner'].includes(usuario.rol) ? `<button class="btn-secundario" id="btnAdmin" style="width:100%;justify-content:center">⚙️ Panel de Administración</button>` : ''}
-          ${usuario.rol === 'owner' ? `<button class="btn-secundario u-mt-1" id="btnOwner" style="width:100%;justify-content:center">🏢 Panel de Propietario</button>` : ''}
+          ${['admin', 'owner'].includes(usuario.rol) ? `<button class="btn-secundario" id="btnAdmin" style="width:100%;justify-content:center">${window.Iconos.render('settings')} Panel de Administración</button>` : ''}
+          ${usuario.rol === 'owner' ? `<button class="btn-secundario u-mt-1" id="btnOwner" style="width:100%;justify-content:center">${window.Iconos.render('building-2')} Panel de Propietario</button>` : ''}
           <button class="btn-secundario" id="btnLogout" style="color:var(--color-error);border-color:var(--color-error-soft);width:100%;justify-content:center;margin-top:var(--espaciado-sm)">Cerrar sesión</button>
         </div>`;
       raiz.querySelector('#btnLogout').onclick = () => authRepository.cerrarSesion();

@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v1';
+const CACHE_VERSION = 'v2';
 const STATIC_CACHE = `fb-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `fb-dynamic-${CACHE_VERSION}`;
 
@@ -10,7 +10,8 @@ const PRECACHE_URLS = [
   '/assets/iconos/icon-512.svg',
   '/assets/iconos/icon-maskable-192.svg',
   '/assets/iconos/icon-maskable-512.svg',
-  '/assets/iconos/sprite.svg'
+  '/assets/iconos/sprite.svg',
+  '/js/vendor/lucide.min.js'
 ];
 
 self.addEventListener('install', (event) => {

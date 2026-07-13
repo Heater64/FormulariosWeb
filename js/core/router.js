@@ -36,6 +36,7 @@ class Router {
         this._vistaActual = config.vista;
         if (this._vistaActual.montar) await this._vistaActual.montar(raiz, params);
         store.actualizar('rutaActual', ruta);
+        if (window.Iconos) window.Iconos.actualizar();
         return;
       }
     }
