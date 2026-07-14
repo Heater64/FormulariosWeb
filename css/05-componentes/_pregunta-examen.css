@@ -71,3 +71,88 @@
 .pregunta__input {
   margin-top: var(--espaciado-xs);
 }
+
+/* Selector de tipo de pregunta en editor */
+select[data-campo="tipo"] {
+  background: var(--color-acento-soft);
+  border: 2px solid var(--color-acento);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  color: var(--color-texto);
+  cursor: pointer;
+  min-width: 180px;
+}
+
+select[data-campo="tipo"]:focus {
+  box-shadow: 0 0 0 3px var(--color-acento);
+  border-color: var(--color-acento);
+}
+
+/* Tarjeta de pregunta en examen (tomar examen) */
+.pregunta-examen {
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  margin-bottom: var(--espaciado-md);
+}
+
+.pregunta-examen__numero {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: #fff;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  margin-right: var(--espaciado-xs);
+}
+
+.pregunta-examen__texto {
+  font-weight: 600;
+  margin-bottom: var(--espaciado-sm);
+  line-height: 1.4;
+}
+
+.pregunta-examen__opciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.pregunta-examen__opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  cursor: pointer;
+  transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.pregunta-examen__opcion:hover {
+  background: var(--color-fondo-alt);
+  border-color: var(--color-acento-soft);
+}
+
+.pregunta-examen__opcion--seleccionada {
+  background: var(--color-acento-soft);
+  border-color: var(--color-acento);
+}
+
+.pregunta-examen input[type="text"],
+.pregunta-examen textarea {
+  width: 100%;
+  padding: var(--espaciado-sm);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+}

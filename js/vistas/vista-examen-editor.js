@@ -115,17 +115,34 @@
               <option value="multiple" ${p.tipo === 'multiple' ? 'selected' : ''}>Opción múltiple</option>
               <option value="verdadero_falso" ${p.tipo === 'verdadero_falso' ? 'selected' : ''}>Verdadero/Falso</option>
               <option value="respuesta_corta" ${p.tipo === 'respuesta_corta' ? 'selected' : ''}>Respuesta corta</option>
-              <option value="completar" ${p.tipo === 'completar' ? 'selected' : ''}>Completar</option>
+              <option value="texto_corto" ${p.tipo === 'texto_corto' ? 'selected' : ''}>Texto corto</option>
+              <option value="texto_largo" ${p.tipo === 'texto_largo' ? 'selected' : ''}>Texto largo</option>
+              <option value="completar" ${p.tipo === 'completar' ? 'selected' : ''}>Completar oración</option>
+              <option value="opcion_unica" ${p.tipo === 'opcion_unica' ? 'selected' : ''}>Opción única</option>
+              <option value="varias_opciones" ${p.tipo === 'varias_opciones' ? 'selected' : ''}>Varias opciones</option>
+              <option value="relacionar" ${p.tipo === 'relacionar' ? 'selected' : ''}>Relacionar</option>
+              <option value="ordenar" ${p.tipo === 'ordenar' ? 'selected' : ''}>Ordenar</option>
+              <option value="solo_numero" ${p.tipo === 'solo_numero' ? 'selected' : ''}>Solo un número</option>
             </select>
           </div>
           <div class="opciones-container" data-idx="${i}">
             ${p.tipo === 'multiple' ? this._renderOpciones(p.opciones, i) : ''}
             ${p.tipo === 'verdadero_falso' ? this._renderVF(p.respuesta_correcta, i) : ''}
+            ${p.tipo === 'varias_opciones' ? this._renderOpciones(p.opciones, i) : ''}
+            ${p.tipo === 'opcion_unica' ? this._renderOpciones(p.opciones, i) : ''}
+            ${p.tipo === 'relacionar' ? this._renderRelacionar(p.opciones || ['','','','','',''], i) : ''}
+            ${p.tipo === 'ordenar' ? this._renderOrdenar(p.opciones || ['','','','','',''], i) : ''}
           </div>
-          <div class="u-mt-1">
+          <div class="u-mt-1 respuesta-correcta-container">
             <label class="u-fs-xs u-color-texto-terciario">Respuesta correcta</label>
             ${p.tipo === 'multiple' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Índice de opción correcta (0, 1, 2...)">` : ''}
-            ${p.tipo === 'respuesta_corta' || p.tipo === 'completar' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Respuesta exacta">` : ''}
+            ${p.tipo === 'opcion_unica' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Índice de opción correcta (0, 1, 2...)">` : ''}
+            ${p.tipo === 'varias_opciones' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Ej: [0,2,3] (índices separados por coma)">` : ''}
+            ${p.tipo === 'respuesta_corta' || p.tipo === 'texto_corto' || p.tipo === 'completar' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Respuesta exacta">` : ''}
+            ${p.tipo === 'texto_largo' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Palabras clave separadas por |">` : ''}
+            ${p.tipo === 'solo_numero' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder="Ej: 42">` : ''}
+            ${p.tipo === 'relacionar' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder='Ej: {"0":"1","2":"3"} (pares izquierda:derecha)'>` : ''}
+            ${p.tipo === 'ordenar' ? `<input type="text" data-campo="respuesta_correcta" data-idx="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta)}" placeholder='Ej: [3,0,1,2] (orden correcto por índice)'>` : ''}
             ${p.tipo === 'verdadero_falso' ? '' : ''}
             <input type="text" data-campo="explicacion" data-idx="${i}" value="${window.helpers.escapeHtml(p.explicacion || '')}" placeholder="Explicación (opcional)" class="u-mt-1">
           </div>
@@ -181,6 +198,31 @@
           <label class="u-fs-sm"><input type="radio" name="vf_${idx}" value="false" ${respuesta === 'false' ? 'checked' : ''} data-vf="${idx}" data-campo="respuesta_correcta"> Falso</label>
         </div>`;
     },
+    _renderRelacionar(opciones, idx) {
+      let html = '<div class="o-pila u-mb-1"><p class="u-fs-xs u-color-texto-terciario">Pares izquierda → derecha (rellena ambos lados):</p>';
+      const pares = opciones.length || 3;
+      for (let pi = 0; pi < pares; pi++) {
+        html += `<div class="o-flecha u-mb-1" style="gap:var(--espaciado-xs)">
+          <input type="text" data-relizq="${idx}" data-idx="${pi}" value="${window.helpers.escapeHtml(opciones[pi] || '')}" placeholder="Izquierda ${pi + 1}" style="flex:1">
+          <span class="u-color-texto-terciario">→</span>
+          <input type="text" data-relder="${idx}" data-idx="${pi}" value="" placeholder="Derecha ${pi + 1}" style="flex:1">
+        </div>`;
+      }
+      html += '</div>';
+      return html;
+    },
+    _renderOrdenar(opciones, idx) {
+      let html = '<div class="o-pila u-mb-1"><p class="u-fs-xs u-color-texto-terciario">Elementos en el orden correcto:</p>';
+      const items = opciones.length || 3;
+      for (let oi = 0; oi < items; oi++) {
+        html += `<div class="o-flecha u-mb-1" style="gap:var(--espaciado-xs)">
+          <span class="u-fs-xs u-color-texto-terciario" style="min-width:24px">${oi + 1}.</span>
+          <input type="text" data-orden="${idx}" data-idx="${oi}" value="${window.helpers.escapeHtml(opciones[oi] || '')}" placeholder="Elemento ${oi + 1}" style="flex:1">
+        </div>`;
+      }
+      html += '</div>';
+      return html;
+    },
     _sincronizarPreguntas(raiz) {
       const cont = raiz.querySelector('#preguntasContainer');
       if (!cont) return;
@@ -206,6 +248,13 @@
         if (el.dataset.vf !== undefined) {
           if (el.checked) preguntas[idx].respuesta_correcta = el.value;
         }
+      });
+      cont.querySelectorAll('[data-relizq]').forEach(el => {
+        const idx = parseInt(el.dataset.relizq);
+        if (idx >= preguntas.length) return;
+        if (!preguntas[idx].opciones) preguntas[idx].opciones = [];
+        const pi = parseInt(el.dataset.idx);
+        preguntas[idx].opciones[pi] = el.value;
       });
     },
     async _guardar(raiz, publicar) {

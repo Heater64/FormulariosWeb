@@ -41,6 +41,7 @@ class Router {
           raiz.innerHTML = `<div class="o-contenedor u-mt-4 u-texto-centrado o-pila"><h2>Vista no disponible</h2><p class="u-color-texto-secundario u-fs-sm">Es necesario recargar para obtener la última versión.</p><button class="btn-primario" onclick="location.reload()">Recargar</button></div>`;
         }
         store.actualizar('rutaActual', ruta);
+        if (window.eventBus) window.eventBus.publicar('route:change', ruta);
         if (window.Iconos) window.Iconos.actualizar();
         return;
       }

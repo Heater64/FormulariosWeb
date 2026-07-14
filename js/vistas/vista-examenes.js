@@ -61,8 +61,8 @@
                 ${calif !== null ? `<span class="u-fw-700" style="color:${calif >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">${calif}</span>` : ''}
                 ${esProfesor ? `<button class="btn-secundario btn-editar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Editar</button>${ex.publicado ? `<button class="btn-secundario btn-compartir-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}" style="font-size:var(--texto-xs)">${window.Iconos.render('share-2')} Compartir</button><button class="btn-secundario btn-ver-resultados" data-id="${ex.id}" style="font-size:var(--texto-xs)">Resultados</button><button class="btn-secundario btn-gestionar-alumnos" data-id="${ex.id}" style="font-size:var(--texto-xs)">${window.Iconos.render('users')} Alumnos</button>` : `<button class="btn-secundario btn-publicar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">Publicar</button>`}` : ''}
                 ${esProfesor ? `<button class="btn-peligro btn-eliminar-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}" style="font-size:var(--texto-xs);width:auto">${window.Iconos.render('trash-2')} Eliminar</button>` : ''}
-                ${!esProfesor && ex.publicado && !completado ? `<button class="btn-primario btn-iniciar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">${enProgreso ? 'Continuar' : 'Comenzar'}</button>` : ''}
-                ${!esProfesor && completado ? `<button class="btn-secundario btn-ver-resultados-alumno" data-id="${ex.id}" style="font-size:var(--texto-xs)">Ver resultados</button>` : ''}
+                ${ex.publicado && !completado ? `<button class="btn-primario btn-iniciar-examen" data-id="${ex.id}" style="font-size:var(--texto-xs)">${enProgreso ? 'Continuar' : 'Comenzar'}</button>` : ''}
+                ${completado ? `<button class="btn-secundario btn-ver-resultados-alumno" data-id="${ex.id}" style="font-size:var(--texto-xs)">Ver resultados</button>` : ''}
               </div>
             </div>
           </div>`;

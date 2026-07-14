@@ -44,7 +44,21 @@
 
 .barra-nav-inferior__item--activo {
   color: var(--color-acento);
-  font-weight: 600;
+  font-weight: 700;
+  background: var(--color-acento-soft);
+  position: relative;
+}
+
+.barra-nav-inferior__item--activo::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--color-acento);
 }
 
 .barra-nav-inferior__item--activo svg {

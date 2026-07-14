@@ -85,3 +85,47 @@
   border-color: var(--color-acento, #b06a3a);
   box-shadow: 0 0 0 2px var(--color-acento-soft, rgba(176, 106, 58, 0.2));
 }
+
+.modal-confirm {
+  width: 100%;
+  max-width: 400px;
+  background: var(--color-fondo-tarjeta);
+  border-radius: var(--radio-xl);
+  box-shadow: var(--sombra-lg);
+  padding: var(--espaciado-xl);
+  animation: slideUp 300ms ease;
+}
+
+.modal-confirm__titulo {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  margin-bottom: var(--espaciado-sm);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.modal-confirm__mensaje {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: var(--altura-linea-cuerpo, 1.5);
+  margin-bottom: var(--espaciado-lg);
+}
+
+.modal-confirm__acciones {
+  display: flex;
+  gap: var(--espaciado-sm);
+  justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .modal-confirm__acciones {
+    flex-direction: column;
+  }
+  .modal-confirm__acciones .btn-primario,
+  .modal-confirm__acciones .btn-secundario,
+  .modal-confirm__acciones .btn-peligro {
+    width: 100%;
+    justify-content: center;
+  }
+}

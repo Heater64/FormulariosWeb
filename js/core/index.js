@@ -21,6 +21,9 @@
         this._renderizarBarraNavegacion();
         router.reemplazar('/login');
       });
+      window.eventBus.suscribir('route:change', () => {
+        this._renderizarBarraNavegacion();
+      });
     },
     _recuperarSesion() {
       try {
@@ -42,6 +45,9 @@
             letra_grande: !!prefs.letra_grande
           });
         }
+        const actualizado = { ...usuario, preferencias: prefs };
+        localStorage.setItem('fb_usuario', JSON.stringify(actualizado));
+        store.actualizar('usuario', actualizado);
       }
       if (window.preferencias) window.preferencias.aplicar();
     },
@@ -92,7 +98,7 @@
         { ruta: '/estudio', icono: 'book-open', texto: 'Estudio' },
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
         { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
-        { ruta: '/progreso', icono: 'pie-chart', texto: 'Progreso' },
+        { ruta: '/progreso', icono: 'sparkles', texto: 'Curiosidades' },
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();

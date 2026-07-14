@@ -5,18 +5,27 @@ const progresoLectura = {
     return Math.round((completados / totalCapitulos) * 100);
   },
 
+  _fechaLocal(iso) {
+    const d = new Date(iso);
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  },
+  _hoyLocal() {
+    const d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  },
   calcularRacha(historial) {
     if (!historial || historial.length === 0) return 0;
     const dias = [...new Set(historial
       .filter(h => h.fecha_lectura)
-      .map(h => new Date(h.fecha_lectura).toISOString().split('T')[0])
+      .map(h => this._fechaLocal(h.fecha_lectura))
     )].sort((a, b) => b.localeCompare(a));
     let racha = 0;
-    const hoy = new Date();
+    const hoy = this._hoyLocal();
     for (let i = 0; i < dias.length; i++) {
-      const esperado = new Date(hoy);
-      esperado.setDate(esperado.getDate() - i);
-      if (dias[i] === esperado.toISOString().split('T')[0]) racha++;
+      const d = new Date(hoy);
+      d.setDate(d.getDate() - i);
+      const esperado = d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+      if (dias[i] === esperado) racha++;
       else break;
     }
     return racha;

@@ -2,12 +2,50 @@ const puntuacionExamen = {
   _normalizarRespuesta(r) {
     return String(r).trim().toLowerCase().replace(/\s+/g, ' ');
   },
+  _compararArrays(usuario, correcto) {
+    try {
+      const u = JSON.parse(usuario);
+      const c = JSON.parse(correcto);
+      if (!Array.isArray(u) || !Array.isArray(c)) return false;
+      if (u.length !== c.length) return false;
+      return u.every((val, i) => String(val).trim().toLowerCase() === String(c[i]).trim().toLowerCase());
+    } catch (e) { return false; }
+  },
+  _compararRelaciones(usuario, correcto) {
+    try {
+      const u = typeof usuario === 'string' ? JSON.parse(usuario) : usuario;
+      const c = typeof correcto === 'string' ? JSON.parse(correcto) : correcto;
+      if (typeof u !== 'object' || typeof c !== 'object') return false;
+      const uKeys = Object.keys(u).sort();
+      const cKeys = Object.keys(c).sort();
+      if (uKeys.length !== cKeys.length) return false;
+      return uKeys.every(k => String(u[k]).trim().toLowerCase() === String(c[k]).trim().toLowerCase());
+    } catch (e) { return false; }
+  },
   esCorrecta(respuestaUsuario, respuestaCorrecta, tipo) {
-    if (!respuestaUsuario || !respuestaCorrecta) return false;
-    if (tipo === 'multiple' || tipo === 'verdadero_falso') {
+    if (!respuestaUsuario && respuestaUsuario !== 0) return false;
+    if (!respuestaCorrecta && respuestaCorrecta !== 0) return false;
+    if (tipo === 'multiple' || tipo === 'verdadero_falso' || tipo === 'opcion_unica') {
       return String(respuestaUsuario) === String(respuestaCorrecta);
     }
-    if (tipo === 'respuesta_corta') {
+    if (tipo === 'varias_opciones') {
+      return this._compararArrays(respuestaUsuario, respuestaCorrecta);
+    }
+    if (tipo === 'relacionar') {
+      return this._compararRelaciones(respuestaUsuario, respuestaCorrecta);
+    }
+    if (tipo === 'ordenar') {
+      return this._compararArrays(respuestaUsuario, respuestaCorrecta);
+    }
+    if (tipo === 'respuesta_corta' || tipo === 'texto_corto') {
+      return this._normalizarRespuesta(respuestaUsuario) === this._normalizarRespuesta(respuestaCorrecta);
+    }
+    if (tipo === 'texto_largo' || tipo === 'solo_numero') {
+      if (tipo === 'solo_numero') {
+        const n = parseFloat(respuestaUsuario);
+        const r = parseFloat(respuestaCorrecta);
+        return !isNaN(n) && !isNaN(r) && n === r;
+      }
       return this._normalizarRespuesta(respuestaUsuario) === this._normalizarRespuesta(respuestaCorrecta);
     }
     if (tipo === 'completar') {

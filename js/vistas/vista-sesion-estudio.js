@@ -65,23 +65,36 @@
 
     _renderLeer() {
       const { raiz, libro, capituloNum } = this.estado;
+      const I = window.Iconos.render;
       raiz.innerHTML = `
         <div class="o-contenedor o-pila" style="padding-top:var(--espaciado-2xl);padding-bottom:calc(180px + env(safe-area-inset-bottom));min-height:100dvh">
           ${this._cabecera(libro.nombre, `Capítulo ${capituloNum}`)}
           <div class="u-texto-centrado o-pila" style="align-items:center;margin-top:var(--espaciado-2xl)">
-            <div style="width:96px;height:96px;border-radius:var(--radio-2xl);background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;color:var(--color-acento)">${window.Iconos.render('book-open')}</div>
+            <div style="width:96px;height:96px;border-radius:var(--radio-2xl);background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;color:var(--color-acento)">${I('book-open')}</div>
             <h2 class="u-mt-3">Lee en tu Biblia</h2>
             <p class="u-color-texto-secundario u-fs-base" style="max-width:340px;line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>
           </div>
+          <div class="o-pila" style="width:100%">
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas sobre este capítulo (se guardarán en Memorización)</label>
+            <textarea id="notasLectura" rows="3" placeholder="Escribe aquí tus notas, reflexiones o versículos destacados..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
+          </div>
           <div class="barra-accion">
-            <button class="btn-primario" id="btnLeido">${window.Iconos.render('check')} Ya lo he leído</button>
+            <button class="btn-primario" id="btnLeido">${I('check')} Ya lo he leído</button>
           </div>
         </div>`;
       raiz.querySelector('#btnLeido').onclick = async (e) => {
         const btn = e.currentTarget;
-        btn.disabled = true; btn.innerHTML = window.Iconos.render('check') + ' Guardando...';
+        btn.disabled = true; btn.innerHTML = I('check') + ' Guardando...';
         this._transicion('LEER');
-        await window.progresoRepository.marcarLeido(store.obtener('usuario').id, this.estado.capId);
+        const usuario = store.obtener('usuario');
+        await window.progresoRepository.marcarLeido(usuario.id, this.estado.capId);
+        const notas = raiz.querySelector('#notasLectura')?.value.trim();
+        if (notas) {
+          await window.memorizacionRepository.agregarTarjetaManual(usuario.id, {
+            referencia: libro.nombre + ' ' + capituloNum,
+            texto: '📝 Notas: ' + notas
+          }).catch(() => {});
+        }
         window.Iconos.actualizar();
         this._iniciarEstudio();
       };
@@ -274,11 +287,12 @@
 
     _renderResumen() {
       const e = this.estado;
-      const { aciertos, fallos, falladas } = e.resInicial;
-      const hayErrores = falladas.length > 0;
+      const { aciertos, fallos } = e.resInicial;
+      const falladasUnicas = [...new Set(e.falladasRonda)];
+      const hayErrores = falladasUnicas.length > 0;
       const mensaje = this._mensajeCompletar(aciertos);
       const tono = aciertos <= 4 ? 'error' : (aciertos >= 6 ? 'ok' : 'mal');
-      const listaErrores = falladas.map(pid => {
+      const listaErrores = falladasUnicas.map(pid => {
         const p = e.preguntas.find(x => x.id === pid);
         if (!p) return '';
         return `<div class="cuestion-resumen__item">
@@ -295,8 +309,8 @@
             <div class="cuestion-resumen__icono cuestion-resumen__icono--${tono}">${window.Iconos.render(tono === 'ok' ? 'check-circle' : 'alert-triangle')}</div>
             <h2 class="u-texto-centrado">${mensaje}</h2>
             <div class="cuestion-resumen__stats">
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Acertadas</p><p class="u-texto-lg u-fw-700 u-color-exito">${aciertos}</p></div>
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Falladas</p><p class="u-texto-lg u-fw-700 ${hayErrores ? 'u-color-error' : 'u-color-texto-terciario'}">${fallos}</p></div>
+              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Acertadas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${aciertos}</p></div>
+              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Falladas</p><p class="u-texto-2xl u-fw-700 ${hayErrores ? 'u-color-error' : 'u-color-texto-terciario'}">${fallos}</p></div>
             </div>
             ${hayErrores ? `<div class="o-pila" style="width:100%"><h3>Repaso de errores</h3><div class="o-pila">${listaErrores}</div></div>` : ''}
           </div>
@@ -327,8 +341,8 @@
             <h2 class="u-texto-centrado">Aún quedan por corregir</h2>
             <p class="u-texto-centrado u-color-texto-secundario" style="max-width:320px">${restantes} ${restantes === 1 ? 'pregunta sin acertar' : 'preguntas sin acertar'}. Repítelas hasta responderlas bien.</p>
             <div class="cuestion-resumen__stats">
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Corregidas</p><p class="u-texto-lg u-fw-700 u-color-exito">${corregidas}</p></div>
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Pendientes</p><p class="u-texto-lg u-fw-700 u-color-error">${restantes}</p></div>
+              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Corregidas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${corregidas}</p></div>
+              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Pendientes</p><p class="u-texto-2xl u-fw-700 u-color-error">${restantes}</p></div>
             </div>
           </div>
           <div class="barra-accion">
@@ -379,51 +393,9 @@
               ? `<button class="btn-primario" id="btnSig">${I('arrow-right')} Siguiente capítulo</button>`
               : `<button class="btn-primario" id="btnLibro">${I('book-open')} Volver al libro</button>`}
           </div>
-          <div class="tarjeta-memorizar-oferta" id="ofertaMemoria">
-            <div class="tarjeta-memorizar-oferta__titulo">${I('bookmark')} ¿Memorizar un versículo de este capítulo?</div>
-            <div class="tarjeta-memorizar-oferta__sugerencias" id="memSugerencias"></div>
-            <input class="cuestion__input" id="memRef" placeholder="Referencia (ej. ${e.libro.nombre} ${e.capituloNum}:16)" maxlength="60" style="text-align:center">
-            <textarea class="cuestion__input" id="memTexto" placeholder="Escribe el texto del versículo a memorizar" rows="3"></textarea>
-            <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-sm)">
-              <button class="btn-secundario" id="btnOmitirMem">Omitir</button>
-              <button class="btn-primario" id="btnGuardarVers">${I('plus')} Guardar versículo</button>
-            </div>
-          </div>
         </div>`;
       if (haySiguiente) raiz.querySelector('#btnSig').onclick = () => router.navegar(`/estudio/sesion/${e.libroId}/${e.capituloNum + 1}`);
       else raiz.querySelector('#btnLibro').onclick = () => router.navegar(`/estudio/libro/${e.libroId}`);
-      const oferta = raiz.querySelector('#ofertaMemoria');
-      if (oferta) {
-        const ref = oferta.querySelector('#memRef');
-        const txt = oferta.querySelector('#memTexto');
-        const guardar = oferta.querySelector('#btnGuardarVers');
-        oferta.querySelector('#btnOmitirMem').onclick = () => oferta.remove();
-        guardar.onclick = async () => {
-          if (!txt.value.trim()) { txt.focus(); return; }
-          guardar.disabled = true;
-          guardar.innerHTML = I('check') + ' Guardando...';
-          await window.memorizacionRepository.agregarTarjetaManual(usuario.id, {
-            referencia: ref.value.trim(), texto: txt.value.trim()
-          }).catch(() => {});
-          oferta.innerHTML = `<div class="u-texto-centrado o-pila" style="align-items:center"><p style="font-size:2rem;color:var(--color-exito);display:flex;justify-content:center">${I('check-circle')}</p><p class="u-fw-600">¡Versículo guardado!</p><p class="u-fs-xs u-color-texto-terciario">Lo encontrarás en Memoria para repasarlo.</p></div>`;
-        };
-        const sugerencias = oferta.querySelector('#memSugerencias');
-        try {
-          const vers = await window.memorizacionRepository.versiculosDelCapitulo(e.capId);
-          if (vers.length) {
-            sugerencias.innerHTML = '<p class="u-fs-xs u-color-texto-terciario u-mb-1">O elige uno de este capítulo:</p>' +
-              vers.map(v => `<button type="button" class="chip-versiculo" data-id="${v.id}" data-ref="${e.libro.nombre} ${e.capituloNum}:${v.numero}">${e.libro.nombre} ${e.capituloNum}:${v.numero}</button>`).join('');
-            sugerencias.querySelectorAll('.chip-versiculo').forEach(chip => {
-              chip.onclick = async () => {
-                chip.disabled = true;
-                chip.textContent = I('check') + ' ' + chip.dataset.ref;
-                await window.memorizacionRepository.agregarTarjeta(usuario.id, chip.dataset.id).catch(() => {});
-                oferta.innerHTML = `<div class="u-texto-centrado o-pila" style="align-items:center"><p style="font-size:2rem;color:var(--color-exito);display:flex;justify-content:center">${I('check-circle')}</p><p class="u-fw-600">¡Versículo guardado!</p><p class="u-fs-xs u-color-texto-terciario">Lo encontrarás en Memoria para repasarlo.</p></div>`;
-              };
-            });
-          }
-        } catch (e) {}
-      }
       window.Iconos.actualizar();
 
       try {

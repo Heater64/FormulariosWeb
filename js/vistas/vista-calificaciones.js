@@ -32,6 +32,10 @@
           (notasPorExamen[i.examen_id] = notasPorExamen[i.examen_id] || {})[i.alumno_id] = parseFloat(i.nota);
         }
       });
+      let filtroAlumno = '';
+      const completadosEval = (evalObj, alumnoId) => {
+        return (evalObj.examenes || []).filter(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId] != null).length;
+      };
       const mediaEval = (evalObj, alumnoId) => {
         const ns = (evalObj.examenes || []).map(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId]).filter(n => n != null);
         return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
@@ -43,22 +47,28 @@
       };
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg)">
-          <div class="o-flecha o-flecha--between">
+          <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
             <h2>${window.Iconos.render('graduation-cap')} Libro de Calificaciones</h2>
-            <div style="display:flex;gap:var(--espaciado-xs)">
+            <div class="o-flecha" style="gap:var(--espaciado-xs)">
               <button class="btn-secundario" id="btnVolver">Volver</button>
               <button class="btn-primario" id="btnCrearEval">+ Crear evaluación</button>
             </div>
           </div>
           ${this._tarjetaCrear()}
           ${this._estadisticas(stats)}
+          <div class="o-flecha u-fs-xs u-color-texto-terciario" style="gap:var(--espaciado-sm);flex-wrap:wrap">
+            <span>${window.Iconos.render('info')} <span style="color:var(--color-exito);font-weight:700">Verde</span>: ≥7 &nbsp; <span style="color:var(--color-error);font-weight:700">Rojo</span>: &lt;7</span>
+            <span>${window.Iconos.render('check')} Calificación automática &nbsp; ${window.Iconos.render('clipboard')} Pendiente de corrección</span>
+          </div>
+          <input type="text" id="filtroAlumno" placeholder="Buscar alumno..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)">
           ${evaluaciones.length === 0 && sueltos.length === 0
             ? '<p class="u-color-texto-terciario">Aún no hay evaluaciones ni exámenes. Crea una evaluación y añade exámenes.</p>'
             : alumnos.length === 0
               ? '<p class="u-color-texto-terciario">No hay alumnos asignados a este grupo.</p>'
-              : evaluaciones.map(e => this._seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, mediaGrupoEval)).join('') +
+              : evaluaciones.map(e => this._seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, completadosEval, mediaGrupoEval)).join('') +
                 (sueltos.length ? this._seccionSueltos(sueltos, alumnos, notasPorExamen) : '')}
         </div>`;
+      window.Iconos.actualizar();
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
       const crearEval = async () => {
         const datos = await window.helpers.formulario({
@@ -126,6 +136,16 @@
       raiz.querySelectorAll('[data-corregir]').forEach(b => {
         b.onclick = () => router.navegar('/corregir/' + b.getAttribute('data-corregir'));
       });
+      const filtroInput = raiz.querySelector('#filtroAlumno');
+      if (filtroInput) {
+        filtroInput.addEventListener('input', () => {
+          const q = filtroInput.value.toLowerCase().trim();
+          raiz.querySelectorAll('.fila-alumno').forEach(tr => {
+            const nombre = tr.querySelector('td:first-child')?.textContent?.toLowerCase() || '';
+            tr.style.display = !q || nombre.includes(q) ? '' : 'none';
+          });
+        });
+      }
     },
     _tarjetaCrear() {
       return `
@@ -141,26 +161,27 @@
     _estadisticas(stats) {
       if (!stats) return '';
       const tarjeta = (icono, valor, etiqueta, color) => `
-        <div class="tarjeta-capitulo" style="flex:1;min-width:120px">
+        <div class="tarjeta-estadistica" style="flex:1;min-width:120px;border-left:3px solid ${color || 'var(--color-borde)'}">
           <div class="o-flecha o-flecha--between">
             <span class="u-fs-xs u-color-texto-secundario">${etiqueta}</span>
-            <span class="u-color-texto-terciario">${window.Iconos.render(icono)}</span>
+            <span>${window.Iconos.render(icono)}</span>
           </div>
-          <p class="u-fw-700" style="font-size:1.5rem;color:${color || 'var(--color-texto)'}">${valor}</p>
+          <p class="u-texto-2xl u-fw-700" style="color:${color || 'var(--color-texto)'}">${valor}</p>
         </div>`;
       return `
         <div style="display:flex;gap:var(--espaciado-sm);flex-wrap:wrap" class="u-mt-2 u-mb-2">
           ${tarjeta('users', stats.totalAlumnos, 'Alumnos', 'var(--color-texto)')}
           ${tarjeta('clipboard-check', stats.totalExamenes, 'Exámenes', 'var(--color-texto)')}
-            ${tarjeta('percent', stats.promedioGrupo, 'Prom. grupo', stats.promedioGrupo >= 7 ? 'var(--color-exito)' : 'var(--color-error)')}
+          ${tarjeta('percent', stats.promedioGrupo, 'Prom. grupo', stats.promedioGrupo >= 7 ? 'var(--color-exito)' : 'var(--color-error)')}
           ${tarjeta('check-check', stats.aprobados, 'Aprobados (≥70)', 'var(--color-exito)')}
           ${tarjeta('alert-triangle', stats.enRiesgo, 'En riesgo (<70)', 'var(--color-error)')}
           ${tarjeta('star', stats.destacados, 'Destacados (≥90)', 'var(--color-acento)')}
         </div>`;
     },
-    _seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, mediaGrupoEval) {
+    _seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, completadosEval, mediaGrupoEval) {
       const mg = mediaGrupoEval(e);
       const examenes = e.examenes || [];
+      const totalEx = examenes.length;
       const cabecera = `
         <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
           <div>
@@ -178,27 +199,30 @@
         ? '<p class="u-fs-sm u-color-texto-terciario u-mt-2">Sin exámenes todavía. Pulsa “+ Añadir examen”.</p>'
         : `
           <div style="overflow-x:auto;-webkit-overflow-scrolling:touch" class="u-mt-2">
-            <table class="tabla-admin" style="min-width:${Math.max(360, (examenes.length + 2) * 90)}px">
+            <table class="tabla-admin" style="min-width:${Math.max(360, (examenes.length + 3) * 80)}px">
               <thead>
                 <tr>
                   <th>Alumno</th>
-                  ${examenes.map(x => `<th style="font-size:var(--texto-xs)">
+                  ${examenes.map(x => `<th style="font-size:var(--texto-xs);text-align:center">
                     <a class="btn-enlace" data-corregir="${x.id}" title="Ver y corregir">${window.helpers.escapeHtml(x.titulo)}</a>
                     <br><button class="btn-enlace u-fs-xs" data-editar-ex="${x.id}">editar</button>
                   </th>`).join('')}
-                  <th>Media</th>
+                  <th style="text-align:center;font-size:var(--texto-xs)">Compl.</th>
+                  <th style="text-align:center">Media</th>
                 </tr>
               </thead>
               <tbody>
                 ${alumnos.map(a => {
                   const media = mediaEval(e, a.id);
-                  return `<tr>
+                  const compl = completadosEval(e, a.id);
+                  return `<tr class="fila-alumno">
                     <td class="u-fw-600 u-fs-sm">${window.helpers.escapeHtml(window.helpers.nombreAlumno(a))}</td>
                     ${examenes.map(x => {
                       const m = notasPorExamen[x.id];
                       const nota = m ? m[a.id] : undefined;
                       return `<td style="text-align:center;font-weight:${nota != null ? '700' : '400'};color:${colorNota(nota)}">${nota != null ? nota : '—'}</td>`;
                     }).join('')}
+                    <td style="text-align:center;font-size:var(--texto-xs);color:${compl === totalEx ? 'var(--color-exito)' : 'var(--color-texto-terciario)'}">${compl}/${totalEx}</td>
                     <td style="text-align:center;font-weight:700;color:${colorNota(media)}">${media != null ? media : '—'}</td>
                   </tr>`;
                 }).join('')}
@@ -226,7 +250,7 @@
               </tr>
             </thead>
             <tbody>
-              ${alumnos.map(a => `<tr>
+              ${alumnos.map(a => `<tr class="fila-alumno">
                 <td class="u-fw-600 u-fs-sm">${window.helpers.escapeHtml(window.helpers.nombreAlumno(a))}</td>
                 ${sueltos.map(x => {
                   const m = notasPorExamen[x.id];

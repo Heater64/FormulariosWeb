@@ -45,7 +45,7 @@
     border-color: #3730A3;
   }
   :root:not([data-tema="claro"]) .tarjeta-porcentaje__barra {
-    background: #312E81;
+    background: #60A5FA;
   }
 }
 
@@ -55,5 +55,5 @@
 }
 
 :root[data-tema="oscuro"] .tarjeta-porcentaje__barra {
-  background: #312E81;
+  background: #60A5FA;
 }

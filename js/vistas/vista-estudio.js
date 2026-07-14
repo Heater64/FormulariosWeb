@@ -48,14 +48,26 @@
             ${pendientesMemoria > 0 ? `<div class="banner-repaso" onclick="router.navegar('/memorizacion')" role="button" tabindex="0">${window.Iconos.render('brain')} <span>Tienes ${pendientesMemoria} versículo${pendientesMemoria === 1 ? '' : 's'} para repasar hoy</span> <span class="banner-repaso__flecha">→</span></div>` : ''}
             <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div>
               <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas">
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-lg u-fw-700">${completados.length}</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros</p><p class="u-texto-lg u-fw-700">${librosCompletados}/${(libros||[]).length}</p></div>
-              <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${window.Iconos.render('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-lg u-fw-700">${racha} días</p></div></div>
-              <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-lg u-fw-700">${pctGeneral}%</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" style="width:${pctGeneral}%"></div></div></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-2xl u-fw-700">${completados.length}</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros</p><p class="u-texto-2xl u-fw-700">${librosCompletados}/${(libros||[]).length}</p></div>
+              <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${window.Iconos.render('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-2xl u-fw-700">${racha} días</p></div></div>
+              <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-2xl u-fw-700">${pctGeneral}%</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" style="width:${pctGeneral}%"></div></div></div>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso" style="cursor:pointer" id="continuarLectura"><div class="o-flecha o-flecha--between"><div><span class="u-fs-sm u-color-texto-secundario">Continuar leyendo</span><p class="u-fw-600">${siguienteLibro.nombre} ${siguienteCap}</p></div><span>→</span></div></div>` : ''}
-            <div class="o-pila"><h3>Antiguo Testamento</h3><div id="listaAT" class="o-grid-tarjetas"></div></div>
-            <div class="o-pila"><h3>Nuevo Testamento</h3><div id="listaNT" class="o-grid-tarjetas"></div></div>
+            <div class="o-pila">
+              <div class="o-flecha o-flecha--between" style="cursor:pointer" id="toggleAT">
+                <h3>Antiguo Testamento</h3>
+                <span id="iconAT" style="transition:transform var(--transicion-normal)">${window.Iconos.render('chevron-down')}</span>
+              </div>
+              <div id="listaAT" class="o-grid-tarjetas"></div>
+            </div>
+            <div class="o-pila">
+              <div class="o-flecha o-flecha--between" style="cursor:pointer" id="toggleNT">
+                <h3>Nuevo Testamento</h3>
+                <span id="iconNT" style="transition:transform var(--transicion-normal)">${window.Iconos.render('chevron-down')}</span>
+              </div>
+              <div id="listaNT" class="o-grid-tarjetas"></div>
+            </div>
           </div>`;
         if (siguienteLibro) {
           raiz.querySelector('#continuarLectura').onclick = () => router.navegar(`/estudio/sesion/${siguienteLibro.id}/${siguienteCap}`);
@@ -74,6 +86,24 @@
         raiz.querySelectorAll('[data-libro]').forEach(el => {
           el.addEventListener('click', () => router.navegar(`/estudio/libro/${el.dataset.libro}`));
         });
+        const atStorage = localStorage.getItem('fb_collapse_at') !== 'false';
+        const ntStorage = localStorage.getItem('fb_collapse_nt') !== 'false';
+        const listaAT = raiz.querySelector('#listaAT');
+        const listaNT = raiz.querySelector('#listaNT');
+        if (!atStorage) { listaAT.style.display = 'none'; raiz.querySelector('#iconAT').style.transform = 'rotate(-90deg)'; }
+        if (!ntStorage) { listaNT.style.display = 'none'; raiz.querySelector('#iconNT').style.transform = 'rotate(-90deg)'; }
+        raiz.querySelector('#toggleAT').onclick = () => {
+          const vis = listaAT.style.display !== 'none';
+          listaAT.style.display = vis ? 'none' : '';
+          raiz.querySelector('#iconAT').style.transform = vis ? 'rotate(-90deg)' : '';
+          localStorage.setItem('fb_collapse_at', String(!vis));
+        };
+        raiz.querySelector('#toggleNT').onclick = () => {
+          const vis = listaNT.style.display !== 'none';
+          listaNT.style.display = vis ? 'none' : '';
+          raiz.querySelector('#iconNT').style.transform = vis ? 'rotate(-90deg)' : '';
+          localStorage.setItem('fb_collapse_nt', String(!vis));
+        };
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     }
   };

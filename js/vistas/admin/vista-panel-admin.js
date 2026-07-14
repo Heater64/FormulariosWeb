@@ -46,11 +46,11 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
           <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('settings')} Administración</h2><button class="btn-secundario" onclick="router.navegar('/perfil')">← Volver</button></div>
-          <div class="o-grid-tarjetas" style="grid-template-columns:repeat(4,1fr)">
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-lg u-fw-700">${stats.usuarios}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Grupos</p><p class="u-texto-lg u-fw-700">${grupos.length}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Exámenes</p><p class="u-texto-lg u-fw-700">${stats.examenes}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-lg u-fw-700">${stats.lecturas}</p></div>
+          <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-xl u-fw-700">${stats.usuarios}</p></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Grupos</p><p class="u-texto-xl u-fw-700">${grupos.length}</p></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Exámenes</p><p class="u-texto-xl u-fw-700">${stats.examenes}</p></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-xl u-fw-700">${stats.lecturas}</p></div>
           </div>
           <div class="o-pila" id="adminSecciones">
             <div class="seccion-admin">
@@ -58,12 +58,12 @@
                 <h3>${window.Iconos.render('users')} Usuarios (${usuarios.length})</h3>
                 <button class="btn-primario u-fs-xs" id="btnCrearUsuario">+ Crear usuario</button>
               </div>
-               <div class="o-pila">${usuarios.map(u => `<div class="tarjeta-capitulo" style="border-left:3px solid ${u.activo ? 'var(--color-exito)' : 'var(--color-error)'}"><div class="o-flecha o-flecha--between"><div><span class="u-fw-600">${window.helpers.escapeHtml(u.nombre_completo)}</span><span class="u-fs-xs u-color-texto-secundario"> @${u.username} · ${u.rol}</span></div><div class="o-flecha" style="gap:4px">${window.vistaPanelAdmin._puedeEditar(usuario, u) ? `<button class="btn-editar-usuario" data-id="${u.id}" data-nombre="${window.helpers.escapeHtml(u.nombre_completo)}" style="font-size:var(--texto-xs);background:none;border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;gap:4px">${window.Iconos.render('edit-3')} Editar</button>` : ''}${window.vistaPanelAdmin._puedeEditar(usuario, u) && u.rol !== 'owner' ? `<button class="btn-toggle-activo" data-id="${u.id}" data-activo="${!u.activo}" style="font-size:var(--texto-xs);background:none;border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;gap:4px">${u.activo ? window.Iconos.render('ban') + ' Desactivar' : window.Iconos.render('circle-check') + ' Activar'}</button>` : ''}${window.vistaPanelAdmin._puedeEliminar(usuario, u) ? `<button class="btn-eliminar-usuario" data-id="${u.id}" data-nombre="${window.helpers.escapeHtml(u.nombre_completo)}" style="font-size:var(--texto-xs);background:none;border:1px solid var(--color-error);color:var(--color-error);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;gap:4px">${window.Iconos.render('trash-2')} Eliminar</button>` : ''}</div></div><div class="o-flecha u-mt-1" style="gap:var(--espaciado-xs);flex-wrap:wrap">${['usuario','editor','admin'].filter(r => r !== u.rol && window.vistaPanelAdmin._rangoRol(r) <= window.vistaPanelAdmin._rangoRol(usuario.rol)).map(r => `<button class="btn-cambiar-rol" data-id="${u.id}" data-rol="${r}" style="font-size:var(--texto-xs);background:var(--color-fondo);border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px">Hacer ${r}</button>`).join('')}</div></div>`).join('')}</div>
+               <div class="o-pila">${usuarios.map(u => `<div class="tarjeta-capitulo" style="border-left:3px solid ${u.activo ? 'var(--color-exito)' : 'var(--color-error)'}"><div class="o-flecha o-flecha--between"><div><span class="u-fw-600">${window.helpers.escapeHtml(u.nombre_completo)}</span><span class="u-fs-xs u-color-texto-secundario"> @${u.username} · ${u.rol}</span></div><div class="o-flecha" style="gap:4px">${window.vistaPanelAdmin._puedeEditar(usuario, u) ? `<button class="btn-editar-usuario" data-id="${u.id}" data-nombre="${window.helpers.escapeHtml(u.nombre_completo)}" style="font-size:var(--texto-xs);background:none;border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;gap:4px">${window.Iconos.render('edit-3')} Editar</button>` : ''}${window.vistaPanelAdmin._puedeEliminar(usuario, u) ? `<button class="btn-eliminar-usuario" data-id="${u.id}" data-nombre="${window.helpers.escapeHtml(u.nombre_completo)}" style="font-size:var(--texto-xs);background:none;border:1px solid var(--color-error);color:var(--color-error);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px;display:inline-flex;align-items:center;gap:4px">${window.Iconos.render('trash-2')} Eliminar</button>` : ''}</div></div><div class="o-flecha u-mt-1" style="gap:var(--espaciado-xs);flex-wrap:wrap">${['usuario','editor','admin'].filter(r => r !== u.rol && window.vistaPanelAdmin._rangoRol(r) <= window.vistaPanelAdmin._rangoRol(usuario.rol)).map(r => `<button class="btn-cambiar-rol" data-id="${u.id}" data-rol="${r}" style="font-size:var(--texto-xs);background:var(--color-fondo);border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;padding:2px 6px">Hacer ${r}</button>`).join('')}</div></div>`).join('')}</div>
             </div>
             <div class="seccion-admin u-mt-3">
               <h3>${window.Iconos.render('users')} Grupos (${grupos.length})</h3>
-              <div class="o-flecha u-mb-2" style="gap:var(--espaciado-sm)"><input type="text" id="nuevoGrupoNombre" placeholder="Nombre del grupo"><button class="btn-primario" id="btnCrearGrupo">Crear</button></div>
-              <div class="o-pila">${grupos.map(g => `<div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(g.nombre)}</span><button class="btn-eliminar-grupo" data-id="${g.id}" style="background:none;border:none;color:var(--color-error);cursor:pointer;display:inline-flex">${window.Iconos.render('x')} Eliminar</button></div><p class="u-fs-xs u-color-texto-terciario">Admin: ${g.perfiles?.nombre_completo || 'N/A'}</p></div>`).join('')}</div>
+              <div class="o-flecha u-mb-2" style="gap:var(--espaciado-sm);flex-wrap:wrap"><input type="text" id="nuevoGrupoNombre" placeholder="Nombre del grupo" style="min-width:160px;flex:1"><button class="btn-primario" id="btnCrearGrupo">Crear</button></div>
+              <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${grupos.map(g => `<div class="tarjeta-capitulo btn-ver-grupo-admin" data-gid="${g.id}" style="cursor:pointer"><div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(g.nombre)}</span><button class="btn-eliminar-grupo" data-id="${g.id}" style="background:none;border:none;color:var(--color-error);cursor:pointer;display:inline-flex;font-size:var(--texto-xs)">${window.Iconos.render('x')}</button></div><p class="u-fs-xs u-color-texto-terciario">Admin: ${g.perfiles?.nombre_completo || g.perfiles?.username || 'N/A'}</p></div>`).join('')}</div>
             </div>
             <div class="seccion-admin u-mt-3">
               <h3>${window.Iconos.render('file-text')} Exámenes (${examenes.length})</h3>
@@ -151,6 +151,28 @@
             window.helpers.mostrarAlerta('Usuario eliminado.', 'exito');
             router.navegar('/admin');
           } catch (e) { window.helpers.mostrarAlerta('Error al eliminar el usuario: ' + e.message, 'error'); }
+        };
+      });
+      const gruposLocal = grupos;
+      raiz.querySelectorAll('.btn-ver-grupo-admin').forEach(el => {
+        el.onclick = async (e) => {
+          if (e.target.closest('.btn-eliminar-grupo')) return;
+          const gid = el.dataset.gid;
+          const grupo = gruposLocal.find(g => g.id === gid);
+          if (!grupo) return;
+          try {
+            const { data: miembros } = await window.supabaseClient.from('perfiles').select('id, nombre_completo, username, rol').eq('grupo_id', gid).order('nombre_completo');
+            const admins = (miembros || []).filter(m => m.rol === 'admin');
+            const editores = (miembros || []).filter(m => m.rol === 'editor');
+            const alumnos = (miembros || []).filter(m => m.rol === 'usuario');
+            const overlay = document.createElement('div');
+            overlay.className = 'modal-overlay';
+            overlay.innerHTML = '<div class="modal"><div class="o-pila"><h3>' + window.helpers.escapeHtml(grupo.nombre) + '</h3><div class="tarjeta-capitulo"><span class="u-fs-sm u-color-texto-secundario">Total miembros</span><p class="u-texto-xl u-fw-700">' + (miembros || []).length + '</p></div><div class="o-pila"><h4>Administradores (' + admins.length + ')</h4>' + (admins.length ? admins.map(a => '<div class="tarjeta-capitulo u-fs-sm">' + window.helpers.escapeHtml(a.nombre_completo || a.username) + '</div>').join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin administradores</p>') + '</div><div class="o-pila"><h4>Editores (' + editores.length + ')</h4>' + (editores.length ? editores.map(e => '<div class="tarjeta-capitulo u-fs-sm">' + window.helpers.escapeHtml(e.nombre_completo || e.username) + '</div>').join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin editores</p>') + '</div><div class="o-pila"><h4>Alumnos (' + alumnos.length + ')</h4>' + (alumnos.length ? alumnos.map(a => '<div class="tarjeta-capitulo u-fs-sm">' + window.helpers.escapeHtml(a.nombre_completo || a.username) + '</div>').join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin alumnos</p>') + '</div></div><button class="btn-primario u-mt-2" id="btnCerrarDetalle" style="width:100%;justify-content:center">Cerrar</button></div>';
+            document.body.appendChild(overlay);
+            window.Iconos.actualizar();
+            overlay.querySelector('#btnCerrarDetalle').onclick = () => overlay.remove();
+            overlay.addEventListener('click', ev => { if (ev.target === overlay) overlay.remove(); });
+          } catch (err) { window.helpers.mostrarAlerta('Error: ' + err.message, 'error'); }
         };
       });
       raiz.querySelectorAll('.btn-editar-usuario').forEach(btn => {

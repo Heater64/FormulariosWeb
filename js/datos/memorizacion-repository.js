@@ -64,6 +64,10 @@
       const { count } = await sb().from('tarjetas_memorizacion').select('id', { count: 'exact', head: true }).eq('usuario_id', usuarioId).eq('activa', true);
       return count || 0;
     },
+    async desactivarTarjeta(id) {
+      if (!sb()) return;
+      await sb().from('tarjetas_memorizacion').update({ activa: false }).eq('id', id);
+    },
     async totalRepasos(usuarioId) {
       if (!sb()) return 0;
       const { count } = await sb().from('repasos_memorizacion').select('id, tarjetas_memorizacion!inner(usuario_id)', { count: 'exact', head: true }).eq('tarjetas_memorizacion.usuario_id', usuarioId);
