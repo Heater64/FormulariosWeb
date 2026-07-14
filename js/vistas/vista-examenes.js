@@ -15,9 +15,9 @@
         this._alumnos = esProfesor ? await window.examenesRepository.obtenerMiembrosGrupo(usuario.grupo_id, true) : [];
         this._intentosGrupo = esProfesor ? await window.examenesRepository.obtenerIntentosGrupo(usuario.grupo_id) : [];
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="o-flecha o-flecha--between">
-              <h2>${window.Iconos.render('clipboard-check')} Exámenes</h2>
+              <h2>${window.Iconos.render('clipboard-check')} Exámenes <button class="info-ayuda" data-guia="examenes" aria-label="Guía de Exámenes">i</button></h2>
               <div style="display:flex;gap:var(--espaciado-xs)">
                 ${esProfesor ? '<button class="btn-primario" id="btnNuevoExamen">+ Nuevo</button>' : ''}
                 ${esProfesor ? '<button class="btn-secundario" id="btnCalificaciones">Notas</button>' : ''}
@@ -98,6 +98,13 @@
         });
         cont.querySelectorAll('.btn-compartir-examen').forEach(btn => {
           btn.onclick = () => this._compartir(btn.dataset.id, btn.dataset.titulo);
+        });
+        const guiasExamenes = {
+          'examenes': ['Exámenes', 'Aquí encuentras los exámenes personalizados creados por los profesores. Puedes ver los disponibles, los que tienes en progreso y los ya calificados. Los profesores pueden crear, publicar, compartir y gestionar exámenes.', 'Ej: Si eres alumno, haz clic en "Comenzar" para iniciar un examen. Si eres profesor, usa "+ Nuevo" para crear uno.']
+        };
+        raiz.querySelectorAll('[data-guia]').forEach(btn => {
+          const g = guiasExamenes[btn.dataset.guia];
+          if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
         });
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     },

@@ -10,6 +10,12 @@
       if (window.colaSync) window.colaSync.iniciar();
       this._verificarSesion();
       window.eventBus.suscribir('auth:login', (usuario) => {
+        if (!usuario.foto_perfil) {
+          try {
+            const prev = JSON.parse(localStorage.getItem('fb_usuario'));
+            if (prev?.foto_perfil) usuario.foto_perfil = prev.foto_perfil;
+          } catch (e) {}
+        }
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
         this._renderizarBarraNavegacion();
         this._notificarRepasos();
@@ -39,11 +45,15 @@
       const prefs = usuario?.preferencias;
       if (prefs) {
         if (window.preferencias) {
+          let tema = prefs.tema;
+          if (tema === 'claro') tema = 'light';
+          else if (tema === 'oscuro') tema = 'dark';
           window.preferencias.guardar({
-            tema: (prefs.tema === 'claro' || prefs.tema === 'oscuro') ? prefs.tema : null,
+            tema: (tema === 'light' || tema === 'dark') ? tema : null,
             alto_contraste: !!prefs.alto_contraste,
             letra_grande: !!prefs.letra_grande
           });
+          prefs.tema = tema;
         }
         const actualizado = { ...usuario, preferencias: prefs };
         localStorage.setItem('fb_usuario', JSON.stringify(actualizado));

@@ -107,7 +107,7 @@ select[data-campo="tipo"]:focus {
   height: 28px;
   border-radius: 50%;
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   font-size: var(--texto-sm);
   font-weight: 700;
   margin-right: var(--espaciado-xs);
@@ -155,4 +155,26 @@ select[data-campo="tipo"]:focus {
   background: var(--color-fondo);
   color: var(--color-texto);
   font: inherit;
+}
+
+@media (max-width: 480px) {
+  .pregunta {
+    padding: var(--espaciado-sm);
+  }
+  .pregunta__texto {
+    font-size: var(--texto-sm);
+  }
+  .pregunta__opcion {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    font-size: var(--texto-sm);
+  }
+  .pregunta-examen {
+    padding: var(--espaciado-sm);
+  }
+  .pregunta-examen__texto {
+    font-size: var(--texto-sm);
+  }
+  .pregunta-examen__opcion {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
 }

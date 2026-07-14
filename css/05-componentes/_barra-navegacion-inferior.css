@@ -11,7 +11,7 @@
   -webkit-backdrop-filter: var(--desenfoque-vidrio);
   backdrop-filter: var(--desenfoque-vidrio);
   border-top: 1px solid var(--color-vidrio-borde);
-  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.04), 0 -8px 24px -16px rgba(15, 23, 42, 0.25);
+  box-shadow: var(--sombra-nav, 0 -1px 0 rgba(15, 23, 42, 0.04), 0 -8px 24px -16px rgba(15, 23, 42, 0.25));
   padding: 6px 6px max(8px, env(safe-area-inset-bottom));
   min-height: calc(52px + env(safe-area-inset-bottom));
 }
@@ -76,5 +76,39 @@
   }
   .barra-nav-inferior__item--activo:hover {
     color: var(--color-acento);
+  }
+}
+
+@media (max-width: 480px) {
+  .barra-nav-inferior {
+    padding: 4px 4px max(6px, env(safe-area-inset-bottom));
+    min-height: calc(48px + env(safe-area-inset-bottom));
+  }
+  .barra-nav-inferior__item {
+    padding: 4px 2px;
+    font-size: 9px;
+    min-width: 40px;
+    min-height: 44px;
+  }
+  .barra-nav-inferior__item svg {
+    width: 22px;
+    height: 22px;
+  }
+  .barra-nav-inferior__item--activo::after {
+    width: 16px;
+    height: 2px;
+    bottom: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .barra-nav-inferior__item {
+    font-size: 8px;
+    min-width: 36px;
+    padding: 3px 1px;
+  }
+  .barra-nav-inferior__item svg {
+    width: 20px;
+    height: 20px;
   }
 }

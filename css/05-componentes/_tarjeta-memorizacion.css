@@ -186,7 +186,7 @@
 
 .mem-tab--activo {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   border-color: var(--color-acento);
 }
 

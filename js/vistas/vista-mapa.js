@@ -16,7 +16,7 @@
       const antiguos = libros.filter(l => l.testamento === 'antiguo');
       const nuevos = libros.filter(l => l.testamento === 'nuevo');
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <h2>${window.Iconos.render('map')} Mapa Bíblico</h2>
           <p class="u-fs-sm u-color-texto-secundario u-mb-3">Visualiza tu progreso a través de toda la Biblia</p>
           <div class="o-pila" id="mapaAT">

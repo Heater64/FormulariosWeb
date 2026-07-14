@@ -29,7 +29,7 @@
 .btn-peligro {
   width: 100%;
   justify-content: center;
-  color: #fff;
+  color: var(--color-texto-acento);
   background: var(--color-error);
   border: 1.5px solid var(--color-error);
   border-radius: var(--radio-md);
@@ -77,4 +77,13 @@
   display: flex;
   gap: var(--espaciado-xs);
   justify-content: flex-end;
+}
+
+@media (max-width: 480px) {
+  .zona-peligro {
+    padding: var(--espaciado-sm);
+  }
+  .btn-peligro {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
 }

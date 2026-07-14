@@ -28,7 +28,7 @@
   width: 100%;
   height: 8px;
   border-radius: var(--radio-pill);
-  background: #BFDBFE;
+  background: var(--color-acento-soft);
   overflow: hidden;
 }
 
@@ -40,20 +40,26 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) .tarjeta-porcentaje {
+  :root:not([data-theme="light"]) .tarjeta-porcentaje {
     background: linear-gradient(135deg, #1E3A5F, #312E81);
     border-color: #3730A3;
   }
-  :root:not([data-tema="claro"]) .tarjeta-porcentaje__barra {
-    background: #60A5FA;
+  :root:not([data-theme="light"]) .tarjeta-porcentaje__barra {
+    background: var(--color-acento);
   }
 }
 
-:root[data-tema="oscuro"] .tarjeta-porcentaje {
+:root[data-theme="dark"] .tarjeta-porcentaje {
   background: linear-gradient(135deg, #1E3A5F, #312E81);
   border-color: #3730A3;
 }
 
-:root[data-tema="oscuro"] .tarjeta-porcentaje__barra {
-  background: #60A5FA;
+:root[data-theme="dark"] .tarjeta-porcentaje__barra {
+  background: var(--color-acento);
+}
+
+@media (max-width: 480px) {
+  .tarjeta-porcentaje {
+    padding: var(--espaciado-sm);
+  }
 }

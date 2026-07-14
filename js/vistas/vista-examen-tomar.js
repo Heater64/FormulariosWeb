@@ -34,7 +34,7 @@
     _renderizar(raiz, examen, preguntas, intento, respuestas, usuario) {
       const respondidas = preguntas.filter(p => respuestas[p.id] !== undefined && respuestas[p.id] !== '').length;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-pila">
             <div class="o-flecha o-flecha--between o-flecha--centro">
               <div>
@@ -49,7 +49,7 @@
             <p class="u-fs-xs u-color-texto-terciario" id="contadorProgreso">${respondidas}/${preguntas.length} respondidas</p>
           </div>
           <div id="preguntasExamen" class="o-pila"></div>
-          <div class="o-flecha" style="position:fixed;bottom:80px;left:0;right:0;justify-content:center;gap:var(--espaciado-md);padding:var(--espaciado-sm);background:rgba(255,255,255,0.95);backdrop-filter:blur(8px);border-top:1px solid var(--color-borde)">
+          <div class="o-flecha" style="position:fixed;bottom:calc(76px + env(safe-area-inset-bottom));left:0;right:0;justify-content:center;gap:var(--espaciado-md);padding:var(--espaciado-sm);background:var(--color-vidrio);-webkit-backdrop-filter:var(--desenfoque-vidrio);backdrop-filter:var(--desenfoque-vidrio);border-top:1px solid var(--color-vidrio-borde)">
             <button class="btn-primario" id="btnEntregar" style="width:80%;justify-content:center">Entregar examen</button>
           </div>
         </div>`;
@@ -151,7 +151,7 @@
         : `<p class="u-fw-600">Aciertos: ${aciertos}/${preguntas.length} (${Math.round((aciertos / preguntas.length) * 100)}%)</p>`;
       const estadoTexto = intento.corregido ? 'Corregido' : (esLibre ? 'Pendiente de calificación' : 'Calificado automáticamente');
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-mt-3" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+        <div class="o-contenedor o-pila o-pila--lg u-mt-3" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between">
             <button class="btn-secundario" id="btnVolver">← Volver</button>
             <span class="u-fs-xs u-color-texto-terciario">${estadoTexto}</span>

@@ -21,7 +21,7 @@
         const primerPendiente = (() => { for (let n = 1; n <= total; n++) if (!leidosPorNum[n]) return n; return 1; })();
 
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
+          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="o-flecha o-flecha--between u-mb-2">
               <button class="btn-secundario" onclick="router.navegar('/estudio')">${window.Iconos.render('arrow-left')}</button>
               <span class="u-fs-xs u-color-texto-terciario">${leidos}/${total} leídos</span>

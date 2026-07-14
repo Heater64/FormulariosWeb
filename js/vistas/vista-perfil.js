@@ -5,8 +5,10 @@
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
       const prefs = usuario.preferencias || {};
+      if (prefs.tema === 'claro') { prefs.tema = 'light'; }
+      else if (prefs.tema === 'oscuro') { prefs.tema = 'dark'; }
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="u-texto-centrado o-pila" style="align-items:center">
             <div style="width:80px;height:80px;border-radius:50%;background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;font-size:2.2rem;font-weight:700;color:var(--color-acento);cursor:pointer;overflow:hidden;position:relative" id="avatarPerfil" title="Cambiar foto de perfil">
               <span id="avatarLetra">${usuario.nombre_completo.charAt(0).toUpperCase()}</span>
@@ -20,14 +22,15 @@
               <span class="u-fs-sm u-color-texto-secundario">@${usuario.username} · ${usuario.rol}</span>
             </div>
           </div>
-          <div class="o-pila"><h4>Información</h4>
+          <div class="o-pila"><h4>Información <button class="info-ayuda" data-guia="perfil" aria-label="Guía de Perfil">i</button></h4>
             ${usuario.email ? `<div class="tarjeta-capitulo"><span class="u-fs-sm u-color-texto-secundario">Email</span><p>${window.helpers.escapeHtml(usuario.email)}</p></div>` : ''}
             <div class="tarjeta-capitulo"><span class="u-fs-sm u-color-texto-secundario">Miembro desde</span><p>${window.helpers.formatearFecha(usuario.creado_en) || '—'}</p></div>
           </div>
-          <div class="o-pila"><h4>Preferencias</h4>
+          <div class="o-pila"><h4>Preferencias <button class="info-ayuda" data-guia="perfil-prefs" aria-label="Guía de preferencias">i</button></h4>
             <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Alto contraste</span><label class="switch"><input type="checkbox" id="chkContraste" ${prefs.alto_contraste ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Aumenta el contraste con texto negro, bordes negros y colores vivos para facilitar la lectura.</p></div>
             <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Letra grande</span><label class="switch"><input type="checkbox" id="chkLetra" ${prefs.letra_grande ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Aumenta el tamaño del texto en toda la aplicación.</p></div>
-            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Tema claro</span><label class="switch"><input type="checkbox" id="chkTema" ${prefs.tema === 'claro' ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Fuerza la apariencia clara (blanco). Desactívalo para usar el tema oscuro. Es distinto de <strong>Alto contraste</strong>, que además pone bordes negros y colores vivos para facilitar la lectura.</p></div>
+            <div class="tarjeta-capitulo"><div class="o-flecha o-flecha--between"><span>Tema claro</span><label class="switch"><input type="checkbox" id="chkTema" ${prefs.tema === 'light' ? 'checked' : ''}><span class="slider"></span></label></div><p class="u-fs-xs u-color-texto-terciario u-mt-1">Fuerza la apariencia clara (blanco). Desactívalo para usar el tema oscuro. Es distinto de <strong>Alto contraste</strong>, que además pone bordes negros y colores vivos para facilitar la lectura.</p></div>
+            <button class="btn-secundario" id="btnResetPrefs" style="width:100%;justify-content:center;font-size:var(--texto-sm)">Restablecer preferencias</button>
           </div>
           ${['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase()) ? `<button class="btn-secundario" id="btnAdmin" style="width:100%;justify-content:center">${window.Iconos.render('settings')} Panel de Administración</button>` : ''}
           ${(usuario.rol || '').toString().trim().toLowerCase() === 'owner' ? `<button class="btn-secundario u-mt-1" id="btnOwner" style="width:100%;justify-content:center">${window.Iconos.render('building-2')} Panel de Propietario</button>` : ''}
@@ -72,25 +75,49 @@
           router._ejecutar();
         } catch (e) { window.helpers.mostrarAlerta('Error al eliminar: ' + e.message, 'error'); }
       };
-      const togglePref = async (clave, checked) => {
+      const togglePref = async (clave, valor) => {
         const sb = window.supabaseClient;
         if (!sb || !usuario) return;
-        const prefsActuales = { ...(usuario.preferencias || {}), [clave]: checked };
+        const prefsActuales = { ...(usuario.preferencias || {}), [clave]: valor };
         usuario.preferencias = prefsActuales;
         store.actualizar('usuario', { ...usuario });
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
         if (window.preferencias) window.preferencias.guardar(prefsActuales);
         try { await sb.from('perfiles').update({ preferencias: JSON.stringify(prefsActuales) }).eq('id', usuario.id); } catch (e) { console.warn(e); }
       };
-      raiz.querySelector('#chkContraste').addEventListener('change', function() { document.documentElement.classList.toggle('alto-contraste', this.checked); togglePref('alto_contraste', this.checked); });
-      raiz.querySelector('#chkLetra').addEventListener('change', function() { document.documentElement.classList.toggle('letra-grande', this.checked); togglePref('letra_grande', this.checked); });
+      raiz.querySelector('#chkContraste').addEventListener('change', function() {
+        document.documentElement.dataset.hc = this.checked ? 'true' : 'false';
+        togglePref('alto_contraste', this.checked);
+      });
+      const chkLetra = raiz.querySelector('#chkLetra');
+      if (!chkLetra) { console.error('#chkLetra NOT FOUND in DOM'); }
+      chkLetra.addEventListener('change', function() {
+        console.log('chkLetra change:', this.checked);
+        document.documentElement.dataset.lg = this.checked ? 'true' : 'false';
+        console.log('data-lg set to:', document.documentElement.dataset.lg);
+        togglePref('letra_grande', this.checked);
+      });
       raiz.querySelector('#chkTema').addEventListener('change', function() {
-        const tema = this.checked ? 'claro' : 'oscuro';
-        document.documentElement.dataset.tema = tema;
+        const tema = this.checked ? 'light' : 'dark';
+        if (tema === 'light') document.documentElement.dataset.theme = 'light';
+        else document.documentElement.dataset.theme = 'dark';
         togglePref('tema', tema);
       });
-      if (prefs.alto_contraste) document.documentElement.classList.add('alto-contraste');
-      if (prefs.letra_grande) document.documentElement.classList.add('letra-grande');
+      raiz.querySelector('#btnResetPrefs').onclick = async () => {
+        const ok = await window.helpers.confirmar('Se restaurarán las preferencias a sus valores por defecto (tema automático, alto contraste desactivado, letra normal).', { titulo: '¿Restablecer preferencias?', textoConfirmar: 'Restablecer' });
+        if (!ok) return;
+        delete document.documentElement.dataset.theme;
+        document.documentElement.dataset.hc = 'false';
+        document.documentElement.dataset.lg = 'false';
+        if (window.preferencias) window.preferencias.guardar({ tema: null, alto_contraste: false, letra_grande: false });
+        const prefsDefault = { tema: null, alto_contraste: false, letra_grande: false };
+        usuario.preferencias = prefsDefault;
+        store.actualizar('usuario', { ...usuario });
+        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        try { await sb().from('perfiles').update({ preferencias: JSON.stringify(prefsDefault) }).eq('id', usuario.id); } catch (e) { console.warn(e); }
+        window.helpers.mostrarAlerta('Preferencias restablecidas.', 'exito');
+        router.navegar('/perfil');
+      };
       const btnAdmin = raiz.querySelector('#btnAdmin');
       if (btnAdmin) btnAdmin.onclick = () => router.navegar('/admin');
       const btnOwner = raiz.querySelector('#btnOwner');
@@ -120,15 +147,15 @@
         const lector = new FileReader();
         lector.onload = async (ev) => {
           const base64 = ev.target.result;
+          usuario.foto_perfil = base64;
+          store.actualizar('usuario', { ...usuario });
+          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+          const avatar = raiz.querySelector('#avatarPerfil');
+          if (avatar) avatar.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
           try {
             await window.supabaseClient.from('perfiles').update({ foto_perfil: base64 }).eq('id', usuario.id);
-            usuario.foto_perfil = base64;
-            store.actualizar('usuario', { ...usuario });
-            localStorage.setItem('fb_usuario', JSON.stringify(usuario));
-            const avatar = raiz.querySelector('#avatarPerfil');
-            if (avatar) avatar.innerHTML = `<img src="${base64}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
-            window.helpers.mostrarAlerta('Foto de perfil actualizada.', 'exito');
-          } catch (e) { window.helpers.mostrarAlerta('Error al guardar la foto: ' + e.message, 'error'); }
+          } catch (e) { console.warn('No se pudo guardar la foto en el servidor:', e.message); }
+          window.helpers.mostrarAlerta('Foto de perfil actualizada.', 'exito');
         };
         lector.readAsDataURL(file);
       };
@@ -136,6 +163,14 @@
         const avatar = raiz.querySelector('#avatarPerfil');
         if (avatar) avatar.innerHTML = `<img src="${usuario.foto_perfil}" style="width:100%;height:100%;object-fit:cover;border-radius:50%">`;
       }
+      const guiasPerfil = {
+        'perfil': ['Perfil', 'Esta sección muestra tu información personal y preferencias de la aplicación. Puedes editar tu nombre, cambiar la foto de perfil, ajustar el tema visual y acceder a paneles de administración.', 'Usa los interruptores para activar/desactivar el alto contraste, la letra grande o el tema claro.'],
+        'perfil-prefs': ['Preferencias', 'Personaliza tu experiencia en la aplicación: activa el alto contraste para mejorar la legibilidad, aumenta el tamaño del texto, o fuerza el tema claro. Los cambios se guardan automáticamente.', 'Alto contraste: añade bordes negros y colores más vivos. Letra grande: aumenta todo el texto. Tema claro: fondo blanco siempre.']
+      };
+      raiz.querySelectorAll('[data-guia]').forEach(btn => {
+        const g = guiasPerfil[btn.dataset.guia];
+        if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
+      });
     }
   };
 })();

@@ -44,7 +44,7 @@
     },
     _renderizar(raiz, { usuarios, grupos, examenes, stats, usuario }) {
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('settings')} Administración</h2><button class="btn-secundario" onclick="router.navegar('/perfil')">← Volver</button></div>
           <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-xl u-fw-700">${stats.usuarios}</p></div>

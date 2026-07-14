@@ -17,6 +17,7 @@ CREATE TABLE IF NOT EXISTS perfiles (
     rol TEXT NOT NULL DEFAULT 'usuario' CHECK (rol IN ('owner', 'admin', 'editor', 'usuario')),
     activo BOOLEAN DEFAULT TRUE,
     grupo_id UUID,
+    foto_perfil TEXT,
     preferencias JSONB DEFAULT '{"alto_contraste": false, "letra_grande": false}'::jsonb,
     ultimo_acceso TIMESTAMPTZ,
     creado_en TIMESTAMPTZ DEFAULT NOW()

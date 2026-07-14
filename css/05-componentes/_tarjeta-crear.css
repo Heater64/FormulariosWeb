@@ -47,3 +47,17 @@
 .tarjeta-crear__accion {
   flex-shrink: 0;
 }
+
+@media (max-width: 480px) {
+  .tarjeta-crear {
+    padding: var(--espaciado-sm);
+    gap: var(--espaciado-sm);
+  }
+  .tarjeta-crear__icono {
+    width: 40px;
+    height: 40px;
+  }
+  .tarjeta-crear__titulo {
+    font-size: var(--texto-sm);
+  }
+}

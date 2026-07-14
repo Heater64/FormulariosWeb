@@ -37,7 +37,7 @@
         `<option value="${e.id}" ${e.id === evalSeleccionada ? 'selected' : ''}>${window.helpers.escapeHtml(e.titulo)}</option>`
       ).join('');
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between">
             <button class="btn-secundario" id="btnVolver">← Volver</button>
             <h3>${editando ? 'Editar' : 'Nuevo'} Examen</h3>
@@ -64,7 +64,7 @@
             </div>
             <div id="preguntasContainer" class="o-pila"></div>
           </div>
-          <div class="o-flecha" style="justify-content:center;gap:var(--espaciado-md);margin-top:var(--espaciado-lg);padding-bottom:120px">
+          <div class="o-flecha" style="justify-content:center;gap:var(--espaciado-md);margin-top:var(--espaciado-lg)">
             <button class="btn-secundario" id="btnGuardarBorrador">Guardar borrador</button>
             <button class="btn-primario" id="btnPublicar">Publicar</button>
           </div>

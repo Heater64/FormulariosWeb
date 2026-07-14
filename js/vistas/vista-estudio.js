@@ -44,14 +44,14 @@
           }
         }
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             ${pendientesMemoria > 0 ? `<div class="banner-repaso" onclick="router.navegar('/memorizacion')" role="button" tabindex="0">${window.Iconos.render('brain')} <span>Tienes ${pendientesMemoria} versículo${pendientesMemoria === 1 ? '' : 's'} para repasar hoy</span> <span class="banner-repaso__flecha">→</span></div>` : ''}
-            <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div>
+            <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><div class="o-flecha" style="gap:var(--espaciado-xs)"><button class="info-ayuda" data-guia="estudio" aria-label="Guía de Estudio">i</button><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div></div>
               <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas">
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-2xl u-fw-700">${completados.length}</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros</p><p class="u-texto-2xl u-fw-700">${librosCompletados}/${(libros||[]).length}</p></div>
-              <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${window.Iconos.render('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-2xl u-fw-700">${racha} días</p></div></div>
-              <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-2xl u-fw-700">${pctGeneral}%</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" style="width:${pctGeneral}%"></div></div></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos <button class="info-ayuda" data-guia="estudio-caps" aria-label="Info capítulos">i</button></p><p class="u-texto-2xl u-fw-700">${completados.length}</p></div>
+              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros <button class="info-ayuda" data-guia="estudio-libros" aria-label="Info libros">i</button></p><p class="u-texto-2xl u-fw-700">${librosCompletados}/${(libros||[]).length}</p></div>
+              <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${window.Iconos.render('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha <button class="info-ayuda" data-guia="estudio-racha" aria-label="Info racha">i</button></p><p class="u-texto-2xl u-fw-700">${racha} días</p></div></div>
+              <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General <button class="info-ayuda" data-guia="estudio-pct" aria-label="Info porcentaje">i</button></p><p class="u-texto-2xl u-fw-700">${pctGeneral}%</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" style="width:${pctGeneral}%"></div></div></div>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso" style="cursor:pointer" id="continuarLectura"><div class="o-flecha o-flecha--between"><div><span class="u-fs-sm u-color-texto-secundario">Continuar leyendo</span><p class="u-fw-600">${siguienteLibro.nombre} ${siguienteCap}</p></div><span>→</span></div></div>` : ''}
             <div class="o-pila">
@@ -104,6 +104,17 @@
           raiz.querySelector('#iconNT').style.transform = vis ? 'rotate(-90deg)' : '';
           localStorage.setItem('fb_collapse_nt', String(!vis));
         };
+        const guias = {
+          'estudio': ['Estudio Guiado', 'Aquí navegas por todos los libros de la Biblia. Cada libro contiene capítulos; al seleccionar uno accedes al plan de lectura con preguntas de comprensión. El progreso se guarda automáticamente.', 'Ej: Selecciona "Génesis" → "Capítulo 1" para comenzar a leer y responder preguntas.'],
+          'estudio-caps': ['Capítulos leídos', 'Muestra el total de capítulos que has completado. Un capítulo se marca como leído cuando terminas la sesión de estudio (lees el texto y respondes las preguntas).', 'Cuantos más capítulos completes, mayor será tu porcentaje general de la Biblia.'],
+          'estudio-libros': ['Libros completados', 'Indica cuántos libros de la Biblia has terminado por completo (todos sus capítulos leídos) frente al total de libros disponibles.', 'Ej: 5/66 significa que has completado 5 libros de los 66 que tiene la Biblia.'],
+          'estudio-racha': ['Racha de lectura', 'Días consecutivos en los que has estudiado al menos un capítulo. Si dejas pasar un día sin estudiar, la racha se reinicia a cero.', '¡Mantén la racha encendida estudiando al menos un capítulo cada día! 🔥'],
+          'estudio-pct': ['Porcentaje general', 'Porcentaje total de la Biblia que has leído. Se calcula dividiendo los capítulos completados entre el total de capítulos de toda la Biblia.', 'Ej: 25% significa que has leído una cuarta parte de la Biblia.']
+        };
+        raiz.querySelectorAll('[data-guia]').forEach(btn => {
+          const g = guias[btn.dataset.guia];
+          if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
+        });
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     }
   };

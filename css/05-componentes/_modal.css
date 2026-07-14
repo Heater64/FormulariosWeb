@@ -119,6 +119,26 @@
 }
 
 @media (max-width: 480px) {
+  .modal-overlay {
+    padding: var(--espaciado-sm);
+    align-items: flex-end;
+  }
+  .modal,
+  .modal-formulario,
+  .modal-confirm {
+    max-width: 100%;
+    border-radius: var(--radio-lg) var(--radio-lg) 0 0;
+    padding: var(--espaciado-md);
+    margin-top: auto;
+  }
+  .modal__acciones {
+    flex-direction: column;
+  }
+  .modal__acciones .btn-primario,
+  .modal__acciones .btn-secundario {
+    width: 100%;
+    justify-content: center;
+  }
   .modal-confirm__acciones {
     flex-direction: column;
   }

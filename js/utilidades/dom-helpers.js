@@ -111,6 +111,36 @@
         overlay.querySelector('[data-confirmar]').onclick = () => cerrar(true);
       });
     },
+    mostrarGuia(titulo, texto, ejemplo) {
+      const overlay = document.createElement('div');
+      overlay.className = 'guia-overlay';
+      overlay.innerHTML = `
+        <div class="guia-popup" role="dialog" aria-modal="true">
+          <h3 class="guia-popup__titulo">${window.Iconos ? window.Iconos.render('info') : 'ℹ️'} ${window.helpers.escapeHtml(titulo)}</h3>
+          <p class="guia-popup__texto">${window.helpers.escapeHtml(texto)}</p>
+          ${ejemplo ? `<p class="guia-popup__ejemplo">💡 ${window.helpers.escapeHtml(ejemplo)}</p>` : ''}
+          <div class="guia-popup__accion">
+            <button class="btn-primario" data-cerrar-guia style="justify-content:center">Entendido</button>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      if (window.Iconos && window.Iconos.actualizar) window.Iconos.actualizar();
+      const cerrar = () => overlay.remove();
+      overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
+      overlay.querySelector('[data-cerrar-guia]').onclick = cerrar;
+    },
+    infoAyuda(titulo, texto, ejemplo) {
+      const btn = document.createElement('button');
+      btn.type = 'button';
+      btn.className = 'info-ayuda';
+      btn.setAttribute('aria-label', 'Más información');
+      btn.textContent = 'i';
+      btn.addEventListener('click', e => {
+        e.stopPropagation();
+        window.helpers.mostrarGuia(titulo, texto, ejemplo);
+      });
+      return btn;
+    },
     formulario({ titulo = 'Formulario', mensaje = '', campos = [], textoConfirmar = 'Guardar', textoCancelar = 'Cancelar' } = {}) {
       return new Promise(resolve => {
         const overlay = document.createElement('div');

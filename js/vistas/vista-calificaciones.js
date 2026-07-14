@@ -46,7 +46,7 @@
         return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
       };
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg)">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
             <h2>${window.Iconos.render('graduation-cap')} Libro de Calificaciones</h2>
             <div class="o-flecha" style="gap:var(--espaciado-xs)">

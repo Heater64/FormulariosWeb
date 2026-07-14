@@ -47,3 +47,9 @@
 .tarjeta-libro--completado {
   border-color: var(--color-exito);
 }
+
+@media (max-width: 480px) {
+  .tarjeta-libro {
+    padding: var(--espaciado-sm);
+  }
+}

@@ -42,3 +42,16 @@
 .tabla-admin tbody tr:nth-child(even) {
   background: var(--color-fondo-alt);
 }
+
+@media (max-width: 480px) {
+  .tabla-admin {
+    font-size: var(--texto-xs);
+  }
+  .tabla-admin th,
+  .tabla-admin td {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
+  .seccion-admin {
+    padding: var(--espaciado-sm);
+  }
+}

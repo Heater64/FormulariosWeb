@@ -19,7 +19,7 @@
   font-size: var(--texto-sm);
   font-weight: 600;
   line-height: 1.4;
-  color: #fff;
+  color: var(--color-texto-acento);
   box-shadow: var(--sombra-md);
   cursor: pointer;
   opacity: 1;
@@ -40,4 +40,15 @@
 @keyframes alerta-entrar {
   from { opacity: 0; transform: translateY(-8px); }
   to { opacity: 1; transform: translateY(0); }
+}
+
+@media (max-width: 480px) {
+  #contenedorAlertas {
+    top: var(--espaciado-xs);
+    width: calc(100% - 2 * var(--espaciado-sm));
+  }
+  .alerta {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    font-size: var(--texto-xs);
+  }
 }

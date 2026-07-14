@@ -1,0 +1,115 @@
+.info-ayuda {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 20px;
+  height: 20px;
+  min-width: 0;
+  min-height: 0;
+  border-radius: 50%;
+  border: 1.5px solid var(--color-texto-terciario);
+  color: var(--color-texto-terciario);
+  font-size: 11px;
+  font-weight: 700;
+  font-style: normal;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  flex-shrink: 0;
+  line-height: 1;
+  background: transparent;
+  padding: 0;
+}
+
+.info-ayuda:hover,
+.info-ayuda:focus-visible {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+/* Guía emergente (overlay) */
+.guia-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0,0,0,0.45);
+  backdrop-filter: blur(4px);
+  animation: guia-aparece 0.2s ease;
+  padding: var(--espaciado-md);
+}
+
+@keyframes guia-aparece {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes guia-contenido {
+  from { opacity: 0; transform: translateY(12px) scale(0.96); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.guia-popup {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-lg);
+  max-width: 480px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  padding: var(--espaciado-lg);
+  animation: guia-contenido 0.2s ease;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.guia-popup__titulo {
+  font-size: var(--texto-base);
+  font-weight: 700;
+  color: var(--color-texto);
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+}
+
+.guia-popup__titulo i {
+  color: var(--color-acento);
+}
+
+.guia-popup__texto {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.7;
+  margin: 0;
+  white-space: pre-wrap;
+}
+
+.guia-popup__ejemplo {
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  line-height: 1.6;
+  margin: 0;
+  border-left: 3px solid var(--color-acento);
+}
+
+.guia-popup__accion {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--espaciado-xs);
+}
+
+@media (max-width: 480px) {
+  .guia-popup {
+    max-width: 100%;
+    margin: var(--espaciado-sm);
+    max-height: 90vh;
+  }
+}

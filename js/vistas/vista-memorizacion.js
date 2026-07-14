@@ -55,12 +55,12 @@
       const { pendientes, total, repasos, tarjetas, categorias, libros, usuario, pestaña } = datos;
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
-          <h2>${I('brain')} Memorización</h2>
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <h2>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizar" aria-label="Guía de Memorización">i</button></h2>
           <div class="mem-grid-tarjetas">
-            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Pendientes hoy</p><p class="u-texto-2xl u-fw-700">${pendientes.length}</p></div>
-            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Total versículos</p><p class="u-texto-2xl u-fw-700">${total}</p></div>
-            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Repasos</p><p class="u-texto-2xl u-fw-700">${repasos}</p></div>
+            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Pendientes hoy <button class="info-ayuda" data-guia="mem-pendientes" aria-label="Info pendientes">i</button></p><p class="u-texto-2xl u-fw-700">${pendientes.length}</p></div>
+            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Total versículos <button class="info-ayuda" data-guia="mem-total" aria-label="Info total">i</button></p><p class="u-texto-2xl u-fw-700">${total}</p></div>
+            <div class="tarjeta-capitulo mem-stat"><p class="u-fs-xs u-color-texto-terciario">Repasos <button class="info-ayuda" data-guia="mem-repasos" aria-label="Info repasos">i</button></p><p class="u-texto-2xl u-fw-700">${repasos}</p></div>
           </div>
           <div class="mem-tabs">
             <button class="mem-tab ${pestaña === 'pendientes' ? 'mem-tab--activo' : ''}" id="btnPestPendientes">${I('clock')} Repaso</button>
@@ -83,6 +83,16 @@
       else if (pestaña === 'versiculos') this._renderVersiculos(cont, datos);
       else if (pestaña === 'categorias') this._renderCategorias(cont, datos);
       window.Iconos.actualizar();
+      const guiasMem = {
+        'memorizar': ['Memorización', 'Sistema de repaso espaciado (SRS) para memorizar versículos bíblicos. Guarda versículos, repásalos cuando el sistema lo indique y califica qué tan bien los recuerdas. El programa ajusta automáticamente los intervalos de repaso.', 'Ej: En "Repaso" verás los versículos pendientes. Revela el texto, califica tu recuerdo (0/3/5) y el sistema programa el próximo repaso.'],
+        'mem-pendientes': ['Pendientes hoy', 'Versículos que el sistema ha programado para repasar hoy. El repaso espaciado te muestra justo los que estás a punto de olvidar para maximizar la retención.', 'Cuantos más pendientes tengas, más ha estado funcionando el sistema de repaso. ¡Dedica unos minutos a repasarlos!'],
+        'mem-total': ['Total versículos', 'Todos los versículos que has guardado para memorizar, incluyendo los que están al día y los pendientes de repaso.', 'Ej: 15 versículos guardados significa que tienes 15 pasajes bíblicos en tu banco de memoria.'],
+        'mem-repasos': ['Repasos realizados', 'Número total de repasos que has completado desde que empezaste a usar el sistema. Cada vez que calificas un versículo cuenta como un repaso.', 'Cuantos más repasos acumules, mejor fijada tendrás la Palabra en tu memoria.']
+      };
+      raiz.querySelectorAll('[data-guia]').forEach(btn => {
+        const g = guiasMem[btn.dataset.guia];
+        if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
+      });
     },
     _renderPendientes(cont, datos) {
       const { pendientes } = datos;

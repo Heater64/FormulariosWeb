@@ -26,7 +26,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-texto-acento);
   background: radial-gradient(circle at 50% 35%, #FCD34D 0%, #FB923C 45%, #EF4444 100%);
   box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.18), 0 6px 16px -6px rgba(239, 68, 68, 0.6);
   animation: tarjeta-racha-flicker 1.8s ease-in-out infinite;
@@ -53,20 +53,34 @@
 }
 
 @media (prefers-color-scheme: dark) {
-  :root:not([data-tema="claro"]) .tarjeta-racha {
+  :root:not([data-theme="light"]) .tarjeta-racha {
     background: linear-gradient(135deg, #431407, #7F1D1D);
     border-color: #7F1D1D;
   }
-  :root:not([data-tema="claro"]) .tarjeta-racha__info .u-texto-lg {
+  :root:not([data-theme="light"]) .tarjeta-racha__info .u-texto-lg {
     color: #FDBA74;
   }
 }
 
-:root[data-tema="oscuro"] .tarjeta-racha {
+:root[data-theme="dark"] .tarjeta-racha {
   background: linear-gradient(135deg, #431407, #7F1D1D);
   border-color: #7F1D1D;
 }
 
-:root[data-tema="oscuro"] .tarjeta-racha__info .u-texto-lg {
+:root[data-theme="dark"] .tarjeta-racha__info .u-texto-lg {
   color: #FDBA74;
+}
+
+@media (max-width: 480px) {
+  .tarjeta-racha {
+    padding: var(--espaciado-sm);
+  }
+  .tarjeta-racha__llama {
+    width: 36px;
+    height: 36px;
+  }
+  .tarjeta-racha__llama svg {
+    width: 20px;
+    height: 20px;
+  }
 }

@@ -41,7 +41,7 @@
     },
     _renderizar(raiz, examen, preguntas, intentos, usuario) {
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:120px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between">
             <button class="btn-secundario" onclick="router.irAtras()">← Volver</button>
             <h3>Corregir: ${window.helpers.escapeHtml(examen.titulo)}</h3>

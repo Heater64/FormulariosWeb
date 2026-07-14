@@ -12,3 +12,15 @@
 .o-contenedor--ancho {
   max-width: 1024px;
 }
+
+@media (max-width: 480px) {
+  .o-contenedor {
+    padding: 0 var(--espaciado-md);
+  }
+}
+
+@media (max-width: 360px) {
+  .o-contenedor {
+    padding: 0 var(--espaciado-sm);
+  }
+}

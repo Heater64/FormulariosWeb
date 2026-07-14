@@ -141,8 +141,8 @@
     _renderizar(raiz) {
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
-          <h2>${I('sparkles')} Curiosidades Bíblicas</h2>
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <h2>${I('sparkles')} Curiosidades Bíblicas <button class="info-ayuda" data-guia="curiosidades" aria-label="Guía de Curiosidades">i</button></h2>
           <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap">
             <button class="btn-primario" id="btnPestCronologia" style="flex:1;justify-content:center;${this._pestana === 'cronologia' ? '' : 'opacity:0.6'}">${I('clock')} Reyes</button>
             <button class="btn-primario" id="btnPestGenealogia" style="flex:1;justify-content:center;${this._pestana === 'genealogia' ? '' : 'opacity:0.6'}">${I('git-branch')} Genealogía</button>
@@ -158,6 +158,13 @@
       else if (this._pestana === 'genealogia') this._renderGenealogia(cont);
       else if (this._pestana === 'datos') this._renderDatosCuriosos(cont);
       window.Iconos.actualizar();
+      const guiasCur = {
+        'curiosidades': ['Curiosidades Bíblicas', 'Sección con información histórica y curiosa sobre la Biblia. Explora la cronología de los reyes de Israel y Judá, el árbol genealógico de Jesús y datos fascinantes sobre las Escrituras.', 'Usa las pestañas para cambiar entre: Reyes (cronología), Genealogía de Jesús y Datos curiosos.']
+      };
+      raiz.querySelectorAll('[data-guia]').forEach(btn => {
+        const g = guiasCur[btn.dataset.guia];
+        if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
+      });
     },
     _renderCronologia(cont) {
       const I = window.Iconos.render;

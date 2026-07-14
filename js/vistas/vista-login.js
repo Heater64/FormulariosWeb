@@ -180,6 +180,17 @@
             .landing-grid { grid-template-columns: 1fr; }
             .landing-paso { flex-direction: column; align-items: flex-start; }
             .landing-seccion { padding: var(--espaciado-lg) var(--espaciado-sm); }
+            .landing-hero { padding: var(--espaciado-2xl) var(--espaciado-sm) var(--espaciado-lg); }
+            .landing-hero__titulo { font-size: clamp(1.3rem, 6vw, 1.8rem); }
+            .landing-hero__subtitulo { font-size: var(--texto-sm); }
+            .landing-card { padding: var(--espaciado-sm); }
+            .landing-acordeon__header { padding: var(--espaciado-sm); font-size: var(--texto-xs); }
+            .form-login-card { padding: var(--espaciado-md); }
+          }
+          @media (max-width: 360px) {
+            .landing-seccion { padding: var(--espaciado-md) var(--espaciado-xs); }
+            .landing-card { padding: var(--espaciado-xs); }
+            .landing-card__texto { font-size: var(--texto-xs); }
           }
         </style>
 

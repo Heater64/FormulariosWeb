@@ -24,7 +24,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #fff;
+  color: var(--color-texto-acento);
   background: radial-gradient(circle at 50% 35%, #FCD34D 0%, #FB923C 45%, #EF4444 100%);
   box-shadow: 0 0 0 8px rgba(251, 146, 60, 0.18), 0 20px 50px -12px rgba(239, 68, 68, 0.7);
   animation: celebracion-giro 2.6s ease-in-out;
@@ -39,7 +39,7 @@
   font-size: var(--texto-2xl);
   font-weight: 800;
   color: var(--color-texto);
-  text-shadow: 0 2px 16px rgba(0, 0, 0, 0.18);
+  text-shadow: 0 2px 16px var(--color-superficie-modal);
   animation: celebracion-texto 2.6s var(--easing-apple) forwards;
 }
 

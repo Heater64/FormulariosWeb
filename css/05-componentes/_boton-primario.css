@@ -1,6 +1,6 @@
 .btn-primario {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   padding: var(--espaciado-sm) var(--espaciado-xl);
   border-radius: var(--radio-lg);
   font-weight: 600;

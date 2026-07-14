@@ -20,7 +20,7 @@
     _renderizar(raiz, { stats, auditoria, grupos, examenes, usuario }) {
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:100px">
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)"><h2>${I('building-2')} Panel de Propietario</h2><button class="btn-secundario" onclick="router.navegar('/perfil')">← Volver</button></div>
           <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-xl u-fw-700">${stats.usuarios}</p></div>

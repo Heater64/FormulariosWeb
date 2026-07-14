@@ -37,6 +37,6 @@
   margin-top: 2px;
   text-align: center;
 }
-.btn-calidad--no { background: #fee2e2; color: #dc2626; border-color: #fecaca; }
-.btn-calidad--dificil { background: #fef3c7; color: #d97706; border-color: #fde68a; }
-.btn-calidad--facil { background: #d1fae5; color: #059669; border-color: #a7f3d0; }
+.btn-calidad--no { background: var(--color-error-soft); color: var(--color-error); border-color: var(--color-error); }
+.btn-calidad--dificil { background: var(--color-aviso-soft); color: var(--color-aviso); border-color: var(--color-aviso); }
+.btn-calidad--facil { background: var(--color-exito-soft); color: var(--color-exito); border-color: var(--color-exito); }
