@@ -114,10 +114,7 @@
           'estudio-racha': ['Racha de lectura', 'Días consecutivos en los que has estudiado al menos un capítulo. Si dejas pasar un día sin estudiar, la racha se reinicia a cero.', '¡Mantén la racha encendida estudiando al menos un capítulo cada día! 🔥'],
           'estudio-pct': ['Porcentaje general', 'Porcentaje total de la Biblia que has leído. Se calcula dividiendo los capítulos completados entre el total de capítulos de toda la Biblia.', 'Ej: 25% significa que has leído una cuarta parte de la Biblia.']
         };
-        raiz.querySelectorAll('[data-guia]').forEach(btn => {
-          const g = guias[btn.dataset.guia];
-          if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
-        });
+        window.helpers.registrarGuias(raiz, guias);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     }
   };

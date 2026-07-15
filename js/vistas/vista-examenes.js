@@ -48,7 +48,7 @@
           </style>
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
-              <h2>${window.Iconos.render('clipboard-check')} Exámenes</h2>
+              <h2>${window.Iconos.render('clipboard-check')} Exámenes <button class="info-ayuda" data-guia="examenes" aria-label="Guía de Exámenes">i</button></h2>
               <div class="o-flecha" style="gap:var(--espaciado-xs)">
                 ${esProfesor ? '<button class="btn-secundario" id="btnCalificaciones">Notas</button>' : ''}
                 ${esProfesor ? '<button class="btn-primario" id="btnNuevoExamen">+ Nuevo</button>' : ''}
@@ -61,6 +61,12 @@
           raiz.querySelector('#btnNuevoExamen').onclick = () => router.navegar('/editor/nuevo');
           raiz.querySelector('#btnCalificaciones').onclick = () => router.navegar('/calificaciones');
         }
+        window.helpers.registrarGuias(raiz, {
+          examenes: ['Exámenes', esProfesor
+            ? 'Aquí puedes crear, publicar y revisar exámenes para tus alumnos. Cada tarjeta muestra su estado, alumnos asignados y acciones disponibles.'
+            : 'Aquí aparecen los exámenes disponibles para ti. Puedes empezar uno nuevo, continuar uno en progreso o revisar si ya fue calificado.',
+            esProfesor ? 'Usa "+ Nuevo" para crear un examen y "Notas" para revisar resultados.' : 'Toca un examen publicado para responderlo.']
+        });
 
         const cont = raiz.querySelector('#listaExamenes');
         if (examenes.length === 0) {

@@ -165,10 +165,7 @@
       const guiasCur = {
         'curiosidades': ['Curiosidades Bíblicas', 'Sección con información histórica y curiosa sobre la Biblia. Explora la cronología de los reyes de Israel y Judá, el árbol genealógico de Jesús y datos fascinantes sobre las Escrituras.', 'Usa las pestañas para cambiar entre: Reyes (cronología), Genealogía de Jesús y Datos curiosos.']
       };
-      raiz.querySelectorAll('[data-guia]').forEach(btn => {
-        const g = guiasCur[btn.dataset.guia];
-        if (g) btn.addEventListener('click', () => window.helpers.mostrarGuia(g[0], g[1], g[2]));
-      });
+      window.helpers.registrarGuias(raiz, guiasCur);
     },
     _renderCronologia(cont) {
       const I = window.Iconos.render;

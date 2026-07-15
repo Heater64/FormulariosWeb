@@ -224,7 +224,7 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <h2>${I('brain')} Memorización</h2>
+          <h2>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion" aria-label="Guía de Memorización">i</button></h2>
 
           <div class="mem-grid-tarjetas">
             <div class="tarjeta-capitulo mem-stat">
@@ -265,6 +265,9 @@
       else if (pestana === 'nuevo') this._nuevo(cont, d, raiz);
 
       window.Iconos.actualizar();
+      window.helpers.registrarGuias(raiz, {
+        memorizacion: ['Memorización', 'Esta sección te ayuda a guardar versículos y repasarlos con repetición espaciada. Las tarjetas pendientes aparecen según tu historial de repaso.', 'Usa "Nuevo" para guardar un versículo, "Mis versículos" para organizarlos y "Repasar" para practicar.']
+      });
     },
 
 

@@ -125,6 +125,18 @@
       overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
       overlay.querySelector('[data-cerrar-guia]').onclick = cerrar;
     },
+    registrarGuias(raiz, guias) {
+      if (!raiz || !guias) return;
+      raiz.querySelectorAll('[data-guia]').forEach(btn => {
+        const guia = guias[btn.dataset.guia];
+        if (!guia) return;
+        btn.addEventListener('click', (event) => {
+          event.preventDefault();
+          event.stopPropagation();
+          window.helpers.mostrarGuia(guia[0], guia[1], guia[2]);
+        });
+      });
+    },
     formulario({ titulo = 'Formulario', mensaje = '', campos = [], textoConfirmar = 'Guardar', textoCancelar = 'Cancelar' } = {}) {
       return new Promise(resolve => {
         const overlay = document.createElement('div');

@@ -148,7 +148,8 @@
     document.addEventListener('DOMContentLoaded', () => {
       const installBtn = document.createElement('div');
       installBtn.id = 'installPwaBtn';
-      installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">Instalar app</button>';
+      installBtn.className = 'pwa-install';
+      installBtn.innerHTML = '<button class="btn-instalar" type="button" aria-label="Instalar aplicación">Instalar</button>';
       document.body.appendChild(installBtn);
       const btn = installBtn.querySelector('.btn-instalar');
       const isAndroid = /Android/i.test(navigator.userAgent);
@@ -160,22 +161,24 @@
       };
 
       const mostrarAyudaInstalacion = () => {
+        document.getElementById('pwaInstallHelp')?.remove();
         const ayuda = document.createElement('div');
-        ayuda.className = 'modal';
+        ayuda.id = 'pwaInstallHelp';
+        ayuda.className = 'pwa-install-help';
         ayuda.innerHTML = `
-          <div class="modal__contenido" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
-            <button class="modal__cerrar" type="button" aria-label="Cerrar">×</button>
-            <h2 id="installHelpTitle">Instalar en Android</h2>
-            <p>Si tu navegador no muestra el instalador automático, abre el menú del navegador y toca "Añadir a pantalla de inicio" o "Instalar aplicación".</p>
-            <button class="btn-primario" type="button" style="width:100%;justify-content:center">Entendido</button>
+          <div class="pwa-install-help__card" role="dialog" aria-modal="false" aria-labelledby="installHelpTitle">
+            <button class="pwa-install-help__cerrar" type="button" aria-label="Cerrar">×</button>
+            <h2 id="installHelpTitle">Instalar app</h2>
+            <p>Abre el menú del navegador y toca "Instalar aplicación" o "Añadir a pantalla de inicio".</p>
+            <button class="btn-secundario pwa-install-help__ok" type="button">Entendido</button>
           </div>`;
         document.body.appendChild(ayuda);
         const cerrar = () => {
           localStorage.setItem('fb_install_dismissed', new Date().toISOString().slice(0, 10));
           ayuda.remove();
         };
-        ayuda.querySelector('.modal__cerrar').addEventListener('click', cerrar);
-        ayuda.querySelector('.btn-primario').addEventListener('click', cerrar);
+        ayuda.querySelector('.pwa-install-help__cerrar').addEventListener('click', cerrar);
+        ayuda.querySelector('.pwa-install-help__ok').addEventListener('click', cerrar);
       };
 
       window.addEventListener('beforeinstallprompt', e => {
@@ -198,6 +201,7 @@
       });
 
       window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
+      window.addEventListener('hashchange', () => document.getElementById('pwaInstallHelp')?.remove());
       if (isAndroid) setTimeout(mostrarBoton, 2500);
     });
   </script>
