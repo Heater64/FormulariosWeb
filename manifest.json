@@ -24,21 +24,21 @@
       "name": "Estudio",
       "short_name": "Leer",
       "description": "Ir al estudio guiado",
-      "url": "/index.html#!/estudio",
+      "url": "./index.html#!/estudio",
       "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     },
     {
       "name": "Exámenes",
       "short_name": "Exámenes",
       "description": "Ver exámenes disponibles",
-      "url": "/index.html#!/examenes",
+      "url": "./index.html#!/examenes",
       "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     },
     {
       "name": "Memorización",
       "short_name": "Memoria",
       "description": "Repasar tarjetas de memoria",
-      "url": "/index.html#!/memorizacion",
+      "url": "./index.html#!/memorizacion",
       "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     }
   ],

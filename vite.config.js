@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { cpSync, copyFileSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 
 function copyStaticFiles() {
@@ -23,6 +23,13 @@ function copyStaticFiles() {
         if (!existsSync(from)) continue;
         mkdirSync(dirname(to), { recursive: true });
         copyFileSync(from, to);
+      }
+
+      const indexPath = join(process.cwd(), 'dist', 'index.html');
+      if (existsSync(indexPath)) {
+        const html = readFileSync(indexPath, 'utf8')
+          .replace(/href="\.\/assets\/manifest-[^"]+\.json"/, 'href="./manifest.json"');
+        writeFileSync(indexPath, html);
       }
     },
   };
