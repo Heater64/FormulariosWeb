@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v6';
+const CACHE_VERSION = 'v7';
 const STATIC_CACHE = `fb-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `fb-dynamic-${CACHE_VERSION}`;
 const BASE_URL = self.location.href.replace(/sw\.js$/, '');
@@ -73,7 +73,7 @@ const PRECACHE_URLS = [
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(STATIC_CACHE).then((cache) => {
-      return cache.addAll(PRECACHE_URLS);
+      return cache.addAll(PRECACHE_URLS.map((url) => new Request(url, { cache: 'reload' })));
     }).then(() => self.skipWaiting())
   );
 });
@@ -169,7 +169,7 @@ self.addEventListener('fetch', (event) => {
             caches.open(DYNAMIC_CACHE).then((cache) => cache.put(url, clone));
           }
           return response;
-        }).catch(() => caches.match('/offline.html'));
+        }).catch(() => caches.match(toAbs('offline.html')));
       })
     );
     return;
