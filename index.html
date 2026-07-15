@@ -148,26 +148,57 @@
     document.addEventListener('DOMContentLoaded', () => {
       const installBtn = document.createElement('div');
       installBtn.id = 'installPwaBtn';
-      installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">⬇ Instalar app</button>';
+      installBtn.innerHTML = '<button class="btn-instalar" style="position:fixed;bottom:140px;left:50%;transform:translateX(-50%);z-index:100;display:none;align-items:center;gap:8px;padding:12px 20px;background:#2563EB;color:white;border:none;border-radius:14px;font-size:0.875rem;font-weight:600;cursor:pointer;box-shadow:0 4px 16px rgba(37,99,235,0.4);-webkit-tap-highlight-color:transparent">Instalar app</button>';
       document.body.appendChild(installBtn);
       const btn = installBtn.querySelector('.btn-instalar');
+      const isAndroid = /Android/i.test(navigator.userAgent);
+      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+      const installDismissed = localStorage.getItem('fb_install_dismissed') === new Date().toISOString().slice(0, 10);
+
+      const mostrarBoton = () => {
+        if (!isStandalone && !installDismissed) btn.style.display = 'flex';
+      };
+
+      const mostrarAyudaInstalacion = () => {
+        const ayuda = document.createElement('div');
+        ayuda.className = 'modal';
+        ayuda.innerHTML = `
+          <div class="modal__contenido" role="dialog" aria-modal="true" aria-labelledby="installHelpTitle">
+            <button class="modal__cerrar" type="button" aria-label="Cerrar">×</button>
+            <h2 id="installHelpTitle">Instalar en Android</h2>
+            <p>Si tu navegador no muestra el instalador automático, abre el menú del navegador y toca "Añadir a pantalla de inicio" o "Instalar aplicación".</p>
+            <button class="btn-primario" type="button" style="width:100%;justify-content:center">Entendido</button>
+          </div>`;
+        document.body.appendChild(ayuda);
+        const cerrar = () => {
+          localStorage.setItem('fb_install_dismissed', new Date().toISOString().slice(0, 10));
+          ayuda.remove();
+        };
+        ayuda.querySelector('.modal__cerrar').addEventListener('click', cerrar);
+        ayuda.querySelector('.btn-primario').addEventListener('click', cerrar);
+      };
 
       window.addEventListener('beforeinstallprompt', e => {
         e.preventDefault();
         deferredPrompt = e;
-        btn.style.display = 'flex';
+        mostrarBoton();
       });
 
       btn.addEventListener('click', async () => {
-        if (!deferredPrompt) return;
+        if (!deferredPrompt) {
+          mostrarAyudaInstalacion();
+          return;
+        }
         deferredPrompt.prompt();
         const { outcome } = await deferredPrompt.userChoice;
         console.log('Instalación:', outcome);
         deferredPrompt = null;
-        btn.style.display = 'none';
+        if (outcome === 'accepted') btn.style.display = 'none';
+        else if (isAndroid) mostrarAyudaInstalacion();
       });
 
       window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
+      if (isAndroid) setTimeout(mostrarBoton, 2500);
     });
   </script>
 

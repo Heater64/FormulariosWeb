@@ -1,9 +1,9 @@
 {
-  "id": "./",
+  "id": "./index.html",
   "name": "FormsBiblicos",
   "short_name": "FormsBiblicos",
   "description": "Plataforma de estudio bíblico guiado con exámenes, memorización y progreso",
-  "start_url": "./",
+  "start_url": "./index.html",
   "scope": "./",
   "display": "standalone",
   "display_override": ["standalone", "minimal-ui"],
@@ -11,6 +11,7 @@
   "background_color": "#1e1e2e",
   "theme_color": "#1e1e2e",
   "lang": "es",
+  "dir": "ltr",
   "categories": ["education", "books", "religion"],
   "prefer_related_applications": false,
   "icons": [

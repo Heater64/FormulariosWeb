@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v7';
+const CACHE_VERSION = 'v8';
 const STATIC_CACHE = `fb-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `fb-dynamic-${CACHE_VERSION}`;
 const BASE_URL = self.location.href.replace(/sw\.js$/, '');
