@@ -14,10 +14,10 @@
   "categories": ["education", "books", "religion"],
   "prefer_related_applications": false,
   "icons": [
-    { "src": "https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png", "sizes": "192x192", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png", "sizes": "512x512", "type": "image/svg+xml", "purpose": "any" },
-    { "src": "https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png", "sizes": "192x192", "type": "image/svg+xml", "purpose": "maskable" },
-    { "src": "https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png", "sizes": "512x512", "type": "image/svg+xml", "purpose": "maskable" }
+    { "src": "assets/iconos/192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/iconos/512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/iconos/192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/iconos/512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
   ],
   "shortcuts": [
     {
@@ -25,21 +25,21 @@
       "short_name": "Leer",
       "description": "Ir al estudio guiado",
       "url": "/index.html#!/estudio",
-      "icons": [{ "src": "assets/iconos/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     },
     {
       "name": "Exámenes",
       "short_name": "Exámenes",
       "description": "Ver exámenes disponibles",
       "url": "/index.html#!/examenes",
-      "icons": [{ "src": "assets/iconos/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     },
     {
       "name": "Memorización",
       "short_name": "Memoria",
       "description": "Repasar tarjetas de memoria",
       "url": "/index.html#!/memorizacion",
-      "icons": [{ "src": "assets/iconos/icon-192.svg", "sizes": "192x192" }]
+      "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
     }
   ],
   "screenshots": []

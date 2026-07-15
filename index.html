@@ -9,12 +9,14 @@
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
-  <link rel="apple-touch-icon" href="https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png">
+  <link rel="apple-touch-icon" href="assets/iconos/180x180.png">
 
   <link rel="manifest" href="manifest.json">
 
   <title>FormsBiblicos</title>
-  <link rel="icon" href="https://res.cloudinary.com/dcsent4fs/image/upload/v1783961361/Dise%C3%B1o_sin_t%C3%ADtulo_1_p6sdrb.png" type="image/svg+xml">
+  <link rel="icon" href="assets/iconos/icono.svg" type="image/svg+xml">
+  <link rel="icon" href="assets/iconos/32x32.png" type="image/png" sizes="32x32">
+  <link rel="icon" href="assets/iconos/16x16.png" type="image/png" sizes="16x16">
 
   <!-- CSS: Settings -->
   <link rel="stylesheet" href="css/00-settings/_tokens.css">
@@ -66,6 +68,18 @@
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-crear.css">
   <link rel="stylesheet" href="css/05-componentes/_switch.css">
   <link rel="stylesheet" href="css/05-componentes/_instalar.css">
+  <link rel="stylesheet" href="css/05-componentes/_loading.css">
+  <link rel="stylesheet" href="css/05-componentes/_transiciones.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-huecos.css">
+  <link rel="stylesheet" href="css/05-componentes/_perfil.css">
+  <link rel="stylesheet" href="css/05-componentes/_login.css">
+  <link rel="stylesheet" href="css/05-componentes/_tarjeta-estadistica.css">
+  <link rel="stylesheet" href="css/05-componentes/_boton-enlace.css">
+  <link rel="stylesheet" href="css/05-componentes/_calificaciones.css">
+  <link rel="stylesheet" href="css/05-componentes/_corregir-examen.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-preguntas.css">
+  <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
+  <link rel="stylesheet" href="css/05-componentes/_explorar.css">
 
   <!-- CSS: Utilities -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -92,6 +106,7 @@
   <script src="js/datos/progreso-repository.js"></script>
   <script src="js/datos/examenes-repository.js"></script>
   <script src="js/datos/memorizacion-repository.js"></script>
+  <script src="js/datos/notas-repository.js"></script>
   <script src="js/datos/admin-repository.js"></script>
   <script src="js/datos/sync-queue.js"></script>
 
@@ -101,6 +116,9 @@
   <script src="js/dominio/puntuacion-examen.js"></script>
   <script src="js/dominio/logros.js"></script>
   <script src="js/dominio/maquina-estudio.js"></script>
+
+  <!-- JS: Components -->
+  <script src="js/componentes/editor-huecos.js"></script>
 
   <!-- JS: Views -->
   <script src="js/vistas/vista-login.js"></script>
@@ -114,7 +132,9 @@
   <script src="js/vistas/vista-examen-corregir.js"></script>
   <script src="js/vistas/vista-calificaciones.js"></script>
   <script src="js/vistas/vista-memorizacion.js"></script>
+  <script src="js/vistas/vista-notas.js"></script>
   <script src="js/vistas/vista-progreso.js"></script>
+  <script src="js/vistas/vista-explorar.js"></script>
   <script src="js/vistas/vista-perfil.js"></script>
   <script src="js/vistas/admin/vista-panel-admin.js"></script>
   <script src="js/vistas/admin/vista-owner.js"></script>

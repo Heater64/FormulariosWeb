@@ -1,0 +1,254 @@
+/* === Corregir examen: Accordion === */
+.corregir-alumno {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-xl);
+  background: var(--color-fondo-tarjeta);
+  box-shadow: var(--sombra-sm);
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  overflow: hidden;
+}
+
+.corregir-alumno--abierto {
+  border-color: var(--color-acento);
+  box-shadow: var(--sombra-md);
+}
+
+.corregir-alumno__header {
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  cursor: pointer;
+  gap: var(--espaciado-sm);
+  min-height: var(--toque-minimo);
+}
+
+.corregir-alumno__header:hover {
+  background: var(--color-fondo-alt);
+}
+
+.corregir-alumno__nombre {
+  font-weight: 600;
+  font-size: var(--texto-sm);
+}
+
+.corregir-alumno__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.corregir-alumno__badge {
+  font-size: var(--texto-xs);
+  padding: 2px var(--espaciado-xs);
+  border-radius: var(--radio-pill);
+  font-weight: 600;
+}
+
+.corregir-alumno__badge--corregido {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+.corregir-alumno__badge--pendiente {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+
+.corregir-alumno__detalle {
+  padding: 0 var(--espaciado-md) var(--espaciado-md);
+  display: none;
+}
+
+.corregir-alumno__detalle--visible {
+  display: block;
+  animation: corregir-slide-down 250ms var(--easing-apple);
+}
+
+@keyframes corregir-slide-down {
+  from { opacity: 0; transform: translateY(-8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* === Corregir examen: Toggle buttons === */
+.corregir-toggle {
+  display: inline-flex;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  overflow: hidden;
+}
+
+.corregir-toggle__btn {
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  border: none;
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+  min-height: auto;
+}
+
+.corregir-toggle__btn:not(:last-child) {
+  border-right: 1px solid var(--color-borde);
+}
+
+.corregir-toggle__btn--activo {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+.corregir-toggle__btn--correcta {
+  background: var(--color-exito);
+  color: white;
+}
+
+.corregir-toggle__btn--incorrecta {
+  background: var(--color-error);
+  color: white;
+}
+
+.corregir-toggle__btn:hover:not(.corregir-toggle__btn--activo):not(.corregir-toggle__btn--correcta):not(.corregir-toggle__btn--incorrecta) {
+  background: var(--color-fondo-alt);
+}
+
+/* === Corregir examen: Pregunta card === */
+.corregir-pregunta {
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo);
+  border-radius: var(--radio-md);
+  border-left: 3px solid var(--color-borde);
+  transition: border-color var(--transicion-rapida);
+}
+
+.corregir-pregunta--correcta {
+  border-left-color: var(--color-exito);
+}
+
+.corregir-pregunta--incorrecta {
+  border-left-color: var(--color-error);
+}
+
+.corregir-pregunta__texto {
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  margin-bottom: var(--espaciado-xxs);
+}
+
+.corregir-pregunta__respuesta {
+  font-size: var(--texto-xs);
+  margin-bottom: var(--espaciado-xxs);
+}
+
+.corregir-pregunta__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+  margin-top: var(--espaciado-xxs);
+}
+
+.corregir-pregunta__puntos {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.corregir-pregunta__puntos-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  transition: all var(--transicion-rapida);
+  min-height: auto;
+}
+
+.corregir-pregunta__puntos-btn:hover {
+  background: var(--color-fondo-alt);
+}
+
+.corregir-pregunta__puntos-btn:active {
+  transform: scale(0.92);
+}
+
+.corregir-pregunta__puntos-valor {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  min-width: 24px;
+  text-align: center;
+}
+
+/* === Corregir examen: Progress bar === */
+.corregir-progreso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+}
+
+.corregir-progreso__barra {
+  flex: 1;
+  height: 6px;
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+  overflow: hidden;
+}
+
+.corregir-progreso__lleno {
+  height: 100%;
+  background: var(--color-acento);
+  border-radius: var(--radio-pill);
+  transition: width var(--transicion-normal);
+}
+
+.corregir-progreso__texto {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  white-space: nowrap;
+}
+
+/* === Corregir examen: Bulk actions === */
+.corregir-bulk {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+}
+
+/* === Corregir examen: Comentario === */
+.corregir-comentario {
+  width: 100%;
+  margin-top: var(--espaciado-xxs);
+}
+
+/* === Corregir examen: Nota final === */
+.corregir-nota-final {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+}
+
+@media (max-width: 480px) {
+  .corregir-alumno__header {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  
+  .corregir-pregunta__acciones {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}

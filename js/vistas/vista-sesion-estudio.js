@@ -28,6 +28,15 @@
           fsm: window.maquinaEstudio.estados.NO_INICIADO
         };
         this._renderInicio();
+        raiz.addEventListener('click', async (ev) => {
+          if (ev.target.closest('#btnRetroceder')) {
+            if (this.estado && !this.estado.respondido) {
+              const ok = await window.helpers.confirmar('¿Seguro que quieres salir? Perderás el progreso de esta sesión.', { titulo: 'Salir de la sesión', textoConfirmar: 'Salir' });
+              if (!ok) return;
+            }
+            router.navegar('/estudio/libro/' + this.estado.libroId);
+          }
+        });
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor o-pila u-mt-4 u-texto-centrado"><h2 style="color:var(--color-acento);display:flex;justify-content:center">${window.Iconos.render('book-open')}</h2><p class="u-color-texto-secundario">Capítulo no disponible</p><button class="btn-primario" onclick="router.navegar('/estudio')">← Volver</button></div>`;
       }
@@ -36,7 +45,7 @@
     _cabecera(titulo, sub) {
       return `
         <div class="o-flecha o-flecha--between u-mb-3">
-          <button class="btn-secundario" onclick="router.navegar('/estudio/libro/${this.estado.libroId}')">${window.Iconos.render('arrow-left')}</button>
+          <button class="btn-secundario" id="btnRetroceder">${window.Iconos.render('arrow-left')}</button>
           <div class="u-texto-centrado" style="flex:1">
             <h3 style="margin:0">${titulo}</h3>
             ${sub ? `<span class="u-fs-xs u-color-texto-terciario">${sub}</span>` : ''}
@@ -75,25 +84,33 @@
             <p class="u-color-texto-secundario u-fs-base" style="max-width:340px;line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>
           </div>
           <div class="o-pila" style="width:100%">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas sobre este capítulo (se guardarán en Memorización)</label>
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas personales del capítulo</label>
             <textarea id="notasLectura" rows="3" placeholder="Escribe aquí tus notas, reflexiones o versículos destacados..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
           </div>
           <div class="barra-accion">
             <button class="btn-primario" id="btnLeido">${I('check')} Ya lo he leído</button>
           </div>
         </div>`;
+      const usuario = store.obtener('usuario');
+      if (usuario && window.notasRepository) {
+        window.notasRepository.obtener(usuario.id, libro.nombre, parseInt(capituloNum)).then(nota => {
+          if (nota && nota.contenido) {
+            const ta = raiz.querySelector('#notasLectura');
+            if (ta) ta.value = nota.contenido;
+          }
+        }).catch(() => {});
+      }
       raiz.querySelector('#btnLeido').onclick = async (e) => {
         const btn = e.currentTarget;
         btn.disabled = true; btn.innerHTML = I('check') + ' Guardando...';
         this._transicion('LEER');
         const usuario = store.obtener('usuario');
-        await window.progresoRepository.marcarLeido(usuario.id, this.estado.capId);
+        try {
+          await window.progresoRepository.marcarLeido(usuario.id, this.estado.capId);
+        } catch (e) { window.helpers.mostrarAlerta('No se pudo guardar el progreso.', 'advertencia'); }
         const notas = raiz.querySelector('#notasLectura')?.value.trim();
-        if (notas) {
-          await window.memorizacionRepository.agregarTarjetaManual(usuario.id, {
-            referencia: libro.nombre + ' ' + capituloNum,
-            texto: '📝 Notas: ' + notas
-          }).catch(() => {});
+        if (notas && window.notasRepository) {
+          await window.notasRepository.guardar(usuario.id, libro.nombre, parseInt(capituloNum), notas).catch(() => {});
         }
         window.Iconos.actualizar();
         this._iniciarEstudio();
@@ -185,12 +202,20 @@
       const e = this.estado;
       const raiz = e.raiz;
       if (p.tipo === 'multiple' || p.tipo === 'verdadero_falso') {
+        const accion = raiz.querySelector('#accion');
+        let valorSeleccionado = null;
         raiz.querySelectorAll('input[name="resp"]').forEach(inp => {
           inp.addEventListener('change', () => {
             if (e.respondido) return;
             raiz.querySelectorAll('.cuestion__opcion').forEach(o => o.classList.remove('cuestion__opcion--seleccionada'));
             inp.closest('.cuestion__opcion').classList.add('cuestion__opcion--seleccionada');
-            this._corregir(p, inp.value);
+            valorSeleccionado = inp.value;
+            accion.innerHTML = `<button class="btn-primario cuestion__btn-confirmar" id="btnConfirmar">${window.Iconos.render('check')} Confirmar</button>`;
+            raiz.querySelector('#btnConfirmar').onclick = () => {
+              if (e.respondido || valorSeleccionado === null) return;
+              this._corregir(p, valorSeleccionado);
+            };
+            window.Iconos.actualizar();
           });
         });
       } else {
@@ -290,8 +315,9 @@
       const { aciertos, fallos } = e.resInicial;
       const falladasUnicas = [...new Set(e.falladasRonda)];
       const hayErrores = falladasUnicas.length > 0;
-      const mensaje = this._mensajeCompletar(aciertos);
-      const tono = aciertos <= 4 ? 'error' : (aciertos >= 6 ? 'ok' : 'mal');
+      const total = e.preguntas.length;
+      const mensaje = this._mensajeCompletar(aciertos, total);
+      const tono = (aciertos / total) < 0.5 ? 'error' : ((aciertos / total) >= 0.75 ? 'ok' : 'mal');
       const listaErrores = falladasUnicas.map(pid => {
         const p = e.preguntas.find(x => x.id === pid);
         if (!p) return '';
@@ -362,16 +388,18 @@
       return a;
     },
 
-    _mensajeCompletar(aciertos) {      if (aciertos <= 4) return 'Repasa el capítulo';
-      if (aciertos === 5) return 'Por los pelos...';
-      if (aciertos >= 6 && aciertos <= 9) return 'Bien hecho';
+    _mensajeCompletar(aciertos, total) {
+      const ratio = total > 0 ? aciertos / total : 0;
+      if (ratio < 0.5) return 'Repasa el capítulo';
+      if (ratio < 0.75) return 'Por los pelos...';
+      if (ratio < 1) return 'Bien hecho';
       return 'Eres increíble!!';
     },
 
     _transicion(evento) {
       try {
         this.estado.fsm = window.maquinaEstudio.siguiente(this.estado.fsm, evento);
-      } catch (err) { console.warn('[FSM estudio]', err.message); }
+      } catch (err) { window.helpers.mostrarAlerta('Error de estado del estudio.', 'advertencia'); }
     },
 
     async _completar() {
@@ -379,7 +407,9 @@
       e.estudioCompletado = true;
       this._transicion('COMPLETAR');
       const usuario = store.obtener('usuario');
-      window.progresoRepository.marcarEstudioCompletado(usuario.id, e.capId).catch(() => {});
+      try {
+        await window.progresoRepository.marcarEstudioCompletado(usuario.id, e.capId);
+      } catch (err) { window.helpers.mostrarAlerta('No se pudo guardar el progreso de estudio.', 'advertencia'); }
       const haySiguiente = e.capituloNum < e.numCaps;
       const { raiz } = e;
       const I = window.Iconos.render;
@@ -416,16 +446,19 @@
     _celebrar(icono, titulo) {
       const overlay = document.createElement('div');
       overlay.className = 'celebracion';
-      const colores = ['#FB923C', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+      const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
       let confeti = '';
-      for (let i = 0; i < 70; i++) {
-        const left = Math.random() * 100;
-        const color = colores[Math.floor(Math.random() * colores.length)];
-        const dur = 1.8 + Math.random() * 1.8;
-        const delay = Math.random() * 0.6;
-        const ancho = 7 + Math.random() * 6;
-        const alto = 12 + Math.random() * 8;
-        confeti += `<span class="celebracion__confeti" style="left:${left}%;width:${ancho}px;height:${alto}px;background:${color};animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
+      if (!reduced) {
+        const colores = ['#FB923C', '#EF4444', '#F59E0B', '#10B981', '#3B82F6', '#8B5CF6', '#EC4899'];
+        for (let i = 0; i < 70; i++) {
+          const left = Math.random() * 100;
+          const color = colores[Math.floor(Math.random() * colores.length)];
+          const dur = 1.8 + Math.random() * 1.8;
+          const delay = Math.random() * 0.6;
+          const ancho = 7 + Math.random() * 6;
+          const alto = 12 + Math.random() * 8;
+          confeti += `<span class="celebracion__confeti" style="left:${left}%;width:${ancho}px;height:${alto}px;background:${color};animation-duration:${dur}s;animation-delay:${delay}s"></span>`;
+        }
       }
       overlay.innerHTML = `
         <div class="celebracion__emblema">
@@ -433,8 +466,11 @@
           <div class="celebracion__titulo">${titulo}</div>
         </div>
         ${confeti}`;
+      overlay.style.pointerEvents = 'auto';
+      overlay.style.cursor = 'pointer';
+      overlay.onclick = () => overlay.remove();
       document.body.appendChild(overlay);
-      setTimeout(() => overlay.remove(), 2800);
+      setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, reduced ? 2000 : 2800);
     }
   };
 })();

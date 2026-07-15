@@ -37,32 +37,74 @@
   font-weight: 600;
 }
 
-/* ===== FLIPCARD (Repaso) ===== */
+/* ===== FLASHCARD ===== */
+.flashcard-container {
+  perspective: 1200px;
+  min-height: 300px;
+  position: relative;
+  touch-action: none;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+.flashcard-inner {
+  position: relative;
+  width: 100%;
+  min-height: 300px;
+  transition: transform 0.5s var(--easing-apple);
+  transform-style: preserve-3d;
+  will-change: transform;
+}
+
+.flashcard-container--volteado .flashcard-inner {
+  transform: rotateY(180deg);
+}
+
+.flashcard-container--volteado .flashcard-cara--atras {
+  pointer-events: auto;
+}
+
 .flashcard-cara {
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  min-height: 260px;
-  padding: var(--espaciado-lg) var(--espaciado-md);
+  min-height: 300px;
+  padding: var(--espaciado-xl) var(--espaciado-lg);
   text-align: center;
   gap: var(--espaciado-md);
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+  position: absolute;
+  inset: 0;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  pointer-events: none;
 }
 
-.flashcard-etiqueta {
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  font-weight: 600;
+.flashcard-cara--atras {
+  transform: rotateY(180deg);
+  pointer-events: none;
 }
 
 .flashcard-referencia {
-  font-size: var(--texto-xl);
-  font-weight: 700;
+  font-size: var(--texto-2xl);
+  font-weight: 800;
   color: var(--color-texto);
   line-height: 1.3;
-  margin: var(--espaciado-sm) 0;
+}
+
+.flashcard-hint {
+  font-size: var(--texto-sm);
+  color: var(--color-acento);
+  font-weight: 600;
+  animation: hint-pulso 2s ease-in-out infinite;
+}
+
+@keyframes hint-pulso {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
 }
 
 .flashcard-pista {
@@ -70,16 +112,12 @@
   color: var(--color-texto-secundario);
 }
 
-.flashcard-btn {
-  width: 100%;
-  max-width: 280px;
-  justify-content: center;
-}
-
 .flashcard-referencia-chica {
   font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
-  font-style: italic;
+  color: var(--color-texto-terciario);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
   margin-bottom: var(--espaciado-xs);
 }
 
@@ -88,23 +126,112 @@
   line-height: var(--altura-linea-lectura);
   color: var(--color-texto);
   white-space: pre-wrap;
-  margin: var(--espaciado-sm) 0;
   text-align: left;
   width: 100%;
 }
 
-.flashcard-pregunta {
-  font-size: var(--texto-sm);
+.flashcard-swipe-hint {
+  font-size: var(--texto-xs);
   color: var(--color-texto-terciario);
   font-weight: 600;
+  margin-top: var(--espaciado-sm);
 }
 
 .flashcard-calidades {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(4, 1fr);
   gap: var(--espaciado-xs);
   width: 100%;
   max-width: 400px;
+}
+
+/* ===== SWIPE INDICATORS ===== */
+.flashcard-indicador {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-radius: var(--radio-lg);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+  z-index: 10;
+}
+
+.flashcard-indicador--izq {
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-error-soft, rgba(239, 68, 68, 0.1));
+  color: var(--color-error, #ef4444);
+  border: 2px solid var(--color-error, #ef4444);
+}
+
+.flashcard-indicador--der {
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+  background: var(--color-exito-soft, rgba(34, 197, 94, 0.1));
+  color: var(--color-exito, #22c55e);
+  border: 2px solid var(--color-exito, #22c55e);
+}
+
+.flashcard-indicador--arriba {
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(249, 115, 22, 0.1);
+  color: #f97316;
+  border: 2px solid #f97316;
+}
+
+.flashcard-indicador--abajo {
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(217, 119, 6, 0.1);
+  color: #D97706;
+  border: 2px solid #D97706;
+}
+
+.flashcard-indicador--visible {
+  opacity: 1;
+}
+
+/* Card movement during swipe */
+.flashcard-container--moviendo .flashcard-inner {
+  transition: none;
+}
+
+/* Card fly-off animations */
+.flashcard-container--fly-left .flashcard-inner {
+  animation: fly-left 0.35s ease-in forwards;
+}
+.flashcard-container--fly-right .flashcard-inner {
+  animation: fly-right 0.35s ease-in forwards;
+}
+.flashcard-container--fly-up .flashcard-inner {
+  animation: fly-up 0.35s ease-in forwards;
+}
+.flashcard-container--fly-down .flashcard-inner {
+  animation: fly-down 0.35s ease-in forwards;
+}
+
+@keyframes fly-left {
+  to { transform: translateX(-150%) rotate(-15deg); opacity: 0; }
+}
+@keyframes fly-right {
+  to { transform: translateX(150%) rotate(15deg); opacity: 0; }
+}
+@keyframes fly-up {
+  to { transform: translateY(-150%) scale(0.8); opacity: 0; }
+}
+@keyframes fly-down {
+  to { transform: translateY(150%) scale(0.8); opacity: 0; }
 }
 
 /* ===== BOTONES DE CALIDAD ===== */
@@ -148,6 +275,10 @@
 .btn-calidad--dificil:hover { background: var(--color-aviso-soft); }
 .btn-calidad--dificil .btn-calidad__num { color: var(--color-aviso); }
 
+.btn-calidad--medio { border-color: #D97706; color: #D97706; }
+.btn-calidad--medio:hover { background: rgba(217, 119, 6, 0.08); }
+.btn-calidad--medio .btn-calidad__num { color: #D97706; }
+
 .btn-calidad--facil { border-color: var(--color-exito); color: var(--color-exito); }
 .btn-calidad--facil:hover { background: var(--color-exito-soft); }
 .btn-calidad--facil .btn-calidad__num { color: var(--color-exito); }
@@ -188,11 +319,6 @@
   background: var(--color-acento);
   color: var(--color-texto-acento);
   border-color: var(--color-acento);
-}
-
-.mem-tab--secundario {
-  background: transparent;
-  border-style: dashed;
 }
 
 /* ===== GRID ESTADÍSTICAS ===== */
@@ -278,15 +404,20 @@
   }
 
   .flashcard-calidades {
-    grid-template-columns: 1fr;
+    grid-template-columns: repeat(2, 1fr);
   }
 
   .flashcard-referencia {
-    font-size: var(--texto-lg);
+    font-size: var(--texto-xl);
   }
 
   .flashcard-texto {
     font-size: var(--texto-base);
+  }
+
+  .flashcard-indicador {
+    font-size: var(--texto-xs);
+    padding: var(--espaciado-xs) var(--espaciado-sm);
   }
 }
 

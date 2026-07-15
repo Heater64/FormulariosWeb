@@ -9,41 +9,128 @@
       this._aplicarPreferencias();
       if (window.colaSync) window.colaSync.iniciar();
       this._verificarSesion();
-      window.eventBus.suscribir('auth:login', (usuario) => {
+
+      window.eventBus.suscribir('auth:login', async (payload) => {
+        const usuario = payload.usuario || payload;
+        const recordar = payload.recordar !== false;
         if (!usuario.foto_perfil) {
           try {
             const prev = JSON.parse(localStorage.getItem('fb_usuario'));
             if (prev?.foto_perfil) usuario.foto_perfil = prev.foto_perfil;
           } catch (e) {}
         }
-        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        if (recordar) {
+          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+          localStorage.setItem('fb_recordar_sesion', 'true');
+        } else {
+          localStorage.removeItem('fb_usuario');
+          localStorage.removeItem('fb_recordar_sesion');
+          sessionStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        }
         this._renderizarBarraNavegacion();
+
+        if (window._loginUI) {
+          await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
+        }
+
         this._notificarRepasos();
-        router.reemplazar('/estudio');
+
+        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') && !usuario.preferencias?.tema && usuario.preferencias?.tema !== null;
+        if (esPrimeraVez) {
+          router.reemplazar('/estudio');
+          setTimeout(() => this._mostrarSetupInicial(usuario), 400);
+        } else {
+          router.reemplazar('/estudio');
+        }
       });
+
       window.eventBus.suscribir('auth:logout', () => {
         localStorage.removeItem('fb_usuario');
+        localStorage.removeItem('fb_recordar_sesion');
+        sessionStorage.removeItem('fb_usuario');
         if (window.preferencias) window.preferencias.aplicar();
         this._renderizarBarraNavegacion();
         router.reemplazar('/login');
       });
+
       window.eventBus.suscribir('route:change', () => {
         this._renderizarBarraNavegacion();
       });
     },
+
+    _mostrarSetupInicial(usuario) {
+      const I = (n) => { try { return window.Iconos.render(n); } catch(e) { return ''; } };
+      let temaSel = null;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'login-setup';
+      overlay.innerHTML = `
+        <div class="login-setup__card">
+          <h2 class="login-setup__titulo">${I('sparkles')} ¡Bienvenido!</h2>
+          <p class="login-setup__sub">Antes de comenzar, elige tu tema visual.</p>
+          <div class="login-setup__temas">
+            <button class="login-setup__tema" data-tema="light">
+              <span class="login-setup__tema-radio"></span>
+              <span class="login-setup__tema-label">${I('sun')} Claro</span>
+            </button>
+            <button class="login-setup__tema" data-tema="dark">
+              <span class="login-setup__tema-radio"></span>
+              <span class="login-setup__tema-label">${I('moon')} Oscuro</span>
+            </button>
+            <button class="login-setup__tema" data-tema="auto">
+              <span class="login-setup__tema-radio"></span>
+              <span class="login-setup__tema-label">${I('settings')} Automático</span>
+            </button>
+          </div>
+          <button class="btn-primario u-mt-2" id="btnSetupContinuar" style="width:100%;justify-content:center" disabled>Continuar</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      if (window.Iconos) window.Iconos.actualizar();
+
+      overlay.querySelectorAll('.login-setup__tema').forEach(btn => {
+        btn.addEventListener('click', () => {
+          overlay.querySelectorAll('.login-setup__tema').forEach(b => b.classList.remove('login-setup__tema--sel'));
+          btn.classList.add('login-setup__tema--sel');
+          temaSel = btn.dataset.tema;
+          overlay.querySelector('#btnSetupContinuar').disabled = false;
+        });
+      });
+
+      overlay.querySelector('#btnSetupContinuar').onclick = async () => {
+        if (!temaSel) return;
+        const temaValor = temaSel === 'auto' ? null : temaSel;
+        const prefs = { tema: temaValor, alto_contraste: false, letra_grande: false };
+        if (window.preferencias) window.preferencias.guardar(prefs);
+        if (temaSel !== 'auto') document.documentElement.dataset.theme = temaSel;
+        else delete document.documentElement.dataset.theme;
+        usuario.preferencias = prefs;
+        store.actualizar('usuario', { ...usuario });
+        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        try { await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefs) }).eq('id', usuario.id); } catch (e) {}
+        localStorage.setItem('fb_setup_completado', 'true');
+        overlay.remove();
+        window.helpers.mostrarAlerta('Preferencias guardadas.', 'exito');
+      };
+    },
+
     _recuperarSesion() {
       try {
-        const guardado = localStorage.getItem('fb_usuario');
+        const recordar = localStorage.getItem('fb_recordar_sesion');
+        const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
         if (guardado) {
           const usuario = JSON.parse(guardado);
           store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
         }
-      } catch (e) { localStorage.removeItem('fb_usuario'); }
+      } catch (e) { localStorage.removeItem('fb_usuario'); sessionStorage.removeItem('fb_usuario'); }
     },
+
     _aplicarPreferencias() {
       const usuario = store.obtener('usuario');
-      const prefs = usuario?.preferencias;
+      let prefs = usuario?.preferencias;
       if (prefs) {
+        if (typeof prefs === 'string') {
+          try { prefs = JSON.parse(prefs); } catch (e) { prefs = {}; }
+        }
         if (window.preferencias) {
           let tema = prefs.tema;
           if (tema === 'claro') tema = 'light';
@@ -61,14 +148,24 @@
       }
       if (window.preferencias) window.preferencias.aplicar();
     },
+
     _verificarSesion() {
       const usuario = store.obtener('usuario');
       const ruta = router._rutaActual();
       const esLogin = ruta === '/login' || ruta === '/';
       if (!usuario && !esLogin) { router.reemplazar('/login'); return; }
-      if (usuario && esLogin) { router.reemplazar('/estudio'); return; }
+      if (usuario && esLogin) {
+        if (window._loginUI) {
+          const loading = window._loginUI.crearLoading('Cargando tu progreso...');
+          setTimeout(() => { loading.remove(); router.reemplazar('/estudio'); }, 600);
+        } else {
+          router.reemplazar('/estudio');
+        }
+        return;
+      }
       router._ejecutar();
     },
+
     async _notificarRepasos() {
       const usuario = store.obtener('usuario');
       if (!usuario) return;
@@ -79,6 +176,7 @@
         if (pendientes && pendientes.length > 0) this._mostrarToastRepaso(pendientes.length);
       } catch (e) {}
     },
+
     _mostrarToastRepaso(n) {
       if (document.getElementById('toast-repaso')) return;
       const t = document.createElement('div');
@@ -99,26 +197,31 @@
       localStorage.setItem('fb_toast_repaso', new Date().toISOString().slice(0, 10));
       setTimeout(() => { if (t) t.remove(); }, 9000);
     },
+
     _renderizarBarraNavegacion() {
       const nav = document.getElementById('barra-navegacion');
       if (!nav) return;
       const usuario = store.obtener('usuario');
-      if (!usuario) { nav.innerHTML = ''; return; }
+      if (!usuario) { nav.innerHTML = ''; nav.style.display = 'none'; return; }
+      nav.style.display = '';
+      nav.setAttribute('role', 'tablist');
       const items = [
         { ruta: '/estudio', icono: 'book-open', texto: 'Estudio' },
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
         { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
-        { ruta: '/progreso', icono: 'sparkles', texto: 'Curiosidades' },
+        { ruta: '/notas', icono: 'file-text', texto: 'Notas' },
+        { ruta: '/explorar', icono: 'compass', texto: 'Explorar' },
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();
       const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/'));
-      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
+      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}"><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
       window.Iconos.actualizar();
       nav.querySelectorAll('[data-nav]').forEach(el => {
         el.addEventListener('click', e => { e.preventDefault(); router.navegar(el.getAttribute('href').replace('#!', '')); });
       });
     },
+
     _inicializarRutas() {
       router.registrar('/', { montar: () => { const u = store.obtener('usuario'); u ? router.reemplazar('/estudio') : router.reemplazar('/login'); } });
       router.registrar('/login', window.vistaLogin);
@@ -134,7 +237,9 @@
       router.registrar('/corregir/:id', window.vistaExamenCorregir);
       router.registrar('/calificaciones', window.vistaCalificaciones);
       router.registrar('/memorizacion', window.vistaMemorizacion);
-      router.registrar('/progreso', window.vistaProgreso);
+      router.registrar('/notas', window.vistaNotas);
+      router.registrar('/progreso', window.vistaExplorar);
+      router.registrar('/explorar', window.vistaExplorar);
       router.registrar('/perfil', window.vistaPerfil);
       router.registrar('/admin', window.vistaPanelAdmin);
       router.registrar('/owner', window.vistaOwner);

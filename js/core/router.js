@@ -2,6 +2,7 @@ class Router {
   constructor() {
     this._rutas = new Map();
     this._vistaActual = null;
+    this._primeraCarga = true;
     window.addEventListener('hashchange', () => this._ejecutar());
   }
 
@@ -32,6 +33,12 @@ class Router {
         if (this._vistaActual?.desmontar) this._vistaActual.desmontar();
         const raiz = document.getElementById('app-root');
         if (!raiz) return;
+        const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        if (!this._primeraCarga && !reduced) {
+          raiz.classList.add('app-transicion-salida');
+          await new Promise(r => setTimeout(r, 150));
+          raiz.classList.remove('app-transicion-salida');
+        }
         raiz.innerHTML = '';
         this._vistaActual = config.vista;
         if (this._vistaActual && this._vistaActual.montar) {
@@ -40,6 +47,11 @@ class Router {
           console.warn('Vista no disponible para la ruta:', ruta);
           raiz.innerHTML = `<div class="o-contenedor u-mt-4 u-texto-centrado o-pila"><h2>Vista no disponible</h2><p class="u-color-texto-secundario u-fs-sm">Es necesario recargar para obtener la última versión.</p><button class="btn-primario" onclick="location.reload()">Recargar</button></div>`;
         }
+        if (!reduced) {
+          raiz.classList.add('app-transicion-entrada');
+          requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('app-transicion-entrada')));
+        }
+        this._primeraCarga = false;
         store.actualizar('rutaActual', ruta);
         if (window.eventBus) window.eventBus.publicar('route:change', ruta);
         if (window.Iconos) window.Iconos.actualizar();

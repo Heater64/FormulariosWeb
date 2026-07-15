@@ -1,0 +1,23 @@
+.tarjeta-estadistica {
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-sm);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.tarjeta-estadistica:hover {
+  box-shadow: var(--sombra-md);
+}
+
+.tarjeta-estadistica p {
+  margin: var(--espaciado-xxs) 0 0;
+}
+
+@media (max-width: 480px) {
+  .tarjeta-estadistica {
+    min-width: calc(50% - var(--espaciado-xs));
+    flex: 1 1 calc(50% - var(--espaciado-xs));
+  }
+}

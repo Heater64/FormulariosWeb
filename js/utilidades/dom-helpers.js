@@ -15,23 +15,6 @@
       });
     },
 
-    generarUUID() {
-      return crypto.randomUUID?.() || 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
-        const r = Math.random() * 16 | 0;
-        return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
-      });
-    },
-
-    delegar(contenedor, selector, evento, handler) {
-      contenedor.addEventListener(evento, e => {
-        const el = e.target.closest(selector);
-        if (el && contenedor.contains(el)) handler(e, el);
-      });
-    },
-
-    $ (selector, ctx) { return (ctx || document).querySelector(selector); },
-    $$ (selector, ctx) { return Array.from((ctx || document).querySelectorAll(selector)); },
-
     descargarCSV(nombreArchivo, cabeceras, filas) {
       const escapar = (v) => {
         const s = String(v == null ? '' : v);
@@ -95,9 +78,10 @@
       return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
+        const tituloId = 'modal-titulo-' + Date.now();
         overlay.innerHTML = `
-          <div class="modal-confirm" role="dialog" aria-modal="true">
-            <h3 class="modal-confirm__titulo">${window.Iconos ? window.Iconos.render('alert-triangle') : '⚠️'} ${window.helpers.escapeHtml(opciones.titulo || '¿Confirmar?')}</h3>
+          <div class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="${tituloId}">
+            <h3 class="modal-confirm__titulo" id="${tituloId}">${window.Iconos ? window.Iconos.render('alert-triangle') : '⚠️'} ${window.helpers.escapeHtml(opciones.titulo || '¿Confirmar?')}</h3>
             <p class="modal-confirm__mensaje">${window.helpers.escapeHtml(mensaje)}</p>
             <div class="modal-confirm__acciones">
               <button class="btn-secundario" data-cancelar>${opciones.textoCancelar || 'Cancelar'}</button>
@@ -105,10 +89,22 @@
             </div>
           </div>`;
         document.body.appendChild(overlay);
-        const cerrar = (valor) => { overlay.remove(); resolve(valor); };
+        const cerrar = (valor) => { document.removeEventListener('keydown', onKey); overlay.remove(); resolve(valor); };
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); cerrar(false); return; }
+          if (e.key === 'Tab') {
+            const btns = overlay.querySelectorAll('button');
+            if (btns.length < 2) return;
+            const first = btns[0], last = btns[btns.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
         overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(false); });
         overlay.querySelector('[data-cancelar]').onclick = () => cerrar(false);
         overlay.querySelector('[data-confirmar]').onclick = () => cerrar(true);
+        setTimeout(() => overlay.querySelector('[data-cancelar]')?.focus(), 50);
       });
     },
     mostrarGuia(titulo, texto, ejemplo) {
@@ -129,22 +125,11 @@
       overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
       overlay.querySelector('[data-cerrar-guia]').onclick = cerrar;
     },
-    infoAyuda(titulo, texto, ejemplo) {
-      const btn = document.createElement('button');
-      btn.type = 'button';
-      btn.className = 'info-ayuda';
-      btn.setAttribute('aria-label', 'Más información');
-      btn.textContent = 'i';
-      btn.addEventListener('click', e => {
-        e.stopPropagation();
-        window.helpers.mostrarGuia(titulo, texto, ejemplo);
-      });
-      return btn;
-    },
     formulario({ titulo = 'Formulario', mensaje = '', campos = [], textoConfirmar = 'Guardar', textoCancelar = 'Cancelar' } = {}) {
       return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
+        const tituloId = 'modal-form-titulo-' + Date.now();
         const camposHtml = campos.map((c, i) => {
           let control;
           if (c.tipo === 'textarea') {
@@ -162,8 +147,8 @@
           </div>`;
         }).join('');
         overlay.innerHTML = `
-          <div class="modal-formulario" role="dialog" aria-modal="true">
-            <h3 class="modal-confirm__titulo">${window.Iconos ? window.Iconos.render('edit-3') : '✎'} ${window.helpers.escapeHtml(titulo)}</h3>
+          <div class="modal-formulario" role="dialog" aria-modal="true" aria-labelledby="${tituloId}">
+            <h3 class="modal-confirm__titulo" id="${tituloId}">${window.Iconos ? window.Iconos.render('edit-3') : '✎'} ${window.helpers.escapeHtml(titulo)}</h3>
             ${mensaje ? `<p class="modal-confirm__mensaje">${window.helpers.escapeHtml(mensaje)}</p>` : ''}
             <div class="modal-formulario__campos">${camposHtml}</div>
             <div class="modal-confirm__acciones">
@@ -173,7 +158,18 @@
           </div>`;
         document.body.appendChild(overlay);
         window.Iconos && window.Iconos.actualizar && window.Iconos.actualizar();
-        const cerrar = (val) => { overlay.remove(); resolve(val); };
+        const cerrar = (val) => { document.removeEventListener('keydown', onKey); overlay.remove(); resolve(val); };
+        const onKey = (e) => {
+          if (e.key === 'Escape') { e.preventDefault(); cerrar(null); return; }
+          if (e.key === 'Tab') {
+            const focusables = overlay.querySelectorAll('input, select, textarea, button');
+            if (focusables.length < 2) return;
+            const first = focusables[0], last = focusables[focusables.length - 1];
+            if (e.shiftKey && document.activeElement === first) { e.preventDefault(); last.focus(); }
+            else if (!e.shiftKey && document.activeElement === last) { e.preventDefault(); first.focus(); }
+          }
+        };
+        document.addEventListener('keydown', onKey);
         overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(null); });
         overlay.querySelector('[data-cancelar]').onclick = () => cerrar(null);
         overlay.querySelector('[data-confirmar]').onclick = () => {

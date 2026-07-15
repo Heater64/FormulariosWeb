@@ -4,10 +4,6 @@ class Store {
     this._suscriptores = new Map();
   }
 
-  obtenerEstado() {
-    return this._clonar(this._estado);
-  }
-
   obtener(clave) {
     const valor = this._estado[clave];
     return valor !== undefined ? (Array.isArray(valor) ? [...valor] : (typeof valor === 'object' && valor !== null ? {...valor} : valor)) : undefined;
@@ -24,14 +20,6 @@ class Store {
       this._estado[clave] = this._clonar(valor);
     }
     this._notificar({ parcial: true, datos: this._clonar(parcial) });
-  }
-
-  suscribir(clave, callback) {
-    if (!this._suscriptores.has(clave)) {
-      this._suscriptores.set(clave, new Set());
-    }
-    this._suscriptores.get(clave).add(callback);
-    return () => this._suscriptores.get(clave)?.delete(callback);
   }
 
   _notificar(cambio) {

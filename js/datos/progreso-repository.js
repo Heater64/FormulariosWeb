@@ -17,11 +17,6 @@
         window.colaSync.encolar('upsert', 'progreso_lectura', datos, { onConflict: 'usuario_id,capitulo_id' });
       }
     },
-    async obtenerProgreso(usuarioId) {
-      if (!sb()) return [];
-      const { data } = await sb().from('progreso_lectura').select('*').eq('usuario_id', usuarioId);
-      return data || [];
-    },
     async obtenerProgresoPorLibro(usuarioId) {
       if (!sb()) return {};
       const { data: progreso } = await sb().from('progreso_lectura').select('capitulo_id').eq('usuario_id', usuarioId).eq('completado', true);
@@ -34,11 +29,6 @@
         progresoPorLibro[c.libro_id].push(completados.has(c.id) ? 1 : 0);
       });
       return progresoPorLibro;
-    },
-    async obtenerRacha(usuarioId) {
-      if (!sb()) return 0;
-      const { data } = await sb().from('progreso_lectura').select('fecha_lectura').eq('usuario_id', usuarioId).not('fecha_lectura', 'is', null).order('fecha_lectura', { ascending: false });
-      return window.progresoLectura.calcularRacha(data || []);
     },
     async marcarEstudioCompletado(usuarioId, capituloId) {
       const datos = {

@@ -1,0 +1,174 @@
+/* === Tomar examen: Page layout === */
+.examen-page {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+/* === Tomar examen: Progress bar === */
+.examen-progreso {
+  height: 6px;
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+  overflow: hidden;
+}
+
+.examen-progreso__lleno {
+  height: 100%;
+  background: var(--color-exito);
+  border-radius: var(--radio-pill);
+  transition: width 0.3s ease;
+}
+
+/* === Tomar examen: Submit bar === */
+.examen-submit-bar {
+  position: fixed;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  left: 0;
+  right: 0;
+  display: flex;
+  justify-content: center;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-sm);
+  background: var(--color-vidrio);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  backdrop-filter: var(--desenfoque-vidrio);
+  border-top: 1px solid var(--color-vidrio-borde);
+  z-index: 10;
+}
+
+/* === Tomar examen: Pagination (mobile) === */
+.examen-paginado {
+  display: none;
+}
+
+.examen-pagina {
+  display: none;
+}
+
+.examen-pagina--activa {
+  display: block;
+}
+
+.examen-dots {
+  display: flex;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--espaciado-sm) 0;
+  flex-wrap: wrap;
+}
+
+.examen-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  border: 2px solid var(--color-borde);
+  background: transparent;
+  cursor: pointer;
+  transition: all 0.2s;
+  padding: 0;
+}
+
+.examen-dot--activa {
+  background: var(--color-acento);
+  border-color: var(--color-acento);
+}
+
+.examen-dot--respondida {
+  background: var(--color-exito);
+  border-color: var(--color-exito);
+}
+
+.examen-nav {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm) 0;
+}
+
+.examen-nav__btn {
+  flex: 1;
+  max-width: 140px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+}
+
+/* === Tomar examen: Option cards === */
+.examen-opcion {
+  display: flex;
+  gap: var(--espaciado-sm);
+  cursor: pointer;
+  padding: var(--espaciado-xs);
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+  transition: all var(--transicion-rapida);
+  min-height: var(--toque-minimo);
+  align-items: center;
+}
+
+.examen-opcion:hover {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.examen-opcion--seleccionada {
+  background: var(--color-acento-soft);
+  border-color: var(--color-acento);
+}
+
+/* === Tomar examen: Question result === */
+.examen-resultado {
+  border-left: 4px solid var(--color-borde);
+  transition: border-color var(--transicion-rapida);
+}
+
+.examen-resultado--correcta {
+  border-left-color: var(--color-exito);
+}
+
+.examen-resultado--incorrecta {
+  border-left-color: var(--color-error);
+}
+
+/* === Tomar examen: Order buttons === */
+.examen-ordenar-btn {
+  background: none;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  padding: 2px 6px;
+  transition: all var(--transicion-rapida);
+  min-height: auto;
+}
+
+.examen-ordenar-btn:hover {
+  background: var(--color-fondo-alt);
+  border-color: var(--color-acento);
+}
+
+/* === Responsive === */
+@media (min-width: 769px) {
+  .examen-paginado {
+    display: none !important;
+  }
+}
+
+@media (max-width: 768px) {
+  .examen-paginado {
+    display: block;
+  }
+
+  .examen-sin-paginar {
+    display: none !important;
+  }
+
+  .examen-pagina {
+    padding: var(--espaciado-sm) 0;
+  }
+
+  .examen-nav__btn {
+    max-width: none;
+  }
+}

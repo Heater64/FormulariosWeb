@@ -1,0 +1,77 @@
+[
+  {
+    "categoria": "Datos asombrosos",
+    "icono": "sparkles",
+    "items": [
+      { "titulo": "El versículo más corto", "texto": "Juan 11:35 — «Jesús lloró.» Solo dos palabras en español, pero plenas de emoción.", "ref": "Juan 11:35" },
+      { "titulo": "El capítulo más largo", "texto": "Salmo 119 tiene 176 versículos, todos centrados en la Palabra de Dios.", "ref": "Salmo 119" },
+      { "titulo": "El libro más corto", "texto": "2 Juan tiene solo 13 versículos. Una carta breve de amor y verdad.", "ref": "2 Juan" },
+      { "titulo": "La persona más longeva", "texto": "Matusalén vivió 969 años, la edad más avanzada registrada en la Biblia.", "ref": "Génesis 5:27" },
+      { "titulo": "El evento más antiguo", "texto": "La creación del universo, descrita en Génesis 1.", "ref": "Génesis 1:1" },
+      { "titulo": "El milagro más extenso", "texto": "La resurrección de Lázaro, que involucró una cueva, una piedra y el poder de Jesús.", "ref": "Juan 11:1-44" },
+      { "titulo": "La Biblia tiene 66 libros", "texto": "39 en el Antiguo Testamento y 27 en el Nuevo Testamento.", "ref": "Canon bíblico" },
+      { "titulo": "El libro más vendido", "texto": "La Biblia es el libro más traducido y distribuido de la historia.", "ref": "Historia" }
+    ]
+  },
+  {
+    "categoria": "Números interesantes",
+    "icono": "hash",
+    "items": [
+      { "titulo": "7 días de creación", "texto": "Dios creó el mundo en 6 días y descansó en el séptimo.", "ref": "Génesis 1-2" },
+      { "titulo": "40 días y 40 noches", "texto": "El diluvio duró 40 días. Jesús ayunó 40 días en el desierto. Israel vagó 40 años.", "ref": "Génesis 7:12, Mateo 4:2" },
+      { "titulo": "12 tribus de Israel", "texto": "Descendientes de los 12 hijos de Jacob.", "ref": "Génesis 49" },
+      { "titulo": "30 monedas de plata", "texto": "El precio por el que Judas traicionó a Jesús.", "ref": "Mateo 26:15" },
+      { "titulo": "7 iglesias del Apocalipsis", "texto": "Jesús dictó cartas a 7 iglesias en Asia Menor.", "ref": "Apocalipsis 2-3" },
+      { "titulo": "144,000 sellados", "texto": "El número de elegidos mencionado en Apocalipsis.", "ref": "Apocalipsis 7:4" },
+      { "titulo": "150 salmos", "texto": "El libro de Salmos tiene exactamente 150 cánticos.", "ref": "Salmos" },
+      { "titulo": "3 días en el sepulcro", "texto": "Jesús resucitó al tercer día después de su crucifixión.", "ref": "Mateo 28:1" }
+    ]
+  },
+  {
+    "categoria": "Curiosidades de la creación",
+    "icono": "leaf",
+    "items": [
+      { "titulo": "La primera profesión", "texto": "Adán fue el primer agricultor: trabajaba el huerto de Edén.", "ref": "Génesis 2:15" },
+      { "titulo": "La primera canción", "texto": "Moisés cantó después del cruce del Mar Rojo.", "ref": "Éxodo 15" },
+      { "titulo": "La primera boda", "texto": "Adán y Eva, oficiada por Dios mismo.", "ref": "Génesis 2:22-24" },
+      { "titulo": "La primera mentira", "texto": "La serpiente engañó a Eva en el Edén.", "ref": "Génesis 3:1-5" },
+      { "titulo": "El primer asesinato", "texto": "Caín mató a su hermano Abel por envidia.", "ref": "Génesis 4:8" },
+      { "titulo": "El primer arcoíris", "texto": "Dios puso el arcoíris como señal de su alianza después del diluvio.", "ref": "Génesis 9:13" },
+      { "titulo": "La primera oración", "texto": "La biblia no registra una primera oración formal, pero Caín y Abel ofrecieron ofrendas a Dios.", "ref": "Génesis 4:3-4" }
+    ]
+  },
+  {
+    "categoria": "Palabras y lenguas",
+    "icono": "message-square",
+    "items": [
+      { "titulo": "La torre de Babel", "texto": "Dios confundió las lenguas de la humanidad por su arrogancia.", "ref": "Génesis 11:1-9" },
+      { "titulo": "Pentateuco", "texto": "Los primeros 5 libros de la Biblia, escritos por Moisés.", "ref": "Génesis – Deuteronomio" },
+      { "titulo": "Aleluya", "texto": "Una de las palabras más conocidas, aparece en muchos salmos.", "ref": "Salmo 150" },
+      { "titulo": "Biblia", "texto": "La palabra viene del griego 'biblos' que significa 'libros'.", "ref": "Etimología" },
+      { "titulo": "Emanuel", "texto": "Significa 'Dios con nosotros', el nombre profetizado para el Mesías.", "ref": "Isaías 7:14, Mateo 1:23" },
+      { "titulo": "Jesús", "texto": "Su nombre en hebreo es 'Yeshúa', que significa 'salvación'.", "ref": "Mateo 1:21" }
+    ]
+  },
+  {
+    "categoria": "Libros únicos",
+    "icono": "book-open",
+    "items": [
+      { "titulo": "El libro de Ester", "texto": "No menciona a Dios ni una sola vez, pero Su presencia se siente en cada evento.", "ref": "Ester" },
+      { "titulo": "El libro de Proverbios", "texto": "Contiene 31 capítulos, uno para cada día del mes.", "ref": "Proverbios" },
+      { "titulo": "El libro de Job", "texto": "Es el libro más antiguo de la Biblia, escrito probablemente antes que Génesis.", "ref": "Job" },
+      { "titulo": "El Cantar de los Cantares", "texto": "Es un poema de amor, el libro más poético de la Biblia.", "ref": "Cantar 1" },
+      { "titulo": "Apocalipsis", "texto": "Es el único libro profético del Nuevo Testamento.", "ref": "Apocalipsis 1:1" }
+    ]
+  },
+  {
+    "categoria": "Costumbres bíblicas",
+    "icono": "users",
+    "items": [
+      { "titulo": "El beso de Judas", "texto": "Judas señaló a Jesús con un beso, costumbre de identificación en esa época.", "ref": "Mateo 26:48-49" },
+      { "titulo": "Polvo de los pies", "texto": "Cuando alguien rechazaba el mensaje, se sacudían el polvo de los pies.", "ref": "Mateo 10:14" },
+      { "titulo": "Derramar la ira", "texto": "Sobre la cabeza de los reos se derramaba agua, símbolo de responsabilidad.", "ref": " Mateo 27:24" },
+      { "titulo": "Sangre y agua", "texto": "Al ser crucificado, de Jesús salió sangre y agua, símbolo de sacrificio y vida.", "ref": "Juan 19:34" },
+      { "titulo": "Las cenizas del becerro", "texto": "Moisés roció al pueblo con agua mezclada con cenizas del becerro de oro.", "ref": "Éxodo 32:20" }
+    ]
+  }
+]

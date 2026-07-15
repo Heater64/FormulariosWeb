@@ -114,6 +114,9 @@ self.addEventListener('fetch', (event) => {
   if (!url.startsWith('http')) return;
   if (esApi(url)) return;
 
+  /* En desarrollo (localhost/Vite), no interceptar */
+  if (self.location.hostname === 'localhost' || self.location.hostname === '127.0.0.1') return;
+
   if (esNavegacion(url)) {
     event.respondWith(
       fetchConTimeout(url, 4000)

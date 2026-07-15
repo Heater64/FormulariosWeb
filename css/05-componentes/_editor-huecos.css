@@ -1,0 +1,330 @@
+.editor-hueco {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.editor-hueco__zona-texto {
+  position: relative;
+}
+
+.editor-hueco__escritorio {
+  width: 100%;
+  min-height: 80px;
+  padding: var(--espaciado-md);
+  border: 2px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-base);
+  line-height: 1.6;
+  outline: none;
+  transition: border-color var(--transicion-rapida);
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+.editor-hueco__escritorio:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 3px var(--color-acento-soft);
+}
+
+.editor-hueco__escritorio:empty::before {
+  content: attr(data-placeholder);
+  color: var(--color-texto-terciario);
+  pointer-events: none;
+}
+
+.editor-hueco__marcador {
+  display: inline-block;
+  min-width: 60px;
+  padding: 2px 8px;
+  margin: 0 2px;
+  border-bottom: 2.5px solid var(--color-acento);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  border-radius: var(--radio-sm) var(--radio-sm) 0 0;
+  cursor: default;
+  vertical-align: baseline;
+  user-select: none;
+  transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.editor-hueco__marcador:hover {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+.editor-hueco__btn-flotante {
+  position: absolute;
+  z-index: 20;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  border: none;
+  border-radius: var(--radio-sm);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+  box-shadow: var(--sombra-md);
+  white-space: nowrap;
+  transition: background var(--transicion-rapida), transform var(--transicion-rapida);
+  pointer-events: auto;
+}
+
+.editor-hueco__btn-flotante:hover {
+  background: var(--color-acento-hover);
+}
+
+.editor-hueco__lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.editor-hueco__item {
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  border-left: 3px solid var(--color-acento);
+}
+
+.editor-hueco__item-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--espaciado-xs);
+}
+
+.editor-hueco__item-num {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--color-acento);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.editor-hueco__item-eliminar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: var(--radio-sm);
+  color: var(--color-texto-terciario);
+  cursor: pointer;
+  transition: color var(--transicion-rapida), background var(--transicion-rapida);
+}
+
+.editor-hueco__item-eliminar:hover {
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+.editor-hueco__label {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xxs);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.editor-hueco__input {
+  width: 100%;
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border: 1.5px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-sm);
+}
+
+.editor-hueco__input:focus {
+  border-color: var(--color-acento);
+  outline: none;
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+.editor-hueco__variantes {
+  margin-top: var(--espaciado-xs);
+}
+
+.editor-hueco__variantes-lista {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  margin-top: var(--espaciado-xxs);
+}
+
+.editor-hueco__variante-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 4px 2px 8px;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-xs);
+}
+
+.editor-hueco__variante-input {
+  width: 80px;
+  padding: 2px 0;
+  border: none;
+  background: transparent;
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-xs);
+  outline: none;
+}
+
+.editor-hueco__variante-eliminar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  padding: 0;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  color: var(--color-texto-terciario);
+  cursor: pointer;
+  transition: color var(--transicion-rapida);
+}
+
+.editor-hueco__variante-eliminar:hover {
+  color: var(--color-error);
+}
+
+.editor-hueco__variante-agregar {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 8px;
+  background: none;
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio-pill);
+  color: var(--color-acento);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.editor-hueco__variante-agregar:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento-hover);
+}
+
+/* Hueco inline en vista de alumno */
+.pregunta-examen__hueco-inline {
+  display: inline-block;
+  min-width: 80px;
+  max-width: 200px;
+  margin: 0 4px;
+}
+
+.pregunta-examen__hueco-input {
+  width: 100%;
+  padding: 4px 8px;
+  border: none;
+  border-bottom: 2px solid var(--color-acento);
+  background: transparent;
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-sm);
+  text-align: center;
+  outline: none;
+  transition: border-color var(--transicion-rapida);
+}
+
+.pregunta-examen__hueco-input:focus {
+  border-bottom-color: var(--color-acento-hover);
+}
+
+.pregunta-examen__hueco-input--correcta {
+  border-bottom-color: var(--color-exito);
+  background: var(--color-exito-soft);
+}
+
+.pregunta-examen__hueco-input--incorrecta {
+  border-bottom-color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+/* Selector de tipo de pregunta */
+.selector-tipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: var(--espaciado-xs);
+}
+
+.selector-tipo-opcion {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  padding: var(--espaciado-sm);
+  border: 2px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  cursor: pointer;
+  transition: border-color var(--transicion-rapida), background var(--transicion-rapida);
+  text-align: center;
+}
+
+.selector-tipo-opcion:hover {
+  border-color: var(--color-acento-soft);
+  background: var(--color-fondo-alt);
+}
+
+.selector-tipo-opcion--activo {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.selector-tipo-opcion input[type="radio"] {
+  display: none;
+}
+
+.selector-tipo-opcion__icono {
+  font-size: 1.5rem;
+  line-height: 1;
+}
+
+.selector-tipo-opcion__nombre {
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+@media (max-width: 480px) {
+  .editor-hueco__escritorio {
+    min-height: 60px;
+    padding: var(--espaciado-sm);
+    font-size: var(--texto-sm);
+  }
+  .editor-hueco__marcador {
+    min-width: 40px;
+    padding: 1px 6px;
+    font-size: var(--texto-xs);
+  }
+  .selector-tipo-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}

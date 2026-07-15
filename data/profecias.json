@@ -1,0 +1,22 @@
+{
+  "mesianicas": [
+    { "nombre": "Nacimiento virginal", "detalle": "Una virgen concebiría y daría a luz un hijo llamado Emanuel.", "profecia": "Isaías 7:14", "cumplimiento": "Mateo 1:22-23" },
+    { "nombre": "Nacimiento en Belén", "detalle": "El líder de Israel saldría de Belén.", "profecia": "Miqueas 5:2", "cumplimiento": "Mateo 2:1" },
+    { "nombre": "Entrada en Jerusalén", "detalle": "El rey vendría montado en un pollino de burra.", "profecia": "Zacarías 9:9", "cumplimiento": "Mateo 21:1-11" },
+    { "nombre": "Vendido por 30 monedas", "detalle": "El precio de un esclavo would ser el precio de su traición.", "profecia": "Zacarías 11:12-13", "cumplimiento": "Mateo 26:15" },
+    { "nombre": "Crucificado con pecadores", "detalle": "Sería contado entre los transgresores.", "profecia": "Isaías 53:12", "cumplimiento": "Marcos 15:28" },
+    { "nombre": "Huesos sin quebrantar", "detalle": "No se le quebrarían los huesos.", "profecia": "Éxodo 12:46", "cumplimiento": "Juan 19:33-36" },
+    { "nombre": "Resurrección", "detalle": "No verá la corrupción y resucitará.", "profecia": "Salmo 16:10", "cumplimiento": "Hechos 2:31-32" }
+  ],
+  "cumplidas": [
+    { "nombre": "Destrucción del Templo", "detalle": "Jesús profetizó que no quedaría piedra sobre piedra.", "profecia": "Mateo 24:1-2", "cumplimiento": "70 d.C. por Roma" },
+    { "nombre": "Dispersión de Israel", "detalle": "Israel sería esparcida entre todas las naciones.", "profecia": "Deuteronomio 28:64", "cumplimiento": "Historia posterior al 70 d.C." },
+    { "nombre": "Idioma nuevo", "detalle": "En Pentecostés hablaron en lenguas que no conocían.", "profecia": "Isaías 28:11", "cumplimiento": "Hechos 2:1-12" }
+  ],
+  "futuras": [
+    { "nombre": "Segunda venida de Cristo", "detalle": "Jesús volverá en gloria para juzgar a los vivos y a los muertos.", "profecia": "Hechos 1:11", "cumplimiento": "Pendiente" },
+    { "nombre": "Resurrección de los muertos", "detalle": "Los muertos resucitarán para juicio eterno.", "profecia": "Daniel 12:2", "cumplimiento": "Pendiente" },
+    { "nombre": "Nuevo cielo y nueva tierra", "detalle": "Dios creará un nuevo cielo y una nueva tierra donde morará con los suyos.", "profecia": "Apocalipsis 21:1", "cumplimiento": "Pendiente" },
+    { "nombre": "Reino milenario", "detalle": "Cristo reinará por 1,000 años en paz.", "profecia": "Apocalipsis 20:4-6", "cumplimiento": "Pendiente" }
+  ]
+}

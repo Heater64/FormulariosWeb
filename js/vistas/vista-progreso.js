@@ -141,9 +141,13 @@
     _renderizar(raiz) {
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+    <style>
+      [data-lg="true"] .pestana-curiosidades { flex-direction:column !important; }
+      [data-lg="true"] .pestana-curiosidades .btn-primario { width:100%; }
+    </style>
+          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <h2>${I('sparkles')} Curiosidades Bíblicas <button class="info-ayuda" data-guia="curiosidades" aria-label="Guía de Curiosidades">i</button></h2>
-          <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap">
+          <div class="o-flecha pestana-curiosidades" style="gap:var(--espaciado-xs);flex-wrap:wrap">
             <button class="btn-primario" id="btnPestCronologia" style="flex:1;justify-content:center;${this._pestana === 'cronologia' ? '' : 'opacity:0.6'}">${I('clock')} Reyes</button>
             <button class="btn-primario" id="btnPestGenealogia" style="flex:1;justify-content:center;${this._pestana === 'genealogia' ? '' : 'opacity:0.6'}">${I('git-branch')} Genealogía</button>
             <button class="btn-primario" id="btnPestDatos" style="flex:1;justify-content:center;${this._pestana === 'datos' ? '' : 'opacity:0.6'}">${I('lightbulb')} Datos curiosos</button>

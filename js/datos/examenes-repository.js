@@ -64,7 +64,7 @@
       await sb().from('examenes_personalizados').delete().eq('id', id);
     },
     async publicar(id) {
-      if (!sb()) return;
+      if (!sb()) throw new Error('Sin conexión');
       const { data: ex } = await sb().from('examenes_personalizados').select('grupo_id').eq('id', id).single();
       await sb().from('examenes_personalizados').update({ publicado: true, estado: 'publicado' }).eq('id', id);
       if (ex && ex.grupo_id) await this.asignarAGrupo(id, ex.grupo_id);
@@ -168,7 +168,7 @@
       return data || [];
     },
     async calificar(intentoId, nota, observaciones, corregidoPor, correccion) {
-      if (!sb()) return;
+      if (!sb()) throw new Error('Sin conexión');
       const update = {
         nota, observaciones, corregido: true, corregido_por: corregidoPor,
         estado: 'calificado', fecha_corregido: new Date().toISOString()

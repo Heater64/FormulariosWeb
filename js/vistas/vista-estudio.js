@@ -7,9 +7,14 @@
       const sb = window.supabaseClient;
       if (!sb || !usuario) return;
       try {
-        const { data: libros } = await sb.from('libros_biblicos').select('*').order('id');
-        const { data: progreso } = await sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true);
-        const completados = progreso || [];
+        const [librosResult, progresoResult, pendientesMemoriaResult] = await Promise.all([
+          sb.from('libros_biblicos').select('*').order('id'),
+          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
+          window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => [])
+        ]);
+        const libros = librosResult.data;
+        const completados = progresoResult.data || [];
+        const pendientesMemoria = pendientesMemoriaResult.length;
         const leidosPorLibro = {};
         completados.forEach(p => {
           const lid = p.capitulos?.libro_id;
@@ -21,8 +26,6 @@
         const totalCapitulosBiblia = (libros || []).reduce((sum, l) => sum + (l.num_capitulos || 0), 0);
         const racha = window.progresoLectura.calcularRacha(completados);
         try { localStorage.setItem('fb_racha', String(racha)); } catch (e) {}
-        let pendientesMemoria = 0;
-        try { pendientesMemoria = (await window.memorizacionRepository.tarjetasPendientes(usuario.id)).length; } catch (e) {}
         const pctGeneral = totalCapitulosBiblia ? Math.round((completados.length / totalCapitulosBiblia) * 100) : 0;
         const ultimo = completados.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura))[0];
         let ultimoLibro = null, ultimoCap = null;

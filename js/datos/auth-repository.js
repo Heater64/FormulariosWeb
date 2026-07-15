@@ -1,7 +1,7 @@
 const authRepository = {
-  async iniciarSesion(usuario, password) {
+  async iniciarSesion(usuario, password, recordar) {
     const sb = window.supabaseClient;
-    if (!sb) throw new Error('Supabase no disponible');
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
 
     const { data, error } = await sb
       .from('perfiles')
@@ -14,24 +14,16 @@ const authRepository = {
     if (!data.activo) throw new Error('Cuenta desactivada');
 
     store.asignar({ usuario: data, sesion: { autenticado: true, inicio: Date.now() } });
-    window.eventBus.publicar('auth:login', data);
+    window.eventBus.publicar('auth:login', { usuario: data, recordar: recordar !== false });
     return data;
   },
 
   async cerrarSesion() {
     store.asignar({ usuario: null, sesion: null });
+    localStorage.removeItem('fb_usuario');
+    localStorage.removeItem('fb_recordar_sesion');
+    sessionStorage.removeItem('fb_usuario');
     window.eventBus.publicar('auth:logout');
-  },
-
-  async obtenerSesion() {
-    const sb = window.supabaseClient;
-    if (!sb) return null;
-    try {
-      const { data: { session } } = await sb.auth.getSession();
-      return session;
-    } catch {
-      return null;
-    }
   },
 
   async asegurarGrupo(usuario) {
@@ -47,16 +39,9 @@ const authRepository = {
     return usuario;
   },
 
-  async obtenerPerfil(id) {
-    const sb = window.supabaseClient;
-    if (!sb) return null;
-    const { data } = await sb.from('perfiles').select('*').eq('id', id).single();
-    return data;
-  },
-
   async eliminarMisDatos(usuarioId) {
     const sb = window.supabaseClient;
-    if (!sb) throw new Error('Supabase no disponible');
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
     const tablas = [
       ['repasos_memorizacion', 'usuario_id'],
       ['tarjetas_memorizacion', 'usuario_id'],

@@ -1,0 +1,12 @@
+[
+  { "nombre": "El Buen Samaritano", "tema": "Amor al prójimo", "detalle": "Un samaritano ayudó a un judío herido, mientras el sacerdote y el levita lo ignoraron.", "ref": "Lucas 10:25-37", "leccion": "El amor al prójimo no tiene fronteras de religión ni de raza." },
+  { "nombre": "El Hijo Pródigo", "tema": "Perdón y arrepentimiento", "detalle": "Un hijo malgastó su herencia y volvió arrepentido. Su padre lo recibió con fiesta.", "ref": "Lucas 15:11-32", "leccion": "Dios recibe con gozo a quien se arrepiente." },
+  { "nombre": "El Sembrador", "tema": "La Palabra y el corazón", "detalle": "Un sembrador sembró semilla en 4 tipos de tierra con resultados diferentes.", "ref": "Mateo 13:3-23", "leccion": "La Palabra fructifica según la disposición del corazón." },
+  { "nombre": "Los Talentos", "tema": "Fidelidad en lo poco", "detalle": "Un señor dio talentos a sus siervos. Los que los multiplicaron fueron recompensados.", "ref": "Mateo 25:14-30", "leccion": "Debemos usar los dones que Dios nos da para Su gloria." },
+  { "nombre": "La Oveja Perdida", "tema": "El valor de cada persona", "detalle": "Un pastor dejó 99 ovejas para buscar una que se había perdido.", "ref": "Mateo 18:12-14", "leccion": "A Dios le importa cada persona individualmente." },
+  { "nombre": "El Hombre Rico y Lázaro", "tema": "Valores eternos", "detalle": "Un rico vivió lujosamente y un pobre mendigaba. En la eternidad, sus situaciones se invirtieron.", "ref": "Lucas 16:19-31", "leccion": "Lo que hacemos con lo que tenemos determina nuestro destino eterno." },
+  { "nombre": "Las Copas de Aceite", "tema": "Fe y obediencia", "detalle": "Una viuda llenó vasos con aceite milagroso por la palabra de Eliseo.", "ref": "2 Reyes 4:1-7", "leccion": "La obediencia a Dios produce abundancia." },
+  { "nombre": "La Higuera", "tema": "Fruto espiritual", "detalle": "Jesús maldijo una higuera sin fruto como lección para sus discípulos.", "ref": "Marcos 11:12-14", "leccion": "Dios espera fruto espiritual de nosotros." },
+  { "nombre": "La Viña y los Labradores", "tema": "Fidelidad y juicio", "detalle": "Un señor plantó una viña y la alquiló. Los labradores maltrataron a los siervos del señor.", "ref": "Mateo 21:33-46", "leccion": "Dios juzgará a quienes no son fieles con lo que Él les ha dado." },
+  { "nombre": "Las Diez vírgenes", "tema": "Preparación para la venida de Cristo", "detalle": "Cinco vírgenes prudentes y cinco insensatas esperaron al novio.", "ref": "Mateo 25:1-13", "leccion": "Debemos estar preparados para la segunda venida de Jesús." }
+]

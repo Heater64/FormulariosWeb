@@ -1,0 +1,24 @@
+{
+  "antiguo_testamento": [
+    { "nombre": "El maná del cielo", "detalle": "Dios envió alimento del cielo para alimentar a Israel en el desierto durante 40 años.", "ref": "Éxodo 16", "personajes": ["Moisés", "Israel"] },
+    { "nombre": "Agua de la roca", "detalle": "Moisés golpeó una roca y brotó agua para el pueblo sediento.", "ref": "Éxodo 17:6", "personajes": ["Moisés"] },
+    { "nombre": "El mar Rojo se abrió", "detalle": "Dios abrió el mar para que Israel cruzara y se cerró sobre los egipcios.", "ref": "Éxodo 14:21-31", "personajes": ["Moisés"] },
+    { "nombre": "Resurrección del hijo de la viuda", "detalle": "Elías resucitó al hijo muerto de una viuda de Sarepta.", "ref": "1 Reyes 17:17-24", "personajes": ["Elías"] },
+    { "nombre": "Fuego del cielo en el Carmelo", "detalle": "Dios mandó fuego que consumió el holocausto de Elías, probando que Él es Dios.", "ref": "1 Reyes 18:30-39", "personajes": ["Elías"] },
+    { "nombre": "Curación de Naamán", "detalle": "Eliseo curó la lepra de Naamán, un sirio, lavándose 7 veces en el Jordán.", "ref": "2 Reyes 5:1-14", "personajes": ["Eliseo", "Naamán"] },
+    { "nombre": "Multiplicación del aceite", "detalle": "Eliseo multiplicó el aceite de una viuda para que pudiera pagar sus deudas.", "ref": "2 Reyes 4:1-7", "personajes": ["Eliseo"] },
+    { "nombre": "Jonás en el pez", "detalle": "Jonás fue engullido por un pez grande y después vomitado en tierra seca.", "ref": "Jonás 1-2", "personajes": ["Jonás"] }
+  ],
+  "nuevo_testamento": [
+    { "nombre": "Convertir agua en vino", "detalle": "Jesús convirtió agua en vino de calidad en las bodas de Caná.", "ref": "Juan 2:1-11", "personajes": ["Jesús", "María"] },
+    { "nombre": "Sanación del ciego de nacimiento", "detalle": "Jesús abrió los ojos de un hombre que había nacido ciego.", "ref": "Juan 9:1-7", "personajes": ["Jesús"] },
+    { "nombre": "Caminar sobre el agua", "detalle": "Jesús caminó sobre el mar de Galilea hacia los discípulos en la barca.", "ref": "Mateo 14:22-33", "personajes": ["Jesús", "Pedro"] },
+    { "nombre": "Multiplicación de panes y peces", "detalle": "Jesús alimentó a 5,000 hombres con 5 panes y 2 peces.", "ref": "Mateo 14:13-21", "personajes": ["Jesús"] },
+    { "nombre": "Resurrección de Lázaro", "detalle": "Jesús resucitó a Lázaro después de 4 días muerto.", "ref": "Juan 11:1-44", "personajes": ["Jesús", "Lázaro", "María", "Marta"] },
+    { "nombre": "Calmar la tormenta", "detalle": "Jesús calmó una tormenta violenta con su palabra.", "ref": "Marcos 4:35-41", "personajes": ["Jesús"] },
+    { "nombre": "Sanación del leproso", "detalle": "Jesús tocó y curó a un leproso, algo que nadie hacía.", "ref": "Marcos 1:40-42", "personajes": ["Jesús"] },
+    { "nombre": "Resurrección de Jesús", "detalle": "Jesús resucitó al tercer día después de ser crucificado.", "ref": "Mateo 28:1-10", "personajes": ["Jesús"] },
+    { "nombre": "Sanación del paralítico", "detalle": "Jesús sanó a un hombre que llevaba 38 años en su parálisis.", "ref": "Juan 5:1-9", "personajes": ["Jesús"] },
+    { "nombre": "Exorcismo del Legion", "detalle": "Jesús liberó a un hombre poseído por muchos demonios.", "ref": "Marcos 5:1-20", "personajes": ["Jesús"] }
+  ]
+}

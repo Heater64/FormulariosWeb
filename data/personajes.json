@@ -1,0 +1,112 @@
+[
+  {
+    "nombre": "Abraham",
+    "acimiento": "Ur de los caldeos",
+    "muerte": "Hebrón",
+    "padre": "Tara",
+    "hijos": ["Isaac", "Ismael"],
+    "libros": ["Génesis 12-25", "Isaías 41:8", "Romanos 4", "Hebreos 11", "Santiago 2:23"],
+    "epoca": "Patriarcas",
+    "detalle": "Padre de la fe. Dios le prometió que sería padre de una gran nación. Creyó y le fue contado por justicia.",
+    "eventos": ["Llamado de Dios", "Separación de Lot", "Alianza con Dios", "Sacrificio de Isaac"]
+  },
+  {
+    "nombre": "Moisés",
+    "acimiento": "Egipto",
+    "muerte": "Monte Nebo",
+    "padre": "Amram",
+    "hijos": ["Gersón", "Eliezer"],
+    "libros": ["Éxodo", "Levítico", "Números", "Deuteronomio"],
+    "epoca": "Éxodo",
+    "detalle": "Liberador de Israel. Habló con Dios cara a cara y recibió la Ley en el Sinaí.",
+    "eventos": ["Nacido en Egipto", "Arrojado al Nilo", "Llamado en la zarza", "Diez plagas", "Cruce del Mar Rojo", "Diez Mandamientos", "La ley del maná"]
+  },
+  {
+    "nombre": "David",
+    "acimiento": "Belén",
+    "muerte": "Jerusalén",
+    "padre": "Isai",
+    "hijos": ["Absalón", "Salomón", "Adonías"],
+    "libros": ["1 Samuel 16–2 Samuel 24", "1 Reyes 1-2", "Salmos"],
+    "epoca": "Reyes",
+    "detalle": "Rey de Israel, autor de muchos Salmos. Hombre según el corazón de Dios, pese a sus fallos.",
+    "eventos": ["Ungido por Samuel", "Derrotó a Goliat", "Fugitivo de Saúl", "Rey de Judá", "Rey de Israel", "Batsabé", "Rebelión de Absalón"]
+  },
+  {
+    "nombre": "Elías",
+    "acimiento": "Tishbe (Galaad)",
+    "muerte": "Arrebatado en un carruaje de fuego",
+    "padre": "Desconocido",
+    "hijos": [],
+    "libros": ["1 Reyes 17-19", "2 Reyes 1-2", "Malaquías 4:5", "Mateo 17:1-3"],
+    "epoca": "Reyes",
+    "detalle": "Profeta que no conoció la muerte. Enfrentó a 450 profetas de Baal en el monte Carmelo.",
+    "eventos": ["Alimentado por cuervos", "Resurrección del hijo de la viuda", "Desafío en el Carmelo", "Huida al Horeb", "Arrebatado al cielo"]
+  },
+  {
+    "nombre": "Isaías",
+    "acimiento": "Jerusalén",
+    "muerte": "Mártir (según la tradición)",
+    "padre": "Amoz",
+    "hijos": ["Sear-iasún", "Maer-salal-bazaz"],
+    "libros": ["Isaías"],
+    "epoca": "Profetas",
+    "detalle": "El profeta mesiánico por excelencia. Profetizó el nacimiento, muerte y resurrección de Jesús.",
+    "eventos": ["Visión en el templo", "Profecías mesiánicas", "Predicción del exilio", "Consolación a Israel"]
+  },
+  {
+    "nombre": "Pedro (Simón)",
+    "acimiento": "Betsaida",
+    "muerte": "Roma (crucificado boca abajo)",
+    "padre": "Jonás",
+    "hijos": [],
+    "libros": ["Mateo 10-26", "Hechos 1-12", "1 Pedro", "2 Pedro"],
+    "epoca": "Iglesia primitiva",
+    "detalle": "Primer líder de la iglesia. Predicó el primer sermón y bautizó a 3,000 personas en Pentecostés.",
+    "eventos": ["Llamado por Jesús", "Caminó sobre el agua", "Confesó a Cristo", "Negó a Jesús", "Pentecostés", "Libertad de la cárcel", "Conversión de Cornelio"]
+  },
+  {
+    "nombre": "Pablo ( Saulo )",
+    "acimiento": "Tarsos",
+    "muerte": "Mártir en Roma",
+    "padre": "Fariseo",
+    "hijos": [],
+    "libros": ["Hechos 7-28", "Romanos", "1-2 Corintios", "Gálatas", "Efesios", "Filipenses", "Colosenses", "1-2 Tesalonicenses", "1-2 Timoteo", "Tito", "Filemón", "Hebreos"],
+    "epoca": "Iglesia primitiva",
+    "detalle": "El apóstol de los gentiles. Perseguía cristianos hasta que Jesús lo llamó en el camino a Damasco.",
+    "eventos": ["Persecución de la iglesia", "Conversión en Damasco", "Tres misiones", "Concilio de Jerusalén", "Escritura de epístolas", "Viaje a Roma"]
+  },
+  {
+    "nombre": "Noé",
+    "acimiento": "Desconocido",
+    "muerte": "Desconocido",
+    "padre": "Lamec",
+    "hijos": ["Sem", "Cam", "Jafet"],
+    "libros": ["Génesis 5-9"],
+    "epoca": "Creación",
+    "detalle": "Justo en su generación. Construyó el arca por fe y sobrevivió al diluvio universal.",
+    "eventos": ["Construcción del arca", "Diluvio universal", "El arca descansó", "Alianza del arcoíris", "Plantación de viña"]
+  },
+  {
+    "nombre": "José (patriarca)",
+    "acimiento": "Canaán",
+    "muerte": "Egipto",
+    "padre": "Jacob",
+    "hijos": ["Efraín", "Manasés"],
+    "libros": ["Génesis 30-50"],
+    "epoca": "Patriarcas",
+    "detalle": "Vendido como esclavo por sus hermanos. Dios lo elevó a segundo al mando de Egipto.",
+    "eventos": ["Soñó con estrellas", "Vendido como esclavo", "En la casa de Potifar", "Encarcelado", "Interpretó sueños", "Se reunió con sus hermanos"]
+  },
+  {
+    "nombre": "Rut",
+    "acimiento": "Moab",
+    "muerte": "Belén",
+    "padre": "Desconocido",
+    "hijos": ["Obed"],
+    "libros": ["Rut"],
+    "epoca": "Jueces",
+    "detalle": "Extranjera moabita que siguió a Noemí y fue abuela del rey David. Modelo de lealtad y fe.",
+    "eventos": ["Siguió a Noemí", "Recogió espigas", "Conoció a Booz", "Se casó con Booz", "Ancestra de Jesús"]
+  }
+]

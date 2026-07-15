@@ -22,6 +22,15 @@ const puntuacionExamen = {
       return uKeys.every(k => String(u[k]).trim().toLowerCase() === String(c[k]).trim().toLowerCase());
     } catch (e) { return false; }
   },
+  _esCorrectoHueco(respuesta, hueco) {
+    if (!respuesta && respuesta !== 0) return false;
+    const normalizada = this._normalizarRespuesta(respuesta);
+    if (this._normalizarRespuesta(hueco.respuesta_correcta) === normalizada) return true;
+    if (hueco.variantes && Array.isArray(hueco.variantes)) {
+      return hueco.variantes.some(v => this._normalizarRespuesta(v) === normalizada);
+    }
+    return false;
+  },
   esCorrecta(respuestaUsuario, respuestaCorrecta, tipo) {
     if (!respuestaUsuario && respuestaUsuario !== 0) return false;
     if (!respuestaCorrecta && respuestaCorrecta !== 0) return false;
@@ -40,13 +49,13 @@ const puntuacionExamen = {
     if (tipo === 'respuesta_corta' || tipo === 'texto_corto') {
       return this._normalizarRespuesta(respuestaUsuario) === this._normalizarRespuesta(respuestaCorrecta);
     }
-    if (tipo === 'texto_largo' || tipo === 'solo_numero') {
-      if (tipo === 'solo_numero') {
-        const n = parseFloat(respuestaUsuario);
-        const r = parseFloat(respuestaCorrecta);
-        return !isNaN(n) && !isNaN(r) && n === r;
-      }
+    if (tipo === 'texto_largo') {
       return this._normalizarRespuesta(respuestaUsuario) === this._normalizarRespuesta(respuestaCorrecta);
+    }
+    if (tipo === 'solo_numero') {
+      const n = parseFloat(respuestaUsuario);
+      const r = parseFloat(respuestaCorrecta);
+      return !isNaN(n) && !isNaN(r) && n === r;
     }
     if (tipo === 'completar') {
       const opciones = respuestaCorrecta.split('|').map(s => s.trim().toLowerCase());
@@ -54,21 +63,51 @@ const puntuacionExamen = {
     }
     return false;
   },
+  esCorrectaPregunta(respuestaUsuario, pregunta) {
+    if (pregunta.tipo === 'completar' && pregunta.huecos && Array.isArray(pregunta.huecos)) {
+      const respuestas = Array.isArray(respuestaUsuario) ? respuestaUsuario : [];
+      const resultado = this._calcularHuecos(respuestas, pregunta.huecos);
+      return resultado.correctos === resultado.total;
+    }
+    return this.esCorrecta(respuestaUsuario, pregunta.respuesta_correcta, pregunta.tipo);
+  },
+  _calcularHuecos(respuestasArray, huecos) {
+    if (!Array.isArray(respuestasArray) || !Array.isArray(huecos) || huecos.length === 0) {
+      return { correctos: 0, total: huecos ? huecos.length : 0 };
+    }
+    let correctos = 0;
+    for (let i = 0; i < huecos.length; i++) {
+      const respuesta = respuestasArray[i] || '';
+      if (this._esCorrectoHueco(respuesta, huecos[i])) correctos++;
+    }
+    return { correctos, total: huecos.length };
+  },
   calcularPuntuacion(respuestas, preguntas) {
     let aciertos = 0;
+    let puntosObtenidos = 0;
+    let totalPuntos = 0;
     for (const p of preguntas) {
+      const pts = this.puntosPregunta(p);
+      totalPuntos += pts;
       const rUser = respuestas[p.id];
-      if (rUser !== undefined && this.esCorrecta(rUser, p.respuesta_correcta, p.tipo)) {
-        aciertos++;
+      if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
+        const respuestasArr = Array.isArray(rUser) ? rUser : [];
+        const h = this._calcularHuecos(respuestasArr, p.huecos);
+        const fraccion = h.total > 0 ? h.correctos / h.total : 0;
+        const puntos = Math.round(fraccion * pts * 100) / 100;
+        puntosObtenidos += puntos;
+        if (fraccion === 1) aciertos++;
+      } else {
+        if (rUser !== undefined && this.esCorrecta(rUser, p.respuesta_correcta, p.tipo)) {
+          aciertos++;
+          puntosObtenidos += pts;
+        }
       }
     }
     const total = preguntas.length;
-    return {
-      aciertos,
-      total,
-      porcentaje: total > 0 ? Math.round((aciertos / total) * 100) : 0,
-      nota: total > 0 ? Math.round(((aciertos / total) * 10) * 100) / 100 : 0
-    };
+    const porcentaje = totalPuntos > 0 ? Math.round((puntosObtenidos / totalPuntos) * 100) : 0;
+    const nota = totalPuntos > 0 ? Math.round(((puntosObtenidos / totalPuntos) * 10) * 100) / 100 : 0;
+    return { aciertos, total, porcentaje, nota, puntosObtenidos, totalPuntos };
   },
   puntosPregunta(p) {
     return Number(p.puntos) || 1;
@@ -80,23 +119,40 @@ const puntuacionExamen = {
       totalPuntos += pts;
       const override = correccion && correccion[p.id];
       let esCorrecta;
-      if (override && override.es_correcta !== undefined && override.es_correcta !== null) {
-        esCorrecta = !!override.es_correcta;
+      let puntosAuto = 0;
+      if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
+        const respuestasArr = Array.isArray(respuestas[p.id]) ? respuestas[p.id] : [];
+        const h = this._calcularHuecos(respuestasArr, p.huecos);
+        const fraccion = h.total > 0 ? h.correctos / h.total : 0;
+        puntosAuto = Math.round(fraccion * pts * 100) / 100;
+        esCorrecta = fraccion === 1;
       } else {
         esCorrecta = this.esCorrecta(respuestas[p.id], p.respuesta_correcta, p.tipo);
+        puntosAuto = esCorrecta ? pts : 0;
       }
-      let puntos = 0;
-      if (esCorrecta) {
-        puntos = (override && override.puntos != null) ? Number(override.puntos) : pts;
-        aciertos++;
-      } else if (override && override.puntos != null) {
-        puntos = Number(override.puntos);
+      let puntos;
+      if (override && override.es_correcta !== undefined && override.es_correcta !== null) {
+        esCorrecta = !!override.es_correcta;
+        puntos = override.puntos != null ? Number(override.puntos) : (esCorrecta ? pts : 0);
+      } else {
+        puntos = puntosAuto;
       }
+      if (esCorrecta) aciertos++;
       puntosObtenidos += puntos;
     }
     const porcentaje = totalPuntos > 0 ? Math.round((puntosObtenidos / totalPuntos) * 100) : 0;
     const nota = totalPuntos > 0 ? Math.round(((puntosObtenidos / totalPuntos) * 10) * 100) / 100 : 0;
     return { aciertos, puntosObtenidos, totalPuntos, porcentaje, nota };
+  },
+  detalleCompletar(respuestaUsuario, pregunta) {
+    if (!pregunta.huecos || !Array.isArray(pregunta.huecos)) return null;
+    const respuestas = Array.isArray(respuestaUsuario) ? respuestaUsuario : [];
+    return pregunta.huecos.map((h, i) => ({
+      respuestaUsuario: respuestas[i] || '',
+      respuestaCorrecta: h.respuesta_correcta,
+      variantes: h.variantes || [],
+      esCorrecta: this._esCorrectoHueco(respuestas[i] || '', h)
+    }));
   },
   convertirNota(nota) {
     if (nota >= 9) return { letra: 'A', excelente: true };

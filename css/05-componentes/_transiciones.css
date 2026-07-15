@@ -1,0 +1,26 @@
+.app-transicion-salida {
+  animation: transicion-salida 0.15s ease forwards;
+}
+
+.app-transicion-entrada {
+  animation: transicion-entrada 0.2s ease forwards;
+}
+
+@keyframes transicion-salida {
+  from { opacity: 1; transform: translateX(0); }
+  to { opacity: 0; transform: translateX(-16px); }
+}
+
+@keyframes transicion-entrada {
+  from { opacity: 0; transform: translateX(16px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .app-transicion-salida,
+  .app-transicion-entrada {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+}

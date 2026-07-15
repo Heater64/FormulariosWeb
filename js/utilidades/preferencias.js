@@ -43,5 +43,5 @@
     root.dataset.lg = p.letra_grande ? 'true' : 'false';
   }
 
-  window.preferencias = { leer, guardar, aplicar, CLAVE };
+  window.preferencias = { guardar, aplicar };
 })();

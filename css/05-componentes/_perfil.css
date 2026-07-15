@@ -1,0 +1,741 @@
+/* ===== PERFIL - Modular Sections ===== */
+
+.perfil-cabecera {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--espaciado-lg) 0;
+  gap: var(--espaciado-sm);
+}
+
+.perfil-avatar {
+  width: 88px;
+  height: 88px;
+  border-radius: 50%;
+  background: var(--color-acento-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2.4rem;
+  font-weight: 700;
+  color: var(--color-acento);
+  cursor: pointer;
+  overflow: hidden;
+  position: relative;
+  transition: transform 0.15s ease;
+  border: 3px solid var(--color-borde);
+}
+
+.perfil-avatar:hover {
+  transform: scale(1.05);
+}
+
+.perfil-avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+}
+
+.perfil-avatar input[type="file"] {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+
+.perfil-nombre-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  justify-content: center;
+}
+
+.perfil-nombre-fila h3 {
+  margin: 0;
+  font-size: var(--texto-xl);
+}
+
+.perfil-btn-editar {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-acento);
+  display: inline-flex;
+  padding: 4px;
+  border-radius: var(--radio-sm);
+  transition: background 0.15s ease;
+}
+
+.perfil-btn-editar:hover {
+  background: var(--color-acento-soft);
+}
+
+.perfil-meta {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.perfil-email {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  justify-content: center;
+}
+
+.perfil-miembro {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  justify-content: center;
+}
+
+/* ===== Secciones Modulares ===== */
+
+.perfil-seccion {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-md);
+  transition: border-color 0.2s ease;
+}
+
+.perfil-seccion:hover {
+  border-color: var(--color-acento-soft);
+}
+
+.perfil-seccion__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-md);
+  padding-bottom: var(--espaciado-sm);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.perfil-seccion__icono {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-acento);
+  flex-shrink: 0;
+}
+
+.perfil-seccion__titulo {
+  font-size: var(--texto-base);
+  font-weight: 700;
+  margin: 0;
+}
+
+.perfil-seccion__desc {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 0;
+}
+
+/* ===== Fila de perfil (para items de cuenta) ===== */
+
+.perfil-fila {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--espaciado-sm) 0;
+  border-bottom: 1px solid var(--color-fondo-alt);
+}
+
+.perfil-fila:last-child {
+  border-bottom: none;
+}
+
+.perfil-fila__label {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-terciario);
+  font-weight: 500;
+}
+
+.perfil-fila__valor {
+  font-size: var(--texto-sm);
+  color: var(--color-texto);
+  font-weight: 600;
+  text-align: right;
+  max-width: 60%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ===== Apariencia - Opciones ===== */
+
+.perfil-opcion {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--espaciado-sm) 0;
+  border-bottom: 1px solid var(--color-fondo-alt);
+}
+
+.perfil-opcion:last-child {
+  border-bottom: none;
+}
+
+.perfil-opcion__info {
+  flex: 1;
+}
+
+.perfil-opcion__label {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  margin: 0;
+}
+
+.perfil-opcion__desc {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 2px 0 0;
+}
+
+/* ===== Segmented Control (temas) ===== */
+
+.perfil-segmented {
+  display: flex;
+  gap: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  overflow: hidden;
+  margin-top: var(--espaciado-sm);
+}
+
+.perfil-segmented__btn {
+  flex: 1;
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  background: var(--color-fondo);
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 500;
+  color: var(--color-texto-secundario);
+  transition: all 0.15s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+}
+
+.perfil-segmented__btn:not(:last-child) {
+  border-right: 1px solid var(--color-borde);
+}
+
+.perfil-segmented__btn:hover {
+  background: var(--color-fondo-alt);
+}
+
+.perfil-segmented__btn--activo {
+  background: var(--color-acento);
+  color: #fff;
+  font-weight: 700;
+}
+
+/* ===== Botón de sección (Admin/Owner) ===== */
+
+.perfil-boton-seccion {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  width: 100%;
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  transition: all 0.15s ease;
+  text-align: left;
+}
+
+.perfil-boton-seccion:hover {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.perfil-boton-seccion__icono {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-acento);
+  flex-shrink: 0;
+}
+
+.perfil-boton-seccion__texto {
+  flex: 1;
+}
+
+.perfil-boton-seccion__label {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+.perfil-boton-seccion__desc {
+  margin: 2px 0 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 400;
+}
+
+.perfil-boton-seccion__flecha {
+  color: var(--color-texto-terciario);
+  flex-shrink: 0;
+}
+
+/* ===== Botón Secundario Rojo (Cerrar sesión) ===== */
+
+.perfil-btn-cerrar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+  width: 100%;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1.5px solid var(--color-error-soft);
+  border-radius: var(--radio-md);
+  color: var(--color-error);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.perfil-btn-cerrar:hover {
+  background: var(--color-error-soft);
+  border-color: var(--color-error);
+}
+
+/* ===== Tarjeta Info (FormsBiblicos) ===== */
+
+.perfil-info-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-lg);
+  border: 1px solid var(--color-borde);
+}
+
+.perfil-info-card__texto {
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-info-card__nombre {
+  font-weight: 700;
+  font-size: var(--texto-sm);
+  margin: 0;
+}
+
+.perfil-info-card__version {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 2px 0 0;
+}
+
+/* ===== ADMIN PANEL ===== */
+
+.admin-buscar {
+  position: relative;
+}
+
+.admin-buscar input {
+  width: 100%;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  padding-left: 40px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-sm);
+}
+
+.admin-buscar input:focus {
+  outline: none;
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+.admin-buscar__icono {
+  position: absolute;
+  left: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-texto-terciario);
+  pointer-events: none;
+}
+
+.admin-usuario-card {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-md);
+  border-left: 4px solid var(--color-exito);
+  transition: border-color 0.2s ease;
+}
+
+.admin-usuario-card[data-inactivo="true"] {
+  border-left-color: var(--color-error);
+  opacity: 0.7;
+}
+
+.admin-usuario-card__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-sm);
+}
+
+.admin-usuario-card__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background: var(--color-acento-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  color: var(--color-acento);
+  font-size: var(--texto-sm);
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.admin-usuario-card__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-usuario-card__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-usuario-card__nombre {
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.admin-usuario-card__meta {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 2px 0 0;
+}
+
+.admin-usuario-card__badge {
+  font-size: var(--texto-xs);
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  font-weight: 600;
+  flex-shrink: 0;
+}
+
+.admin-usuario-card__badge--activo {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+.admin-usuario-card__badge--inactivo {
+  background: var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.admin-usuario-card__acciones {
+  display: flex;
+  gap: var(--espaciado-xxs);
+  flex-wrap: wrap;
+}
+
+.admin-usuario-card__acciones button {
+  font-size: var(--texto-xs);
+  padding: 4px 10px;
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.15s ease;
+}
+
+.admin-btn-editar {
+  background: none;
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto);
+}
+
+.admin-btn-editar:hover {
+  background: var(--color-fondo-alt);
+  border-color: var(--color-acento);
+}
+
+.admin-btn-permisos {
+  background: none;
+  border: 1px solid var(--color-acento-soft);
+  color: var(--color-acento);
+}
+
+.admin-btn-permisos:hover {
+  background: var(--color-acento-soft);
+}
+
+.admin-btn-eliminar {
+  background: none;
+  border: 1px solid var(--color-error-soft);
+  color: var(--color-error);
+}
+
+.admin-btn-eliminar:hover {
+  background: var(--color-error-soft);
+}
+
+/* ===== Grupo Card ===== */
+
+.admin-grupo-card {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-md);
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.admin-grupo-card:hover {
+  border-color: var(--color-acento);
+  box-shadow: var(--sombra-sm);
+}
+
+.admin-grupo-card__nombre {
+  font-weight: 700;
+  font-size: var(--texto-sm);
+  margin: 0 0 var(--espaciado-xxs);
+}
+
+.admin-grupo-card__stats {
+  display: flex;
+  gap: var(--espaciado-md);
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+.admin-grupo-card__stat {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+/* ===== Jerarquía de Permisos ===== */
+
+.admin-jerarquia {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+}
+
+.admin-jerarquia__nivel {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  border-radius: var(--radio-sm);
+}
+
+.admin-jerarquia__nivel--owner {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+
+.admin-jerarquia__nivel--admin {
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+}
+
+.admin-jerarquia__nivel--editor {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+.admin-jerarquia__nivel--usuario {
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  border: 1px solid var(--color-borde);
+}
+
+.admin-jerarquia__flecha {
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+}
+
+/* ===== Password field con toggle ===== */
+
+.admin-password-campo {
+  position: relative;
+}
+
+.admin-password-campo input {
+  width: 100%;
+  padding-right: 40px;
+}
+
+.admin-password-campo__toggle {
+  position: absolute;
+  right: 8px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--color-texto-terciario);
+  padding: 4px;
+  display: flex;
+  transition: color 0.15s ease;
+}
+
+.admin-password-campo__toggle:hover {
+  color: var(--color-acento);
+}
+
+/* ===== OWNER PANEL ===== */
+
+.owner-filtros {
+  display: flex;
+  gap: var(--espaciado-xxs);
+  flex-wrap: wrap;
+}
+
+.owner-filtros__btn {
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.owner-filtros__btn:hover {
+  background: var(--color-fondo-alt);
+}
+
+.owner-filtros__btn--activo {
+  background: var(--color-acento);
+  color: #fff;
+  border-color: var(--color-acento);
+}
+
+.owner-auditoria-item {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-left: 3px solid var(--color-acento);
+}
+
+.owner-auditoria-item__cabecera {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.owner-auditoria-item__accion {
+  font-weight: 600;
+  font-size: var(--texto-sm);
+}
+
+.owner-auditoria-item__tiempo {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+.owner-auditoria-item__detalle {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  margin-top: 4px;
+}
+
+/* ===== Login Recordar Sesión ===== */
+
+.login-recordar {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+  user-select: none;
+}
+
+.login-recordar input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-acento);
+  cursor: pointer;
+}
+
+/* ===== Responsive ===== */
+
+@media (max-width: 480px) {
+  .perfil-avatar {
+    width: 72px;
+    height: 72px;
+    font-size: 2rem;
+  }
+
+  .perfil-seccion {
+    padding: var(--espaciado-sm);
+  }
+
+  .admin-usuario-card__acciones {
+    flex-direction: column;
+  }
+
+  .admin-usuario-card__acciones button {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .perfil-boton-seccion {
+    padding: var(--espaciado-sm);
+  }
+}

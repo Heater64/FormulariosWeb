@@ -4,7 +4,23 @@
     if (n == null) return 'var(--color-texto-terciario)';
     return n >= 7 ? 'var(--color-exito)' : 'var(--color-error)';
   }
+  function claseNota(n) {
+    if (n == null) return '';
+    return n >= 7 ? 'calif-nota--aprobada' : 'calif-nota--suspendida';
+  }
   function redondear(n) { return Math.round(n * 100) / 100; }
+  function badgeNota(n) {
+    if (n == null) return '—';
+    return `<span class="${claseNota(n)}" style="font-weight:700">${n}</span>`;
+  }
+  function clasificacion(n) {
+    if (n == null) return '';
+    if (n >= 9) return 'Sobresaliente';
+    if (n >= 7) return 'Notable';
+    if (n >= 5) return 'Suficiente';
+    return 'Insuficiente';
+  }
+
   window.vistaCalificaciones = {
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
@@ -24,15 +40,17 @@
         this._renderizar(raiz, { evaluaciones, sueltos, intentos, alumnos, stats, usuario });
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     },
+
     async _renderizar(raiz, ctx) {
       const { evaluaciones, sueltos, intentos, alumnos, stats, usuario } = ctx;
+
       const notasPorExamen = {};
       intentos.forEach(i => {
         if (i.corregido && i.nota != null) {
           (notasPorExamen[i.examen_id] = notasPorExamen[i.examen_id] || {})[i.alumno_id] = parseFloat(i.nota);
         }
       });
-      let filtroAlumno = '';
+
       const completadosEval = (evalObj, alumnoId) => {
         return (evalObj.examenes || []).filter(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId] != null).length;
       };
@@ -45,22 +63,32 @@
         (evalObj.examenes || []).forEach(e => { const m = notasPorExamen[e.id]; if (m) Object.values(m).forEach(n => ns.push(n)); });
         return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
       };
+
+      // Build distribution data for stats
+      const todasLasNotas = Object.values(notasPorExamen).flatMap(m => Object.values(m));
+      const distribucion = this._calcularDistribucion(todasLasNotas);
+
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
             <h2>${window.Iconos.render('graduation-cap')} Libro de Calificaciones</h2>
             <div class="o-flecha" style="gap:var(--espaciado-xs)">
-              <button class="btn-secundario" id="btnVolver">Volver</button>
+              <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
+              <button class="btn-secundario calif-exportar-btn" id="btnExportarCalif">${window.Iconos.render('download')} CSV</button>
               <button class="btn-primario" id="btnCrearEval">+ Crear evaluación</button>
             </div>
           </div>
+
           ${this._tarjetaCrear()}
-          ${this._estadisticas(stats)}
+          ${this._estadisticas(stats, distribucion)}
+
           <div class="o-flecha u-fs-xs u-color-texto-terciario" style="gap:var(--espaciado-sm);flex-wrap:wrap">
             <span>${window.Iconos.render('info')} <span style="color:var(--color-exito);font-weight:700">Verde</span>: ≥7 &nbsp; <span style="color:var(--color-error);font-weight:700">Rojo</span>: &lt;7</span>
-            <span>${window.Iconos.render('check')} Calificación automática &nbsp; ${window.Iconos.render('clipboard')} Pendiente de corrección</span>
+            <span>${window.Iconos.render('check')} Auto &nbsp; ${window.Iconos.render('clipboard')} Pendiente</span>
           </div>
+
           <input type="text" id="filtroAlumno" placeholder="Buscar alumno..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)">
+
           ${evaluaciones.length === 0 && sueltos.length === 0
             ? '<p class="u-color-texto-terciario">Aún no hay evaluaciones ni exámenes. Crea una evaluación y añade exámenes.</p>'
             : alumnos.length === 0
@@ -68,8 +96,16 @@
               : evaluaciones.map(e => this._seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, completadosEval, mediaGrupoEval)).join('') +
                 (sueltos.length ? this._seccionSueltos(sueltos, alumnos, notasPorExamen) : '')}
         </div>`;
+
       window.Iconos.actualizar();
+      this._conectarEventos(raiz, { evaluaciones, sueltos, intentos, alumnos, notasPorExamen, usuario, stats });
+    },
+
+    _conectarEventos(raiz, ctx) {
+      const { evaluaciones, sueltos, intentos, alumnos, notasPorExamen, usuario, stats } = ctx;
+
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
+
       const crearEval = async () => {
         const datos = await window.helpers.formulario({
           titulo: 'Crear evaluación',
@@ -94,6 +130,13 @@
       raiz.querySelector('#btnCrearEval').onclick = crearEval;
       const cardCrear = raiz.querySelector('#btnCrearEvalCard');
       if (cardCrear) cardCrear.onclick = crearEval;
+
+      // Export CSV
+      raiz.querySelector('#btnExportarCalif').onclick = () => {
+        this._exportarCSV(evaluaciones, sueltos, alumnos, notasPorExamen);
+      };
+
+      // Edit evaluations
       raiz.querySelectorAll('[data-editar-eval]').forEach(b => {
         b.onclick = async () => {
           const id = b.getAttribute('data-editar-eval');
@@ -113,9 +156,13 @@
           } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
         };
       });
+
+      // Add exam to evaluation
       raiz.querySelectorAll('[data-anadir]').forEach(b => {
         b.onclick = () => router.navegar('/editor/nuevo?evaluacion=' + b.getAttribute('data-anadir'));
       });
+
+      // Delete evaluation
       raiz.querySelectorAll('[data-eliminar-eval]').forEach(b => {
         b.onclick = async () => {
           const ok = await window.helpers.confirmar(
@@ -130,23 +177,85 @@
           } catch (e) { window.helpers.mostrarAlerta('Error al eliminar: ' + e.message, 'error'); }
         };
       });
+
+      // Edit exam
       raiz.querySelectorAll('[data-editar-ex]').forEach(b => {
         b.onclick = () => router.navegar('/editor/' + b.getAttribute('data-editar-ex'));
       });
+
+      // Correct exam
       raiz.querySelectorAll('[data-corregir]').forEach(b => {
         b.onclick = () => router.navegar('/corregir/' + b.getAttribute('data-corregir'));
       });
+
+      // Search filter (works for both desktop table rows AND mobile cards)
       const filtroInput = raiz.querySelector('#filtroAlumno');
       if (filtroInput) {
+        let debounceTimer;
         filtroInput.addEventListener('input', () => {
-          const q = filtroInput.value.toLowerCase().trim();
-          raiz.querySelectorAll('.fila-alumno').forEach(tr => {
-            const nombre = tr.querySelector('td:first-child')?.textContent?.toLowerCase() || '';
-            tr.style.display = !q || nombre.includes(q) ? '' : 'none';
-          });
+          clearTimeout(debounceTimer);
+          debounceTimer = setTimeout(() => {
+            const q = filtroInput.value.toLowerCase().trim();
+            // Desktop: table rows
+            raiz.querySelectorAll('.fila-alumno').forEach(tr => {
+              const nombre = tr.querySelector('td:first-child')?.textContent?.toLowerCase() || '';
+              tr.style.display = !q || nombre.includes(q) ? '' : 'none';
+            });
+            // Mobile: cards
+            raiz.querySelectorAll('.calif-card').forEach(card => {
+              const nombre = card.querySelector('.calif-card__nombre')?.textContent?.toLowerCase() || '';
+              card.style.display = !q || nombre.includes(q) ? '' : 'none';
+            });
+          }, 200);
         });
       }
+
+      // Evaluation menu toggles
+      raiz.querySelectorAll('[data-menu-toggle]').forEach(btn => {
+        btn.onclick = (e) => {
+          e.stopPropagation();
+          const menuId = btn.getAttribute('data-menu-toggle');
+          const menu = raiz.querySelector('#' + menuId);
+          if (!menu) return;
+          // Close all other menus first
+          raiz.querySelectorAll('.calif-menu--abierto').forEach(m => {
+            if (m !== menu) m.classList.remove('calif-menu--abierto');
+          });
+          menu.classList.toggle('calif-menu--abierto');
+        };
+      });
+      // Close menus on outside click
+      const closeMenus = (e) => {
+        if (!e.target.closest('[data-menu-toggle]') && !e.target.closest('.calif-menu')) {
+          raiz.querySelectorAll('.calif-menu--abierto').forEach(m => m.classList.remove('calif-menu--abierto'));
+        }
+      };
+      document.addEventListener('click', closeMenus);
+      // Store cleanup reference
+      this._cleanup = () => document.removeEventListener('click', closeMenus);
     },
+
+    desmontar() {
+      if (this._cleanup) { this._cleanup(); this._cleanup = null; }
+    },
+
+    _calcularDistribucion(notas) {
+      const rangos = [
+        { min: 0, max: 4, label: '0-4' },
+        { min: 4, max: 5, label: '4-5' },
+        { min: 5, max: 6, label: '5-6' },
+        { min: 6, max: 7, label: '6-7' },
+        { min: 7, max: 8, label: '7-8' },
+        { min: 8, max: 9, label: '8-9' },
+        { min: 9, max: 10.01, label: '9-10' }
+      ];
+      const maxCount = Math.max(1, ...rangos.map(r => notas.filter(n => n >= r.min && n < r.max).length));
+      return rangos.map(r => {
+        const count = notas.filter(n => n >= r.min && n < r.max).length;
+        return { ...r, count, height: Math.max(4, (count / maxCount) * 100) };
+      });
+    },
+
     _tarjetaCrear() {
       return `
         <div class="tarjeta-crear" id="btnCrearEvalCard" role="button" tabindex="0">
@@ -158,7 +267,8 @@
           <div class="tarjeta-crear__accion"><span class="btn-primario">Crear</span></div>
         </div>`;
     },
-    _estadisticas(stats) {
+
+    _estadisticas(stats, distribucion) {
       if (!stats) return '';
       const tarjeta = (icono, valor, etiqueta, color) => `
         <div class="tarjeta-estadistica" style="flex:1;min-width:120px;border-left:3px solid ${color || 'var(--color-borde)'}">
@@ -168,37 +278,110 @@
           </div>
           <p class="u-texto-2xl u-fw-700" style="color:${color || 'var(--color-texto)'}">${valor}</p>
         </div>`;
+
+      const distHtml = distribucion && distribucion.length ? `
+        <div class="tarjeta-estadistica" style="flex:2;min-width:200px">
+          <div class="o-flecha o-flecha--between" style="margin-bottom:var(--espaciado-xxs)">
+            <span class="u-fs-xs u-color-texto-secundario">Distribución de notas</span>
+            <span>${window.Iconos.render('bar-chart-2')}</span>
+          </div>
+          <div class="calif-distribucion">
+            ${distribucion.map(d => `
+              <div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                <div class="calif-distribucion__barra" style="height:${d.height}%;width:100%">
+                  <div class="calif-distribucion__barra--fill" style="height:100%;width:100%;border-radius:var(--radio-sm) var(--radio-sm) 0 0;background:${d.min >= 7 ? 'var(--color-exito)' : d.min >= 5 ? 'var(--color-aviso)' : 'var(--color-error)'};opacity:${d.count > 0 ? 1 : 0.3}"></div>
+                </div>
+                <span class="calif-distribucion__etiqueta">${d.label}</span>
+              </div>
+            `).join('')}
+          </div>
+        </div>` : '';
+
       return `
-        <div style="display:flex;gap:var(--espaciado-sm);flex-wrap:wrap" class="u-mt-2 u-mb-2">
+        <div class="calif-stats-grid u-mt-2 u-mb-2">
           ${tarjeta('users', stats.totalAlumnos, 'Alumnos', 'var(--color-texto)')}
-          ${tarjeta('clipboard-check', stats.totalExamenes, 'Exámenes', 'var(--color-texto)')}
-          ${tarjeta('percent', stats.promedioGrupo, 'Prom. grupo', stats.promedioGrupo >= 7 ? 'var(--color-exito)' : 'var(--color-error)')}
-          ${tarjeta('check-check', stats.aprobados, 'Aprobados (≥70)', 'var(--color-exito)')}
-          ${tarjeta('alert-triangle', stats.enRiesgo, 'En riesgo (<70)', 'var(--color-error)')}
-          ${tarjeta('star', stats.destacados, 'Destacados (≥90)', 'var(--color-acento)')}
+          ${tarjeta('clipboard-check', stats.totalExamenes, 'Exámenes', 'var(--color-acento)')}
+          ${tarjeta('percent', stats.promedioGrupo != null ? stats.promedioGrupo : '—', 'Prom. grupo', stats.promedioGrupo >= 7 ? 'var(--color-exito)' : 'var(--color-error)')}
+          ${tarjeta('check-check', stats.aprobados, 'Aprobados (≥7)', 'var(--color-exito)')}
+          ${tarjeta('alert-triangle', stats.enRiesgo, 'En riesgo (<7)', 'var(--color-error)')}
+          ${tarjeta('star', stats.destacados, 'Destacados (≥9)', 'var(--color-acento)')}
+          ${distHtml}
         </div>`;
     },
+
     _seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, completadosEval, mediaGrupoEval) {
       const mg = mediaGrupoEval(e);
       const examenes = e.examenes || [];
       const totalEx = examenes.length;
+      const menuId = 'menu-eval-' + e.id;
+
       const cabecera = `
         <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
           <div>
             <h3 class="u-fw-700">${window.helpers.escapeHtml(e.titulo)}</h3>
             ${e.asignatura ? `<span class="u-fs-xs u-color-texto-secundario">${window.helpers.escapeHtml(e.asignatura)}</span>` : ''}
           </div>
-          <div class="o-flecha" style="gap:var(--espaciado-xs)">
-            <span class="u-fs-sm u-fw-700">Media grupo: <span style="color:${colorNota(mg)}">${mg != null ? mg : '—'}</span></span>
-            <button class="btn-enlace u-fs-xs" data-editar-eval="${e.id}">Editar</button>
-            <button class="btn-secundario u-fs-xs" data-anadir="${e.id}">+ Añadir examen</button>
-            <button class="btn-peligro u-fs-xs" data-eliminar-eval="${e.id}" data-titulo="${window.helpers.escapeHtml(e.titulo)}" style="width:auto">${window.Iconos.render('trash-2')} Eliminar</button>
+          <div class="calif-eval-acciones">
+            <span class="calif-eval-media" style="color:${colorNota(mg)}">Media: ${mg != null ? mg : '—'}</span>
+            <div style="position:relative">
+              <button class="btn-secundario u-fs-xs" data-menu-toggle="${menuId}" aria-expanded="false" aria-label="Acciones de evaluación">
+                ${window.Iconos.render('more-vertical')}
+              </button>
+              <div class="calif-menu" id="${menuId}" style="position:absolute;right:0;top:100%;margin-top:4px;background:var(--color-fondo-tarjeta);border:1px solid var(--color-borde);border-radius:var(--radio-md);box-shadow:var(--sombra-lg);z-index:50;min-width:160px;display:none;padding:var(--espaciado-xxs) 0">
+                <button class="calif-menu-item" data-editar-eval="${e.id}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-texto);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
+                  ${window.Iconos.render('edit-3')} Editar
+                </button>
+                <button class="calif-menu-item" data-anadir="${e.id}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-texto);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
+                  ${window.Iconos.render('plus')} Añadir examen
+                </button>
+                <div style="height:1px;background:var(--color-borde);margin:var(--espaciado-xxs) 0"></div>
+                <button class="calif-menu-item" data-eliminar-eval="${e.id}" data-titulo="${window.helpers.escapeHtml(e.titulo)}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-error);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
+                  ${window.Iconos.render('trash-2')} Eliminar
+                </button>
+              </div>
+            </div>
           </div>
         </div>`;
+
+      // Cards móvil
+      const cardsMovil = examenes.length === 0
+        ? '<p class="u-fs-sm u-color-texto-terciario u-mt-2">Sin exámenes todavía.</p>'
+        : `<div class="calif-cards u-mt-2">
+            ${alumnos.map(a => {
+              const media = mediaEval(e, a.id);
+              const compl = completadosEval(e, a.id);
+              const pct = totalEx > 0 ? (compl / totalEx) * 100 : 0;
+              return `
+                <div class="calif-card">
+                  <div class="calif-card__header">
+                    <span class="calif-card__nombre u-fw-600">${window.helpers.escapeHtml(window.helpers.nombreAlumno(a))}</span>
+                    <span class="calif-card__media ${claseNota(media)}">${media != null ? media : '—'}</span>
+                  </div>
+                  <div class="calif-card__examenes">
+                    ${examenes.map(x => {
+                      const m = notasPorExamen[x.id];
+                      const nota = m ? m[a.id] : undefined;
+                      return `<div class="calif-card__examen">
+                        <span class="calif-card__examen-nombre">${window.helpers.escapeHtml(x.titulo)}</span>
+                        <span class="calif-card__examen-nota ${claseNota(nota)}">${nota != null ? nota : '—'}</span>
+                      </div>`;
+                    }).join('')}
+                  </div>
+                  <div class="calif-card__progreso">
+                    <div class="barra-progreso">
+                      <div class="barra-progreso__lleno ${pct >= 100 ? 'barra-progreso--exito' : ''}" style="width:${pct}%"></div>
+                    </div>
+                  </div>
+                  <div class="calif-card__footer u-fs-xs u-color-texto-terciario">${compl}/${totalEx} completados</div>
+                </div>`;
+            }).join('')}
+          </div>`;
+
+      // Tabla escritorio
       const tabla = examenes.length === 0
-        ? '<p class="u-fs-sm u-color-texto-terciario u-mt-2">Sin exámenes todavía. Pulsa “+ Añadir examen”.</p>'
+        ? ''
         : `
-          <div style="overflow-x:auto;-webkit-overflow-scrolling:touch" class="u-mt-2">
+          <div class="calif-tabla-desktop u-mt-2">
             <table class="tabla-admin" style="min-width:${Math.max(360, (examenes.length + 3) * 80)}px">
               <thead>
                 <tr>
@@ -220,25 +403,54 @@
                     ${examenes.map(x => {
                       const m = notasPorExamen[x.id];
                       const nota = m ? m[a.id] : undefined;
-                      return `<td style="text-align:center;font-weight:${nota != null ? '700' : '400'};color:${colorNota(nota)}">${nota != null ? nota : '—'}</td>`;
+                      return `<td class="calif-nota-celda" style="color:${colorNota(nota)}">${nota != null ? nota : '—'}</td>`;
                     }).join('')}
                     <td style="text-align:center;font-size:var(--texto-xs);color:${compl === totalEx ? 'var(--color-exito)' : 'var(--color-texto-terciario)'}">${compl}/${totalEx}</td>
-                    <td style="text-align:center;font-weight:700;color:${colorNota(media)}">${media != null ? media : '—'}</td>
+                    <td class="calif-nota-celda" style="color:${colorNota(media)}">${media != null ? media : '—'}</td>
                   </tr>`;
                 }).join('')}
               </tbody>
             </table>
           </div>
-          <p class="u-fs-xs u-color-texto-terciario u-mt-2">La media de cada alumno se recalcula automáticamente al corregir los exámenes de esta evaluación.</p>`;
-      return `<section class="tarjeta-capitulo o-pila" style="padding:var(--espaciado-md)">${cabecera}${tabla}</section>`;
+          <p class="u-fs-xs u-color-texto-terciario u-mt-2 calif-tabla-desktop">La media de cada alumno se recalcula automáticamente al corregir los exámenes de esta evaluación.</p>`;
+
+      return `<section class="tarjeta-capitulo o-pila" style="padding:var(--espaciado-md)">${cabecera}${cardsMovil}${tabla}</section>`;
     },
+
     _seccionSueltos(sueltos, alumnos, notasPorExamen) {
       const cabecera = `
         <div class="o-flecha o-flecha--between">
-          <h3 class="u-fw-700">Exámenes sin evaluación</h3>
+          <div>
+            <h3 class="u-fw-700">Exámenes sin evaluación</h3>
+            <p class="u-fs-xs u-color-texto-terciario">Estos exámenes no pertenecen a ninguna evaluación. Puedes moverlos creando una evaluación y añadiéndolos.</p>
+          </div>
         </div>`;
+
+      // Cards móvil
+      const cardsMovil = `
+        <div class="calif-cards u-mt-2">
+          ${alumnos.map(a => `
+            <div class="calif-card">
+              <div class="calif-card__header">
+                <span class="calif-card__nombre u-fw-600">${window.helpers.escapeHtml(window.helpers.nombreAlumno(a))}</span>
+              </div>
+              <div class="calif-card__examenes">
+                ${sueltos.map(x => {
+                  const m = notasPorExamen[x.id];
+                  const nota = m ? m[a.id] : undefined;
+                  return `<div class="calif-card__examen">
+                    <span class="calif-card__examen-nombre">${window.helpers.escapeHtml(x.titulo)}</span>
+                    <span class="calif-card__examen-nota ${claseNota(nota)}">${nota != null ? nota : '—'}</span>
+                  </div>`;
+                }).join('')}
+              </div>
+            </div>
+          `).join('')}
+        </div>`;
+
+      // Tabla escritorio
       const tabla = `
-        <div style="overflow-x:auto;-webkit-overflow-scrolling:touch" class="u-mt-2">
+        <div class="calif-tabla-desktop u-mt-2">
           <table class="tabla-admin" style="min-width:${Math.max(360, (sueltos.length + 1) * 120)}px">
             <thead>
               <tr>
@@ -255,13 +467,59 @@
                 ${sueltos.map(x => {
                   const m = notasPorExamen[x.id];
                   const nota = m ? m[a.id] : undefined;
-                  return `<td style="text-align:center;font-weight:${nota != null ? '700' : '400'};color:${colorNota(nota)}">${nota != null ? nota : '—'}</td>`;
+                  return `<td class="calif-nota-celda" style="color:${colorNota(nota)}">${nota != null ? nota : '—'}</td>`;
                 }).join('')}
               </tr>`).join('')}
             </tbody>
           </table>
         </div>`;
-      return `<section class="tarjeta-capitulo o-pila" style="padding:var(--espaciado-md)">${cabecera}${tabla}</section>`;
+      return `<section class="tarjeta-capitulo o-pila" style="padding:var(--espaciado-md)">${cabecera}${cardsMovil}${tabla}</section>`;
+    },
+
+    _exportarCSV(evaluaciones, sueltos, alumnos, notasPorExamen) {
+      const cabeceras = ['Alumno'];
+      const examenesPorEval = [];
+
+      evaluaciones.forEach(e => {
+        (e.examenes || []).forEach(ex => {
+          cabeceras.push(ex.titulo + ' (nota)');
+          examenesPorEval.push(ex);
+        });
+      });
+      evaluaciones.forEach(e => {
+        cabeceras.push(e.titulo + ' (media)');
+      });
+      sueltos.forEach(x => {
+        cabeceras.push(x.titulo + ' (nota)');
+        examenesPorEval.push(x);
+      });
+
+      if (cabeceras.length === 1) {
+        window.helpers.mostrarAlerta('No hay exámenes para exportar.', 'advertencia');
+        return;
+      }
+
+      const filas = alumnos.map(a => {
+        const fila = [window.helpers.nombreAlumno(a)];
+        evaluaciones.forEach(e => {
+          const evalNotas = notasPorExamen;
+          (e.examenes || []).forEach(ex => {
+            const m = evalNotas[ex.id];
+            fila.push(m && m[a.id] != null ? m[a.id] : '');
+          });
+          // Media eval
+          const ns = (e.examenes || []).map(ex => notasPorExamen[ex.id] && notasPorExamen[ex.id][a.id]).filter(n => n != null);
+          fila.push(ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : '');
+        });
+        sueltos.forEach(x => {
+          const m = notasPorExamen[x.id];
+          fila.push(m && m[a.id] != null ? m[a.id] : '');
+        });
+        return fila;
+      });
+
+      window.helpers.descargarCSV('calificaciones_grupo', cabeceras, filas);
+      window.helpers.mostrarAlerta('CSV exportado correctamente.', 'exito');
     }
   };
 })();

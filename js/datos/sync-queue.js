@@ -13,7 +13,7 @@
 
   async function despachar(op) {
     const cliente = sb();
-    if (!cliente) throw new Error('Cliente Supabase no disponible');
+    if (!cliente) throw new Error('No se ha podido conectar con el servidor.');
     if (op.tipo === 'upsert') {
       await cliente.from(op.tabla).upsert(op.datos, op.opts || {});
     } else if (op.tipo === 'insert') {
@@ -87,7 +87,6 @@
       } else {
         sincronizar();
       }
-    },
-    sincronizar
+    }
   };
 })();

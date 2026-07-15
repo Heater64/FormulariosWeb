@@ -18,8 +18,10 @@
       return data;
     },
     async eliminarGrupo(id) {
-      if (!sb()) return;
-      await sb().from('grupos').delete().eq('id', id);
+      if (!sb()) throw new Error('Sin conexión');
+      await sb().from('auditoria').update({ grupo_id: null }).eq('grupo_id', id);
+      const { error } = await sb().from('grupos').delete().eq('id', id);
+      if (error) throw new Error('No se pudo eliminar el grupo: ' + error.message);
     },
     async crearUsuario({ nombre_completo, username, password, rol, grupo_id }) {
       if (!sb()) throw new Error('Sin conexión');
@@ -37,16 +39,12 @@
       }
       return data;
     },
-    async asignarGrupo(usuarioId, grupoId) {
-      if (!sb()) return;
-      await sb().from('perfiles').update({ grupo_id: grupoId }).eq('id', usuarioId);
-    },
     async toggleActivo(usuarioId, activo) {
-      if (!sb()) return;
+      if (!sb()) throw new Error('Sin conexión');
       await sb().from('perfiles').update({ activo }).eq('id', usuarioId);
     },
     async cambiarRol(usuarioId, rol) {
-      if (!sb()) return;
+      if (!sb()) throw new Error('Sin conexión');
       await sb().from('perfiles').update({ rol }).eq('id', usuarioId);
     },
     async eliminarUsuario(usuarioId) {
@@ -84,7 +82,7 @@
       return data || [];
     },
     async registrarAuditoria(accion, detalle, actorId, grupoId) {
-      if (!sb()) return;
+      if (!sb()) throw new Error('Sin conexión');
       await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });
     },
     async statsGenerales() {

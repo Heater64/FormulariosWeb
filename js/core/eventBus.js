@@ -17,9 +17,6 @@ class EventBus {
     });
   }
 
-  limpiar() {
-    this._suscriptores.clear();
-  }
 }
 
 window.eventBus = new EventBus();
