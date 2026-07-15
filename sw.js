@@ -1,4 +1,4 @@
-const CACHE_VERSION = 'v5';
+const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `fb-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `fb-dynamic-${CACHE_VERSION}`;
 
@@ -50,6 +50,19 @@ const PRECACHE_URLS = [
   '/css/05-componentes/_tarjeta-crear.css',
   '/css/05-componentes/_switch.css',
   '/css/05-componentes/_instalar.css',
+  '/css/05-componentes/_info-ayuda.css',
+  '/css/05-componentes/_perfil.css',
+  '/css/05-componentes/_login.css',
+  '/css/05-componentes/_tarjeta-estadistica.css',
+  '/css/05-componentes/_boton-enlace.css',
+  '/css/05-componentes/_calificaciones.css',
+  '/css/05-componentes/_corregir-examen.css',
+  '/css/05-componentes/_editor-preguntas.css',
+  '/css/05-componentes/_examen-tomar.css',
+  '/css/05-componentes/_explorar.css',
+  '/css/05-componentes/_loading.css',
+  '/css/05-componentes/_transiciones.css',
+  '/css/05-componentes/_editor-huecos.css',
   '/css/06-utilidades/_utilidades.css',
   '/css/06-utilidades/_colores.css',
   '/css/06-utilidades/_accesibilidad.css'

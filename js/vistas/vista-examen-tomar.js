@@ -52,6 +52,7 @@
           this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario);
         }
       } catch (e) {
+        console.error('Error cargando examen:', e);
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" onclick="router.navegar('/examenes')">← Volver</button></div>`;
       }
     },
@@ -97,6 +98,47 @@
       const dotsCont = raiz.querySelector('#examenDots');
       let pagActual = 0;
       let _autoTimer = null;
+
+      const _actualizarDots = () => {
+        dotsCont.querySelectorAll('.examen-dot').forEach((d, di) => {
+          const p = preguntas[di];
+          d.classList.toggle('examen-dot--respondida', this._tieneRespuesta(respuestas, p));
+        });
+      };
+
+      const _syncPaginaRespuestas = () => {
+        if (!paginaCont) return;
+        preguntas.forEach(p => {
+          const val = this._obtenerValorRespuesta(paginaCont, p);
+          if (val !== undefined) respuestas[p.id] = val;
+        });
+        preguntas.forEach(p => {
+          const val = this._obtenerValorRespuesta(cont, p);
+          if (val !== undefined) respuestas[p.id] = val;
+        });
+        _actualizarDots();
+      };
+
+      const actualizarBarra = () => {
+        preguntas.forEach(p => {
+          const valP = this._obtenerValorRespuesta(paginaCont, p);
+          const valD = this._obtenerValorRespuesta(cont, p);
+          if (valP !== undefined) respuestas[p.id] = valP;
+          if (valD !== undefined) respuestas[p.id] = valD;
+        });
+        const count = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
+        const barra = raiz.querySelector('#barraProgresoExamen');
+        const texto = raiz.querySelector('#contadorProgreso');
+        if (barra) barra.style.width = `${Math.round((count / preguntas.length) * 100)}%`;
+        if (texto) texto.textContent = `${count}/${preguntas.length} respondidas`;
+        _actualizarDots();
+      };
+
+      const guardarYActualizarBarra = () => {
+        _syncPaginaRespuestas();
+        this._guardarRespuesta(cont, intento, preguntas, usuario);
+        actualizarBarra();
+      };
 
       const renderPagina = (idx) => {
         pagActual = idx;
@@ -152,47 +194,6 @@
       });
       renderPagina(0);
 
-      const _syncPaginaRespuestas = () => {
-        if (!paginaCont) return;
-        preguntas.forEach(p => {
-          const val = this._obtenerValorRespuesta(paginaCont, p);
-          if (val !== undefined) respuestas[p.id] = val;
-        });
-        preguntas.forEach(p => {
-          const val = this._obtenerValorRespuesta(cont, p);
-          if (val !== undefined) respuestas[p.id] = val;
-        });
-        _actualizarDots();
-      };
-
-      const _actualizarDots = () => {
-        dotsCont.querySelectorAll('.examen-dot').forEach((d, di) => {
-          const p = preguntas[di];
-          d.classList.toggle('examen-dot--respondida', this._tieneRespuesta(respuestas, p));
-        });
-      };
-
-      const actualizarBarra = () => {
-        preguntas.forEach(p => {
-          const valP = this._obtenerValorRespuesta(paginaCont, p);
-          const valD = this._obtenerValorRespuesta(cont, p);
-          if (valP !== undefined) respuestas[p.id] = valP;
-          if (valD !== undefined) respuestas[p.id] = valD;
-        });
-        const count = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
-        const barra = raiz.querySelector('#barraProgresoExamen');
-        const texto = raiz.querySelector('#contadorProgreso');
-        if (barra) barra.style.width = `${Math.round((count / preguntas.length) * 100)}%`;
-        if (texto) texto.textContent = `${count}/${preguntas.length} respondidas`;
-        _actualizarDots();
-      };
-
-      const guardarYActualizarBarra = () => {
-        _syncPaginaRespuestas();
-        this._guardarRespuesta(cont, intento, preguntas, usuario);
-        actualizarBarra();
-      };
-
       cont.querySelectorAll('input, select, textarea').forEach(el => {
         el.addEventListener('change', guardarYActualizarBarra);
         if (el.tagName === 'INPUT' && el.type !== 'hidden') el.addEventListener('input', actualizarBarra);
@@ -209,7 +210,8 @@
           const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
           const esLibre = preguntas.some(p => p.tipo === 'texto_largo');
           await window.examenesRepository.guardarIntento({
-            id: intento.id, respuestas: JSON.stringify(respuestasFinales),
+            id: intento.id, examen_id: examen.id, alumno_id: usuario.id,
+            respuestas: JSON.stringify(respuestasFinales),
             puntuacion: resultado.porcentaje,
             estado: esLibre ? 'completado' : 'calificado',
             nota: esLibre ? null : resultado.nota,

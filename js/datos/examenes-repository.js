@@ -50,7 +50,8 @@
     },
     async obtener(id) {
       if (!sb()) return null;
-      const { data } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
+      const { data, error } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
+      if (error) { console.error('obtener examen:', error); return null; }
       return data || null;
     },
     async guardar(examen) {
@@ -164,7 +165,8 @@
     },
     async misIntentos(usuarioId) {
       if (!sb()) return [];
-      const { data } = await sb().from('intentos_examen_personalizado').select('*, examenes_personalizados!examen_id(*)').eq('alumno_id', usuarioId).order('fecha_inicio', { ascending: false });
+      const { data, error } = await sb().from('intentos_examen_personalizado').select('*, examenes_personalizados!examen_id(*)').eq('alumno_id', usuarioId).order('fecha_inicio', { ascending: false });
+      if (error) { console.error('misIntentos:', error); return []; }
       return data || [];
     },
     async calificar(intentoId, nota, observaciones, corregidoPor, correccion) {
