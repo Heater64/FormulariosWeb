@@ -1,72 +1,74 @@
 const CACHE_VERSION = 'v6';
 const STATIC_CACHE = `fb-static-${CACHE_VERSION}`;
 const DYNAMIC_CACHE = `fb-dynamic-${CACHE_VERSION}`;
+const BASE_URL = self.location.href.replace(/sw\.js$/, '');
+const toAbs = (path) => new URL(path, BASE_URL).toString();
 
 const PRECACHE_URLS = [
-  '/index.html',
-  '/offline.html',
-  '/manifest.json',
-  '/assets/iconos/icon-192.svg',
-  '/assets/iconos/icon-512.svg',
-  '/assets/iconos/icon-maskable-192.svg',
-  '/assets/iconos/icon-maskable-512.svg',
-  '/assets/iconos/sprite.svg',
-  '/js/vendor/lucide.min.js',
-  '/css/00-settings/_tokens.css',
-  '/css/00-settings/_colores.css',
-  '/css/00-settings/_tipografia.css',
-  '/css/00-settings/_espaciado.css',
-  '/css/01-tools/_funciones.css',
-  '/css/02-generic/_reset.css',
-  '/css/03-elements/_body.css',
-  '/css/03-elements/_heading.css',
-  '/css/03-elements/_paragraph.css',
-  '/css/03-elements/_button.css',
-  '/css/03-elements/_input.css',
-  '/css/03-elements/_link.css',
-  '/css/04-objects/_contenedor.css',
-  '/css/04-objects/_pila.css',
-  '/css/04-objects/_grid.css',
-  '/css/04-objects/_flecha.css',
-  '/css/05-componentes/_boton-primario.css',
-  '/css/05-componentes/_boton-secundario.css',
-  '/css/05-componentes/_barra-navegacion-inferior.css',
-  '/css/05-componentes/_tarjeta-capitulo.css',
-  '/css/05-componentes/_tarjeta-racha.css',
-  '/css/05-componentes/_tarjeta-porcentaje.css',
-  '/css/05-componentes/_celebracion.css',
-  '/css/05-componentes/_tarjeta-libro.css',
-  '/css/05-componentes/_barra-progreso.css',
-  '/css/05-componentes/_barra-accion.css',
-  '/css/05-componentes/_modal.css',
-  '/css/05-componentes/_pregunta-examen.css',
-  '/css/05-componentes/_tarjeta-pregunta.css',
-  '/css/05-componentes/_tarjeta-memorizacion.css',
-  '/css/05-componentes/_versiculo.css',
-  '/css/05-componentes/_btn-calidad.css',
-  '/css/05-componentes/_seccion-admin.css',
-  '/css/05-componentes/_alerta.css',
-  '/css/05-componentes/_zona-peligro.css',
-  '/css/05-componentes/_tarjeta-crear.css',
-  '/css/05-componentes/_switch.css',
-  '/css/05-componentes/_instalar.css',
-  '/css/05-componentes/_info-ayuda.css',
-  '/css/05-componentes/_perfil.css',
-  '/css/05-componentes/_login.css',
-  '/css/05-componentes/_tarjeta-estadistica.css',
-  '/css/05-componentes/_boton-enlace.css',
-  '/css/05-componentes/_calificaciones.css',
-  '/css/05-componentes/_corregir-examen.css',
-  '/css/05-componentes/_editor-preguntas.css',
-  '/css/05-componentes/_examen-tomar.css',
-  '/css/05-componentes/_explorar.css',
-  '/css/05-componentes/_loading.css',
-  '/css/05-componentes/_transiciones.css',
-  '/css/05-componentes/_editor-huecos.css',
-  '/css/06-utilidades/_utilidades.css',
-  '/css/06-utilidades/_colores.css',
-  '/css/06-utilidades/_accesibilidad.css'
-];
+  'index.html',
+  'offline.html',
+  'manifest.json',
+  'assets/iconos/icon-192.svg',
+  'assets/iconos/icon-512.svg',
+  'assets/iconos/icon-maskable-192.svg',
+  'assets/iconos/icon-maskable-512.svg',
+  'assets/iconos/sprite.svg',
+  'js/vendor/lucide.min.js',
+  'css/00-settings/_tokens.css',
+  'css/00-settings/_colores.css',
+  'css/00-settings/_tipografia.css',
+  'css/00-settings/_espaciado.css',
+  'css/01-tools/_funciones.css',
+  'css/02-generic/_reset.css',
+  'css/03-elements/_body.css',
+  'css/03-elements/_heading.css',
+  'css/03-elements/_paragraph.css',
+  'css/03-elements/_button.css',
+  'css/03-elements/_input.css',
+  'css/03-elements/_link.css',
+  'css/04-objects/_contenedor.css',
+  'css/04-objects/_pila.css',
+  'css/04-objects/_grid.css',
+  'css/04-objects/_flecha.css',
+  'css/05-componentes/_boton-primario.css',
+  'css/05-componentes/_boton-secundario.css',
+  'css/05-componentes/_barra-navegacion-inferior.css',
+  'css/05-componentes/_tarjeta-capitulo.css',
+  'css/05-componentes/_tarjeta-racha.css',
+  'css/05-componentes/_tarjeta-porcentaje.css',
+  'css/05-componentes/_celebracion.css',
+  'css/05-componentes/_tarjeta-libro.css',
+  'css/05-componentes/_barra-progreso.css',
+  'css/05-componentes/_barra-accion.css',
+  'css/05-componentes/_modal.css',
+  'css/05-componentes/_pregunta-examen.css',
+  'css/05-componentes/_tarjeta-pregunta.css',
+  'css/05-componentes/_tarjeta-memorizacion.css',
+  'css/05-componentes/_versiculo.css',
+  'css/05-componentes/_btn-calidad.css',
+  'css/05-componentes/_seccion-admin.css',
+  'css/05-componentes/_alerta.css',
+  'css/05-componentes/_zona-peligro.css',
+  'css/05-componentes/_tarjeta-crear.css',
+  'css/05-componentes/_switch.css',
+  'css/05-componentes/_instalar.css',
+  'css/05-componentes/_info-ayuda.css',
+  'css/05-componentes/_perfil.css',
+  'css/05-componentes/_login.css',
+  'css/05-componentes/_tarjeta-estadistica.css',
+  'css/05-componentes/_boton-enlace.css',
+  'css/05-componentes/_calificaciones.css',
+  'css/05-componentes/_corregir-examen.css',
+  'css/05-componentes/_editor-preguntas.css',
+  'css/05-componentes/_examen-tomar.css',
+  'css/05-componentes/_explorar.css',
+  'css/05-componentes/_loading.css',
+  'css/05-componentes/_transiciones.css',
+  'css/05-componentes/_editor-huecos.css',
+  'css/06-utilidades/_utilidades.css',
+  'css/06-utilidades/_colores.css',
+  'css/06-utilidades/_accesibilidad.css'
+].map(toAbs);
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
@@ -89,7 +91,13 @@ self.addEventListener('activate', (event) => {
 });
 
 function esNavegacion(url) {
-  try { const u = new URL(url); return u.pathname === '/' || u.pathname === '/index.html'; } catch (e) { return false; }
+  try {
+    const u = new URL(url);
+    const pathname = u.pathname.replace(/\/+$/, '');
+    return pathname === '' || pathname === '/' || pathname.endsWith('/index.html');
+  } catch (e) {
+    return false;
+  }
 }
 
 function esActivo(url) {
@@ -135,10 +143,10 @@ self.addEventListener('fetch', (event) => {
       fetchConTimeout(url, 4000)
         .then((response) => {
           const clone = response.clone();
-          caches.open(STATIC_CACHE).then((cache) => cache.put('index.html', clone));
+          caches.open(STATIC_CACHE).then((cache) => cache.put(toAbs('index.html'), clone));
           return response;
         })
-        .catch(() => caches.match('index.html').then(cached => cached || caches.match('/offline.html')))
+        .catch(() => caches.match(toAbs('index.html')).then(cached => cached || caches.match(toAbs('offline.html'))))
     );
     return;
   }
