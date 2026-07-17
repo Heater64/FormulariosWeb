@@ -26,7 +26,7 @@
       if (!params || !params.id) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      raiz.innerHTML = '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando examen...</p></div>';
+      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor o-pila u-mt-3">${window.skeleton.tarjetas(3, { ancho: '100%' })}</div>` : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando examen...</p></div>';
       try {
         const examen = await window.examenesRepository.obtener(params.id);
         if (!examen) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
@@ -145,6 +145,8 @@
         const p = preguntas[idx];
         const rActual = respuestas[p.id] !== undefined ? respuestas[p.id] : '';
         paginaCont.innerHTML = `<div class="pregunta-examen" data-pid="${p.id}">${this._renderPreguntaInner(p, rActual, idx)}</div>`;
+        const nuevaPreg = paginaCont.firstElementChild;
+        if (nuevaPreg && window.animaciones) window.animaciones.animar(nuevaPreg, 'anim-pregunta-entrar', 200);
         if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
         paginaCont.querySelectorAll('input[type="radio"]').forEach(el => {
           el.addEventListener('change', () => {
@@ -192,6 +194,20 @@
           raiz.querySelector('#btnEntregar').click();
         }
       });
+
+      if (window.gestosNavegacion) {
+        window.gestosNavegacion.initGestosNavegacion(raiz, {
+          onIzquierda: () => {
+            _syncPaginaRespuestas();
+            if (pagActual < preguntas.length - 1) renderPagina(pagActual + 1);
+            else raiz.querySelector('#btnEntregar').click();
+          },
+          onDerecha: () => {
+            if (pagActual > 0) { _syncPaginaRespuestas(); renderPagina(pagActual - 1); }
+          },
+        });
+      }
+
       renderPagina(0);
 
       cont.querySelectorAll('input, select, textarea').forEach(el => {
@@ -219,6 +235,7 @@
             fecha_completado: new Date().toISOString()
           });
           try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { console.warn('Auditoría no registrada:', e.message); }
+          if (window.haptica) window.haptica.logro();
           window.helpers.mostrarAlerta('Examen entregado correctamente.', 'exito');
           router.navegar('/examenes');
         } catch (e) {
@@ -253,6 +270,17 @@
 
     _renderResultados(raiz, examen, preguntas, intento, usuario) {
       const usuarioEsProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
+      if (!usuarioEsProfesor && intento.corregido) {
+        try {
+          const key = 'fb_examen_corregido_' + intento.id;
+          if (!localStorage.getItem(key)) {
+            localStorage.setItem(key, '1');
+            if (window.notifications) {
+              window.notifications.notificarCalificacion(examen.titulo, intento.nota != null ? intento.nota : null);
+            }
+          }
+        } catch (e) {}
+      }
       if (!usuarioEsProfesor && examen.publicado === false && intento.corregido === false) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está publicado.</p></div>'; return;
       }
@@ -261,12 +289,15 @@
       const esLibre = preguntas.some(p => p.tipo === 'texto_largo');
       const correccionVisible = intento.corregido || !esLibre;
       const calculo = window.puntuacionExamen.calcularConCorreccion(preguntas, respuestas, correccionMap);
+      if (window.haptica && correccionVisible && calculo.aciertos < preguntas.length) {
+        window.haptica.fallo();
+      }
       const nota = intento.corregido && intento.nota != null
         ? `<p class="u-fw-700" style="font-size:1.25rem;color:${intento.nota >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}/10</p>`
         : `<p class="u-fw-600">Aciertos: ${calculo.aciertos}/${preguntas.length} (${calculo.porcentaje}%)</p>`;
       const estadoTexto = intento.corregido ? 'Corregido' : (esLibre ? 'Pendiente de calificación' : 'Calificado automáticamente');
       raiz.innerHTML = `
-        <div class="examen-page o-contenedor o-pila o-pila--lg">
+        <div class="examen-page o-contenedor o-pila o-pila--lg anim-exito">
           <div class="o-flecha o-flecha--between">
             <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
             <span class="u-fs-xs u-color-texto-terciario">${estadoTexto}</span>

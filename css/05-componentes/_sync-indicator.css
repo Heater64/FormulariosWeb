@@ -1,0 +1,162 @@
+/* ============================================================
+   _sync-indicator.css - Indicador de sincronización inteligente
+   ============================================================ */
+
+.sync-indicator {
+  position: fixed;
+  top: calc(var(--espaciado-md) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  z-index: 150;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  max-width: 92vw;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  box-shadow: var(--sombra-md);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--transicion-normal), opacity var(--transicion-normal);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-indicator--visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.sync-indicator__icon {
+  font-size: 0.9rem;
+  line-height: 1;
+  flex-shrink: 0;
+}
+
+.sync-indicator__text {
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.sync-indicator--pendiente {
+  border-color: var(--color-aviso);
+  background: var(--color-aviso-soft);
+  color: var(--color-texto);
+}
+
+.sync-indicator--ok {
+  border-color: var(--color-exito);
+  background: var(--color-exito-soft);
+}
+
+/* Animación de pulso mientras sincroniza */
+.sync-indicator--cargando {
+  border-color: var(--color-acento);
+}
+
+.sync-indicator--cargando .sync-indicator__icon {
+  animation: sync-pulse 1s ease-in-out infinite;
+}
+
+@keyframes sync-pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sync-indicator {
+    transition: opacity 0.2s ease;
+    transform: translateX(-50%);
+  }
+  .sync-indicator--cargando .sync-indicator__icon {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .sync-indicator {
+    top: calc(var(--espaciado-sm) + env(safe-area-inset-top));
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    font-size: var(--texto-xs);
+  }
+}
+
+/* ============================================================
+   CONNECTION INDICATOR
+   ============================================================ */
+
+.connection-indicator {
+  position: fixed;
+  top: calc(var(--espaciado-md) + env(safe-area-inset-top));
+  left: 50%;
+  transform: translateX(-50%) translateY(-120%);
+  z-index: 149;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  max-width: 92vw;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-exito);
+  border-radius: var(--radio-pill);
+  box-shadow: var(--sombra-md);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  opacity: 0;
+  pointer-events: none;
+  transition: transform var(--transicion-normal), opacity var(--transicion-normal);
+}
+
+.connection-indicator--visible {
+  transform: translateX(-50%) translateY(0);
+  opacity: 1;
+}
+
+.connection-indicator__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-exito);
+  flex-shrink: 0;
+}
+
+.connection-indicator--offline {
+  border-color: var(--color-error);
+  background: var(--color-error-soft);
+  color: var(--color-texto);
+}
+
+.connection-indicator--offline .connection-indicator__dot {
+  background: var(--color-error);
+  animation: conn-blink 1s ease-in-out infinite;
+}
+
+@keyframes conn-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.3; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .connection-indicator {
+    transition: opacity 0.2s ease;
+    transform: translateX(-50%);
+  }
+  .connection-indicator--offline .connection-indicator__dot {
+    animation: none;
+  }
+}
+
+@media (max-width: 480px) {
+  .connection-indicator {
+    top: calc(var(--espaciado-sm) + env(safe-area-inset-top));
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    font-size: var(--texto-xs);
+  }
+}

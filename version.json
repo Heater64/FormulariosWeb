@@ -1,0 +1,19 @@
+{
+  "version": "1.0.1",
+  "features": [
+    "✅ Nuevo sistema de memorización con flashcards",
+    "✅ Mejoras en la corrección de exámenes",
+    "✅ Sincronización offline automática",
+    "✅ Indicador de conexión en tiempo real"
+  ],
+  "fixes": [
+    "🐛 Corrección de errores en el editor de huecos",
+    "🐛 Mejora en la navegación móvil con gestos",
+    "🐛 Corrección de problemas de sincronización"
+  ],
+  "performance": [
+    "⚡ Carga inicial un 40% más rápida",
+    "⚡ Menor consumo de memoria en listas largas",
+    "⚡ Caché inteligente para recursos estáticos"
+  ]
+}

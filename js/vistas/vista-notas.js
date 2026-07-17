@@ -8,23 +8,49 @@
 
   window.vistaNotas = {
 
+    _conectarGestoVolver(raiz, alVolver) {
+      if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
+      if (!window.gestosNavegacion) return;
+      const cont = raiz.firstElementChild || raiz;
+      this._gestoDestruir = window.gestosNavegacion.initGestosNavegacion(cont, {
+        onDerecha: () => { if (typeof alVolver === 'function') alVolver(); },
+      });
+    },
+
     async montar(raiz) {
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      raiz.innerHTML = '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton ? window.skeleton.notas() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
       try {
         const [notas, libros] = await Promise.all([
-          window.notasRepository.listar(usuario.id),
+          window.notasRepository.listar(usuario.id, 'personal'),
           window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
         ]);
         this._pintar(raiz, { notas, libros: libros.data || [], usuario });
       } catch {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar notas</p></div>';
       }
+
+      if (window.pullToRefresh) {
+        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, async () => {
+          const [notas, libros] = await Promise.all([
+            window.notasRepository.listar(usuario.id, 'personal'),
+            window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
+          ]);
+          this._pintar(raiz, { notas, libros: libros.data || [], usuario });
+        });
+      }
+    },
+
+    desmontar() {
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
+      if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
     },
 
     /* ── Vista principal: lista de libros ── */
     _pintar(raiz, d) {
+      if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
       const { notas } = d;
 
       if (notas.length === 0) {
@@ -75,8 +101,9 @@
       const delLibro = d.notas.filter((n) => n.libro_nombre === libro);
       const porCap = {};
       delLibro.forEach((n) => {
-        if (!porCap[n.capitulo_numero]) porCap[n.capitulo_numero] = [];
-        porCap[n.capitulo_numero].push(n);
+        const c = String(n.capitulo_numero);
+        if (!porCap[c]) porCap[c] = [];
+        porCap[c].push(n);
       });
       const orden = Object.keys(porCap).sort((a, b) => parseInt(a) - parseInt(b));
 
@@ -96,15 +123,87 @@
         </div>`;
 
       raiz.querySelector('#btnV').onclick = () => this._pintar(raiz, d);
+      this._conectarGestoVolver(raiz, () => this._pintar(raiz, d));
       $$(raiz, '[data-cap]').forEach((el) => {
-        el.onclick = () => this._verNota(raiz, libro, parseInt(el.dataset.cap, 10), d);
+        el.onclick = () => this._listaNotasCap(raiz, libro, parseInt(el.dataset.cap, 10), d);
       });
     },
 
-    /* ── Ver nota ── */
-    _verNota(raiz, libro, capitulo, d) {
-      const nota = d.notas.find((n) => n.libro_nombre === libro && n.capitulo_numero === capitulo);
-      if (!nota) { this._listaCapitulos(raiz, libro, d); return; }
+    /* ── Lista de notas de un capítulo (puede haber varias) ── */
+    _listaNotasCap(raiz, libro, capitulo, d) {
+      const notasCap = d.notas
+        .filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo))
+        .sort((a, b) => new Date(a.creado_en || 0) - new Date(b.creado_en || 0));
+
+      raiz.innerHTML = `
+        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
+            <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
+            <button class="btn-primario u-fs-xs" id="btnNuevaAqui">${I('plus')} Otra nota</button>
+          </div>
+          <div class="o-pila" id="listaNotasCap">
+            ${notasCap.map((n, i) => this._tarjetaNota(n, i, libro, capitulo, d)).join('')}
+          </div>
+        </div>`;
+
+      raiz.querySelector('#btnV').onclick = () => this._listaCapitulos(raiz, libro, d);
+      this._conectarGestoVolver(raiz, () => this._listaCapitulos(raiz, libro, d));
+      raiz.querySelector('#btnNuevaAqui').onclick = () => this._nuevaNota(raiz, d, libro, capitulo);
+      this._engancharNotas(raiz, libro, capitulo, d);
+    },
+
+    _tarjetaNota(n, i, libro, capitulo, d) {
+      const titulo = n.titulo || `Nota ${i + 1}`;
+      return `
+        <div class="tarjeta-capitulo o-pila" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer">
+          <div class="o-flecha o-flecha--between">
+            <span class="u-fw-600">${E(titulo)}</span>
+            <div class="o-flecha" style="gap:4px" onclick="event.stopPropagation()">
+              <button class="btn-icono" data-edit="${n.id}" aria-label="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
+              <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
+            </div>
+          </div>
+          <div style="white-space:pre-wrap;font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${E(n.contenido)}</div>
+          <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
+        </div>`;
+    },
+
+    _engancharNotas(raiz, libro, capitulo, d) {
+      const cont = raiz.querySelector('#listaNotasCap');
+      if (!cont) return;
+      cont.querySelectorAll('[data-id]').forEach((el) => {
+        const id = el.dataset.id;
+        el.onclick = () => { const n = d.notas.find(x => x.id === id); if (n) this._verNota(raiz, n, d); };
+      });
+      cont.querySelectorAll('[data-edit]').forEach((b) => {
+        b.onclick = () => { const n = d.notas.find(x => x.id === b.dataset.edit); if (n) this._editarNota(raiz, n, d); };
+      });
+      cont.querySelectorAll('[data-del]').forEach((b) => {
+        b.onclick = async () => {
+          const id = b.dataset.del;
+          const ok = await window.helpers.confirmar('¿Eliminar esta nota personal?', { titulo: 'Eliminar nota', textoConfirmar: 'Eliminar' });
+          if (!ok) return;
+          try {
+            await window.notasRepository.eliminar(id);
+            window.helpers.mostrarAlerta('Nota eliminada.', 'exito');
+            d.notas = d.notas.filter((x) => x.id !== id);
+            const quedan = d.notas.filter((x) => x.libro_nombre === libro && String(x.capitulo_numero) === String(capitulo));
+            if (quedan.length === 0) this._listaCapitulos(raiz, libro, d);
+            else this._listaNotasCap(raiz, libro, capitulo, d);
+          } catch {
+            window.helpers.mostrarAlerta('Error al eliminar.', 'error');
+          }
+        };
+      });
+    },
+
+    /* ── Ver nota individual ── */
+    _verNota(raiz, nota, d) {
+      const libro = nota.libro_nombre, capitulo = nota.capitulo_numero;
+      const notasCap = d.notas.filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo));
+      const idx = Math.max(0, notasCap.findIndex(n => n.id === nota.id));
+      const titulo = nota.titulo || `Nota ${idx + 1}`;
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
@@ -112,10 +211,10 @@
           <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
           <div class="tarjeta-capitulo o-pila" style="gap:var(--espaciado-sm)">
             <div class="o-flecha o-flecha--between">
-              <span class="u-fs-xs u-color-texto-terciario">Nota personal</span>
+              <span class="u-fw-600">${E(titulo)}</span>
               <div class="o-flecha" style="gap:4px">
-                <button class="btn-icono" id="btnEdit" title="Editar">${I('edit-3')}</button>
-                <button class="btn-icono btn-icono--peligro" id="btnDel" title="Eliminar">${I('trash-2')}</button>
+                <button class="btn-icono" id="btnEdit" aria-label="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
+                <button class="btn-icono btn-icono--peligro" id="btnDel" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
               </div>
             </div>
             <div style="white-space:pre-wrap;font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${E(nota.contenido)}</div>
@@ -123,8 +222,9 @@
           <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(nota.actualizado_en || nota.creado_en)}</p>
         </div>`;
 
-      raiz.querySelector('#btnV').onclick = () => this._listaCapitulos(raiz, libro, d);
-      raiz.querySelector('#btnEdit').onclick = () => this._editarNota(raiz, libro, capitulo, nota, d);
+      raiz.querySelector('#btnV').onclick = () => this._listaNotasCap(raiz, libro, capitulo, d);
+      this._conectarGestoVolver(raiz, () => this._listaNotasCap(raiz, libro, capitulo, d));
+      raiz.querySelector('#btnEdit').onclick = () => this._editarNota(raiz, nota, d);
       raiz.querySelector('#btnDel').onclick = async () => {
         const ok = await window.helpers.confirmar('¿Eliminar esta nota personal?', { titulo: 'Eliminar nota', textoConfirmar: 'Eliminar' });
         if (!ok) return;
@@ -132,33 +232,38 @@
           await window.notasRepository.eliminar(nota.id);
           window.helpers.mostrarAlerta('Nota eliminada.', 'exito');
           d.notas = d.notas.filter((n) => n.id !== nota.id);
-          if (d.notas.length === 0) this._pintar(raiz, d);
-          else this._listaCapitulos(raiz, libro, d);
+          const quedan = d.notas.filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo));
+          if (quedan.length === 0) this._listaCapitulos(raiz, libro, d);
+          else this._listaNotasCap(raiz, libro, capitulo, d);
         } catch {
           window.helpers.mostrarAlerta('Error al eliminar.', 'error');
         }
       };
     },
 
-    /* ── Editar nota ── */
-    _editarNota(raiz, libro, capitulo, nota, d) {
+    /* ── Editar nota existente (por id) ── */
+    _editarNota(raiz, nota, d) {
+      const libro = nota.libro_nombre, capitulo = nota.capitulo_numero;
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
-          <h2>${I('edit-3')} Editar nota — ${E(libro)} ${capitulo}</h2>
+          <h2>${I('pencil')} Editar nota — ${E(libro)} ${capitulo}</h2>
           <textarea id="fContenido" rows="8" style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit">${E(nota.contenido)}</textarea>
           <button class="btn-primario" id="btnGuardar" style="width:100%;justify-content:center">Guardar cambios</button>
         </div>`;
 
-      raiz.querySelector('#btnV').onclick = () => this._verNota(raiz, libro, capitulo, d);
+      raiz.querySelector('#btnV').onclick = () => this._verNota(raiz, nota, d);
+      this._conectarGestoVolver(raiz, () => this._verNota(raiz, nota, d));
       raiz.querySelector('#btnGuardar').onclick = async () => {
         const contenido = raiz.querySelector('#fContenido').value.trim();
         if (!contenido) { window.helpers.mostrarAlerta('La nota no puede estar vacía.', 'advertencia'); return; }
         try {
-          await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido);
+          await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido, { id: nota.id, tipo: 'personal', titulo: nota.titulo });
           nota.contenido = contenido;
+          nota.actualizado_en = new Date().toISOString();
+          if (window.haptica) window.haptica.exito();
           window.helpers.mostrarAlerta('Nota actualizada.', 'exito');
-          this._verNota(raiz, libro, capitulo, d);
+          this._verNota(raiz, nota, d);
         } catch {
           window.helpers.mostrarAlerta('Error al guardar.', 'error');
         }
@@ -166,7 +271,7 @@
     },
 
     /* ── Nueva nota ── */
-    _nuevaNota(raiz, d) {
+    _nuevaNota(raiz, d, libroPre, capPre) {
       const opts = (d.libros || []).map((l) => l.nombre);
 
       raiz.innerHTML = `
@@ -176,18 +281,22 @@
           <div class="o-pila" style="gap:var(--espaciado-sm)">
             <label class="u-fs-sm u-fw-600">Libro</label>
             <select id="fLibro" style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)">
-              <option value="">Seleccionar libro...</option>
-              ${opts.map((l) => `<option value="${E(l)}">${E(l)}</option>`).join('')}
+              ${opts.map((l) => `<option value="${E(l)}" ${libroPre === l ? 'selected' : ''}>${E(l)}</option>`).join('')}
             </select>
             <label class="u-fs-sm u-fw-600">Capítulo</label>
-            <input type="number" id="fCap" min="1" placeholder="Ej: 3" style="width:100%">
+            <input type="number" id="fCap" min="1" placeholder="Ej: 3" value="${capPre || ''}" style="width:100%">
             <label class="u-fs-sm u-fw-600">Contenido de la nota *</label>
             <textarea id="fContenido" rows="8" placeholder="Escribe tu nota aquí..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
           </div>
           <button class="btn-primario" id="btnGuardar" style="width:100%;justify-content:center">Guardar</button>
         </div>`;
 
-      raiz.querySelector('#btnV').onclick = () => this._pintar(raiz, d);
+      const volver = () => {
+        if (libroPre && capPre) this._listaNotasCap(raiz, libroPre, capPre, d);
+        else this._pintar(raiz, d);
+      };
+      raiz.querySelector('#btnV').onclick = volver;
+      this._conectarGestoVolver(raiz, volver);
       raiz.querySelector('#btnGuardar').onclick = async () => {
         const libro = raiz.querySelector('#fLibro').value;
         const cap = raiz.querySelector('#fCap').value.trim();
@@ -197,16 +306,20 @@
         if (!cap) { window.helpers.mostrarAlerta('Escribe el capítulo.', 'advertencia'); return; }
         if (!contenido) { window.helpers.mostrarAlerta('Escribe el contenido de la nota.', 'advertencia'); return; }
 
+        const capitulo = parseInt(cap, 10);
+        const num = await window.notasRepository.contarPorCapitulo(d.usuario.id, libro, capitulo) + 1;
+
         try {
-          await window.notasRepository.guardar(d.usuario.id, libro, parseInt(cap, 10), contenido);
+          await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido, { tipo: 'personal', titulo: `Nota ${num}` });
+          if (window.haptica) window.haptica.exito();
           window.helpers.mostrarAlerta('Nota guardada.', 'exito');
         } catch {
           window.helpers.mostrarAlerta('Error al guardar.', 'error');
           return;
         }
 
-        d.notas = await window.notasRepository.listar(d.usuario.id);
-        this._pintar(raiz, d);
+        d.notas = await window.notasRepository.listar(d.usuario.id, 'personal');
+        this._listaNotasCap(raiz, libro, capitulo, d);
       };
     },
   };

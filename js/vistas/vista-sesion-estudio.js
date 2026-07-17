@@ -4,7 +4,7 @@
     async montar(raiz, params) {
       const libroId = parseInt(params.libro);
       const capituloNum = parseInt(params.capitulo);
-      raiz.innerHTML = '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton ? window.skeleton.tarjetas(2, { ancho: '100%' }) : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
       const sb = window.supabaseClient;
       const usuario = store.obtener('usuario');
       if (!sb || !usuario) return;
@@ -84,7 +84,7 @@
             <p class="u-color-texto-secundario u-fs-base" style="max-width:340px;line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>
           </div>
           <div class="o-pila" style="width:100%">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas personales del capítulo</label>
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas de la sesión (no se guardan como nota personal)</label>
             <textarea id="notasLectura" rows="3" placeholder="Escribe aquí tus notas, reflexiones o versículos destacados..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
           </div>
           <div class="barra-accion">
@@ -93,7 +93,7 @@
         </div>`;
       const usuario = store.obtener('usuario');
       if (usuario && window.notasRepository) {
-        window.notasRepository.obtener(usuario.id, libro.nombre, parseInt(capituloNum)).then(nota => {
+        window.notasRepository.obtener(usuario.id, libro.nombre, parseInt(capituloNum), 'sesion').then(nota => {
           if (nota && nota.contenido) {
             const ta = raiz.querySelector('#notasLectura');
             if (ta) ta.value = nota.contenido;
@@ -110,7 +110,7 @@
         } catch (e) { window.helpers.mostrarAlerta('No se pudo guardar el progreso.', 'advertencia'); }
         const notas = raiz.querySelector('#notasLectura')?.value.trim();
         if (notas && window.notasRepository) {
-          await window.notasRepository.guardar(usuario.id, libro.nombre, parseInt(capituloNum), notas).catch(() => {});
+          await window.notasRepository.guardar(usuario.id, libro.nombre, parseInt(capituloNum), notas, { tipo: 'sesion' }).catch(() => {});
         }
         window.Iconos.actualizar();
         this._iniciarEstudio();
@@ -405,6 +405,7 @@
     async _completar() {
       const e = this.estado;
       e.estudioCompletado = true;
+      if (window.haptica) window.haptica.logro();
       this._transicion('COMPLETAR');
       const usuario = store.obtener('usuario');
       try {
@@ -461,7 +462,7 @@
         }
       }
       overlay.innerHTML = `
-        <div class="celebracion__emblema">
+        <div class="celebracion__emblema anim-exito">
           <div class="celebracion__icono">${window.Iconos.render(icono)}</div>
           <div class="celebracion__titulo">${titulo}</div>
         </div>

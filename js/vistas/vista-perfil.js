@@ -9,6 +9,26 @@
     return d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
   }
 
+  function _recortarSimple(file, cb) {
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result;
+      const img = new Image();
+      img.src = base64;
+      img.onload = () => {
+        const size = Math.min(img.width, img.height, 400);
+        const canvas = document.createElement('canvas');
+        canvas.width = size; canvas.height = size;
+        const ctx = canvas.getContext('2d');
+        const sx = (img.width - size) / 2, sy = (img.height - size) / 2;
+        ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
+        cb(canvas.toDataURL('image/jpeg', 0.85));
+      };
+      img.onerror = () => cb(base64);
+    };
+    reader.readAsDataURL(file);
+  }
+
   function rolBonito(rol) {
     const map = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor', usuario: 'Alumno' };
     return map[rol] || rol;
@@ -126,6 +146,7 @@
                 <div class="perfil-info-card__texto">
                   <p class="perfil-info-card__nombre">FormsBiblicos</p>
                   <p class="perfil-info-card__version">Versión 1.0.0</p>
+                  <p class="perfil-info-card__sync" id="perfilUltimaSync"></p>
                 </div>
                 <button class="btn-secundario" id="btnMasInfo" style="font-size:var(--texto-xs)">Más información</button>
               </div>
@@ -272,7 +293,14 @@
             <button class="btn-primario u-mt-2" id="btnCerrarInfo" style="width:100%;justify-content:center">Cerrar</button>
           </div>`;
         document.body.appendChild(overlay);
-        if (window.Iconos) window.Iconos.actualizar();
+      if (window.Iconos) window.Iconos.actualizar();
+
+      const elSync = raiz.querySelector('#perfilUltimaSync');
+      if (elSync && window.syncStatus) {
+        const ts = window.syncStatus.getUltima();
+        elSync.textContent = ts ? `Última sincronización: ${window.syncStatus.fmtHace(ts)}` : 'Sin sincronizar aún';
+      }
+
         overlay.querySelector('#btnCerrarInfo').onclick = () => overlay.remove();
         overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
       };
@@ -320,34 +348,30 @@
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
       };
 
-      raiz.querySelector('#inputFotoPerfil').onchange = async (e) => {
-        const file = e.target.files[0];
-        if (!file) return;
-        const lector = new FileReader();
-        lector.onload = async (ev) => {
-          let base64 = ev.target.result;
-          try {
-            const img = new Image();
-            img.src = base64;
-            await new Promise(r => img.onload = r);
-            const canvas = document.createElement('canvas');
-            const size = Math.min(img.width, img.height, 400);
-            canvas.width = size; canvas.height = size;
-            const ctx = canvas.getContext('2d');
-            const sx = (img.width - size) / 2, sy = (img.height - size) / 2;
-            ctx.drawImage(img, sx, sy, size, size, 0, 0, size, size);
-            base64 = canvas.toDataURL('image/jpeg', 0.85);
-          } catch (err) {}
-          usuario.foto_perfil = base64;
-          store.actualizar('usuario', { ...usuario });
-          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
-          const avatar = raiz.querySelector('#avatarPerfil');
-          if (avatar) avatar.innerHTML = `<img src="${base64}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
-          try { await window.supabaseClient.from('perfiles').update({ foto_perfil: base64 }).eq('id', usuario.id); } catch (e) {}
-          window.helpers.mostrarAlerta('Foto de perfil actualizada.', 'exito');
-        };
-        lector.readAsDataURL(file);
+      const alElegir = (base64) => {
+        usuario.foto_perfil = base64;
+        store.actualizar('usuario', { ...usuario });
+        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        const avatar = raiz.querySelector('#avatarPerfil');
+        if (avatar) avatar.innerHTML = `<img src="${base64}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        const nuevoInput = raiz.querySelector('#inputFotoPerfil');
+        if (nuevoInput) nuevoInput.onchange = onFotoChange;
+        try { window.supabaseClient.from('perfiles').update({ foto_perfil: base64 }).eq('id', usuario.id); } catch (err) {}
+        window.helpers.mostrarAlerta('Foto de perfil actualizada.', 'exito');
       };
+
+      function onFotoChange(e) {
+        const file = e.target.files[0];
+        e.target.value = '';
+        if (!file) return;
+        if (window.editorImagen) {
+          window.editorImagen.abrir(file, { onConfirm: alElegir });
+        } else {
+          _recortarSimple(file, alElegir);
+        }
+      }
+
+      raiz.querySelector('#inputFotoPerfil').onchange = onFotoChange;
     }
   };
 })();

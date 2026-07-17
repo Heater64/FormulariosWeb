@@ -3,9 +3,18 @@
   const sb = () => window.supabaseClient;
   window.examenesRepository = {
     async listar(usuario) {
-      if (!usuario || !sb()) return [];
-      const { data } = await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id).order('creado_en', { ascending: false });
-      return data || [];
+      if (!usuario || !sb()) {
+        const cache = await window.cacheDatos.get(`examenes:grupo:${usuario?.grupo_id}`);
+        return cache || [];
+      }
+      try {
+        const { data } = await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id).order('creado_en', { ascending: false });
+        const lista = data || [];
+        await window.cacheDatos.set(`examenes:grupo:${usuario.grupo_id}`, lista);
+        return lista;
+      } catch (e) {
+        return await window.cacheDatos.get(`examenes:grupo:${usuario?.grupo_id}`) || [];
+      }
     },
     async crearEvaluacion({ grupoId, creadoPor, titulo, asignatura, descripcion }) {
       if (!sb()) throw new Error('Sin conexión');
@@ -49,10 +58,17 @@
       return data || [];
     },
     async obtener(id) {
-      if (!sb()) return null;
-      const { data, error } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
-      if (error) { console.error('obtener examen:', error); return null; }
-      return data || null;
+      if (!sb()) {
+        return await window.cacheDatos.get(`examen:${id}`) || null;
+      }
+      try {
+        const { data, error } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
+        if (error) { console.error('obtener examen:', error); return null; }
+        if (data) await window.cacheDatos.set(`examen:${id}`, data);
+        return data || null;
+      } catch (e) {
+        return await window.cacheDatos.get(`examen:${id}`) || null;
+      }
     },
     async guardar(examen) {
       if (!sb()) throw new Error('Sin conexión');
@@ -158,16 +174,32 @@
       return data || [];
     },
     async guardarIntento(intento) {
-      if (!sb()) throw new Error('Sin conexión');
-      const { data, error } = await sb().from('intentos_examen_personalizado').upsert(intento, { onConflict: 'id' }).select().single();
-      if (error) throw error;
-      return data;
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' });
+        return { ...intento, pendiente_sync: true };
+      }
+      try {
+        const { data, error } = await sb().from('intentos_examen_personalizado').upsert(intento, { onConflict: 'id' }).select().single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' });
+        return { ...intento, pendiente_sync: true };
+      }
     },
     async misIntentos(usuarioId) {
-      if (!sb()) return [];
-      const { data, error } = await sb().from('intentos_examen_personalizado').select('*, examenes_personalizados!examen_id(*)').eq('alumno_id', usuarioId).order('fecha_inicio', { ascending: false });
-      if (error) { console.error('misIntentos:', error); return []; }
-      return data || [];
+      if (!sb()) {
+        return await window.cacheDatos.get(`intentos:${usuarioId}`) || [];
+      }
+      try {
+        const { data, error } = await sb().from('intentos_examen_personalizado').select('*, examenes_personalizados!examen_id(*)').eq('alumno_id', usuarioId).order('fecha_inicio', { ascending: false });
+        if (error) { console.error('misIntentos:', error); return []; }
+        const lista = data || [];
+        await window.cacheDatos.set(`intentos:${usuarioId}`, lista);
+        return lista;
+      } catch (e) {
+        return await window.cacheDatos.get(`intentos:${usuarioId}`) || [];
+      }
     },
     async calificar(intentoId, nota, observaciones, corregidoPor, correccion) {
       if (!sb()) throw new Error('Sin conexión');

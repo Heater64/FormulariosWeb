@@ -1,0 +1,60 @@
+/* ==========================================================================
+   _pull-to-refresh.css - Indicador "Pull to refresh" (deslizar para actualizar)
+   ========================================================================== */
+
+.ptr-indicador {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 70px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-12px);
+  transition: opacity 200ms ease, transform 200ms ease;
+  z-index: 5;
+}
+
+.ptr-indicador--visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ptr-indicador--refrescando {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.ptr-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2px solid var(--color-borde);
+  border-top-color: var(--color-acento);
+  border-radius: 50%;
+  animation: ptr-girar 0.7s linear infinite;
+}
+
+@keyframes ptr-girar {
+  to { transform: rotate(360deg); }
+}
+
+.ptr-contenido--arrastrando {
+  transition: none;
+}
+
+.ptr-contenido--transicion {
+  transition: transform 260ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ptr-spinner { animation-duration: 1.4s; }
+  .ptr-indicador,
+  .ptr-contenido--transicion { transition: none; }
+}

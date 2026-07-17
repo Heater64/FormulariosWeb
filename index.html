@@ -58,6 +58,7 @@
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-pregunta.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
   <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
+  <link rel="stylesheet" href="css/05-componentes/_update-card.css">
 
   <!-- CSS: Utilities -->
   <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
@@ -69,6 +70,12 @@
   <link rel="stylesheet" href="css/05-componentes/_switch.css">
   <link rel="stylesheet" href="css/05-componentes/_instalar.css">
   <link rel="stylesheet" href="css/05-componentes/_loading.css">
+  <link rel="stylesheet" href="css/05-componentes/_sync-indicator.css">
+  <link rel="stylesheet" href="css/05-componentes/_animaciones.css">
+  <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
+  <link rel="stylesheet" href="css/05-componentes/_skeleton.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-imagen.css">
+  <link rel="stylesheet" href="css/05-componentes/_install-banner.css">
   <link rel="stylesheet" href="css/05-componentes/_transiciones.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-huecos.css">
   <link rel="stylesheet" href="css/05-componentes/_perfil.css">
@@ -94,6 +101,7 @@
   <script src="js/utilidades/iconos.js"></script>
   <script src="js/utilidades/storage.js"></script>
   <script src="js/utilidades/preferencias.js"></script>
+  <script src="js/datos/cache-datos.js"></script>
 
   <!-- JS: Core -->
   <script src="js/core/store.js"></script>
@@ -109,6 +117,21 @@
   <script src="js/datos/notas-repository.js"></script>
   <script src="js/datos/admin-repository.js"></script>
   <script src="js/datos/sync-queue.js"></script>
+  <script src="js/utilidades/sync-status.js"></script>
+  <script src="js/utilidades/connection-indicator.js"></script>
+  <script src="js/utilidades/animaciones.js"></script>
+  <script src="js/utilidades/haptica.js"></script>
+  <script src="js/utilidades/gestos-navegacion.js"></script>
+  <script src="js/utilidades/pull-to-refresh.js"></script>
+  <script src="js/utilidades/skeleton.js"></script>
+  <script src="js/utilidades/memoria.js"></script>
+  <script src="js/componentes/editor-imagen.js"></script>
+
+  <!-- JS: Core (nuevos) -->
+<script src="js/core/update-manager.js"></script>
+<script src="js/core/connection-indicator.js"></script>
+<script src="js/core/sync-status.js"></script>
+<script src="js/core/notifications.js"></script>
 
   <!-- JS: Domain Logic -->
   <script src="js/dominio/progreso-lectura.js"></script>
@@ -143,85 +166,95 @@
   <script src="js/core/index.js"></script>
 
   <!-- JS: Instalación PWA -->
-  <script>
-    let deferredPrompt = null;
-    document.addEventListener('DOMContentLoaded', () => {
-      const installBtn = document.createElement('div');
-      installBtn.id = 'installPwaBtn';
-      installBtn.className = 'pwa-install';
-      installBtn.innerHTML = '<button class="btn-instalar" type="button" aria-label="Instalar aplicación">Instalar</button>';
-      document.body.appendChild(installBtn);
-      const btn = installBtn.querySelector('.btn-instalar');
-      const isAndroid = /Android/i.test(navigator.userAgent);
-      const isStandalone = window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
-      const installDismissed = localStorage.getItem('fb_install_dismissed') === new Date().toISOString().slice(0, 10);
+  <script src="js/core/install.js"></script>
 
-      const mostrarBoton = () => {
-        if (!isStandalone && !installDismissed) btn.style.display = 'flex';
-      };
-
-      const mostrarAyudaInstalacion = () => {
-        document.getElementById('pwaInstallHelp')?.remove();
-        const ayuda = document.createElement('div');
-        ayuda.id = 'pwaInstallHelp';
-        ayuda.className = 'pwa-install-help';
-        ayuda.innerHTML = `
-          <div class="pwa-install-help__card" role="dialog" aria-modal="false" aria-labelledby="installHelpTitle">
-            <button class="pwa-install-help__cerrar" type="button" aria-label="Cerrar">×</button>
-            <h2 id="installHelpTitle">Instalar app</h2>
-            <p>Abre el menú del navegador y toca "Instalar aplicación" o "Añadir a pantalla de inicio".</p>
-            <button class="btn-secundario pwa-install-help__ok" type="button">Entendido</button>
-          </div>`;
-        document.body.appendChild(ayuda);
-        const cerrar = () => {
-          localStorage.setItem('fb_install_dismissed', new Date().toISOString().slice(0, 10));
-          ayuda.remove();
-        };
-        ayuda.querySelector('.pwa-install-help__cerrar').addEventListener('click', cerrar);
-        ayuda.querySelector('.pwa-install-help__ok').addEventListener('click', cerrar);
-      };
-
-      window.addEventListener('beforeinstallprompt', e => {
-        e.preventDefault();
-        deferredPrompt = e;
-        mostrarBoton();
-      });
-
-      btn.addEventListener('click', async () => {
-        if (!deferredPrompt) {
-          mostrarAyudaInstalacion();
-          return;
-        }
-        deferredPrompt.prompt();
-        const { outcome } = await deferredPrompt.userChoice;
-        console.log('Instalación:', outcome);
-        deferredPrompt = null;
-        if (outcome === 'accepted') btn.style.display = 'none';
-        else if (isAndroid) mostrarAyudaInstalacion();
-      });
-
-      window.addEventListener('appinstalled', () => { btn.style.display = 'none'; deferredPrompt = null; });
-      window.addEventListener('hashchange', () => document.getElementById('pwaInstallHelp')?.remove());
-      if (isAndroid) setTimeout(mostrarBoton, 2500);
-    });
-  </script>
-
-  <!-- JS: Service Worker (producción) -->
+  <!-- JS: Service Worker (producción) + Update Detection -->
   <script>
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => {
         navigator.serviceWorker.register('./sw.js').then((reg) => {
+          let refreshing = false;
+
+          // Listen for update messages from SW
+          navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data?.type === 'SW_UPDATE_AVAILABLE') {
+              showUpdateCard(event.data);
+            }
+          });
+
           reg.addEventListener('updatefound', () => {
             const worker = reg.installing;
             if (!worker) return;
             worker.addEventListener('statechange', () => {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller) {
+              if (worker.state === 'installed' && navigator.serviceWorker.controller && !refreshing) {
+                refreshing = true;
                 window.location.reload();
               }
             });
           });
+
+          // Periodic check for updates
+          setInterval(() => reg.update(), 5 * 60 * 1000);
         }).catch(e => console.warn('SW:', e.message));
       });
+    }
+
+    function showUpdateCard({ version, features, fixes, performance }) {
+      if (document.getElementById('updateCard')) return;
+      const card = document.createElement('div');
+      card.id = 'updateCard';
+      card.className = 'update-card';
+      card.setAttribute('role', 'alertdialog');
+      card.setAttribute('aria-modal', 'true');
+      card.innerHTML = `
+        <div class="update-card__content">
+          <div class="update-card__icon">${window.Iconos?.render('download-cloud') || '⬇'}</div>
+          <h2 class="update-card__title">Nueva versión disponible</h2>
+          <p class="update-card__subtitle">Versión ${version}</p>
+          <ul class="update-card__list">
+            ${(features || []).map(f => `<li>${window.Iconos?.render('check') || '✓'} ${f}</li>`).join('')}
+            ${(fixes || []).map(f => `<li>${window.Iconos?.render('bug') || '🐛'} ${f}</li>`).join('')}
+            ${(performance || []).map(f => `<li>${window.Iconos?.render('zap') || '⚡'} ${f}</li>`).join('')}
+          </ul>
+          <button class="btn-primario update-card__btn" id="updateNowBtn">Actualizar ahora</button>
+        </div>`;
+      document.body.appendChild(card);
+      window.Iconos?.actualizar?.();
+
+      card.querySelector('#updateNowBtn').onclick = () => {
+        const btn = card.querySelector('#updateNowBtn');
+        btn.disabled = true;
+        btn.textContent = 'Descargando…';
+
+        // Cuando el nuevo SW tome el control, recargamos para aplicar la versión.
+        let recargado = false;
+        const onControllerChange = () => {
+          if (recargado) return;
+          recargado = true;
+          // La sesión persiste en localStorage, así que se mantiene tras reload.
+          window.location.reload();
+        };
+        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
+
+        // Pedir al SW instalado que se active (descarga la nueva versión).
+        navigator.serviceWorker.getRegistration().then((reg) => {
+          const waiting = reg && reg.waiting;
+          if (waiting) {
+            waiting.postMessage({ type: 'SKIP_WAITING' });
+          } else if (navigator.serviceWorker.controller) {
+            navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
+          } else {
+            // Sin SW controlador: recargar para forzar la toma de control.
+            window.location.reload();
+          }
+        });
+
+        card.classList.add('update-card--hiding');
+        setTimeout(() => card.remove(), 300);
+
+        // Fallback por si controllerchange no dispara.
+        setTimeout(() => { if (!recargado) window.location.reload(); }, 4000);
+      };
     }
   </script>
 
@@ -232,8 +265,39 @@
         navigator.vibrate(8);
     }, { passive: true });
   </script>
+
+  <!-- JS: Indicadores de conexión y sincronización -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      if (window.connectionIndicator) window.connectionIndicator.iniciar();
+      if (window.syncStatus) window.syncStatus.iniciar();
+    });
+  </script>
 </head>
 <body>
+  <!-- Splash Screen -->
+  <div id="splashScreen" class="splash-screen" role="status" aria-label="Cargando FormsBiblicos">
+    <div class="splash-screen__logo" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </div>
+    <h1 class="splash-screen__title">FormsBiblicos</h1>
+    <p class="splash-screen__subtitle">Cargando tu progreso…</p>
+    <div class="splash-screen__progress"><div class="splash-screen__bar"></div></div>
+    <p class="splash-screen__status" id="splashStatus">Iniciando…</p>
+  </div>
+
+  <!-- Online/Offline Indicator -->
+  <div id="connectionIndicator" class="connection-indicator u-oculto" aria-live="polite" aria-atomic="true">
+    <span class="connection-indicator__dot" aria-hidden="true"></span>
+    <span class="connection-indicator__text">Conectado</span>
+  </div>
+
+  <!-- Sync Status Indicator -->
+  <div id="syncIndicator" class="sync-indicator u-oculto" aria-live="polite" aria-atomic="true">
+    <span class="sync-indicator__icon" aria-hidden="true"></span>
+    <span class="sync-indicator__text">Todo sincronizado</span>
+  </div>
+
   <main id="app-root"></main>
   <nav id="barra-navegacion" class="barra-nav-inferior"></nav>
 </body>

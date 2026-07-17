@@ -352,10 +352,13 @@
 
       raiz.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
+          if (_pestana === btn.dataset.tab) return;
           _pestana = btn.dataset.tab;
           _busqueda = '';
           _detalle = null;
           this._renderizar(raiz);
+          const content = raiz.querySelector('#explorarContent');
+          if (content && window.animaciones) window.animaciones.animar(content, 'anim-tab', 180);
         });
       });
 

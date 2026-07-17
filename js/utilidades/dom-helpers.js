@@ -50,6 +50,11 @@
     },
 
     mostrarAlerta(mensaje, tipo = 'info', duracion = 4000) {
+      if (window.haptica) {
+        if (tipo === 'error') window.haptica.error();
+        else if (tipo === 'exito') window.haptica.exito();
+        else if (tipo === 'advertencia') window.haptica.aviso();
+      }
       let cont = document.getElementById('contenedorAlertas');
       if (!cont) {
         cont = document.createElement('div');
@@ -110,9 +115,9 @@
     mostrarGuia(titulo, texto, ejemplo) {
       const overlay = document.createElement('div');
       overlay.className = 'guia-overlay';
-      overlay.innerHTML = `
-        <div class="guia-popup" role="dialog" aria-modal="true">
-          <h3 class="guia-popup__titulo">${window.Iconos ? window.Iconos.render('info') : 'ℹ️'} ${window.helpers.escapeHtml(titulo)}</h3>
+        overlay.innerHTML = `
+          <div class="guia-popup anim-menu" role="dialog" aria-modal="true">
+            <h3 class="guia-popup__titulo">${window.Iconos ? window.Iconos.render('info') : 'ℹ️'} ${window.helpers.escapeHtml(titulo)}</h3>
           <p class="guia-popup__texto">${window.helpers.escapeHtml(texto)}</p>
           ${ejemplo ? `<p class="guia-popup__ejemplo">💡 ${window.helpers.escapeHtml(ejemplo)}</p>` : ''}
           <div class="guia-popup__accion">

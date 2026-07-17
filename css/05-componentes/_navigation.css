@@ -1,0 +1,140 @@
+/* ============================================================
+   _navigation.css - Barra de navegación inferior inteligente
+   ============================================================ */
+
+/* ===== BARRA DE NAVEGACIÓN ===== */
+.barra-nav-inferior {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 100;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
+  background: var(--color-vidrio);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  backdrop-filter: var(--desenfoque-vidrio);
+  border-top: 1px solid var(--color-vidrio-borde);
+  box-shadow: var(--sombra-nav);
+  padding: 6px 6px max(8px, env(safe-area-inset-bottom));
+  min-height: calc(52px + env(safe-area-inset-bottom));
+  
+  /* ===== NUEVO: Transición para ocultar/mostrar ===== */
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1);
+  will-change: transform;
+}
+
+/* ===== ITEMS ===== */
+.barra-nav-inferior__item {
+  flex: 1 1 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  min-width: var(--toque-minimo);
+  min-height: var(--toque-minimo);
+  padding: 6px 4px;
+  color: var(--color-texto-terciario);
+  font-size: 10px;
+  line-height: 1;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+  border-radius: var(--radio-lg);
+  transition: color var(--transicion-rapida), transform var(--transicion-rapida);
+  text-decoration: none;
+  -webkit-tap-highlight-color: transparent;
+  position: relative;
+}
+
+.barra-nav-inferior__item svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 1.75;
+  transition: transform var(--transicion-rapida), opacity var(--transicion-rapida);
+}
+
+/* ===== ACTIVO ===== */
+.barra-nav-inferior__item--activo {
+  color: var(--color-acento);
+  font-weight: 700;
+  background: var(--color-acento-soft);
+}
+
+.barra-nav-inferior__item--activo::after {
+  content: '';
+  position: absolute;
+  bottom: 4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 20px;
+  height: 3px;
+  border-radius: 99px;
+  background: var(--color-acento);
+}
+
+.barra-nav-inferior__item--activo svg {
+  transform: translateY(-1px) scale(1.08);
+}
+
+/* ===== INTERACCIONES ===== */
+.barra-nav-inferior__item:active {
+  transform: scale(0.92);
+  color: var(--color-acento);
+}
+
+@media (hover: hover) {
+  .barra-nav-inferior__item:hover {
+    color: var(--color-texto-secundario);
+  }
+  .barra-nav-inferior__item--activo:hover {
+    color: var(--color-acento);
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .barra-nav-inferior {
+    padding: 4px 4px max(6px, env(safe-area-inset-bottom));
+    min-height: calc(48px + env(safe-area-inset-bottom));
+  }
+  
+  .barra-nav-inferior__item {
+    padding: 4px 2px;
+    font-size: 9px;
+    min-width: 40px;
+    min-height: 44px;
+  }
+  
+  .barra-nav-inferior__item svg {
+    width: 22px;
+    height: 22px;
+  }
+  
+  .barra-nav-inferior__item--activo::after {
+    width: 16px;
+    height: 2px;
+    bottom: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .barra-nav-inferior__item {
+    font-size: 8px;
+    min-width: 36px;
+    padding: 3px 1px;
+  }
+  
+  .barra-nav-inferior__item svg {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .barra-nav-inferior {
+    transition: none !important;
+  }
+}

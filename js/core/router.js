@@ -31,6 +31,7 @@ class Router {
       if (match) {
         const params = match.groups || {};
         if (this._vistaActual?.desmontar) this._vistaActual.desmontar();
+        if (window.memoria) window.memoria.liberar(this._vistaActual);
         const raiz = document.getElementById('app-root');
         if (!raiz) return;
         const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches;

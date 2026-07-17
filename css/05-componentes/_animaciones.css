@@ -1,0 +1,78 @@
+/* ============================================================
+   _animaciones.css - Sistema de animaciones unificado (150-250ms)
+   Todas usan transform/opacity para aceleración por hardware.
+   ============================================================ */
+
+/* ---- ABRIR TARJETAS ---- */
+@keyframes anim-tarjeta-abrir {
+  from { opacity: 0; transform: scale(0.96) translateY(8px); }
+  to   { opacity: 1; transform: scale(1) translateY(0); }
+}
+.anim-tarjeta {
+  animation: anim-tarjeta-abrir 200ms var(--easing-apple) both;
+}
+
+/* ---- CAMBIAR PESTAÑAS ---- */
+@keyframes anim-tab-entrar {
+  from { opacity: 0; transform: translateY(6px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+.anim-tab {
+  animation: anim-tab-entrar 180ms var(--easing-apple) both;
+}
+
+/* ---- TERMINAR EXAMEN / COMPLETAR CAPÍTULO (celebración) ---- */
+@keyframes anim-exito-pop {
+  0%   { opacity: 0; transform: scale(0.8); }
+  60%  { opacity: 1; transform: scale(1.04); }
+  100% { opacity: 1; transform: scale(1); }
+}
+.anim-exito {
+  animation: anim-exito-pop 250ms var(--easing-apple) both;
+}
+
+/* ---- ABRIR MENÚS / DRAWERS ---- */
+@keyframes anim-menu-entrar {
+  from { opacity: 0; transform: translateY(-8px) scale(0.98); transform-origin: top center; }
+  to   { opacity: 1; transform: translateY(0) scale(1); }
+}
+.anim-menu {
+  animation: anim-menu-entrar 160ms var(--easing-apple) both;
+  transform-origin: top center;
+}
+
+/* ---- CAMBIAR DE PREGUNTA (slide horizontal) ---- */
+@keyframes anim-pregunta-entrar {
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes anim-pregunta-salir {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-24px); }
+}
+.anim-pregunta-entrar { animation: anim-pregunta-entrar 200ms var(--easing-apple) both; }
+.anim-pregunta-salir { animation: anim-pregunta-salir 200ms var(--easing-apple) both; }
+
+/* ---- MICRO: RESALTAR AL COMPLETAR ---- */
+@keyframes anim-check-flash {
+  0%   { background: var(--color-exito-soft); }
+  100% { background: transparent; }
+}
+.anim-flash-exito {
+  animation: anim-check-flash 600ms ease both;
+}
+
+/* ---- REDUCED MOTION: respetar preferencia ---- */
+@media (prefers-reduced-motion: reduce) {
+  .anim-tarjeta,
+  .anim-tab,
+  .anim-exito,
+  .anim-menu,
+  .anim-pregunta-entrar,
+  .anim-pregunta-salir,
+  .anim-flash-exito {
+    animation: none !important;
+    opacity: 1 !important;
+    transform: none !important;
+  }
+}

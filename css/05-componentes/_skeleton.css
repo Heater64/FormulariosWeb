@@ -1,0 +1,54 @@
+/* ==========================================================================
+   _skeleton.css - Skeleton loading (estilo YouTube)
+   ========================================================================== */
+
+.skel {
+  display: block;
+  background: var(--color-fondo-alt, #e6e8eb);
+  border-radius: var(--radio-sm);
+  position: relative;
+  overflow: hidden;
+}
+
+.skel::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.55) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  animation: skel-shimmer 1.4s infinite;
+}
+
+@keyframes skel-shimmer {
+  100% { transform: translateX(100%); }
+}
+
+.skel-tarjeta {
+  background: var(--color-fondo-tarjeta, #fff);
+  border: 1px solid var(--color-borde, #e2e4e8);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-md);
+}
+
+@media (prefers-color-scheme: dark) {
+  .skel {
+    background: #2a2d33;
+  }
+  .skel::after {
+    background: linear-gradient(
+      90deg,
+      rgba(255, 255, 255, 0) 0%,
+      rgba(255, 255, 255, 0.08) 50%,
+      rgba(255, 255, 255, 0) 100%
+    );
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel::after { animation: none; }
+}

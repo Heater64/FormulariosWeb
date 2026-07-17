@@ -1,6 +1,9 @@
 (function() {
   'use strict';
   const sb = () => window.supabaseClient;
+
+  function claveProgreso(usuarioId) { return `progreso:usuario:${usuarioId}`; }
+
   window.progresoRepository = {
     async marcarLeido(usuarioId, capituloId) {
       const datos = {
@@ -18,17 +21,19 @@
       }
     },
     async obtenerProgresoPorLibro(usuarioId) {
-      if (!sb()) return {};
-      const { data: progreso } = await sb().from('progreso_lectura').select('capitulo_id').eq('usuario_id', usuarioId).eq('completado', true);
-      const { data: capitulos } = await sb().from('capitulos').select('id, libro_id');
-      if (!progreso || !capitulos) return {};
-      const progresoPorLibro = {};
-      const completados = new Set(progreso.map(p => p.capitulo_id));
-      capitulos.forEach(c => {
-        if (!progresoPorLibro[c.libro_id]) progresoPorLibro[c.libro_id] = [];
-        progresoPorLibro[c.libro_id].push(completados.has(c.id) ? 1 : 0);
-      });
-      return progresoPorLibro;
+      const fnRed = async () => {
+        const { data: progreso } = await sb().from('progreso_lectura').select('capitulo_id').eq('usuario_id', usuarioId).eq('completado', true);
+        const { data: capitulos } = await sb().from('capitulos').select('id, libro_id');
+        if (!progreso || !capitulos) return {};
+        const progresoPorLibro = {};
+        const completados = new Set(progreso.map(p => p.capitulo_id));
+        capitulos.forEach(c => {
+          if (!progresoPorLibro[c.libro_id]) progresoPorLibro[c.libro_id] = [];
+          progresoPorLibro[c.libro_id].push(completados.has(c.id) ? 1 : 0);
+        });
+        return progresoPorLibro;
+      };
+      return await window.cacheDatos.leerOCachear(claveProgreso(usuarioId), fnRed);
     },
     async marcarEstudioCompletado(usuarioId, capituloId) {
       const datos = {
@@ -47,10 +52,15 @@
       }
     },
     async obtenerPreguntasSistema(capituloId) {
-      if (!sb() || !capituloId) return [];
+      if (!sb() || !capituloId) {
+        const cache = await window.cacheDatos.get(`preguntas:${capituloId}`);
+        return cache || [];
+      }
       const { data } = await sb().from('preguntas_sistema')
         .select('*').eq('capitulo_id', capituloId).eq('activa', true).order('orden');
-      return data || [];
+      const lista = data || [];
+      await window.cacheDatos.set(`preguntas:${capituloId}`, lista);
+      return lista;
     }
   };
 })();

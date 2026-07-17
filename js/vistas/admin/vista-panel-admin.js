@@ -38,7 +38,7 @@
       if (!usuario || !['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase())) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" onclick="router.navegar(\'/estudio\')">Volver</button></div>'; return;
       }
-      raiz.innerHTML = '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando panel...</p></div>';
+      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(8, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando panel...</p></div>';
       try {
         const [usuarios, grupos, examenes, stats] = await Promise.all([
           window.adminRepository.listarUsuarios(),
@@ -77,9 +77,7 @@
               <span class="admin-buscar__icono">${I('search')}</span>
               <input type="text" id="buscarUsuarios" placeholder="Buscar por nombre, username o rol...">
             </div>
-            <div class="o-pila" id="listaUsuarios">
-              ${usuarios.map(u => this._renderizarUsuarioCard(u, usuario)).join('')}
-            </div>
+            <div class="o-pila" id="listaUsuarios"></div>
           </div>
 
           <!-- JERARQUÍA DE PERMISOS -->
@@ -136,6 +134,15 @@
         </div>`;
 
       this._bindEvents(raiz);
+
+      // Render por lotes de la lista de usuarios (optimización de memoria / listas enormes)
+      const listaU = raiz.querySelector('#listaUsuarios');
+      if (listaU && window.memoria && usuarios.length > 50) {
+        const gestor = window.memoria.seguir(this);
+        window.memoria.renderPorLotesHtml(listaU, usuarios, (u) => this._renderizarUsuarioCard(u, usuario), 30, gestor);
+      } else if (listaU) {
+        listaU.innerHTML = usuarios.map(u => this._renderizarUsuarioCard(u, usuario)).join('');
+      }
     },
 
     _renderizarUsuarioCard(u, actor) {

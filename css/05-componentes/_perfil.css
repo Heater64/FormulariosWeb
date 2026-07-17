@@ -359,6 +359,12 @@
   margin: 2px 0 0;
 }
 
+.perfil-info-card__sync {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  margin: 4px 0 0;
+}
+
 /* ===== ADMIN PANEL ===== */
 
 .admin-buscar {

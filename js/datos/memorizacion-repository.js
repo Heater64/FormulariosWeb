@@ -1,21 +1,24 @@
 (function() {
   'use strict';
   const sb = () => window.supabaseClient;
+
+  function claveLista(usuarioId) { return `memorizacion:lista:${usuarioId}`; }
+  function clavePendientes(usuarioId) { return `memorizacion:pendientes:${usuarioId}`; }
+
   window.memorizacionRepository = {
     async listarTarjetas(usuarioId) {
-      if (!sb()) return [];
-      try {
+      const fnRed = async () => {
         const { data } = await sb().from('tarjetas_memorizacion')
           .select('*')
           .eq('usuario_id', usuarioId)
           .eq('activa', true)
           .order('creado_en', { ascending: false });
         return data || [];
-      } catch (e) { return []; }
+      };
+      return await window.cacheDatos.leerOCachear(claveLista(usuarioId), fnRed);
     },
     async tarjetasPendientes(usuarioId) {
-      if (!sb()) return [];
-      try {
+      const fnRed = async () => {
         const ahora = new Date().toISOString();
         const { data } = await sb().from('tarjetas_memorizacion')
           .select('*')
@@ -24,7 +27,8 @@
           .lte('proximo_repaso', ahora)
           .order('proximo_repaso');
         return data || [];
-      } catch (e) { return []; }
+      };
+      return await window.cacheDatos.leerOCachear(clavePendientes(usuarioId), fnRed);
     },
     async agregarTarjetaManual(usuarioId, { referencia, texto, pista }) {
       const datos = { usuario_id: usuarioId, referencia: referencia || '', texto: texto || '', pista: pista || '', activa: true };
@@ -42,7 +46,15 @@
       }
     },
     async actualizarTarjeta(tarjeta) {
-      if (!sb()) throw new Error('Sin conexión');
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('update', 'tarjetas_memorizacion', {
+          repeticiones: tarjeta.repeticiones, intervalo: tarjeta.intervalo,
+          proximo_repaso: tarjeta.proximo_repaso, ultimo_repaso: tarjeta.ultimo_repaso,
+          mejor_racha: tarjeta.mejor_racha, veces_olvidado: tarjeta.veces_olvidado,
+          ultima_calificacion: tarjeta.ultima_calificacion, racha_actual: 0
+        }, { id: tarjeta.id });
+        return;
+      }
       await sb().from('tarjetas_memorizacion').update({
         repeticiones: tarjeta.repeticiones,
         intervalo: tarjeta.intervalo,
@@ -55,7 +67,14 @@
       }).eq('id', tarjeta.id);
     },
     async actualizarContenido(id, { referencia, texto, pista }) {
-      if (!sb()) throw new Error('Sin conexión');
+      if (!sb() || !navigator.onLine) {
+        const updates = {};
+        if (referencia !== undefined) updates.referencia = referencia;
+        if (texto !== undefined) updates.texto = texto;
+        if (pista !== undefined) updates.pista = pista;
+        window.colaSync.encolar('update', 'tarjetas_memorizacion', updates, { id });
+        return;
+      }
       const updates = {};
       if (referencia !== undefined) updates.referencia = referencia;
       if (texto !== undefined) updates.texto = texto;
@@ -63,7 +82,10 @@
       await sb().from('tarjetas_memorizacion').update(updates).eq('id', id);
     },
     async registrarRepaso(tarjetaId, calidad) {
-      if (!sb()) throw new Error('Sin conexión');
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('insert', 'repasos_memorizacion', { tarjeta_id: tarjetaId, calidad });
+        return;
+      }
       await sb().from('repasos_memorizacion').insert({ tarjeta_id: tarjetaId, calidad });
     },
     async contarTarjetas(usuarioId) {
@@ -74,7 +96,10 @@
       } catch (e) { return 0; }
     },
     async desactivarTarjeta(id) {
-      if (!sb()) throw new Error('Sin conexión');
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('update', 'tarjetas_memorizacion', { activa: false }, { id });
+        return;
+      }
       await sb().from('tarjetas_memorizacion').update({ activa: false }).eq('id', id);
     },
     async totalRepasos(usuarioId) {

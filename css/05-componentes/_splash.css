@@ -1,0 +1,204 @@
+/* ============================================================
+   _splash.css - Splash Screen personalizada
+   ============================================================ */
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  background: var(--color-fondo);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-lg);
+  padding: var(--espaciado-xl);
+  transition: opacity 0.6s ease, visibility 0.6s ease;
+}
+
+.splash-screen--loaded {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ===== LOGO ===== */
+.splash-screen__logo {
+  width: 96px;
+  height: 96px;
+  border-radius: var(--radio-2xl);
+  background: linear-gradient(135deg, var(--color-acento), var(--color-acento-hover));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 4px var(--color-acento-soft), var(--sombra-lg);
+  animation: splash-logo-pop 0.6s var(--easing-apple) forwards;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.splash-screen__logo svg {
+  width: 48px;
+  height: 48px;
+  stroke: var(--color-texto-acento);
+  stroke-width: 2;
+  fill: none;
+}
+
+/* ===== TEXTO ===== */
+.splash-screen__title {
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  color: var(--color-texto);
+  margin: 0;
+  animation: splash-text-in 0.5s ease 0.2s forwards;
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.splash-screen__subtitle {
+  font-size: var(--texto-base);
+  color: var(--color-texto-secundario);
+  margin: -8px 0 0;
+  animation: splash-text-in 0.5s ease 0.3s forwards;
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+/* ===== PROGRESS BAR ===== */
+.splash-screen__progress {
+  width: min(280px, 70vw);
+  height: 4px;
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+  overflow: hidden;
+  animation: splash-text-in 0.5s ease 0.4s forwards;
+  opacity: 0;
+  transform: translateY(16px);
+}
+
+.splash-screen__bar {
+  width: 0%;
+  height: 100%;
+  background: linear-gradient(90deg, var(--color-acento), var(--color-acento-hover));
+  border-radius: var(--radio-pill);
+  animation: splash-progress 1.8s ease forwards;
+}
+
+/* ===== STATUS TEXT ===== */
+.splash-screen__status {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 0;
+  animation: splash-text-in 0.5s ease 0.5s forwards;
+  opacity: 0;
+  transform: translateY(16px);
+  min-height: 1.5em;
+  transition: opacity 0.3s ease;
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes splash-logo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.8) rotate(-8deg);
+  }
+  60% {
+    transform: scale(1.08) rotate(2deg);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1) rotate(0deg);
+  }
+}
+
+@keyframes splash-text-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-progress {
+  0% { width: 0%; }
+  20% { width: 15%; }
+  40% { width: 35%; }
+  60% { width: 55%; }
+  80% { width: 80%; }
+  95% { width: 95%; }
+  100% { width: 100%; }
+}
+
+/* ===== DARK MODE ===== */
+@media (prefers-color-scheme: dark) {
+  .splash-screen__logo {
+    box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2), var(--sombra-lg);
+  }
+}
+
+:root[data-theme="dark"] .splash-screen__logo {
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2), var(--sombra-lg);
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen__logo,
+  .splash-screen__title,
+  .splash-screen__subtitle,
+  .splash-screen__progress,
+  .splash-screen__status {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+  
+  .splash-screen__bar {
+    animation: none !important;
+    width: 100%;
+  }
+  
+  .splash-screen--loaded {
+    transition: none !important;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .splash-screen__logo {
+    width: 72px;
+    height: 72px;
+  }
+  
+  .splash-screen__logo svg {
+    width: 36px;
+    height: 36px;
+  }
+  
+  .splash-screen__title {
+    font-size: var(--texto-xl);
+  }
+  
+  .splash-screen__subtitle {
+    font-size: var(--texto-sm);
+  }
+  
+  .splash-screen__progress {
+    width: min(200px, 60vw);
+  }
+}
+
+@media (max-width: 360px) {
+  .splash-screen__logo {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .splash-screen__logo svg {
+    width: 30px;
+    height: 30px;
+  }
+  
+  .splash-screen__title {
+    font-size: var(--texto-lg);
+  }
+}

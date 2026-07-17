@@ -27,7 +27,7 @@
       if (!usuario || !['admin', 'editor', 'owner'].includes(usuario.rol)) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p></div>'; return;
       }
-      raiz.innerHTML = '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando libro de calificaciones...</p></div>';
+      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(6, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando libro de calificaciones...</p></div>';
       try {
         const grupoId = usuario.grupo_id;
         const [evaluaciones, sueltos, intentos, alumnos, stats] = await Promise.all([

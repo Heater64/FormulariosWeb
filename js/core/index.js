@@ -1,24 +1,73 @@
 (function() {
   'use strict';
+  
   const APP = {
     init() {
+      // Aplicar preferencias primero
       if (window.preferencias) window.preferencias.aplicar();
+      
+      // Controlar splash screen
+      this._controlarSplash();
+      
+      // Recuperar sesión
       this._recuperarSesion();
+      
+      // Inicializar rutas
       this._inicializarRutas();
+      
+      // Renderizar barra de navegación
       this._renderizarBarraNavegacion();
+      
+      // Aplicar preferencias del usuario
       this._aplicarPreferencias();
-      if (window.colaSync) window.colaSync.iniciar();
+      
+      // Iniciar sincronización offline
+      if (window.colaSync) {
+        this.splashEstado('Sincronizando...');
+        window.colaSync.iniciar();
+      }
+      
+      // Verificar sesión
       this._verificarSesion();
+      
+      // ============================================================
+      // NUEVO: Inicializar gestor de actualizaciones
+      // ============================================================
+      if (window.updateManager) {
+        // Ya se inicializa en DOMContentLoaded
+        console.log('[App] Gestor de actualizaciones listo');
+      }
+      
+      // ============================================================
+      // NUEVO: Inicializar indicador de conexión
+      // ============================================================
+      if (window.connectionIndicator) {
+        // Ya se inicializa en DOMContentLoaded
+        console.log('[App] Indicador de conexión listo');
+      }
+      
+      // ============================================================
+      // NUEVO: Inicializar sincronización inteligente
+      // ============================================================
+      if (window.syncStatus) {
+        // Ya se inicializa en DOMContentLoaded
+        console.log('[App] Estado de sincronización listo');
+      }
 
+      // ============================================================
+      // Eventos de autenticación
+      // ============================================================
       window.eventBus.suscribir('auth:login', async (payload) => {
         const usuario = payload.usuario || payload;
         const recordar = payload.recordar !== false;
+        
         if (!usuario.foto_perfil) {
           try {
             const prev = JSON.parse(localStorage.getItem('fb_usuario'));
             if (prev?.foto_perfil) usuario.foto_perfil = prev.foto_perfil;
           } catch (e) {}
         }
+        
         if (recordar) {
           localStorage.setItem('fb_usuario', JSON.stringify(usuario));
           localStorage.setItem('fb_recordar_sesion', 'true');
@@ -27,6 +76,7 @@
           localStorage.removeItem('fb_recordar_sesion');
           sessionStorage.setItem('fb_usuario', JSON.stringify(usuario));
         }
+        
         this._renderizarBarraNavegacion();
 
         if (window._loginUI) {
@@ -35,7 +85,10 @@
 
         this._notificarRepasos();
 
-        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') && !usuario.preferencias?.tema && usuario.preferencias?.tema !== null;
+        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') && 
+                            !usuario.preferencias?.tema && 
+                            usuario.preferencias?.tema !== null;
+                            
         if (esPrimeraVez) {
           router.reemplazar('/estudio');
           setTimeout(() => this._mostrarSetupInicial(usuario), 400);
@@ -55,7 +108,59 @@
 
       window.eventBus.suscribir('route:change', () => {
         this._renderizarBarraNavegacion();
+        // Ocultar splash tras montar la primera vista
+        if (this._splash && !this._splashOculto) {
+          this.splashEstado('Cargando datos...');
+          setTimeout(() => this.ocultarSplash(), 400);
+        }
       });
+    },
+
+    // ============================================================
+    // NUEVO: Control de Splash Screen
+    // ============================================================
+    _controlarSplash() {
+      const splash = document.getElementById('splashScreen');
+      const status = document.getElementById('splashStatus');
+
+      if (!splash) return;
+
+      this._splash = splash;
+      this._splashStatus = status;
+      this._splashOculto = false;
+      // Protección: nunca dejar el splash bloqueando la app más de 6s.
+      this._splashTimeout = setTimeout(() => this.ocultarSplash(), 6000);
+
+      const actualizarEstado = (texto) => {
+        if (this._splashStatus) this._splashStatus.textContent = texto;
+      };
+      this._splashEstado = actualizarEstado;
+
+      // Secuencia inicial de carga
+      actualizarEstado('Cargando usuario...');
+
+      const usuario = store?.obtener('usuario');
+      if (usuario) {
+        actualizarEstado(`Hola, ${usuario.nombre_completo || usuario.username}`);
+      } else {
+        actualizarEstado('Cargando...');
+      }
+    },
+
+    // Llamar en cada paso para reflejar progreso real
+    splashEstado(texto) {
+      if (this._splashEstado) this._splashEstado(texto);
+    },
+
+    ocultarSplash() {
+      if (this._splashOculto || !this._splash) return;
+      this._splashOculto = true;
+      clearTimeout(this._splashTimeout);
+      if (this._splashEstado) this._splashEstado('Listo');
+      this._splash.classList.add('splash-screen--loaded');
+      setTimeout(() => {
+        if (this._splash && this._splash.parentNode) this._splash.remove();
+      }, 600);
     },
 
     _mostrarSetupInicial(usuario) {
@@ -106,7 +211,9 @@
         usuario.preferencias = prefs;
         store.actualizar('usuario', { ...usuario });
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
-        try { await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefs) }).eq('id', usuario.id); } catch (e) {}
+        try { 
+          await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefs) }).eq('id', usuario.id); 
+        } catch (e) {}
         localStorage.setItem('fb_setup_completado', 'true');
         overlay.remove();
         window.helpers.mostrarAlerta('Preferencias guardadas.', 'exito');
@@ -121,10 +228,14 @@
           const usuario = JSON.parse(guardado);
           store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
         }
-      } catch (e) { localStorage.removeItem('fb_usuario'); sessionStorage.removeItem('fb_usuario'); }
+      } catch (e) { 
+        localStorage.removeItem('fb_usuario'); 
+        sessionStorage.removeItem('fb_usuario'); 
+      }
     },
 
     _aplicarPreferencias() {
+      this.splashEstado('Aplicando preferencias...');
       const usuario = store.obtener('usuario');
       let prefs = usuario?.preferencias;
       if (prefs) {
@@ -153,11 +264,17 @@
       const usuario = store.obtener('usuario');
       const ruta = router._rutaActual();
       const esLogin = ruta === '/login' || ruta === '/';
-      if (!usuario && !esLogin) { router.reemplazar('/login'); return; }
+      if (!usuario && !esLogin) { 
+        router.reemplazar('/login'); 
+        return; 
+      }
       if (usuario && esLogin) {
         if (window._loginUI) {
           const loading = window._loginUI.crearLoading('Cargando tu progreso...');
-          setTimeout(() => { loading.remove(); router.reemplazar('/estudio'); }, 600);
+          setTimeout(() => { 
+            loading.remove(); 
+            router.reemplazar('/estudio'); 
+          }, 600);
         } else {
           router.reemplazar('/estudio');
         }
@@ -173,7 +290,14 @@
       if (localStorage.getItem('fb_toast_repaso') === hoy) return;
       try {
         const pendientes = await window.memorizacionRepository.tarjetasPendientes(usuario.id);
-        if (pendientes && pendientes.length > 0) this._mostrarToastRepaso(pendientes.length);
+        if (pendientes && pendientes.length > 0) {
+          this._mostrarToastRepaso(pendientes.length);
+          
+          // NUEVO: Notificación push si está disponible
+          if (window.notifications) {
+            await window.notifications.notificarRepasos(pendientes.length);
+          }
+        }
       } catch (e) {}
     },
 
@@ -182,14 +306,19 @@
       const t = document.createElement('div');
       t.id = 'toast-repaso';
       t.className = 'toast-repaso';
-      t.innerHTML = `<span class="toast-repaso__icono">${window.Iconos.render('brain')}</span>
+      t.innerHTML = `
+        <span class="toast-repaso__icono">${window.Iconos.render('brain')}</span>
         <div class="toast-repaso__cuerpo">
-          <p class="toast-repaso__titulo">Repaso de memorización</p>
-          <p class="toast-repaso__texto">Tienes ${n} versículo${n === 1 ? '' : 's'} para repasar hoy.</p>
+          <p class="toast-repaso__titulo">Hoy tienes</p>
+          <p class="toast-repaso__texto">${n} versículo${n === 1 ? '' : 's'} pendiente${n === 1 ? '' : 's'}.</p>
         </div>
-        <button class="toast-repaso__cerrar" aria-label="Cerrar">×</button>`;
+        <button class="toast-repaso__cerrar" aria-label="Cerrar">×</button>
+      `;
       t.addEventListener('click', (ev) => {
-        if (ev.target.closest('.toast-repaso__cerrar')) { t.remove(); return; }
+        if (ev.target.closest('.toast-repaso__cerrar')) { 
+          t.remove(); 
+          return; 
+        }
         router.navegar('/memorizacion');
         t.remove();
       });
@@ -202,7 +331,11 @@
       const nav = document.getElementById('barra-navegacion');
       if (!nav) return;
       const usuario = store.obtener('usuario');
-      if (!usuario) { nav.innerHTML = ''; nav.style.display = 'none'; return; }
+      if (!usuario) { 
+        nav.innerHTML = ''; 
+        nav.style.display = 'none'; 
+        return; 
+      }
       nav.style.display = '';
       nav.setAttribute('role', 'tablist');
       const items = [
@@ -215,15 +348,28 @@
       ];
       const rutaActual = router._rutaActual();
       const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/'));
-      nav.innerHTML = items.map(i => `<a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}"><span>${window.Iconos.render(i.icono)}</span><span>${i.texto}</span></a>`).join('');
+      nav.innerHTML = items.map(i => `
+        <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
+          <span>${window.Iconos.render(i.icono)}</span>
+          <span>${i.texto}</span>
+        </a>
+      `).join('');
       window.Iconos.actualizar();
       nav.querySelectorAll('[data-nav]').forEach(el => {
-        el.addEventListener('click', e => { e.preventDefault(); router.navegar(el.getAttribute('href').replace('#!', '')); });
+        el.addEventListener('click', e => { 
+          e.preventDefault(); 
+          router.navegar(el.getAttribute('href').replace('#!', '')); 
+        });
       });
     },
 
     _inicializarRutas() {
-      router.registrar('/', { montar: () => { const u = store.obtener('usuario'); u ? router.reemplazar('/estudio') : router.reemplazar('/login'); } });
+      router.registrar('/', { 
+        montar: () => { 
+          const u = store.obtener('usuario'); 
+          u ? router.reemplazar('/estudio') : router.reemplazar('/login'); 
+        } 
+      });
       router.registrar('/login', window.vistaLogin);
       router.registrar('/estudio', window.vistaEstudio);
       router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
@@ -245,6 +391,14 @@
       router.registrar('/owner', window.vistaOwner);
     }
   };
-  document.addEventListener('DOMContentLoaded', () => APP.init());
+
+  // ============================================================
+  // Inicializar la aplicación
+  // ============================================================
+  
+  document.addEventListener('DOMContentLoaded', () => {
+    APP.init();
+  });
+  
   window.appShell = APP;
 })();

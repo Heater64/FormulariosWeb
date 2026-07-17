@@ -12,10 +12,11 @@
     _cleanup: null,
 
     async montar(raiz) {
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
       const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
-      raiz.innerHTML = '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando exámenes...</p></div>';
+      raiz.innerHTML = window.skeleton ? window.skeleton.examenes() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando exámenes...</p></div>';
 
       try {
         const [examenes, misIntentos] = await Promise.all([
@@ -81,11 +82,31 @@
         cont.innerHTML = examenes.map(ex => this._tarjetaExamen(ex, misIntentos, esProfesor)).join('');
         this._conectarEventos(raiz, cont, examenes, esProfesor);
         window.Iconos.actualizar();
+
+        this._notificarExamenesNuevos(examenes, esProfesor);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
+
+      if (window.pullToRefresh) {
+        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, () => this.montar(raiz));
+      }
+    },
+
+    _notificarExamenesNuevos(examenes, esProfesor) {
+      if (esProfesor) return;
+      try {
+        const vistos = new Set(JSON.parse(localStorage.getItem('fb_examenes_vistos') || '[]'));
+        const nuevos = examenes.filter(ex => ex.publicado && !vistos.has(ex.id));
+        if (nuevos.length > 0 && window.notifications) {
+          window.notifications.notificarExamen(nuevos[0].titulo, nuevos[0].id);
+        }
+        const todos = new Set(examenes.map(ex => ex.id));
+        localStorage.setItem('fb_examenes_vistos', JSON.stringify([...todos]));
+      } catch (e) {}
     },
 
     desmontar() {
       if (this._cleanup) { this._cleanup(); this._cleanup = null; }
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
     },
 
     _tarjetaExamen(ex, misIntentos, esProfesor) {

@@ -1,0 +1,117 @@
+/* ==========================================================================
+   _install-banner.css - Banner de instalación PWA profesional
+   ========================================================================== */
+
+.install-banner {
+  position: fixed;
+  left: 50%;
+  bottom: calc(76px + env(safe-area-inset-bottom));
+  transform: translateX(-50%) translateY(20px);
+  z-index: 300;
+  width: min(440px, calc(100vw - 24px));
+  background: var(--color-fondo-tarjeta, #fff);
+  border: 1px solid var(--color-borde, #e2e4e8);
+  border-radius: var(--radio-xl, 18px);
+  box-shadow: var(--sombra-xl, 0 12px 40px rgba(0, 0, 0, 0.18));
+  padding: var(--espaciado-md, 16px);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md, 14px);
+  opacity: 0;
+  animation: install-banner-in 0.35s var(--easing-apple, ease) forwards;
+}
+
+.install-banner__icono {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-acento-soft, #e8eefe);
+  color: var(--color-acento, #2563eb);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.4rem;
+}
+
+.install-banner__icono svg { width: 22px; height: 22px; }
+
+.install-banner__cuerpo { flex: 1; min-width: 0; }
+
+.install-banner__titulo {
+  margin: 0 0 4px;
+  font-size: var(--texto-base, 1rem);
+  font-weight: 700;
+  color: var(--color-texto, #1a1d21);
+}
+
+.install-banner__beneficios {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 12px;
+}
+
+.install-banner__beneficios li {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--texto-xs, 0.78rem);
+  color: var(--color-texto-secundario, #5b6470);
+  white-space: nowrap;
+}
+
+.install-banner__beneficios svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-exito, #16a34a);
+  flex-shrink: 0;
+}
+
+.install-banner__acciones {
+  flex-shrink: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.install-banner__instalar,
+.install-banner__cerrar {
+  min-height: 38px;
+  padding: 0 14px;
+  font-size: var(--texto-sm, 0.85rem);
+  justify-content: center;
+  border-radius: var(--radio-pill, 999px);
+}
+
+.install-banner__cerrar {
+  background: transparent;
+  border: none;
+  color: var(--color-texto-terciario, #8a929e);
+  cursor: pointer;
+}
+
+.install-banner__cerrar:hover { color: var(--color-texto-secundario, #5b6470); }
+
+@keyframes install-banner-in {
+  to { opacity: 1; transform: translateX(-50%) translateY(0); }
+}
+
+@media (max-width: 420px) {
+  .install-banner {
+    flex-direction: column;
+    align-items: stretch;
+    text-align: left;
+    bottom: calc(70px + env(safe-area-inset-bottom));
+  }
+  .install-banner__icono { display: none; }
+  .install-banner__acciones { flex-direction: row; }
+  .install-banner__instalar { flex: 1; }
+  .install-banner__cerrar { flex: 1; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .install-banner { animation: none; opacity: 1; transform: translateX(-50%); }
+}

@@ -192,9 +192,10 @@
 
     /* ── Montaje ──────────────────────────────────────────── */
     async montar(raiz) {
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      raiz.innerHTML = '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton ? window.skeleton.memorizacion() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
 
       try {
         const [tarjetas, pendientes, total, repasos, libros] = await Promise.all([
@@ -216,6 +217,26 @@
       } catch {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar</p></div>';
       }
+
+      if (window.pullToRefresh) {
+        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, async () => {
+          const [tarjetas, pendientes, total, repasos, libros] = await Promise.all([
+            window.memorizacionRepository.listarTarjetas(usuario.id),
+            window.memorizacionRepository.tarjetasPendientes(usuario.id),
+            window.memorizacionRepository.contarTarjetas(usuario.id),
+            window.memorizacionRepository.totalRepasos(usuario.id),
+            window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
+          ]);
+          this._pintar(raiz, {
+            tarjetas, pendientes, total, repasos,
+            libros: libros.data || [], usuario, pestana: getPestana(),
+          });
+        });
+      }
+    },
+
+    desmontar() {
+      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
     },
 
     /* ── Pintado principal (stats + pestañas + contenido) ── */
@@ -253,9 +274,12 @@
       $$(raiz, '[data-tab]').forEach((btn) => {
         btn.onclick = () => {
           const t = btn.dataset.tab;
+          if (d.pestana === t) return;
           setPestana(t);
           d.pestana = t;
           this._pintar(raiz, d);
+          const cont = $('#memContent');
+          if (cont && window.animaciones) window.animaciones.animar(cont, 'anim-tab', 180);
         };
       });
 
@@ -353,6 +377,7 @@
             await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
             await window.memorizacionRepository.registrarRepaso(t.id, q);
           } catch { /* offline */ }
+          if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
           if (q === 0) pendientes.push({ ...t });
           this._flashcard(slot, pendientes, idx + 1, d);
         }
@@ -368,6 +393,7 @@
             await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
             await window.memorizacionRepository.registrarRepaso(t.id, q);
           } catch { /* offline */ }
+          if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
           if (q === 0) pendientes.push({ ...t });
           this._flashcard(slot, pendientes, idx + 1, d);
         };
@@ -516,6 +542,7 @@
           await window.memorizacionRepository.registrarRepaso(t.id, q);
         } catch { /* offline */ }
 
+        if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
         window.helpers.mostrarAlerta('Repaso registrado.', 'exito');
 
         const curIdx = versiculos.findIndex((v) => v.id === tarjetaId);
