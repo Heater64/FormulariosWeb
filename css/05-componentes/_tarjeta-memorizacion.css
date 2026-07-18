@@ -533,3 +533,123 @@
   background: transparent; border: none; color: var(--color-texto-terciario);
   font-size: 1.4rem; line-height: 1; cursor: pointer; padding: 0 var(--espaciado-xs);
 }
+
+/* ===== LEARNING STATE BADGES ===== */
+.mem-estado-badge {
+  display: inline-flex;
+  align-items: center;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid;
+  line-height: 1.4;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mem-nivel-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  background: var(--color-acento);
+  line-height: 1;
+}
+
+/* ===== FILL-IN-THE-BLANKS (COMPLETAR HUECOS) ===== */
+.mem-completar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-lg) 0;
+}
+
+.mem-completar-ref {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.mem-completar-texto {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px 6px;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--texto-lg);
+  line-height: var(--altura-linea-lectura);
+}
+
+.mem-completar-fijo {
+  color: var(--color-texto);
+  white-space: pre;
+}
+
+.mem-completar-hueco-wrap {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.mem-completar-input {
+  width: 100px;
+  max-width: 140px;
+  padding: 2px 6px;
+  border: none;
+  border-bottom: 2px solid var(--color-borde);
+  background: transparent;
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-base);
+  text-align: center;
+  outline: none;
+  transition: border-color 0.15s ease;
+}
+
+.mem-completar-input:focus {
+  border-bottom-color: var(--color-acento);
+}
+
+.mem-completar-input--ok {
+  border-bottom-color: var(--color-exito) !important;
+  color: var(--color-exito);
+}
+
+.mem-completar-input--ko {
+  border-bottom-color: var(--color-error) !important;
+  color: var(--color-error);
+}
+
+.mem-completar-ok {
+  font-size: 11px;
+  color: var(--color-exito);
+  font-weight: 700;
+}
+
+.mem-completar--revisado .mem-completar-input {
+  cursor: default;
+}
+
+@media (max-width: 480px) {
+  .mem-completar-input {
+    width: 70px;
+    max-width: 100px;
+    font-size: var(--texto-sm);
+  }
+}
+
+/* ===== SEARCH BAR ===== */
+#memBuscar::placeholder {
+  color: var(--color-texto-terciario);
+  opacity: 0.7;
+}

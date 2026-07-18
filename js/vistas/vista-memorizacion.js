@@ -184,6 +184,100 @@
     });
   }
 
+  /* ─── Fill-in-the-blanks helpers ─── */
+  function _generarHuecos(texto) {
+    const tokens = texto.split(/(\s+)/).filter(Boolean);
+    const candidatos = tokens.map((t, i) => ({ idx: i, len: t.replace(/[^a-zA-ZáéíóúüñÁÉÍÓÚÜÑ]/g, '').length })).filter(x => x.len > 2);
+    const nHuecos = Math.max(1, Math.round(candidatos.length * 0.4));
+    const seleccionados = new Set();
+    const shuffled = [...candidatos].sort(() => Math.random() - 0.5);
+    for (let i = 0; i < nHuecos && i < shuffled.length; i++) seleccionados.add(shuffled[i].idx);
+    return tokens.map((t, i) => ({ palabra: t, hueco: seleccionados.has(i), idx: i }));
+  }
+
+  function _renderCompletar(slot, t, pendientes, idx, d) {
+    const tokens = _generarHuecos(t.texto || '');
+    const respCorrectas = tokens.filter(x => x.hueco).map(x => x.palabra.replace(/^[\s.,;:!?¿¡()"'«»]+|[\s.,;:!?¿¡()"'«»]+$/g, ''));
+    let respuestas = [];
+    let mostrandoRespuesta = false;
+
+    const render = () => {
+      slot.innerHTML = `
+        <div class="tarjeta-memorizacion">
+          <div class="tarjeta-memorizacion__progreso">
+            <span>Tarjeta ${idx + 1} de ${pendientes.length}</span>
+            ${idx > 0 ? '<button class="btn-secundario" id="btnAntC" style="margin-left:auto;font-size:var(--texto-xs);padding:4px 8px">← Anterior</button>' : ''}
+            <button class="btn-secundario" id="btnFlip${idx}" style="font-size:var(--texto-xs);padding:4px 8px">${I('copy')} Flashcard</button>
+          </div>
+          <div class="mem-completar${mostrandoRespuesta ? ' mem-completar--revisado' : ''}">
+            <p class="mem-completar-ref">${E(t.referencia || '')}</p>
+            <div class="mem-completar-texto">
+              ${tokens.map((token, i) => {
+                if (!token.hueco) return `<span class="mem-completar-fijo">${E(token.palabra)}</span>`;
+                const usr = respuestas[i] || '';
+                const correcto = mostrandoRespuesta && usr.toLowerCase().trim() === respCorrectas[tokens.filter(x => x.hueco).indexOf(token)].toLowerCase();
+                const incorrecto = mostrandoRespuesta && usr.trim() !== '' && !correcto;
+                return `<span class="mem-completar-hueco-wrap">
+                  <input type="text" class="mem-completar-input${correcto ? ' mem-completar-input--ok' : ''}${incorrecto ? ' mem-completar-input--ko' : ''}" data-hidx="${i}" value="${E(usr)}" autocomplete="off" ${mostrandoRespuesta ? 'readonly' : ''}>
+                  ${mostrandoRespuesta && incorrecto ? `<span class="mem-completar-ok">${E(respCorrectas[tokens.filter(x => x.hueco).indexOf(token)])}</span>` : ''}
+                </span>`;
+              }).join('')}
+            </div>
+            ${mostrandoRespuesta ? `
+              <div class="flashcard-calidades" style="margin-top:var(--espaciado-md)">
+                <button class="btn-calidad btn-calidad--no" data-q="0"><span class="btn-calidad__num">0</span><span class="btn-calidad__label">No lo recordé</span></button>
+                <button class="btn-calidad btn-calidad--dificil" data-q="1"><span class="btn-calidad__num">1</span><span class="btn-calidad__label">Difícil</span></button>
+                <button class="btn-calidad btn-calidad--medio" data-q="3"><span class="btn-calidad__num">3</span><span class="btn-calidad__label">Con esfuerzo</span></button>
+                <button class="btn-calidad btn-calidad--facil" data-q="5"><span class="btn-calidad__num">5</span><span class="btn-calidad__label">Fácil</span></button>
+              </div>` : `
+              <button class="btn-primario" id="btnRevisar${idx}" style="align-self:center;margin-top:var(--espaciado-sm);justify-content:center">Revisar respuestas</button>`}
+          </div>
+        </div>`;
+    };
+
+    render();
+    window.Iconos.actualizar();
+
+    $(slot, '#btnAntC')?.addEventListener('click', () => {
+      if (window.vistaMemorizacion._flashcard && d._historialRepaso && d._historialRepaso.length > 0) {
+        const m = d._modo === 'completar';
+        d._modo = 'completar';
+        window.vistaMemorizacion._flashcard(slot, pendientes, d._historialRepaso.pop(), d);
+        if (!m) d._modo = 'flashcard';
+      }
+    });
+
+    $(slot, `#btnFlip${idx}`)?.addEventListener('click', () => {
+      d._modo = 'flashcard';
+      window.vistaMemorizacion._flashcard(slot, pendientes, idx, d);
+    });
+
+    const inpRevisar = $(slot, `#btnRevisar${idx}`);
+    if (inpRevisar) inpRevisar.addEventListener('click', () => {
+      slot.querySelectorAll('.mem-completar-input').forEach(inp => {
+        respuestas[parseInt(inp.dataset.hidx)] = inp.value;
+      });
+      mostrandoRespuesta = true;
+      render();
+      window.Iconos.actualizar();
+
+      $$(slot, '[data-q]').forEach(btn => {
+        btn.addEventListener('click', async () => {
+          const q = parseInt(btn.dataset.q, 10);
+          if (d._historialRepaso) d._historialRepaso.push(idx);
+          try {
+            const res = window.repeticionEspaciada.calcularProximoRepaso(t, q);
+            await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
+            await window.memorizacionRepository.registrarRepaso(t.id, q);
+          } catch { /* offline */ }
+          if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
+          if (q === 0 && Array.isArray(pendientes)) pendientes.push({ ...t });
+          if (window.vistaMemorizacion._flashcard) window.vistaMemorizacion._flashcard(slot, pendientes, idx + 1, d);
+        });
+      });
+    });
+  }
+
 
   /* ════════════════════════════════════════════════════════════
      VISTA PRINCIPAL
@@ -230,24 +324,24 @@
           <h2>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion" aria-label="Guía de Memorización">i</button></h2>
 
           <div class="mem-grid-tarjetas">
-            <div class="tarjeta-capitulo mem-stat">
+            <div class="tarjeta-capitulo mem-stat" title="Versículos programados para repaso hoy según el sistema de repetición espaciada">
               <p class="u-fs-xs u-color-texto-terciario">Pendientes hoy</p>
               <p class="u-texto-2xl u-fw-700">${pendientes.length}</p>
             </div>
-            <div class="tarjeta-capitulo mem-stat">
+            <div class="tarjeta-capitulo mem-stat" title="Total de versículos que has añadido a tu biblioteca de memorización">
               <p class="u-fs-xs u-color-texto-terciario">Total versículos</p>
               <p class="u-texto-2xl u-fw-700">${total}</p>
             </div>
-            <div class="tarjeta-capitulo mem-stat">
+            <div class="tarjeta-capitulo mem-stat" title="Número total de sesiones de repaso que has completado exitosamente">
               <p class="u-fs-xs u-color-texto-terciario">Repasos realizados</p>
               <p class="u-texto-2xl u-fw-700">${repasos}</p>
             </div>
           </div>
 
-          <div class="mem-tabs">
-            <button class="mem-tab ${pestana === 'repasar' ? 'mem-tab--activo' : ''}" data-tab="repasar">${I('clock')} Repasar</button>
-            <button class="mem-tab ${pestana === 'versiculos' ? 'mem-tab--activo' : ''}" data-tab="versiculos">${I('book-open')} Mis versículos</button>
-            <button class="mem-tab ${pestana === 'nuevo' ? 'mem-tab--activo' : ''}" data-tab="nuevo">${I('plus')} Nuevo</button>
+          <div class="mem-tabs" role="tablist">
+            <button class="mem-tab ${pestana === 'repasar' ? 'mem-tab--activo' : ''}" data-tab="repasar" role="tab" aria-selected="${pestana === 'repasar'}" title="Práctica diaria basada en repetición espaciada">${I('clock')} Repasar</button>
+            <button class="mem-tab ${pestana === 'versiculos' ? 'mem-tab--activo' : ''}" data-tab="versiculos" role="tab" aria-selected="${pestana === 'versiculos'}" title="Gestionar tu colección de versículos">${I('book-open')} Mis versículos</button>
+            <button class="mem-tab ${pestana === 'nuevo' ? 'mem-tab--activo' : ''}" data-tab="nuevo" role="tab" aria-selected="${pestana === 'nuevo'}" title="Añadir nuevos versículos para memorizar">${I('plus')} Nuevo</button>
           </div>
 
           <div id="memContent" class="o-pila"></div>
@@ -293,19 +387,23 @@
         const btnRT = $(cont, '#btnRepasarTodo');
         if (btnRT) btnRT.onclick = () => {
           cont.innerHTML = '<div id="slot" class="o-pila" style="min-height:300px"></div>';
-          this._historialRepaso = [];
+          d._historialRepaso = [];
           this._flashcard($(cont, '#slot'), d.tarjetas, 0, d);
         };
         return;
       }
 
       cont.innerHTML = '<div id="slot" class="o-pila" style="min-height:300px"></div>';
-      this._historialRepaso = [];
+      d._historialRepaso = [];
       this._flashcard($(cont, '#slot'), d.pendientes, 0, d);
     },
 
     /* ── Flashcard (Repasar) ── */
     _flashcard(slot, pendientes, idx, d) {
+      if (d._modo === 'completar' && idx < pendientes.length) {
+        _renderCompletar(slot, pendientes[idx], pendientes, idx, d);
+        return;
+      }
       if (idx >= pendientes.length) {
         slot.innerHTML = `
           <div class="u-texto-centrado o-pila" style="align-items:center;padding:var(--espaciado-xl) 0">
@@ -328,6 +426,7 @@
           <div class="tarjeta-memorizacion__progreso">
             <span>Tarjeta ${idx + 1} de ${pendientes.length}</span>
             ${idx > 0 ? '<button class="btn-secundario" id="btnAnt" style="margin-left:auto;font-size:var(--texto-xs);padding:4px 8px">← Anterior</button>' : ''}
+            <button class="btn-secundario" id="btnCom${idx}" style="font-size:var(--texto-xs);padding:4px 8px">${I('edit-3')} Completar</button>
           </div>
           ${_htmlFlashcard(t, { volteado: false })}
         </div>`;
@@ -344,8 +443,14 @@
       /* Anterior */
       const ba = $(slot, '#btnAnt');
       if (ba) ba.onclick = () => {
-        if (this._historialRepaso.length > 0) this._flashcard(slot, pendientes, this._historialRepaso.pop(), d);
+        if (d._historialRepaso && d._historialRepaso.length > 0) this._flashcard(slot, pendientes, d._historialRepaso.pop(), d);
       };
+
+      /* Completar mode toggle */
+      $(slot, `#btnCom${idx}`)?.addEventListener('click', () => {
+        d._modo = 'completar';
+        this._flashcard(slot, pendientes, idx, d);
+      });
 
       /* Gestos */
       _initGestos(
@@ -353,7 +458,7 @@
         () => volteado,
         () => { volteado = true; fcEl.classList.add('flashcard-container--volteado'); },
         async (q) => {
-          this._historialRepaso.push(idx);
+          if (d._historialRepaso) d._historialRepaso.push(idx);
           try {
             const res = window.repeticionEspaciada.calcularProximoRepaso(t, q);
             await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
@@ -369,7 +474,7 @@
       $$(slot, '[data-q]').forEach((btn) => {
         btn.onclick = async () => {
           const q = parseInt(btn.dataset.q, 10);
-          this._historialRepaso.push(idx);
+          if (d._historialRepaso) d._historialRepaso.push(idx);
           try {
             const res = window.repeticionEspaciada.calcularProximoRepaso(t, q);
             await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
@@ -394,25 +499,50 @@
         return;
       }
 
-      const porLibro = agruparPorLibro(d.tarjetas);
+      const _renderLibros = (buscar) => {
+        const filtro = (buscar || '').toLowerCase().trim();
+        const filtradas = filtro ? d.tarjetas.filter(t => (t.referencia || '').toLowerCase().includes(filtro) || (t.texto || '').toLowerCase().includes(filtro)) : d.tarjetas;
+        const porLibro = agruparPorLibro(filtradas);
+        const librosHtml = Object.entries(porLibro).map(([libro, caps]) => {
+          const totalV = Object.values(caps).reduce((s, a) => s + a.length, 0);
+          const numC = Object.keys(caps).length;
+          return `
+            <div class="tarjeta-capitulo mem-libro-grupo" data-libro="${E(libro)}" style="cursor:pointer">
+              <div class="o-pila" style="gap:2px">
+                <span class="u-fw-600">${I('book-open')} ${E(libro)}</span>
+                <span class="u-fs-xs u-color-texto-terciario">${totalV} versículo${totalV === 1 ? '' : 's'}</span>
+                <span class="u-fs-xs u-color-texto-terciario">${numC} capítulo${numC === 1 ? '' : 's'}</span>
+              </div>
+            </div>`;
+        }).join('');
+        const lista = cont.querySelector('#memListaLibros');
+        if (lista) {
+          lista.innerHTML = librosHtml || '<p class="u-color-texto-secundario u-fs-sm u-mt-2">Sin resultados.</p>';
+          lista.querySelectorAll('.mem-libro-grupo').forEach(el => {
+            el.onclick = () => this._listaCapitulos(cont, el.dataset.libro, d);
+          });
+          window.Iconos?.actualizar();
+        }
+      };
 
-      cont.innerHTML = Object.entries(porLibro).map(([libro, caps]) => {
-        const totalV = Object.values(caps).reduce((s, a) => s + a.length, 0);
-        const numC = Object.keys(caps).length;
-        return `
-          <div class="tarjeta-capitulo mem-libro-grupo" data-libro="${E(libro)}" style="cursor:pointer">
-            <div class="o-pila" style="gap:2px">
-              <span class="u-fw-600">${I('book-open')} ${E(libro)}</span>
-              <span class="u-fs-xs u-color-texto-terciario">${totalV} versículo${totalV === 1 ? '' : 's'}</span>
-              <span class="u-fs-xs u-color-texto-terciario">${numC} capítulo${numC === 1 ? '' : 's'}</span>
-            </div>
-          </div>`;
-      }).join('');
+      cont.innerHTML = `
+        <div class="o-pila" style="gap:var(--espaciado-sm)">
+          <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center;background:var(--color-fondo-alt);border:1px solid var(--color-borde);border-radius:var(--radio-md);padding:var(--espaciado-xxs) var(--espaciado-xs)">
+            <span style="color:var(--color-texto-terciario);display:flex">${I('search')}</span>
+            <input type="search" id="memBuscar" placeholder="Buscar por referencia o texto…" style="border:none;background:transparent;flex:1;outline:none;font-size:var(--texto-sm)">
+          </div>
+          <div id="memListaLibros"></div>
+        </div>`;
 
-      window.Iconos.actualizar();
-      $$(cont, '.mem-libro-grupo').forEach((el) => {
-        el.onclick = () => this._listaCapitulos(cont, el.dataset.libro, d);
-      });
+      _renderLibros('');
+      const inpBuscar = cont.querySelector('#memBuscar');
+      if (inpBuscar) {
+        let timer;
+        inpBuscar.addEventListener('input', () => {
+          clearTimeout(timer);
+          timer = setTimeout(() => _renderLibros(inpBuscar.value), 200);
+        });
+      }
     },
 
     /* ── Lista de capítulos ── */
@@ -449,11 +579,21 @@
         ${versiculos.map((t) => {
           const versoNum = (t.referencia || '').split(' ')[1]?.split(':')[1] || '';
           const corto = (t.texto || '').substring(0, 80) + ((t.texto || '').length > 80 ? '...' : '');
+          const nivel = window.repeticionEspaciada.calcularNivel(t.intervalo || 0);
+          const estado = window.repeticionEspaciada.estadoAprendizaje(t.racha_actual || 0, t.intervalo || 0);
+          const diasRest = t.proximo_repaso ? Math.ceil((new Date(t.proximo_repaso) - new Date()) / (1000 * 60 * 60 * 24)) : 0;
+          const etqEstado = { nuevo: 'Nuevo', repasando: 'Repasando', aprendido: 'Aprendido', consolidado: 'Consolidado' }[estado] || '';
+          const colorEstado = { nuevo: 'var(--color-aviso)', repasando: 'var(--color-acento)', aprendido: 'var(--color-exito)', consolidado: 'var(--color-exito)' }[estado] || 'var(--color-texto-terciario)';
           return `
             <div class="tarjeta-capitulo mem-versiculo-item" data-id="${t.id}" style="cursor:pointer">
               <div class="o-flecha o-flecha--between">
-                <span class="u-fw-600 u-fs-sm">${E(versoNum || t.referencia)}</span>
+                <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center;flex:1">
+                  <span class="u-fw-600 u-fs-sm">${E(versoNum || t.referencia)}</span>
+                  ${nivel > 0 ? `<span class="mem-nivel-badge" title="Nivel ${nivel}">${nivel}</span>` : ''}
+                  ${etqEstado ? `<span class="mem-estado-badge" style="background:${colorEstado}20;color:${colorEstado};border-color:${colorEstado}40">${etqEstado}</span>` : ''}
+                </div>
                 <div class="o-flecha" style="gap:4px">
+                  ${diasRest > 0 && diasRest <= 30 ? `<span class="u-fs-xs u-color-texto-terciario" title="Próximo repaso">${I('calendar')} ${diasRest}d</span>` : ''}
                   <button class="mem-btn-edit" data-id="${t.id}" title="Editar" style="background:none;border:none;cursor:pointer;color:var(--color-acento)">${I('edit-3')}</button>
                   <button class="mem-btn-del" data-id="${t.id}" title="Eliminar" style="background:none;border:none;cursor:pointer;color:var(--color-error)">${I('trash-2')}</button>
                 </div>
@@ -497,25 +637,156 @@
       const t = d.tarjetas.find((x) => x.id === tarjetaId);
       if (!t) return;
 
-      cont.innerHTML = `
-        <div class="o-pila o-pila--lg">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
-          <div class="tarjeta-memorizacion">
-            ${_htmlFlashcard(t, { volteado: false })}
-          </div>
-        </div>`;
+      const renderFlashcard = () => {
+        cont.innerHTML = `
+          <div class="o-pila o-pila--lg">
+            <div class="o-flecha o-flecha--between" style="align-items:center">
+              <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+              <button class="btn-secundario" id="btnModoCompletar" style="font-size:var(--texto-xs);padding:4px 8px">${I('edit-3')} Completar huecos</button>
+            </div>
+            <div class="tarjeta-memorizacion">
+              ${_htmlFlashcard(t, { volteado: false })}
+            </div>
+          </div>`;
 
-      window.Iconos.actualizar();
+        window.Iconos.actualizar();
 
-      const fcEl = $(cont, '#fc');
-      let volteado = false;
+        const fcEl = $(cont, '#fc');
+        let volteado = false;
 
-      $(cont, '#btnV').onclick = () => {
-        const partes = (t.referencia || '').split(' ');
-        const libro = partes[0] || '';
-        const cap = parseInt(partes[1]?.replace(':', '').split(':')[0] || '0', 10);
-        this._listaVersiculos(cont, libro, cap, d);
+        $(cont, '#btnV').onclick = () => {
+          const partes = (t.referencia || '').split(' ');
+          const libro = partes[0] || '';
+          const cap = parseInt(partes[1]?.replace(':', '').split(':')[0] || '0', 10);
+          this._listaVersiculos(cont, libro, cap, d);
+        };
+
+        $(cont, '#btnModoCompletar')?.addEventListener('click', () => renderCompletar());
+
+        const avanzar = async (q) => {
+          try {
+            const res = window.repeticionEspaciada.calcularProximoRepaso(t, q);
+            await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
+            await window.memorizacionRepository.registrarRepaso(t.id, q);
+          } catch { /* offline */ }
+
+          if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
+          window.helpers.mostrarAlerta('Repaso registrado.', 'exito');
+
+          const curIdx = versiculos.findIndex((v) => v.id === tarjetaId);
+          const nextIdx = curIdx + 1;
+
+          if (nextIdx < versiculos.length) {
+            this._practicar(cont, versiculos[nextIdx].id, d, versiculos);
+          } else {
+            const partes = (t.referencia || '').split(' ');
+            const libro = partes[0] || '';
+            const cap = parseInt(partes[1]?.replace(':', '').split(':')[0] || '0', 10);
+            this._listaVersiculos(cont, libro, cap, d);
+          }
+        };
+
+        _initGestos(
+          fcEl,
+          () => volteado,
+          () => { volteado = true; fcEl.classList.add('flashcard-container--volteado'); },
+          (q) => avanzar(q)
+        );
+
+        $$(cont, '[data-q]').forEach((btn) => {
+          btn.onclick = () => avanzar(parseInt(btn.dataset.q, 10));
+        });
       };
+
+      const renderCompletar = () => {
+        const tokens = _generarHuecos(t.texto || '');
+        const respCorrectas = tokens.filter(x => x.hueco).map(x => x.palabra.replace(/^[\s.,;:!?¿¡()"'«»]+|[\s.,;:!?¿¡()"'«»]+$/g, ''));
+        let respuestas = [];
+        let mostrandoRespuesta = false;
+
+        const dibujar = () => {
+          cont.innerHTML = `
+            <div class="o-pila o-pila--lg">
+              <div class="o-flecha o-flecha--between" style="align-items:center">
+                <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+                <button class="btn-secundario" id="btnModoFlip" style="font-size:var(--texto-xs);padding:4px 8px">${I('copy')} Flashcard</button>
+              </div>
+              <div class="tarjeta-memorizacion">
+                <div class="mem-completar${mostrandoRespuesta ? ' mem-completar--revisado' : ''}">
+                  <p class="mem-completar-ref">${E(t.referencia || '')}</p>
+                  <div class="mem-completar-texto">
+                    ${tokens.map((token, i) => {
+                      if (!token.hueco) return `<span class="mem-completar-fijo">${E(token.palabra)}</span>`;
+                      const usr = respuestas[i] || '';
+                      const correcto = mostrandoRespuesta && usr.toLowerCase().trim() === respCorrectas[tokens.filter(x => x.hueco).indexOf(token)].toLowerCase();
+                      const incorrecto = mostrandoRespuesta && usr.trim() !== '' && !correcto;
+                      return `<span class="mem-completar-hueco-wrap">
+                        <input type="text" class="mem-completar-input${correcto ? ' mem-completar-input--ok' : ''}${incorrecto ? ' mem-completar-input--ko' : ''}" data-hidx="${i}" value="${E(usr)}" autocomplete="off" ${mostrandoRespuesta ? 'readonly' : ''}>
+                        ${mostrandoRespuesta && incorrecto ? `<span class="mem-completar-ok">${E(respCorrectas[tokens.filter(x => x.hueco).indexOf(token)])}</span>` : ''}
+                      </span>`;
+                    }).join('')}
+                  </div>
+                  ${mostrandoRespuesta ? `
+                    <div class="flashcard-calidades" style="margin-top:var(--espaciado-md)">
+                      <button class="btn-calidad btn-calidad--no" data-q="0"><span class="btn-calidad__num">0</span><span class="btn-calidad__label">No lo recordé</span></button>
+                      <button class="btn-calidad btn-calidad--dificil" data-q="1"><span class="btn-calidad__num">1</span><span class="btn-calidad__label">Difícil</span></button>
+                      <button class="btn-calidad btn-calidad--medio" data-q="3"><span class="btn-calidad__num">3</span><span class="btn-calidad__label">Con esfuerzo</span></button>
+                      <button class="btn-calidad btn-calidad--facil" data-q="5"><span class="btn-calidad__num">5</span><span class="btn-calidad__label">Fácil</span></button>
+                    </div>` : `
+                    <button class="btn-primario" id="btnRevisar" style="align-self:center;margin-top:var(--espaciado-sm);justify-content:center">Revisar respuestas</button>`}
+                </div>
+              </div>
+            </div>`;
+        };
+
+        dibujar();
+        window.Iconos.actualizar();
+
+        $(cont, '#btnV').onclick = () => {
+          const partes = (t.referencia || '').split(' ');
+          const libro = partes[0] || '';
+          const cap = parseInt(partes[1]?.replace(':', '').split(':')[0] || '0', 10);
+          this._listaVersiculos(cont, libro, cap, d);
+        };
+
+        $(cont, '#btnModoFlip')?.addEventListener('click', () => renderFlashcard());
+
+        const btnRev = $(cont, '#btnRevisar');
+        if (btnRev) btnRev.onclick = () => {
+          cont.querySelectorAll('.mem-completar-input').forEach(inp => {
+            respuestas[parseInt(inp.dataset.hidx)] = inp.value;
+          });
+          mostrandoRespuesta = true;
+          dibujar();
+          window.Iconos.actualizar();
+
+          $$(cont, '[data-q]').forEach(btn => {
+            btn.onclick = async () => {
+              const q = parseInt(btn.dataset.q, 10);
+              try {
+                const res = window.repeticionEspaciada.calcularProximoRepaso(t, q);
+                await window.memorizacionRepository.actualizarTarjeta({ ...t, ...res });
+                await window.memorizacionRepository.registrarRepaso(t.id, q);
+              } catch { /* offline */ }
+              if (window.haptica) { q === 0 ? window.haptica.fallo() : window.haptica.logro(); }
+              window.helpers.mostrarAlerta('Repaso registrado.', 'exito');
+
+              const curIdx = versiculos.findIndex((v) => v.id === tarjetaId);
+              const nextIdx = curIdx + 1;
+              if (nextIdx < versiculos.length) {
+                this._practicar(cont, versiculos[nextIdx].id, d, versiculos);
+              } else {
+                const partes = (t.referencia || '').split(' ');
+                const libro = partes[0] || '';
+                const cap = parseInt(partes[1]?.replace(':', '').split(':')[0] || '0', 10);
+                this._listaVersiculos(cont, libro, cap, d);
+              }
+            };
+          });
+        };
+      };
+
+      renderFlashcard();
 
       const avanzar = async (q) => {
         try {

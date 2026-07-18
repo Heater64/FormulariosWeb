@@ -78,10 +78,10 @@
           <button class="btn-primario" id="btnNueva" style="width:100%;justify-content:center">${I('plus')} Nueva nota</button>
           <div class="o-pila" id="listaNotasLibros">
             ${Object.entries(porLibro).map(([libro, items]) => `
-              <div class="tarjeta-capitulo" style="cursor:pointer" data-libro="${E(libro)}">
+              <div class="tarjeta-capitulo" style="cursor:pointer" data-libro="${E(libro)}" title="Ver notas guardadas para ${E(libro)}">
                 <div class="o-flecha o-flecha--between">
                   <span class="u-fw-600">${I('book-open')} ${E(libro)}</span>
-                  <span class="u-fs-xs u-color-texto-terciario">${items.length} nota${items.length === 1 ? '' : 's'}</span>
+                  <span class="u-fs-xs u-color-texto-terciario" title="Número de notas en este libro">${items.length} nota${items.length === 1 ? '' : 's'}</span>
                 </div>
               </div>`).join('')}
           </div>
@@ -151,10 +151,10 @@
           <h2>${I('book-open')} ${E(libro)}</h2>
           <div class="o-pila">
             ${orden.map((cap) => `
-              <div class="tarjeta-capitulo" style="cursor:pointer" data-cap="${cap}">
+              <div class="tarjeta-capitulo" style="cursor:pointer" data-cap="${cap}" title="Ver notas del capítulo ${cap}">
                 <div class="o-flecha o-flecha--between">
                   <span class="u-fw-600">Capítulo ${cap}</span>
-                  <span class="u-fs-xs u-color-texto-terciario">${porCap[cap].length} nota${porCap[cap].length === 1 ? '' : 's'}</span>
+                  <span class="u-fs-xs u-color-texto-terciario" title="Número de notas en este capítulo">${porCap[cap].length} nota${porCap[cap].length === 1 ? '' : 's'}</span>
                 </div>
               </div>`).join('')}
           </div>
@@ -194,16 +194,16 @@
     _tarjetaNota(n, i, libro, capitulo, d) {
       const titulo = n.titulo || `Nota ${i + 1}`;
       return `
-        <div class="tarjeta-capitulo o-pila" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer">
+        <div class="tarjeta-capitulo o-pila" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer" title="Leer esta nota">
           <div class="o-flecha o-flecha--between">
             <span class="u-fw-600">${E(titulo)}</span>
             <div class="o-flecha" style="gap:4px" onclick="event.stopPropagation()">
-              <button class="btn-icono" data-edit="${n.id}" aria-label="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
-              <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
+              <button class="btn-icono" data-edit="${n.id}" aria-label="Editar nota" title="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
+              <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota" title="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
             </div>
           </div>
           <div class="nota-contenido" style="font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${n.contenido}</div>
-          <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
+          <p class="u-fs-xs u-color-texto-terciario" title="Fecha de última edición">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
         </div>`;
     },
 
@@ -329,6 +329,7 @@
         }
       }).then(editor => {
         _tiptapEditor = editor;
+        window.Iconos.actualizar();
 
         // Toolbar
         const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
@@ -457,6 +458,7 @@
         onUpdate: () => { if (_autoSave) _autoSave.trigger(); }
       }).then(editor => {
         _tiptapEditor = editor;
+        window.Iconos.actualizar();
         const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
         raiz.querySelector('#tip-bold').onclick = () => exec('toggleBold');
         raiz.querySelector('#tip-italic').onclick = () => exec('toggleItalic');

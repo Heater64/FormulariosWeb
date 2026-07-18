@@ -41,9 +41,14 @@
         const misIntentos = await window.examenesRepository.misIntentos(usuario.id);
         const terminado = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
         if (terminado) { this._renderResultados(raiz, examen, preguntas, terminado, usuario); return; }
-        let intento = misIntentos.find(i => i.examen_id === params.id && i.estado === 'en_progreso');
+        let intento = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'en_progreso' || i.estado === 'pendiente'));
         if (!intento) {
           intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso' });
+        } else if (intento.estado === 'pendiente') {
+          // Convert pendiente → en_progreso when student starts the exam
+          intento = await window.examenesRepository.guardarIntento({
+            ...intento, respuestas: intento.respuestas || '{}', estado: 'en_progreso', fecha_inicio: new Date().toISOString()
+          });
         }
         const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
         if (intento.estado === 'completado' || intento.estado === 'calificado') {
@@ -52,7 +57,8 @@
           this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario);
         }
       } catch (e) {
-        console.error('Error cargando examen:', e);
+        console.error('Error cargando examen:', e.message || e);
+        if (e.stack) console.error(e.stack);
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" onclick="router.navegar('/examenes')">← Volver</button></div>`;
       }
     },

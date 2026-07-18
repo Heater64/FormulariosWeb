@@ -175,7 +175,7 @@
     },
     async guardarIntento(intento) {
       if (!sb() || !navigator.onLine) {
-        window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' });
+        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' }); } catch (e) { console.warn('guardarIntento offline queue:', e); }
         return { ...intento, pendiente_sync: true };
       }
       try {
@@ -183,7 +183,7 @@
         if (error) throw error;
         return data;
       } catch (e) {
-        window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' });
+        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' }); } catch (e2) { console.warn('guardarIntento sync queue:', e2); }
         return { ...intento, pendiente_sync: true };
       }
     },

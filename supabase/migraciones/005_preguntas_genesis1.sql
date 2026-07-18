@@ -50,6 +50,6 @@ BEGIN
     '1', 'Respuesta: B) Toda planta que da semilla y todo árbol con fruto (Génesis 1:29).', 9, true),
 
   (v_cap, '¿Cómo describió Dios toda su creación al finalizar el sexto día?', 'multiple',
-    '["A) Buena","B) Perfecta","C) Muy buena","D) Terminada"]'::jsonb,
-    '2', 'Respuesta: C) Muy buena. «Vio Dios todo lo que había hecho, y he aquí que era bueno en gran manera» (Génesis 1:31).', 10, true);
+    '["A) Buena","B) Perfecta","C) Bueno en gran manera","D) Terminada"]'::jsonb,
+    '2', 'Respuesta: C) Bueno en gran manera. «Vio Dios todo lo que había hecho, y he aquí que era bueno en gran manera» (Génesis 1:31).', 10, true);
 END $$;

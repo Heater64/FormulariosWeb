@@ -86,24 +86,66 @@
       await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });
     },
     async statsGenerales() {
-      if (!sb()) return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0 };
+      if (!sb()) return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0, porRol: {} };
       try {
-        const [usuarios, examenes, progreso, tarjetas] = await Promise.all([
+        const [usuarios, examenes, progreso, tarjetas, roles] = await Promise.all([
           sb().from('perfiles').select('id', { count: 'exact', head: true }),
           sb().from('examenes_personalizados').select('id', { count: 'exact', head: true }),
           sb().from('progreso_lectura').select('id', { count: 'exact', head: true }),
-          sb().from('tarjetas_memorizacion').select('id', { count: 'exact', head: true })
+          sb().from('tarjetas_memorizacion').select('id', { count: 'exact', head: true }),
+          sb().from('perfiles').select('rol')
         ]);
+        const porRol = { owner: 0, admin: 0, editor: 0, usuario: 0 };
+        (roles.data || []).forEach(p => { if (porRol[p.rol] !== undefined) porRol[p.rol]++; });
         return {
           usuarios: usuarios.count || 0,
           examenes: examenes.count || 0,
           lecturas: progreso.count || 0,
-          tarjetas: tarjetas.count || 0
+          tarjetas: tarjetas.count || 0,
+          porRol
         };
       } catch (e) {
         console.error('Error al obtener estadísticas generales:', e);
-        return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0 };
+        return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0, porRol: {} };
       }
+    },
+    async batchCambiarRol(ids, rol) {
+      if (!sb() || !ids.length) return;
+      await sb().from('perfiles').update({ rol }).in('id', ids);
+    },
+    async batchCambiarGrupo(ids, grupoId) {
+      if (!sb() || !ids.length) return;
+      await sb().from('perfiles').update({ grupo_id: grupoId || null }).in('id', ids);
+    },
+    async exportarUsuariosCSV() {
+      if (!sb()) return '';
+      const { data } = await sb().from('perfiles').select('nombre_completo, username, rol, activo, grupo_id, creado_en').order('creado_en', { ascending: false });
+      if (!data) return '';
+      const cabeceras = 'Nombre,Username,Rol,Activo,Grupo,Creado';
+      const filas = data.map(u =>
+        `"${u.nombre_completo || ''}","${u.username || ''}","${u.rol || ''}",${u.activo !== false},${u.grupo_id || ''},${u.creado_en || ''}`
+      );
+      return cabeceras + '\n' + filas.join('\n');
+    },
+    async obtenerActividadUsuario(userId) {
+      if (!sb()) return { examenes: 0, lecturas: 0, repasos: 0, ultimoAcceso: null };
+      try {
+        const [examenes, lecturas, repasos] = await Promise.all([
+          sb().from('evaluaciones').select('id', { count: 'exact', head: true }).eq('alumno_id', userId),
+          sb().from('progreso_lectura').select('id', { count: 'exact', head: true }).eq('usuario_id', userId),
+          sb().from('historial_repaso').select('id', { count: 'exact', head: true }).eq('tarjeta_id', userId)
+        ]);
+        return { examenes: examenes.count || 0, lecturas: lecturas.count || 0, repasos: repasos.count || 0 };
+      } catch { return { examenes: 0, lecturas: 0, repasos: 0 }; }
+    },
+    async listarConfiguracion() {
+      if (!sb()) return {};
+      const { data } = await sb().from('configuracion').select('*').maybeSingle();
+      return data || {};
+    },
+    async guardarConfiguracion(clave, valor) {
+      if (!sb()) return;
+      await sb().from('configuracion').upsert({ clave, valor }, { onConflict: 'clave' });
     }
   };
 })();

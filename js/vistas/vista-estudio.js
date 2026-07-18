@@ -78,9 +78,9 @@
         const renderLibro = (l) => {
           const leidos = completados.filter(p => p.capitulos?.libro_id === l.id).length;
           const pct = Math.round((leidos / l.num_capitulos) * 100);
-          return `<div class="tarjeta-libro${pct === 100 ? ' tarjeta-libro--completado' : ''}" data-libro="${l.id}" style="cursor:pointer">
+          return `<div class="tarjeta-libro${pct === 100 ? ' tarjeta-libro--completado' : ''}" data-libro="${l.id}" style="cursor:pointer" title="Estudiar ${l.nombre}: progreso ${pct}%">
             <div class="tarjeta-libro__nombre">${l.nombre}</div>
-            <div class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos}</div>
+            <div class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos</div>
             <div class="tarjeta-libro__barra${pct > 0 ? ' tarjeta-libro__barra--progreso' : ''}"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
           </div>`;
         };

@@ -202,7 +202,7 @@
       // Student-facing status
       let badgeEstado;
       if (esProfesor) {
-        badgeEstado = ESTADO_BADGES[ex.estado] || ESTADO_BADGES['borrador'];
+        badgeEstado = ESTADO_BADGES[ex.estado || (ex.publicado ? 'publicado' : 'borrador')] || ESTADO_BADGES['borrador'];
       } else if (completado) {
         badgeEstado = miIntento.corregido
           ? { clase: 'examen-badge--calificado', texto: 'Calificado', icono: 'check-circle' }
@@ -213,53 +213,92 @@
         badgeEstado = { clase: 'examen-badge--disponible', texto: 'Disponible', icono: 'circle' };
       }
 
-      // Stats for teachers
-      let stats = '';
-      if (esProfesor) {
-        const ints = this._intentosGrupo.filter(i => i.examen_id === ex.id);
-        const total = ints.length;
-        const hechos = ints.filter(i => i.estado === 'completado' || i.estado === 'calificado').length;
-        const pend = total - hechos;
-        stats = `<div class="o-flecha u-fs-xs u-color-texto-terciario" style="gap:var(--espaciado-sm);flex-wrap:wrap">
-          <span>${window.Iconos.render('users')} ${total} asignados</span>
-          <span>${window.Iconos.render('check-circle')} ${hechos} completados</span>
-          <span>${window.Iconos.render('clock')} ${pend} pendientes</span>
-        </div>`;
-      }
+      // Tiempo relativo para última modificación
+      const obtenerTiempoRelativo = (fechaStr) => {
+        if (!fechaStr) return 'Recientemente';
+        try {
+          const diff = Date.now() - new Date(fechaStr).getTime();
+          const mins = Math.floor(diff / 60000);
+          if (mins < 1) return 'Hace unos momentos';
+          if (mins < 60) return `Hace ${mins} min`;
+          const horas = Math.floor(mins / 60);
+          if (horas < 24) return `Hace ${horas} hora${horas > 1 ? 's' : ''}`;
+          const dias = Math.floor(horas / 24);
+          if (dias < 30) return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
+          return window.helpers.formatearFecha(fechaStr);
+        } catch (e) {
+          return 'Recientemente';
+        }
+      };
+
+      const tiempoMod = obtenerTiempoRelativo(ex.actualizado_en || ex.creado_en);
+
+        // Stats for teachers (Google Forms Style)
+        let stats = '';
+        if (esProfesor) {
+          const ints = this._intentosGrupo.filter(i => i.examen_id === ex.id);
+          const totalAsignados = this._alumnos.length; // total alumnos en el grupo
+          const hechos = ints.filter(i => i.estado === 'completado' || i.estado === 'calificado').length;
+          const enProceso = ints.filter(i => i.estado === 'en_progreso').length;
+          const pend = Math.max(0, totalAsignados - hechos);
+          stats = `
+            <div class="u-mt-1 u-fs-xs u-color-texto-secundario" style="display:grid; grid-template-columns: repeat(2, 1fr); gap:6px 12px; margin-top:var(--espaciado-xs)" title="Resumen de participación del grupo">
+              <span style="display:flex; align-items:center; gap:4px" title="Alumnos asignados al grupo">${window.Iconos.render('users')} <b>${totalAsignados}</b> alumnos</span>
+              <span style="display:flex; align-items:center; gap:4px; color:var(--color-exito)" title="Respuestas recibidas">${window.Iconos.render('check-circle')} <b>${hechos}</b> respondieron</span>
+              <span style="display:flex; align-items:center; gap:4px; color:var(--color-aviso)" title="Respuestas pendientes">${window.Iconos.render('clock')} <b>${pend}</b> pendientes</span>
+              <span style="display:flex; align-items:center; gap:4px; color:var(--color-texto-terciario)" title="Última modificación">${window.Iconos.render('save')} Modificado ${tiempoMod}</span>
+            </div>`;
+        }
+
 
       // Teacher menu
       let menuProfesor = '';
       if (esProfesor) {
         const items = [];
-        items.push(`<button class="examen-menu-item btn-editar-examen" data-id="${ex.id}">${window.Iconos.render('edit-3')} Editar</button>`);
+        items.push(`<button class="examen-menu-item btn-editar-examen" data-id="${ex.id}">${window.Iconos.render('edit')} Editar</button>`);
+        items.push(`<button class="examen-menu-item btn-duplicar-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}">${window.Iconos.render('copy')} Duplicar</button>`);
+        
         if (ex.publicado) {
           items.push(`<button class="examen-menu-item btn-compartir-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}">${window.Iconos.render('share-2')} Compartir</button>`);
-          items.push(`<button class="examen-menu-item btn-ver-resultados" data-id="${ex.id}">${window.Iconos.render('bar-chart-2')} Resultados</button>`);
-          items.push(`<button class="examen-menu-item btn-gestionar-alumnos" data-id="${ex.id}">${window.Iconos.render('users')} Alumnos</button>`);
+          items.push(`<button class="examen-menu-item btn-ver-resultados" data-id="${ex.id}">${window.Iconos.render('bar-chart-2')} Respuestas</button>`);
         } else {
           items.push(`<button class="examen-menu-item btn-publicar-examen" data-id="${ex.id}">${window.Iconos.render('send')} Publicar</button>`);
         }
+
+        if (ex.estado === 'archivado') {
+          items.push(`<button class="examen-menu-item btn-desarchivar-examen" data-id="${ex.id}">${window.Iconos.render('arrow-up-circle')} Desarchivar</button>`);
+        } else {
+          items.push(`<button class="examen-menu-item btn-archivar-examen" data-id="${ex.id}">${window.Iconos.render('archive')} Archivar</button>`);
+        }
+
         items.push(`<hr class="examen-menu-sep">`);
         items.push(`<button class="examen-menu-item examen-menu-item--peligro btn-eliminar-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}">${window.Iconos.render('trash-2')} Eliminar</button>`);
         menuProfesor = `
           <div class="examen-menu-wrap">
-            <button class="btn-secundario examen-menu-toggle" aria-label="Más opciones" aria-expanded="false" style="font-size:var(--texto-lg);font-weight:700;min-width:36px;height:36px;padding:0;display:flex;align-items:center;justify-content:center">⋯</button>
+            <button class="btn-secundario examen-menu-toggle" aria-label="Más opciones" aria-expanded="false" style="font-size:var(--texto-lg);font-weight:700;min-width:32px;height:32px;padding:0;display:flex;align-items:center;justify-content:center;border-radius:var(--radio-pill)">⋮</button>
             <div class="examen-menu">${items.join('')}</div>
           </div>`;
       }
 
-      return `<div class="tarjeta-capitulo ${enProgreso ? 'tarjeta-capitulo--en-progreso' : ''}" data-examen="${ex.id}">
-        <div class="o-flecha o-flecha--between" style="align-items:flex-start">
-          <div style="flex:1;min-width:0">
-            <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center;flex-wrap:wrap">
-              <span class="u-fw-600">${window.helpers.escapeHtml(ex.titulo)}</span>
-              <span class="examen-badge ${badgeEstado.clase}">${window.Iconos.render(badgeEstado.icono)} ${badgeEstado.texto}</span>
-            </div>
-            ${ex.descripcion ? `<p class="u-fs-sm u-color-texto-secundario u-mt-1">${window.helpers.escapeHtml(ex.descripcion)}</p>` : ''}
+      const colorExamen = ex.color || 'var(--color-acento)';
+
+        return `<div class="tarjeta-capitulo ${enProgreso ? 'tarjeta-capitulo--en-progreso' : ''}" data-examen="${ex.id}" style="border-left: 5px solid ${colorExamen}; padding: var(--espaciado-md); background: var(--color-fondo-tarjeta); box-shadow: var(--sombra-sm); border-radius: var(--radio-md)" title="Examen: ${window.helpers.escapeHtml(ex.titulo)}">
+          <div class="o-flecha o-flecha--between" style="align-items:flex-start">
+            <div style="flex:1;min-width:0;padding-right:var(--espaciado-xs)">
+              <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center;flex-wrap:wrap">
+                <span class="u-fw-600 u-texto-lg" style="display:flex;align-items:center;gap:6px">${ex.icono ? `<span class="examen-icono-badge">${ex.icono}</span>` : '📘'} ${window.helpers.escapeHtml(ex.titulo)}</span>
+                <span class="examen-badge ${badgeEstado.clase}" title="Estado: ${badgeEstado.texto}">${window.Iconos.render(badgeEstado.icono)} ${badgeEstado.texto}</span>
+              </div>
+
+            ${ex.descripcion ? `<p class="u-fs-sm u-color-texto-secundario u-mt-1" style="display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden">${window.helpers.escapeHtml(ex.descripcion)}</p>` : ''}
+            ${ex.materia || ex.tema ? `<div class="o-flecha u-mt-1" style="gap:var(--espaciado-xxs);flex-wrap:wrap">
+              ${ex.materia ? `<span class="u-fs-xs u-color-texto-terciario" style="background:var(--color-fondo-alt);padding:2px 8px;border-radius:var(--radio-pill)">${window.helpers.escapeHtml(ex.materia)}</span>` : ''}
+              ${ex.tema ? `<span class="u-fs-xs u-color-texto-terciario" style="background:var(--color-fondo-alt);padding:2px 8px;border-radius:var(--radio-pill)">${window.helpers.escapeHtml(ex.tema)}</span>` : ''}
+            </div>` : ''}
           </div>
           ${menuProfesor}
         </div>
-        ${stats ? `<div class="u-mt-2">${stats}</div>` : ''}
+        ${stats ? `<div class="u-mt-1" style="border-top: 1px solid var(--color-borde); padding-top: var(--espaciado-xs)">${stats}</div>` : ''}
         <div class="o-flecha o-flecha--between u-mt-2" style="align-items:center">
           <span class="u-fs-xs u-color-texto-terciario">${ex.fecha_limite ? window.Iconos.render('calendar') + ' Límite: ' + window.helpers.formatearFecha(ex.fecha_limite) : ''}</span>
           <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center">
@@ -278,7 +317,7 @@
 
       // Teacher actions
       cont.querySelectorAll('.btn-editar-examen').forEach(btn => { btn.onclick = () => router.navegar('/editor/' + btn.dataset.id); });
-      cont.querySelectorAll('.btn-ver-resultados').forEach(btn => { btn.onclick = () => router.navegar('/corregir/' + btn.dataset.id); });
+      cont.querySelectorAll('.btn-ver-resultados').forEach(btn => { btn.onclick = () => router.navegar('/editor/' + btn.dataset.id + '?pestana=respuestas'); });
 
       cont.querySelectorAll('.btn-publicar-examen').forEach(btn => {
         btn.onclick = async () => {
@@ -289,6 +328,60 @@
             window.helpers.mostrarAlerta('Examen publicado.', 'exito');
             router._ejecutar();
           } catch (e) { window.helpers.mostrarAlerta('Error al publicar: ' + e.message, 'error'); }
+        };
+      });
+
+      cont.querySelectorAll('.btn-duplicar-examen').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await window.helpers.confirmar(`Se creará una copia idéntica del examen "${btn.dataset.titulo}".`, { titulo: '¿Duplicar examen?', textoConfirmar: 'Duplicar' });
+          if (!ok) return;
+          try {
+            const original = await window.examenesRepository.obtener(btn.dataset.id);
+            if (!original) throw new Error('No se pudo cargar el examen original');
+            
+            // Crear copia sin ID para que inserte uno nuevo
+            const copia = {
+              ...original,
+              id: undefined,
+              titulo: `Copia de ${original.titulo}`,
+              publicado: false,
+              estado: 'borrador',
+              creado_en: undefined,
+              actualizado_en: undefined
+            };
+
+            await window.examenesRepository.guardar(copia);
+            window.helpers.mostrarAlerta('Examen duplicado correctamente.', 'exito');
+            router._ejecutar();
+          } catch (e) { window.helpers.mostrarAlerta('Error al duplicar: ' + e.message, 'error'); }
+        };
+      });
+
+      cont.querySelectorAll('.btn-archivar-examen').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await window.helpers.confirmar('El examen se archivará y dejará de estar visible para los alumnos.', { titulo: '¿Archivar examen?', textoConfirmar: 'Archivar' });
+          if (!ok) return;
+          try {
+            const examen = await window.examenesRepository.obtener(btn.dataset.id);
+            examen.estado = 'archivado';
+            examen.publicado = false;
+            await window.examenesRepository.guardar(examen);
+            window.helpers.mostrarAlerta('Examen archivado.', 'exito');
+            router._ejecutar();
+          } catch (e) { window.helpers.mostrarAlerta('Error al archivar: ' + e.message, 'error'); }
+        };
+      });
+
+      cont.querySelectorAll('.btn-desarchivar-examen').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            const examen = await window.examenesRepository.obtener(btn.dataset.id);
+            examen.estado = 'borrador'; // Vuelve a borrador para que el profesor decida cuándo publicar
+            examen.publicado = false;
+            await window.examenesRepository.guardar(examen);
+            window.helpers.mostrarAlerta('Examen desarchivado (guardado como borrador).', 'exito');
+            router._ejecutar();
+          } catch (e) { window.helpers.mostrarAlerta('Error al desarchivar: ' + e.message, 'error'); }
         };
       });
 

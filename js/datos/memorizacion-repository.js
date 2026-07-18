@@ -46,25 +46,23 @@
       }
     },
     async actualizarTarjeta(tarjeta) {
-      if (!sb() || !navigator.onLine) {
-        window.colaSync.encolar('update', 'tarjetas_memorizacion', {
-          repeticiones: tarjeta.repeticiones, intervalo: tarjeta.intervalo,
-          proximo_repaso: tarjeta.proximo_repaso, ultimo_repaso: tarjeta.ultimo_repaso,
-          mejor_racha: tarjeta.mejor_racha, veces_olvidado: tarjeta.veces_olvidado,
-          ultima_calificacion: tarjeta.ultima_calificacion, racha_actual: 0
-        }, { id: tarjeta.id });
-        return;
-      }
-      await sb().from('tarjetas_memorizacion').update({
+      // Normalize camelCase (from algoritmo SM-2) → snake_case (DB column names)
+      const datos = {
         repeticiones: tarjeta.repeticiones,
         intervalo: tarjeta.intervalo,
-        proximo_repaso: tarjeta.proximo_repaso,
-        ultimo_repaso: tarjeta.ultimo_repaso,
-        mejor_racha: tarjeta.mejor_racha,
-        veces_olvidado: tarjeta.veces_olvidado,
-        ultima_calificacion: tarjeta.ultima_calificacion,
-        racha_actual: tarjeta.racha_actual
-      }).eq('id', tarjeta.id);
+        proximo_repaso: tarjeta.proximoRepaso !== undefined ? tarjeta.proximoRepaso : tarjeta.proximo_repaso,
+        ultimo_repaso: tarjeta.ultimoRepaso !== undefined ? tarjeta.ultimoRepaso : tarjeta.ultimo_repaso,
+        factor_facilidad: tarjeta.factorFacilidad !== undefined ? tarjeta.factorFacilidad : tarjeta.factor_facilidad,
+        mejor_racha: tarjeta.mejorRacha !== undefined ? tarjeta.mejorRacha : tarjeta.mejor_racha,
+        veces_olvidado: tarjeta.vecesOlvidado !== undefined ? tarjeta.vecesOlvidado : tarjeta.veces_olvidado,
+        ultima_calificacion: tarjeta.ultimaCalificacion !== undefined ? tarjeta.ultimaCalificacion : tarjeta.ultima_calificacion,
+        racha_actual: tarjeta.rachaActual !== undefined ? tarjeta.rachaActual : tarjeta.racha_actual
+      };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('update', 'tarjetas_memorizacion', datos, { id: tarjeta.id });
+        return;
+      }
+      await sb().from('tarjetas_memorizacion').update(datos).eq('id', tarjeta.id);
     },
     async actualizarContenido(id, { referencia, texto, pista }) {
       if (!sb() || !navigator.onLine) {
