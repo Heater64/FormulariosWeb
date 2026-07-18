@@ -25,7 +25,7 @@
   align-items: center;
   gap: var(--espaciado-md);
   padding: var(--espaciado-md) var(--espaciado-lg);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   cursor: pointer;
   background: var(--color-fondo-tarjeta);
@@ -55,7 +55,7 @@
 .cuestion__opciones .cuestion__opcion--incorrecta {
   border-color: var(--color-error);
   background: var(--color-error-soft);
-  animation: cuestion-sacudir 380ms var(--easing-apple);
+  animation: cuestion-sacudir var(--transicion-normal);
 }
 
 @keyframes cuestion-sacudir {
@@ -98,7 +98,7 @@
   width: 100%;
   padding: var(--espaciado-md) var(--espaciado-lg);
   border-radius: var(--radio-lg);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   font-size: var(--texto-lg);
   background: var(--color-fondo-tarjeta);
   color: var(--color-texto);

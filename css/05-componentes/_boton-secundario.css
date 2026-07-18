@@ -1,7 +1,7 @@
 .btn-secundario {
   background: var(--color-fondo-alt);
   color: var(--color-texto);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   padding: var(--espaciado-sm) var(--espaciado-lg);
   border-radius: var(--radio-md);
   font-weight: 600;

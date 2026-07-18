@@ -23,7 +23,7 @@
   cursor: pointer;
   overflow: hidden;
   position: relative;
-  transition: transform 0.15s ease;
+  transition: transform var(--transicion-rapida);
   border: 3px solid var(--color-borde);
 }
 
@@ -65,7 +65,7 @@
   display: inline-flex;
   padding: 4px;
   border-radius: var(--radio-sm);
-  transition: background 0.15s ease;
+  transition: background var(--transicion-rapida);
 }
 
 .perfil-btn-editar:hover {
@@ -102,7 +102,7 @@
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   padding: var(--espaciado-md);
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transicion-rapida);
 }
 
 .perfil-seccion:hover {
@@ -225,7 +225,7 @@
   font-size: var(--texto-xs);
   font-weight: 500;
   color: var(--color-texto-secundario);
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -242,7 +242,7 @@
 
 .perfil-segmented__btn--activo {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   font-weight: 700;
 }
 
@@ -262,7 +262,7 @@
   font-size: var(--texto-sm);
   font-weight: 600;
   color: var(--color-texto);
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
   text-align: left;
 }
 
@@ -315,14 +315,14 @@
   width: 100%;
   padding: var(--espaciado-sm) var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
-  border: 1.5px solid var(--color-error-soft);
+  border: 2px solid var(--color-error-soft);
   border-radius: var(--radio-md);
   color: var(--color-error);
   font: inherit;
   font-size: var(--texto-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 
 .perfil-btn-cerrar:hover {
@@ -404,7 +404,7 @@
   border-radius: var(--radio-lg);
   padding: var(--espaciado-md);
   border-left: 4px solid var(--color-exito);
-  transition: border-color 0.2s ease;
+  transition: border-color var(--transicion-rapida);
 }
 
 .admin-usuario-card[data-inactivo="true"] {
@@ -492,7 +492,7 @@
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 
 .admin-btn-editar {
@@ -534,7 +534,7 @@
   border-radius: var(--radio-lg);
   padding: var(--espaciado-md);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 
 .admin-grupo-card:hover {
@@ -630,7 +630,7 @@
   color: var(--color-texto-terciario);
   padding: 4px;
   display: flex;
-  transition: color 0.15s ease;
+  transition: color var(--transicion-rapida);
 }
 
 .admin-password-campo__toggle:hover {
@@ -655,7 +655,7 @@
   font-size: var(--texto-xs);
   font-weight: 500;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 
 .owner-filtros__btn:hover {
@@ -664,7 +664,7 @@
 
 .owner-filtros__btn--activo {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   border-color: var(--color-acento);
 }
 
@@ -722,7 +722,7 @@
   font-weight: 600;
   cursor: pointer;
   border-radius: var(--radio-sm) var(--radio-sm) 0 0;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -758,14 +758,14 @@
   font-size: var(--texto-xs);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 
 .admin-paginacion__btn:hover { border-color: var(--color-acento); color: var(--color-acento); }
 
 .admin-paginacion__btn--activo {
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   border-color: var(--color-acento);
 }
 
@@ -787,7 +787,7 @@
   font-size: var(--texto-xs);
   font-weight: 600;
   color: var(--color-acento);
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn var(--transicion-rapida);
   flex-wrap: wrap;
 }
 
@@ -795,7 +795,7 @@
   padding: 2px 8px;
   border: 1px solid var(--color-acento);
   border-radius: var(--radio-sm);
-  background: #fff;
+  background: var(--color-fondo-tarjeta);
   font: inherit;
   font-size: var(--texto-xs);
   color: var(--color-texto);
@@ -818,7 +818,7 @@
   box-shadow: var(--sombra-lg);
   z-index: 100;
   overflow-y: auto;
-  animation: slideInRight 0.2s ease;
+  animation: slideInRight var(--transicion-rapida);
   padding: var(--espaciado-lg);
 }
 
@@ -829,7 +829,7 @@
   inset: 0;
   background: rgba(0,0,0,0.3);
   z-index: 99;
-  animation: fadeIn 0.15s ease;
+  animation: fadeIn var(--transicion-rapida);
 }
 
 .admin-user-detail__header {
@@ -993,7 +993,7 @@
   background: var(--color-borde);
   border-radius: 24px;
   cursor: pointer;
-  transition: background 0.2s ease;
+  transition: background var(--transicion-rapida);
 }
 
 .toggle-switch__slider::before {
@@ -1003,9 +1003,9 @@
   height: 18px;
   left: 3px;
   bottom: 3px;
-  background: #fff;
+  background: var(--color-fondo-tarjeta);
   border-radius: 50%;
-  transition: transform 0.2s ease;
+  transition: transform var(--transicion-rapida);
 }
 
 .toggle-switch input:checked + .toggle-switch__slider { background: var(--color-exito); }
@@ -1072,5 +1072,65 @@
 
   .perfil-boton-seccion {
     padding: var(--espaciado-sm);
+  }
+
+  /* Panel lateral de detalle de usuario pasa a full-screen */
+  .admin-user-detail {
+    width: 100vw;
+    padding: var(--espaciado-md);
+  }
+
+  .owner-filtros {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+    padding-bottom: var(--espaciado-xxs);
+  }
+  .owner-filtros__btn {
+    flex-shrink: 0;
+  }
+
+  /* Health grid pasa a 1 columna en móvil */
+  .owner-health-grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* Toggle switch un poco más pequeño si hace falta (al alcance minimo) */
+  .toggle-switch { width: 44px; height: 24px; }
+
+  /* Batch bar se apila */
+  .admin-batch-bar { flex-direction: column; align-items: stretch; gap: var(--espaciado-xs); }
+  .admin-batch-bar select { width: 100%; }
+}
+
+@media (max-width: 360px) {
+  .perfil-avatar {
+    width: 64px;
+    height: 64px;
+    font-size: 1.6rem;
+  }
+  .perfil-seccion__icono {
+    width: 32px;
+    height: 32px;
+  }
+  .perfil-nombre-fila h3 {
+    font-size: var(--texto-lg);
+  }
+  .perfil-boton-seccion__icono {
+    width: 32px;
+    height: 32px;
+  }
+  .admin-user-detail__avatar {
+    width: 40px;
+    height: 40px;
+    font-size: var(--texto-md);
+  }
+  .admin-tab {
+    font-size: var(--texto-xs);
+    padding: var(--espaciado-xxs) var(--espaciado-sm);
+  }
+  .admin-paginacion__btn {
+    min-width: 28px;
+    height: 28px;
   }
 }

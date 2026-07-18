@@ -1,0 +1,334 @@
+/* ==========================================================================
+   _estilos-inline.css - Utilidades para reemplazar style="..." en JS
+
+   Sesión 2: extraer los ~34+ inline styles repetidos en vistas JS a clases
+   reutilizables. Mantienen paridad visual y eliminan hardcodes en JS.
+
+   Todas las alturas/anchos pasan por tokens (--espaciado-*, --radio-*)
+   y se adaptan responsivamente cuando aplica.
+   ========================================================================== */
+
+/* Separador vertical fino entre items inline (chips, columnas inline).
+   Usa bordes literales estandar (1px) segun CONVENCIONES. */
+.u-separador-vertical {
+  display: inline-block;
+  width: 1px;
+  height: 14px;
+  background: var(--color-borde);
+  margin: 0 var(--espaciado-xxs);
+  vertical-align: middle;
+}
+
+/* Icono circular sobre fondo suave. Variantes por tamaño. */
+.u-icono-circular {
+  border-radius: var(--radio-2xl);
+  background: var(--color-acento-soft);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-acento);
+  margin: 0 auto;
+}
+.u-icono-circular--lg { width: 96px; height: 96px; }
+.u-icono-circular--md { width: 72px; height: 72px; }
+.u-icono-circular--sm { width: 56px; height: 56px; }
+
+/* Dot/bola de estado inline (8×8, color configurable por tema) */
+.u-dot-estado {
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+/* Cap de ancho para textos y párrafos (reutilizable) */
+.u-max-ancho-320 { max-width: 320px; }
+.u-max-ancho-340 { max-width: 340px; }
+.u-max-ancho-360 { max-width: 360px; }
+.u-max-ancho-280 { max-width: 280px; }
+
+/* Flags inline (animación 'f' o botón 'flag' en preguntas de examen) */
+.u-flag-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: var(--texto-lg);
+  padding: var(--espaciado-xxs);
+  color: var(--color-texto-terciario);
+}
+.u-flag-btn--activa { color: var(--color-aviso); }
+
+/* Stats inline flex (chips 2 columnas en tarjetas examen) */
+.u-stats-grid-2 {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-xs);
+}
+.u-stats-grid-2 > span {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+@media (max-width: 480px) {
+  .u-stats-grid-2 {
+    grid-template-columns: 1fr;
+    gap: 4px;
+  }
+}
+
+/* ==========================================================================
+   Patrones de layout app-shell (reutilizados en TODAS las vistas)
+   ========================================================================== */
+
+/* Contenedor base con min-height de pantalla y safe-area para nav inferior */
+.u-app-shell {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+}
+
+/* Variante "comfort": top amplio (2xl) + clearance grande (180px) para vistas
+   con foco de lectura (ej. inicio de sesión, antes de leer) */
+.u-app-shell--comfort {
+  padding-top: var(--espaciado-2xl);
+  padding-bottom: calc(180px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+}
+
+/* Variante "compact": top estándar + clearance medio (160px) para vistas
+   con preguntas, formularios y resultados */
+.u-app-shell--compact {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+}
+
+/* Variante "ceremony": top ceremonial (3xl) + clearance medio + items centrados
+   para pantallas de celebración y completion */
+.u-app-shell--ceremony {
+  padding-top: var(--espaciado-3xl);
+  padding-bottom: calc(160px + env(safe-area-inset-bottom));
+  min-height: 100dvh;
+  align-items: center;
+}
+
+/* Botón que ocupa el ancho completo y centra su contenido */
+.u-btn-full {
+  width: 100%;
+  justify-content: center;
+}
+
+/* Flex grow=1 en contenedores flex (cabeceras con título centrado) */
+.u-flex-1 { flex: 1; }
+
+/* Spacer de 40px (simetría visual con btn-secundario en cabeceras) */
+.u-min-ancho-40 { width: 40px; }
+
+/* Ancho 100% genérico */
+.u-w-full { width: 100%; }
+
+/* Input/textarea de formulario genérico (text area estilo consistente con inputs) */
+.u-campo-form,
+.u-input-textarea {
+  width: 100%;
+  padding: var(--espaciado-sm);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+.u-campo-form:focus,
+.u-input-textarea:focus {
+  outline: none;
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 3px var(--color-acento-soft);
+}
+
+/* Gap utilities (uno por nivel de espaciado token) */
+.u-gap-2xs { gap: var(--espaciado-2xs); }
+.u-gap-xs  { gap: var(--espaciado-xs); }
+.u-gap-sm  { gap: var(--espaciado-sm); }
+.u-gap-md  { gap: var(--espaciado-md); }
+.u-gap-lg  { gap: var(--espaciado-lg); }
+.u-gap-xl  { gap: var(--espaciado-xl); }
+
+/* Margin-top/sm utilities (apilados manualmente, no auto-margin) */
+.u-mt-2xs { margin-top: var(--espaciado-2xs); }
+.u-mt-sm  { margin-top: var(--espaciado-sm); }
+.u-mt-md  { margin-top: var(--espaciado-md); }
+.u-mt-lg  { margin-top: var(--espaciado-lg); }
+.u-mt-2xl { margin-top: var(--espaciado-2xl); }
+.u-mt-3xl { margin-top: var(--espaciado-3xl); }
+
+/* Columna vertical centrada (align-items: center + flex-direction preservation) */
+.u-flex-center { align-items: center; }
+
+/* Bloques apilados verticalmente con gap xs (columna con espacio entre hijos) */
+.u-pila-gap-xs { display: flex; flex-direction: column; gap: var(--espaciado-xs); }
+.u-pila-gap-sm { display: flex; flex-direction: column; gap: var(--espaciado-sm); }
+
+/* Reset de margin a 0 en headings dentro de tarjetas compactas */
+.u-m-0 { margin: 0; }
+
+/* Cursor pointer (selector de color/dot, fila clickable) */
+.u-cursor-pointer { cursor: pointer; }
+
+/* Gap-2xs (~4-6px via token xxs) para celdas compactas */
+.u-gap-2xs { gap: var(--espaciado-2xs); }
+
+/* Margin-bottom 2xs para filas de opción muy juntas */
+.u-mb-2xs { margin-bottom: var(--espaciado-2xs); }
+
+/* Margin-bottom xxs (2-4px) para separaciones de items inline */
+.u-mb-xxs { margin-bottom: var(--espaciado-xxs); }
+
+/* Flex wrap (filas que envuelven items como color picker) */
+.u-flex-wrap { flex-wrap: wrap; }
+
+/* ==========================================================================
+   Bloques visuales del editor de exámenes
+   ========================================================================== */
+
+/* Badge "SECCIÓN" gris sobre fondo card */
+.u-seccion-badge {
+  background: var(--color-seccion-banda);
+  color: var(--color-seccion-texto);
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+}
+
+/* Card de sección (border-top grueso neutro distintivo). */
+.forms-card--seccion {
+  border-top: 10px solid var(--color-seccion-banda);
+}
+
+/* Bloque/header de sección en vista previa (chip grande con texto e instrucción) */
+.u-seccion-bloque {
+  background: var(--color-seccion-banda);
+  color: var(--color-seccion-texto);
+  padding: var(--espaciado-sm);
+  border-radius: var(--radio-sm);
+  margin-top: var(--espaciado-sm);
+}
+
+/* Botón sin chrome (solo color de error para acciones tipo "quitar opción") */
+.u-btn-ghost {
+  background: none;
+  border: none;
+  color: var(--color-error);
+}
+
+/* Input deshabilitado con opacidad reducida (placeholder visual) */
+.u-input-desactivado {
+  opacity: 0.6;
+}
+
+/* Título de sub-sección en sidebar con borde inferior */
+.sidebar-titulo {
+  margin-top: 0;
+  border-bottom: 1px solid var(--color-borde);
+  padding-bottom: var(--espaciado-xs);
+}
+
+/* Toggle row en sidebar (label flex-space-between con checkbox) */
+.sidebar-toggle {
+  gap: var(--espaciado-xs);
+  cursor: pointer;
+  justify-content: space-between;
+}
+
+/* Grid de 2 columnas adaptativas (auto-fit minmax 220px) — editor info */
+.u-grid-2col-adapt {
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+}
+
+/* Color: error (clase utility reutilizable para botones de borrado) */
+.u-color-error { color: var(--color-error); }
+
+/* ==========================================================================
+   Bloques visuales pequeños usados por vistas específicas
+   (movidos desde inline en vista-capitulos / vista-mapa)
+   ========================================================================== */
+
+/* Check verde en esquina superior derecha de botones de capítulo completados */
+.btn-capitulo__check {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  color: var(--color-exito);
+  display: flex;
+}
+
+/* Título de sección en Mapa Bíblico con subrayado coloreado según testamento */
+.mapa__titulo-seccion {
+  padding-bottom: var(--espaciado-xs);
+  border-bottom: 2px solid transparent;
+}
+.mapa__titulo-seccion--at { border-bottom-color: var(--color-testamento-at); }
+.mapa__titulo-seccion--nt { border-bottom-color: var(--color-testamento-nt); }
+
+/* Dot indicator de progreso en Mapa Bíblico (6px, color por estado) */
+.mapa__dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 1px;
+  background: var(--color-borde);
+  transition: transform var(--transicion-rapida);
+}
+.mapa__dot--leido { background: var(--color-exito); }
+
+/* Alineación a inicio dentro de un contenedor flex/grid */
+.u-self-start { align-self: flex-start; }
+
+/* Etiqueta/título pequeño en mayúsculas con tracking ampliado (eyebrow text) */
+.u-texto-etiqueta {
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+/* Overlay clickeable para celebración / splash / modal ligero */
+.u-overlay-tap {
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+/* Icono decorativo grande para estados vacíos (ej. <p>I('file-text')</p>) */
+.u-icono-vacio {
+  font-size: 3rem;
+  color: var(--color-texto-terciario);
+  display: flex;
+  justify-content: center;
+}
+
+/* Render de contenido Markdown/TipTap dentro de una nota o tarjeta */
+.u-nota-contenido {
+  font-size: var(--texto-sm);
+  line-height: 1.7;
+  color: var(--color-texto);
+}
+
+/* Input de búsqueda con icono a la izquierda */
+.u-buscar-wrap {
+  position: relative;
+}
+.u-buscar-wrap__icono {
+  position: absolute;
+  left: var(--espaciado-sm);
+  top: 50%;
+  transform: translateY(-50%);
+  color: var(--color-texto-terciario);
+  display: flex;
+}
+.u-buscar-wrap__input {
+  width: 100%;
+  padding-left: 2.2rem;
+}

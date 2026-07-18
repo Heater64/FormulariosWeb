@@ -173,18 +173,46 @@
       const { data } = await sb().from('intentos_examen_personalizado').select('*, perfiles!alumno_id(*)').eq('examen_id', examenId).order('fecha_inicio', { ascending: false });
       return data || [];
     },
+    /**
+     * Whitelist de columnas válidas para intentos_examen_personalizado.
+     * Mantener en sincronía con supabase/migraciones/*:
+     *   - 001_initial_schema.sql   (14 columnas base: id, examen_id, alumno_id,
+     *     respuestas, puntuacion, nota, corregido, corregido_por, observaciones,
+     *     estado, fecha_inicio, fecha_completado, fecha_corregido, creado_en)
+     *   - 008_correccion_examenes.sql (añade correccion JSONB)
+     * NOTA: la migración 017 añade columnas a `examenes_personalizado`, NO a esta tabla.
+     *
+     * `pendiente_sync` NO es columna DB: es un flag de retorno que este método
+     * añade cuando la operación queda encolada offline.
+     *
+     * Evita que objetos embebidos (e.g. `examenes_personalizados` desde
+     * un SELECT con join `*, examenes_personalizados!examen_id(*)`)
+     * se propaguen al upsert y reventen con:
+     * "Could not find the '<X>' column of 'intentos_examen_personalizado' in the schema cache"
+     */
     async guardarIntento(intento) {
+      const CAMPOS_VALIDOS = new Set([
+        'id', 'examen_id', 'alumno_id', 'respuestas', 'puntuacion', 'nota',
+        'corregido', 'corregido_por', 'observaciones', 'estado',
+        'fecha_inicio', 'fecha_completado', 'fecha_corregido',
+        'creado_en', 'correccion',
+        'pendiente_sync'
+      ]);
+      const limpio = {};
+      for (const k of Object.keys(intento || {})) {
+        if (CAMPOS_VALIDOS.has(k)) limpio[k] = intento[k];
+      }
       if (!sb() || !navigator.onLine) {
-        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' }); } catch (e) { console.warn('guardarIntento offline queue:', e); }
-        return { ...intento, pendiente_sync: true };
+        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', limpio, { onConflict: 'id' }); } catch (e) { console.warn('guardarIntento offline queue:', e); }
+        return { ...limpio, pendiente_sync: true };
       }
       try {
-        const { data, error } = await sb().from('intentos_examen_personalizado').upsert(intento, { onConflict: 'id' }).select().single();
+        const { data, error } = await sb().from('intentos_examen_personalizado').upsert(limpio, { onConflict: 'id' }).select().single();
         if (error) throw error;
         return data;
       } catch (e) {
-        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', intento, { onConflict: 'id' }); } catch (e2) { console.warn('guardarIntento sync queue:', e2); }
-        return { ...intento, pendiente_sync: true };
+        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', limpio, { onConflict: 'id' }); } catch (e2) { console.warn('guardarIntento sync queue:', e2); }
+        return { ...limpio, pendiente_sync: true };
       }
     },
     async misIntentos(usuarioId) {

@@ -71,7 +71,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .sync-indicator {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--transicion-rapida);
     transform: translateX(-50%);
   }
   .sync-indicator--cargando .sync-indicator__icon {
@@ -84,6 +84,17 @@
     top: calc(var(--espaciado-sm) + env(safe-area-inset-top));
     padding: var(--espaciado-xs) var(--espaciado-sm);
     font-size: var(--texto-xs);
+  }
+}
+
+@media (max-width: 360px) {
+  .sync-indicator,
+  .connection-indicator {
+    max-width: calc(100vw - 16px);
+    font-size: 11px;
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+    border-radius: var(--radio-md);
+    gap: 6px;
   }
 }
 
@@ -145,7 +156,7 @@
 
 @media (prefers-reduced-motion: reduce) {
   .connection-indicator {
-    transition: opacity 0.2s ease;
+    transition: opacity var(--transicion-rapida);
     transform: translateX(-50%);
   }
   .connection-indicator--offline .connection-indicator__dot {
@@ -158,5 +169,16 @@
     top: calc(var(--espaciado-sm) + env(safe-area-inset-top));
     padding: var(--espaciado-xs) var(--espaciado-sm);
     font-size: var(--texto-xs);
+  }
+}
+
+@media (max-width: 360px) {
+  .sync-indicator,
+  .connection-indicator {
+    max-width: calc(100vw - 16px);
+    font-size: 11px;
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+    border-radius: var(--radio-md);
+    gap: 6px;
   }
 }

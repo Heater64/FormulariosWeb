@@ -3,16 +3,16 @@
   align-items: center;
   gap: var(--espaciado-md);
   padding: var(--espaciado-md) var(--espaciado-lg);
-  border: 2px dashed var(--color-acento, #b06a3a);
+  border: 2px dashed var(--color-acento);
   border-radius: var(--radio-lg);
-  background: var(--color-acento-soft, rgba(176, 106, 58, 0.08));
+  background: var(--color-acento-soft);
   cursor: pointer;
-  transition: border-color 0.2s ease, background 0.2s ease, transform 0.1s ease;
+  transition: border-color var(--transicion-rapida), background var(--transicion-rapida), transform var(--transicion-rapida);
 }
 
 .tarjeta-crear:hover {
-  border-color: var(--color-acento-fuerte, #8a4f28);
-  background: var(--color-acento-soft-hover, rgba(176, 106, 58, 0.16));
+  border-color: var(--color-acento-fuerte);
+  background: var(--color-acento-soft-hover);
 }
 
 .tarjeta-crear:active { transform: scale(0.995); }
@@ -25,22 +25,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  background: var(--color-fondo-tarjeta, #fff);
-  color: var(--color-acento, #b06a3a);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-acento);
 }
 
 .tarjeta-crear__texto { flex: 1; min-width: 0; }
 
 .tarjeta-crear__titulo {
   font-weight: 700;
-  font-size: var(--texto-md, 1rem);
+  font-size: var(--texto-md);
   margin: 0;
 }
 
 .tarjeta-crear__descripcion {
-  font-size: var(--texto-xs, 0.8rem);
-  color: var(--color-texto-secundario, #666);
-  margin: var(--espaciado-2xs, 2px) 0 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  margin: var(--espaciado-2xs) 0 0;
   line-height: 1.4;
 }
 

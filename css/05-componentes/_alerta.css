@@ -23,13 +23,13 @@
   box-shadow: var(--sombra-md);
   cursor: pointer;
   opacity: 1;
-  animation: alerta-entrar 0.3s ease;
-  transition: opacity 0.3s ease, transform 0.3s ease;
+  animation: alerta-entrar var(--transicion-rapida);
+  transition: opacity var(--transicion-rapida), transform var(--transicion-rapida);
 }
 
 .alerta--error { background: var(--color-error); }
 .alerta--exito { background: var(--color-exito); }
-.alerta--info { background: var(--color-info, #2f80ed); }
+.alerta--info { background: var(--color-info); }
 .alerta--advertencia { background: var(--color-acento); }
 
 .alerta--salir {

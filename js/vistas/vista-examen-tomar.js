@@ -153,7 +153,7 @@
         actualizarBarra();
       };
 
-      const renderPagina = (idx) => {
+      let renderPagina = (idx) => {
         pagActual = idx;
         const p = preguntas[idx];
         const rActual = respuestas[p.id] !== undefined ? respuestas[p.id] : '';

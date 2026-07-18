@@ -9,13 +9,13 @@
 
 .editor-imagen {
   width: min(420px, 92vw);
-  background: var(--color-fondo-tarjeta, #fff);
+  background: var(--color-fondo-tarjeta);
   border-radius: var(--radio-xl);
   padding: var(--espaciado-lg);
   display: flex;
   flex-direction: column;
   gap: var(--espaciado-md);
-  animation: slideUp 300ms var(--easing-apple);
+  animation: slideUp var(--transicion-normal);
 }
 
 .editor-imagen__visor {
@@ -30,11 +30,12 @@
   display: flex;
   align-items: center;
   justify-content: center;
+  /* Patrón de tablero de ajedrez ornamental para fondo de avatar */
   background:
     repeating-conic-gradient(#e9ebee 0% 25%, #f6f7f9 0% 50%) 50% / 24px 24px;
   touch-action: none;
   cursor: grab;
-  box-shadow: inset 0 0 0 2px var(--color-borde, #ddd);
+  box-shadow: inset 0 0 0 2px var(--color-borde);
 }
 
 .editor-imagen__visor:active { cursor: grabbing; }
@@ -66,8 +67,8 @@
   width: 44px;
   height: 44px;
   border-radius: 50%;
-  border: 1px solid var(--color-borde, #ddd);
-  background: var(--color-fondo-alt, #f0f0f0);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-alt);
   color: var(--color-texto);
   font-size: 1.25rem;
   cursor: pointer;
@@ -93,4 +94,38 @@
 
 @media (prefers-reduced-motion: reduce) {
   .editor-imagen { animation: none; }
+}
+
+@media (max-width: 480px) {
+  .editor-imagen {
+    width: min(100%, 92vw);
+    padding: var(--espaciado-md);
+    gap: var(--espaciado-sm);
+  }
+  .editor-imagen__visor {
+    width: 220px;
+    height: 220px;
+  }
+  .editor-imagen__btn {
+    width: 40px;
+    height: 40px;
+  }
+}
+
+@media (max-width: 360px) {
+  .editor-imagen__visor {
+    width: 180px;
+    height: 180px;
+  }
+  .editor-imagen__btn {
+    width: 36px;
+    height: 36px;
+  }
+  .editor-imagen__acciones {
+    flex-direction: column;
+  }
+  .editor-imagen__acciones .btn-primario,
+  .editor-imagen__acciones .btn-secundario {
+    width: 100%;
+  }
 }

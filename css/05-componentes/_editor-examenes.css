@@ -1,0 +1,320 @@
+/* ==========================================================================
+   _editor-examenes.css — Editor completo de exámenes estilo Google Forms
+
+   Migrado del bloque `_inyectarEstilos()` (runtime <style> injection) de
+   js/vistas/vista-examen-editor.js a un archivo CSS estático. Ventajas:
+   - Las utilities (u-*) y mobile overrides pueden ganar por source order
+     sin necesidad de selectores compuestos ni especificidad hack.
+   - El manager de PWA / offline / service-worker cachea el CSS junto al
+     resto del sistema de diseño, evitando inconsistencia entre sesiones.
+   - Sin flash de estilos al cargar la vista (no hay JS async creando style).
+   ========================================================================== */
+
+/* --- Layout raíz del editor --------------------------------------------- */
+.editor-root {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--color-fondo-alt);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+/* --- Header sticky ------------------------------------------------------- */
+.editor-header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border-bottom: 1px solid var(--color-borde);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: var(--sombra-sm);
+}
+
+.editor-tabs {
+  display: flex;
+  justify-content: center;
+  background: var(--color-fondo-tarjeta);
+  border-bottom: 1px solid var(--color-borde);
+  position: sticky;
+  top: 56px;
+  z-index: 99;
+}
+
+.editor-tab-btn {
+  background: none;
+  border: none;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  font-weight: 500;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+  position: relative;
+  border-bottom: 3px solid transparent;
+  transition: color var(--transicion-rapida) var(--easing-apple), border-color var(--transicion-rapida) var(--easing-apple);
+}
+
+.editor-tab-btn--active {
+  color: var(--color-acento);
+  border-bottom-color: var(--color-acento);
+  font-weight: 600;
+}
+
+/* --- Workspace + panel lateral ------------------------------------------ */
+.editor-workspace {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-md);
+  max-width: 1050px;
+  width: 100%;
+  margin: 0 auto;
+  box-sizing: border-box;
+  flex: 1;
+}
+
+.editor-workspace--con-panel {
+  grid-template-columns: 1fr 320px;
+}
+
+@media (max-width: 850px) {
+  .editor-workspace--con-panel {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --- Tarjeta principal estilo Google Forms ------------------------------ */
+.forms-card {
+  background: var(--color-fondo-tarjeta);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde);
+  border-top: 10px solid var(--color-acento);
+  box-shadow: var(--sombra-sm);
+  padding: var(--espaciado-md);
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  transition: border-top-color var(--transicion-rapida) var(--easing-apple);
+}
+
+.forms-card--pregunta {
+  border-top-width: 1px;
+  border-left: 6px solid transparent;
+}
+
+.forms-card--pregunta-active {
+  border-left-color: var(--color-acento);
+  box-shadow: var(--sombra-md);
+}
+
+/* --- Floating Toolbar estilo Google Forms -------------------------------- */
+.floating-toolbar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  padding: var(--espaciado-xs);
+  box-shadow: var(--sombra-md);
+  position: fixed;
+  right: var(--espaciado-md);
+  bottom: 100px;
+  z-index: 90;
+}
+
+@media (max-width: 600px) {
+  .floating-toolbar {
+    flex-direction: row;
+    right: 50%;
+    transform: translateX(50%);
+    bottom: calc(75px + env(safe-area-inset-bottom));
+    border-radius: var(--radio-pill);
+  }
+}
+
+.toolbar-btn {
+  background: none;
+  border: none;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+  transition: background var(--transicion-rapida) var(--easing-apple), color var(--transicion-rapida) var(--easing-apple);
+}
+
+.toolbar-btn:hover {
+  background: var(--color-fondo-alt);
+  color: var(--color-acento);
+}
+
+/* --- Panel lateral de configuración de pregunta -------------------------- */
+.config-sidebar {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  box-shadow: var(--sombra-sm);
+  height: fit-content;
+  position: sticky;
+  top: 120px;
+}
+
+/* --- Lista vertical de preguntas ---------------------------------------- */
+.preguntas-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+  width: 100%;
+}
+
+/* --- Vista previa responsiva (devices) ----------------------------------- */
+.preview-container {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  /* Fondo neutro de "stage" para simular vista de dispositivo */
+  background: #f0f0f0;
+  padding: var(--espaciado-md);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.preview-device {
+  background: var(--color-fondo);
+  /* Borde estilo marco de tablet */
+  border: 10px solid #222;
+  border-radius: 20px;
+  transition: max-width var(--transicion-normal) var(--easing-apple),
+              min-height var(--transicion-normal) var(--easing-apple),
+              border-radius var(--transicion-normal) var(--easing-apple);
+  width: 100%;
+  box-shadow: var(--sombra-lg);
+  overflow: hidden;
+}
+
+.preview-device--ordenador {
+  max-width: 100%;
+  min-height: 600px;
+  border-radius: var(--radio-md);
+  border-width: 1px;
+  border-color: var(--color-borde);
+}
+
+.preview-device--tablet {
+  max-width: 768px;
+  min-height: 800px;
+}
+
+.preview-device--movil {
+  max-width: 375px;
+  min-height: 650px;
+}
+
+.preview-screen {
+  background: var(--color-fondo-alt);
+  height: 100%;
+  overflow-y: auto;
+  /* Más aire vertical dentro del marco del dispositivo: la primera pregunta
+     no queda pegada al borde superior y la última respira antes del borde
+     inferior. Horizontal se conserva en md para no sobrar espacio lateral. */
+  padding: var(--espaciado-lg) var(--espaciado-md);
+  box-sizing: border-box;
+}
+
+/* Empty state específico para "completar" en vista previa.
+   Caja sutil para distinguir "mensaje del editor" de "contenido de pregunta". */
+.preview-hueco-vacio {
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio-sm);
+}
+
+/* --- Modal banco de preguntas ------------------------------------------- */
+.banco-modal {
+  max-width: 500px;
+  width: 90%;
+}
+
+.banco-pregunta-card {
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  cursor: pointer;
+  transition: background var(--transicion-rapida) var(--easing-apple), border-color var(--transicion-rapida) var(--easing-apple);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.banco-pregunta-card:hover {
+  background: var(--color-fondo-alt);
+  border-color: var(--color-acento);
+}
+
+/* --- Selector de color del tema ------------------------------------------ */
+.color-dot {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: inline-block;
+  cursor: pointer;
+  border: 2px solid transparent;
+  transition: transform var(--transicion-rapida) var(--easing-apple);
+}
+
+.color-dot:hover {
+  transform: scale(1.15);
+}
+
+.color-dot--selected {
+  border-color: var(--color-texto);
+  transform: scale(1.1);
+}
+
+/* --- Pestaña respuestas ------------------------------------------------- */
+.respuestas-tablas {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+  width: 100%;
+}
+
+.respuestas-metrica-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: var(--espaciado-sm);
+}
+
+.respuestas-metrica-card {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-md);
+  text-align: center;
+}
+
+.respuestas-split {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaciado-md);
+}
+
+@media (max-width: 750px) {
+  .respuestas-split {
+    grid-template-columns: 1fr;
+  }
+}

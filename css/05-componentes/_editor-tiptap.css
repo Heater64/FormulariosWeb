@@ -53,3 +53,28 @@
   float: left;
   height: 0;
 }
+
+/* === Responsive TipTap === */
+@media (max-width: 480px) {
+  .tiptap-editor {
+    min-height: 140px;
+    padding: var(--espaciado-xs);
+    font-size: var(--texto-base);
+    line-height: 1.6;
+  }
+  .tiptap-editor h3 {
+    font-size: var(--texto-sm);
+  }
+  .tiptap-editor ul,
+  .tiptap-editor ol {
+    padding-left: 1.1em;
+  }
+}
+
+@media (max-width: 360px) {
+  .tiptap-editor {
+    min-height: 120px;
+    padding: var(--espaciado-xs) var(--espaciado-xxs);
+    font-size: var(--texto-sm);
+  }
+}

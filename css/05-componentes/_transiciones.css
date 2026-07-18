@@ -1,9 +1,9 @@
 .app-transicion-salida {
-  animation: transicion-salida 0.15s ease forwards;
+  animation: transicion-salida var(--transicion-rapida) forwards;
 }
 
 .app-transicion-entrada {
-  animation: transicion-entrada 0.2s ease forwards;
+  animation: transicion-entrada var(--transicion-rapida) forwards;
 }
 
 @keyframes transicion-salida {

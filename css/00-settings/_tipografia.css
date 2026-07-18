@@ -1,5 +1,7 @@
 :root {
+  --texto-xxs: clamp(0.6rem, 0.6rem + 0.1vw, 0.65rem);
   --texto-xs: clamp(0.69rem, 0.66rem + 0.15vw, 0.75rem);
+  --texto-md: clamp(0.9rem, 0.88rem + 0.12vw, 0.95rem);
   --texto-sm: clamp(0.8rem, 0.78rem + 0.12vw, 0.875rem);
   --texto-base: clamp(0.94rem, 0.92rem + 0.1vw, 1rem);
   --texto-lg: clamp(1.06rem, 1.02rem + 0.2vw, 1.125rem);

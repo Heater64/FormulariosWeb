@@ -1,8 +1,25 @@
+/* color-scheme a nivel :root para que el navegador (scrollbars, formularios,
+   canvas por defecto, fondo de autocompletado) se entere del esquema activo
+   sin destellos al cargar o navegar entre secciones. */
+:root {
+  color-scheme: light dark;
+}
+
+/* Forzar html/body/main a cubrir la viewport completa y heredar el fondo del
+   tema. Sin esto, cuando <main id="app-root"> se vacía brevemente durante la
+   transición entre vistas, el canvas del navegador (negro en OS dark, blanco
+   en OS light) se ve por debajo y produce el "flash negro" en modo claro. */
+html,
+body {
+  min-height: 100vh;
+  min-height: 100dvh; /* iOS Safari: viewport dinámica fiable */
+  background: var(--color-fondo);
+}
+
 body {
   font-family: var(--fuente-base);
   font-size: var(--texto-base);
   color: var(--color-texto);
-  background: var(--color-fondo);
   padding-top: env(safe-area-inset-top);
   padding-right: env(safe-area-inset-right);
   padding-bottom: env(safe-area-inset-bottom);
@@ -10,6 +27,18 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+#app-root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  background: var(--color-fondo);
+}
+
+/* Cuando el usuario elige tema manualmente, sincronizar el esquema de
+   color del navegador con el pref. Asi inputs nativos (botones, selects)
+   se pintan con el esquema correcto y no se ven invertidos. */
+:root[data-theme="light"] { color-scheme: light; }
+:root[data-theme="dark"]  { color-scheme: dark;  }
 
 button, nav, [role="button"], .barra-nav-inferior, .btn-primario, .btn-secundario {
   user-select: none;

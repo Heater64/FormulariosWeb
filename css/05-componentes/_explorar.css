@@ -27,7 +27,7 @@
   width: 100%;
   padding: var(--espaciado-sm) var(--espaciado-md);
   padding-left: 42px;
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   background: var(--color-fondo-tarjeta);
   color: var(--color-texto);
@@ -78,7 +78,7 @@
   z-index: 2;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  transition: opacity var(--transicion-rapida);
 }
 
 .explorar__tabs-wrapper::before {
@@ -137,7 +137,7 @@
   padding: var(--espaciado-xxs) var(--espaciado-sm);
   min-height: var(--toque-minimo);
   border-radius: var(--radio-pill);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   background: var(--color-fondo-tarjeta);
   color: var(--color-texto-secundario);
   font: inherit;
@@ -182,7 +182,7 @@
 /* ===== Contenido ===== */
 
 .explorar__contenido {
-  animation: explorarFadeIn 0.25s var(--easing-apple);
+  animation: explorarFadeIn var(--transicion-rapida);
 }
 
 @keyframes explorarFadeIn {
@@ -395,7 +395,7 @@
   height: 12px;
   border-radius: 50%;
   background: var(--color-fondo-tarjeta);
-  border: 2.5px solid var(--color-acento);
+  border: 2px solid var(--color-acento);
   transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 

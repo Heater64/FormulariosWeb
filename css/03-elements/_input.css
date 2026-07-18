@@ -7,7 +7,7 @@ select,
 textarea {
   width: 100%;
   padding: var(--espaciado-sm) var(--espaciado-md);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   background: var(--color-fondo);
   color: var(--color-texto);

@@ -34,7 +34,7 @@
   align-items: center;
   gap: var(--espaciado-sm);
   padding: var(--espaciado-sm) var(--espaciado-md);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   cursor: pointer;
   transition: all var(--transicion-rapida);
@@ -150,7 +150,7 @@ select[data-campo="tipo"]:focus {
 .pregunta-examen textarea {
   width: 100%;
   padding: var(--espaciado-sm);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   background: var(--color-fondo);
   color: var(--color-texto);
@@ -167,6 +167,7 @@ select[data-campo="tipo"]:focus {
   .pregunta__opcion {
     padding: var(--espaciado-xs) var(--espaciado-sm);
     font-size: var(--texto-sm);
+    gap: var(--espaciado-xs);
   }
   .pregunta-examen {
     padding: var(--espaciado-sm);
@@ -176,5 +177,28 @@ select[data-campo="tipo"]:focus {
   }
   .pregunta-examen__opcion {
     padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
+  /* el número de pregunta se hace algo más pequeño en móvil */
+  .pregunta-examen__numero {
+    width: 24px;
+    height: 24px;
+    font-size: var(--texto-xs);
+  }
+  /* El texto del selector de tipo (en editor) pasa a ancho completo */
+  select[data-campo="tipo"] {
+    min-width: 0;
+    width: 100%;
+  }
+}
+
+@media (max-width: 360px) {
+  .pregunta__opcion {
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+    font-size: var(--texto-xs);
+  }
+  .pregunta-examen__numero {
+    width: 22px;
+    height: 22px;
+    margin-right: 4px;
   }
 }

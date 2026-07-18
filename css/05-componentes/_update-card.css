@@ -19,7 +19,7 @@
 }
 
 .update-card--hiding {
-  animation: update-card-out 0.3s ease forwards;
+  animation: update-card-out var(--transicion-rapida) forwards;
 }
 
 .update-card__content {
@@ -122,7 +122,7 @@
 }
 
 .whatsnew-modal {
-  animation: slideUp 300ms var(--easing-apple);
+  animation: slideUp var(--transicion-rapida);
 }
 
 .whatsnew-modal .update-card__list {

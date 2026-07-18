@@ -23,7 +23,7 @@
   box-shadow: 0 4px 14px rgba(37, 99, 235, 0.28);
   -webkit-tap-highlight-color: transparent;
   pointer-events: auto;
-  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
 .btn-instalar:hover {

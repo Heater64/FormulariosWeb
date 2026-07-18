@@ -21,19 +21,19 @@
         const primerPendiente = (() => { for (let n = 1; n <= total; n++) if (!leidosPorNum[n]) return n; return 1; })();
 
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <div class="o-contenedor o-pila o-pila--lg u-app-shell">
             <div class="o-flecha o-flecha--between u-mb-2">
               <button class="btn-secundario" onclick="router.navegar('/estudio')">${window.Iconos.render('arrow-left')}</button>
               <span class="u-fs-xs u-color-texto-terciario">${leidos}/${total} leídos</span>
             </div>
-            <div class="u-texto-centrado o-pila" style="align-items:center">
-              <div style="width:72px;height:72px;border-radius:var(--radio-2xl);background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;color:var(--color-acento)">${window.Iconos.render('book-open')}</div>
+            <div class="u-texto-centrado o-pila u-flex-center">
+              <div class="u-icono-circular u-icono-circular--md">${window.Iconos.render('book-open')}</div>
               <h2 class="u-mt-2">${libro.nombre}</h2>
               <div style="width:100%;height:8px;border-radius:var(--radio-pill);background:var(--color-borde);overflow:hidden;margin-top:var(--espaciado-sm)">
                 <div style="width:${pct}%;height:100%;background:var(--color-acento);border-radius:var(--radio-pill);transition:width var(--transicion-normal)"></div>
               </div>
             </div>
-            <button class="btn-primario" id="btnEmpezar" style="width:100%;justify-content:center;min-height:52px;font-size:var(--texto-lg)">
+            <button class="btn-primario u-btn-full" id="btnEmpezar" style="min-height:52px;font-size:var(--texto-lg)">
               ${window.Iconos.render('play')} Empezar${leidos > 0 && leidos < total ? ' (cap. ' + primerPendiente + ')' : ''}
             </button>
             <div class="o-pila"><h3>Capítulos</h3>
@@ -46,9 +46,9 @@
         const grid = raiz.querySelector('#gridCaps');
         grid.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => {
           const hecho = leidosPorNum[n];
-          return `<button class="btn-capitulo${hecho ? ' btn-capitulo--hecho' : ''}" data-cap="${n}" style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:var(--texto-sm);border:1px solid var(--color-borde);border-radius:var(--radio-lg);background:var(--color-fondo-tarjeta);cursor:pointer;transition:transform var(--transicion-rapida),border-color var(--transicion-rapida),background var(--transicion-rapida)">
+          return `<button class="btn-capitulo${hecho ? ' btn-capitulo--hecho' : ''}" data-cap="${n}" style="position:relative;aspect-ratio:1;display:flex;align-items:center;justify-content:center;font-weight:600;font-size:var(--texto-sm);border:1px solid var(--color-borde);border-radius:var(--radio-lg);background:var(--color-fondo-tarjeta);cursor:pointer;transition:transform var(--transicion-rapida),border-color var(--transicion-rapida),background var(--transicion-rapida)" >
             ${n}
-            ${hecho ? `<span style="position:absolute;top:4px;right:4px;color:var(--color-exito);display:flex">${window.Iconos.render('check')}</span>` : ''}
+            ${hecho ? `<span class="btn-capitulo__check">${window.Iconos.render('check')}</span>` : ''}
           </button>`;
         }).join('');
         grid.querySelectorAll('[data-cap]').forEach(el => {

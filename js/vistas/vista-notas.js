@@ -44,11 +44,11 @@
 
       if (notas.length === 0) {
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <div class="o-contenedor o-pila o-pila--lg u-app-shell">
             <h2>${I('file-text')} Notas personales</h2>
-            <button class="btn-primario" id="btnNueva" style="width:100%;justify-content:center">${I('plus')} Nueva nota</button>
+            <button class="btn-primario u-btn-full" id="btnNueva">${I('plus')} Nueva nota</button>
             <div class="u-texto-centrado o-pila u-mt-4" style="align-items:center">
-              <p style="font-size:3rem;color:var(--color-texto-terciario);display:flex;justify-content:center">${I('file-text')}</p>
+              <p class="u-icono-vacio">${I('file-text')}</p>
               <p class="u-color-texto-secundario">Aún no tienes notas personales.</p>
               <p class="u-fs-xs u-color-texto-terciario">Escribe notas mientras estudias o crea una desde aquí.</p>
             </div>
@@ -66,16 +66,15 @@
       const todasNotasFlat = notas;
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
           <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
             <h2>${I('file-text')} Notas personales</h2>
-          </div>
-          <div class="notas-buscar" style="position:relative">
-            <span style="position:absolute;left:var(--espaciado-sm);top:50%;transform:translateY(-50%);color:var(--color-texto-terciario);display:flex">${I('search')}</span>
-            <input type="text" id="buscarNotas" placeholder="Buscar en todas las notas..." style="width:100%;padding-left:2.2rem">
+          </div><div class="notas-buscar u-buscar-wrap">
+              <span class="u-buscar-wrap__icono">${I('search')}</span>
+              <input type="text" id="buscarNotas" placeholder="Buscar en todas las notas..." class="u-buscar-wrap__input">
           </div>
           <div id="resultadosBusqueda" class="o-pila" style="display:none"></div>
-          <button class="btn-primario" id="btnNueva" style="width:100%;justify-content:center">${I('plus')} Nueva nota</button>
+          <button class="btn-primario u-btn-full" id="btnNueva">${I('plus')} Nueva nota</button>
           <div class="o-pila" id="listaNotasLibros">
             ${Object.entries(porLibro).map(([libro, items]) => `
               <div class="tarjeta-capitulo" style="cursor:pointer" data-libro="${E(libro)}" title="Ver notas guardadas para ${E(libro)}">
@@ -146,8 +145,8 @@
       const orden = Object.keys(porCap).sort((a, b) => parseInt(a) - parseInt(b));
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
+          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <h2>${I('book-open')} ${E(libro)}</h2>
           <div class="o-pila">
             ${orden.map((cap) => `
@@ -174,8 +173,8 @@
         .sort((a, b) => new Date(a.creado_en || 0) - new Date(b.creado_en || 0));
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
+          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
             <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
             <button class="btn-primario u-fs-xs" id="btnNuevaAqui">${I('plus')} Otra nota</button>
@@ -202,7 +201,7 @@
               <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota" title="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
             </div>
           </div>
-          <div class="nota-contenido" style="font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${n.contenido}</div>
+          <div class="nota-contenido u-nota-contenido">${n.contenido}</div>
           <p class="u-fs-xs u-color-texto-terciario" title="Fecha de última edición">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
         </div>`;
     },
@@ -244,8 +243,8 @@
       const titulo = nota.titulo || `Nota ${idx + 1}`;
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
+          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
           <div class="tarjeta-capitulo o-pila" style="gap:var(--espaciado-sm)">
             <div class="o-flecha o-flecha--between">
@@ -255,7 +254,7 @@
                 <button class="btn-icono btn-icono--peligro" id="btnDel" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
               </div>
             </div>
-            <div class="nota-contenido" style="font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${nota.contenido}</div>
+            <div class="nota-contenido u-nota-contenido">${nota.contenido}</div>
           </div>
           <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(nota.actualizado_en || nota.creado_en)}</p>
         </div>`;
@@ -285,20 +284,20 @@
       let _tiptapEditor = null;
       let _autoSave = null;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
+          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <h2>${I('pencil')} Editar nota — ${E(libro)} ${capitulo}</h2>
           <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;padding:var(--espaciado-xs) 0">
             <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
             <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
             <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
-            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <span class="u-separador-vertical"></span>
             <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
             <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
-            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <span class="u-separador-vertical"></span>
             <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
             <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
-            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <span class="u-separador-vertical"></span>
             <button type="button" class="btn-icono" id="btnVersiones" title="Historial de versiones" aria-label="Historial de versiones" style="font-size:var(--texto-xs)">${I('clock')} Versiones</button>
           </div>
           <div id="fContenido" style="width:100%;min-height:200px;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)"></div>
@@ -412,8 +411,8 @@
       let _autoSave = null;
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
+          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <h2>${I('plus')} Nueva nota</h2>
           <div class="o-pila" style="gap:var(--espaciado-sm)">
             <label class="u-fs-sm u-fw-600">Libro</label>
@@ -427,10 +426,10 @@
               <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
               <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
               <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
-              <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+              <span class="u-separador-vertical"></span>
               <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
               <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
-              <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+              <span class="u-separador-vertical"></span>
               <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
               <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
             </div>

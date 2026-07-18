@@ -16,15 +16,15 @@
       const antiguos = libros.filter(l => l.testamento === 'antiguo');
       const nuevos = libros.filter(l => l.testamento === 'nuevo');
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
           <h2>${window.Iconos.render('map')} Mapa Bíblico</h2>
           <p class="u-fs-sm u-color-texto-secundario u-mb-3">Visualiza tu progreso a través de toda la Biblia</p>
           <div class="o-pila" id="mapaAT">
-            <h4 class="u-color-texto-secundario" style="border-bottom:2px solid #8B4513;padding-bottom:var(--espaciado-xs)">Antiguo Testamento</h4>
+            <h4 class="u-color-texto-secundario mapa__titulo-seccion mapa__titulo-seccion--at">Antiguo Testamento</h4>
             <div class="o-grid-tarjetas">${antiguos.map(l => this._renderLibro(l, progreso)).join('')}</div>
           </div>
           <div class="o-pila u-mt-4" id="mapaNT">
-            <h4 class="u-color-texto-secundario" style="border-bottom:2px solid #2563EB;padding-bottom:var(--espaciado-xs)">Nuevo Testamento</h4>
+            <h4 class="u-color-texto-secundario mapa__titulo-seccion mapa__titulo-seccion--nt">Nuevo Testamento</h4>
             <div class="o-grid-tarjetas">${nuevos.map(l => this._renderLibro(l, progreso)).join('')}</div>
           </div>
         </div>`;
@@ -42,8 +42,8 @@
           <div class="tarjeta-libro__nombre">${libro.nombre}</div>
           <div class="tarjeta-libro__progreso">${leidos}/${total}</div>
           <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
-          <div class="tarjeta-libro__detalle" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(6px,1fr));gap:2px;margin-top:var(--espaciado-sm)">
-            ${caps.map(c => `<span style="width:6px;height:6px;border-radius:1px;background:${c ? 'var(--color-exito)' : 'var(--color-borde)'};display:inline-block" title="${caps.indexOf(c)+1}"></span>`).join('')}
+          <div class="tarjeta-libro__detalle u-pila-gap-xs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(6px,1fr));gap:2px;margin-top:var(--espaciado-sm)">
+            ${caps.map(c => `<span class="mapa__dot${c ? ' mapa__dot--leido' : ''}" title="${caps.indexOf(c)+1}"></span>`).join('')}
           </div>
         </div>`;
     }

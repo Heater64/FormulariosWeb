@@ -1,3 +1,7 @@
+/* ==========================================================================
+   Barra de navegación inferior — sistema de diseño FormsBiblicos
+   ========================================================================== */
+
 .barra-nav-inferior {
   position: fixed;
   bottom: 0;
@@ -11,9 +15,10 @@
   -webkit-backdrop-filter: var(--desenfoque-vidrio);
   backdrop-filter: var(--desenfoque-vidrio);
   border-top: 1px solid var(--color-vidrio-borde);
-  box-shadow: var(--sombra-nav, 0 -1px 0 rgba(15, 23, 42, 0.04), 0 -8px 24px -16px rgba(15, 23, 42, 0.25));
-  padding: 6px 6px max(8px, env(safe-area-inset-bottom));
+  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.06), 0 -8px 24px -16px rgba(15, 23, 42, 0.28);
+  padding: var(--espaciado-xs) var(--espaciado-xs) max(var(--espaciado-sm), env(safe-area-inset-bottom));
   min-height: calc(52px + env(safe-area-inset-bottom));
+  /* Sin transiciones en el contenedor: solo los items se animan */
 }
 
 .barra-nav-inferior__item {
@@ -22,26 +27,32 @@
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 3px;
+  gap: var(--espaciado-2xs);
   min-width: var(--toque-minimo);
   min-height: var(--toque-minimo);
   padding: 6px 4px;
   color: var(--color-texto-terciario);
-  font-size: 10px;
+  font-size: var(--texto-xxs);
   line-height: 1;
   font-weight: 500;
-  letter-spacing: 0.02em;
+  letter-spacing: 0.01em;
   border-radius: var(--radio-lg);
-  transition: color var(--transicion-rapida), transform var(--transicion-rapida);
+  -webkit-tap-highlight-color: transparent;
+  text-decoration: none;
+  transition: color var(--transicion-rapida) var(--easing-apple),
+              background var(--transicion-rapida) var(--easing-apple),
+              transform var(--transicion-rapida) var(--easing-apple);
 }
 
 .barra-nav-inferior__item svg {
   width: 24px;
   height: 24px;
   stroke-width: 1.75;
-  transition: transform var(--transicion-rapida), opacity var(--transicion-rapida);
+  transition: transform var(--transicion-rapida) var(--easing-apple),
+              opacity var(--transicion-rapida) var(--easing-apple);
 }
 
+/* --- Estado ACTIVO: indicador pill con glow + scale de icono --- */
 .barra-nav-inferior__item--activo {
   color: var(--color-acento);
   font-weight: 700;
@@ -52,63 +63,87 @@
 .barra-nav-inferior__item--activo::after {
   content: '';
   position: absolute;
-  bottom: 4px;
+  /* Subimos el indicador para que no choque con safe-area-inset-bottom */
+  bottom: max(4px, calc(env(safe-area-inset-bottom) * 0.5));
   left: 50%;
   transform: translateX(-50%);
-  width: 20px;
+  width: 22px;
   height: 3px;
-  border-radius: 99px;
+  border-radius: var(--radio-pill);
   background: var(--color-acento);
+  /* Glow contenido (max 4px de blur) para no sangrar fuera del área controlada por la app */
+  box-shadow: 0 0 4px var(--color-acento);
 }
 
 .barra-nav-inferior__item--activo svg {
   transform: translateY(-1px) scale(1.08);
 }
 
+/* --- Tap feedback (escala sutil para confirmar toque) --- */
 .barra-nav-inferior__item:active {
   transform: scale(0.92);
-  color: var(--color-acento);
 }
 
+/* --- Hover solo en dispositivos con puntero real (no touch) --- */
 @media (hover: hover) {
   .barra-nav-inferior__item:hover {
     color: var(--color-texto-secundario);
+    background: var(--color-fondo-alt);
   }
   .barra-nav-inferior__item--activo:hover {
     color: var(--color-acento);
+    background: var(--color-acento-soft);
   }
 }
 
+/* --- Breakpoint móvil: comprime padding/mínimo sin perder legibilidad --- */
 @media (max-width: 480px) {
   .barra-nav-inferior {
-    padding: 4px 4px max(6px, env(safe-area-inset-bottom));
+    padding: var(--espaciado-2xs) var(--espaciado-2xs) max(var(--espaciado-xs), env(safe-area-inset-bottom));
     min-height: calc(48px + env(safe-area-inset-bottom));
   }
   .barra-nav-inferior__item {
     padding: 4px 2px;
-    font-size: 9px;
-    min-width: 40px;
+    min-width: 44px;
     min-height: 44px;
+    gap: var(--espaciado-2xs);
   }
   .barra-nav-inferior__item svg {
     width: 22px;
     height: 22px;
   }
   .barra-nav-inferior__item--activo::after {
-    width: 16px;
+    width: 18px;
     height: 2px;
-    bottom: 3px;
+    bottom: max(3px, calc(env(safe-area-inset-bottom) * 0.5));
   }
 }
 
 @media (max-width: 360px) {
   .barra-nav-inferior__item {
-    font-size: 8px;
-    min-width: 36px;
     padding: 3px 1px;
+    min-width: 40px;
+    /* Override del clamp del token: en 360 el clamp puede resolver ~10px,
+       demasiado grande para 6 items en pantalla estrecha */
+    font-size: 9px;
   }
   .barra-nav-inferior__item svg {
     width: 20px;
     height: 20px;
+  }
+}
+
+/* --- Reduced motion: respeta preferencia del sistema (WCAG 2.3.3) --- */
+@media (prefers-reduced-motion: reduce) {
+  .barra-nav-inferior__item,
+  .barra-nav-inferior__item svg,
+  .barra-nav-inferior__item--activo svg,
+  .barra-nav-inferior__item--activo::after {
+    animation: none !important;
+    transition: none !important;
+  }
+  .barra-nav-inferior__item--activo svg,
+  .barra-nav-inferior__item:active {
+    transform: none !important;
   }
 }

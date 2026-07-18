@@ -1,0 +1,82 @@
+/* ==========================================================================
+   _empty-state.css - Estado vacío consistente y amigable
+
+   Componente reutilizable para TODAS las vistas cuando una lista/sección
+   no tiene datos. Antes cada vista escribía `<p class="u-color-texto-terciario">Aún no hay X...</p>`
+   inconsistente y frío. Ahora tenemos un bloque visual coherente con:
+   - Icono grande (font-size 3rem, color texto-terciario) que llama atención
+   - Título principal claro (lo que el usuario esperaba ver)
+   - Descripción secundaria (por qué está vacío + qué hacer)
+   - Slot opcional CTA (botón u otra acción)
+
+   Visibilidad: cada vez que un usuario abre una sección sin datos ve un
+   bloque amable con icono + texto motivador, en lugar de texto plano gris.
+   ========================================================================== */
+
+.empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-2xl) var(--espaciado-md);
+  text-align: center;
+  max-width: 480px;
+  margin: 0 auto;
+}
+
+.empty-state__icono {
+  font-size: 3rem;
+  line-height: 1;
+  color: var(--color-texto-terciario);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Animación sutil de aparición para que el icono "llegue" cuando carga la vista */
+  animation: empty-state-icono-pop var(--transicion-normal) var(--easing-apple) both;
+}
+
+@keyframes empty-state-icono-pop {
+  0%   { opacity: 0; transform: scale(0.7); }
+  60%  { opacity: 1; transform: scale(1.05); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+.empty-state__titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--color-texto);
+  line-height: 1.3;
+}
+
+.empty-state__descripcion {
+  margin: 0;
+  font-size: var(--texto-base);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+  max-width: 380px;
+}
+
+.empty-state__cta {
+  margin-top: var(--espaciado-sm);
+}
+
+/* ---- Variante compacta (listas inline pequeñas) ---- */
+.empty-state--compacto {
+  padding: var(--espaciado-lg) var(--espaciado-sm);
+  gap: var(--espaciado-xs);
+}
+.empty-state--compacto .empty-state__icono {
+  font-size: 2rem;
+}
+.empty-state--compacto .empty-state__titulo {
+  font-size: var(--texto-base);
+}
+
+/* ---- Reduced motion: skip the icon pop ---- */
+@media (prefers-reduced-motion: reduce) {
+  .empty-state__icono {
+    animation: none;
+  }
+}

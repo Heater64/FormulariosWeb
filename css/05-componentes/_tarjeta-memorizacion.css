@@ -51,7 +51,7 @@
   position: relative;
   width: 100%;
   min-height: 300px;
-  transition: transform 0.5s var(--easing-apple);
+  transition: transform var(--transicion-normal);
   transform-style: preserve-3d;
   will-change: transform;
 }
@@ -158,7 +158,7 @@
   font-weight: 700;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.15s ease;
+  transition: opacity var(--transicion-rapida);
   z-index: 10;
 }
 
@@ -166,36 +166,36 @@
   left: 0;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color-error-soft, rgba(239, 68, 68, 0.1));
-  color: var(--color-error, #ef4444);
-  border: 2px solid var(--color-error, #ef4444);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  border: 2px solid var(--color-error);
 }
 
 .flashcard-indicador--der {
   right: 0;
   top: 50%;
   transform: translateY(-50%);
-  background: var(--color-exito-soft, rgba(34, 197, 94, 0.1));
-  color: var(--color-exito, #22c55e);
-  border: 2px solid var(--color-exito, #22c55e);
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+  border: 2px solid var(--color-exito);
 }
 
 .flashcard-indicador--arriba {
   top: 0;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(249, 115, 22, 0.1);
-  color: #f97316;
-  border: 2px solid #f97316;
+  background: var(--color-naranja-soft);
+  color: var(--color-naranja);
+  border: 2px solid var(--color-naranja);
 }
 
 .flashcard-indicador--abajo {
   bottom: 0;
   left: 50%;
   transform: translateX(-50%);
-  background: rgba(217, 119, 6, 0.1);
-  color: #D97706;
-  border: 2px solid #D97706;
+  background: var(--color-aviso-soft);
+  color: var(--color-amarillo-600);
+  border: 2px solid var(--color-amarillo-600);
 }
 
 .flashcard-indicador--visible {
@@ -209,16 +209,16 @@
 
 /* Card fly-off animations */
 .flashcard-container--fly-left .flashcard-inner {
-  animation: fly-left 0.35s ease-in forwards;
+  animation: fly-left var(--transicion-normal) forwards;
 }
 .flashcard-container--fly-right .flashcard-inner {
-  animation: fly-right 0.35s ease-in forwards;
+  animation: fly-right var(--transicion-normal) forwards;
 }
 .flashcard-container--fly-up .flashcard-inner {
-  animation: fly-up 0.35s ease-in forwards;
+  animation: fly-up var(--transicion-normal) forwards;
 }
 .flashcard-container--fly-down .flashcard-inner {
-  animation: fly-down 0.35s ease-in forwards;
+  animation: fly-down var(--transicion-normal) forwards;
 }
 
 @keyframes fly-left {
@@ -234,54 +234,9 @@
   to { transform: translateY(150%) scale(0.8); opacity: 0; }
 }
 
-/* ===== BOTONES DE CALIDAD ===== */
-.btn-calidad {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: var(--espaciado-sm) var(--espaciado-xs);
-  border: 2px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  background: var(--color-fondo);
-  cursor: pointer;
-  transition: all 0.15s ease;
-  min-height: 70px;
-}
-
-.btn-calidad:active {
-  transform: scale(0.95);
-}
-
-.btn-calidad__num {
-  font-size: var(--texto-xl);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.btn-calidad__label {
-  font-size: 10px;
-  font-weight: 600;
-  text-align: center;
-  line-height: 1.2;
-  color: var(--color-texto-secundario);
-}
-
-.btn-calidad--no { border-color: var(--color-error); color: var(--color-error); }
-.btn-calidad--no:hover { background: var(--color-error-soft); }
-.btn-calidad--no .btn-calidad__num { color: var(--color-error); }
-
-.btn-calidad--dificil { border-color: var(--color-aviso); color: var(--color-aviso); }
-.btn-calidad--dificil:hover { background: var(--color-aviso-soft); }
-.btn-calidad--dificil .btn-calidad__num { color: var(--color-aviso); }
-
-.btn-calidad--medio { border-color: #D97706; color: #D97706; }
-.btn-calidad--medio:hover { background: rgba(217, 119, 6, 0.08); }
-.btn-calidad--medio .btn-calidad__num { color: #D97706; }
-
-.btn-calidad--facil { border-color: var(--color-exito); color: var(--color-exito); }
-.btn-calidad--facil:hover { background: var(--color-exito-soft); }
-.btn-calidad--facil .btn-calidad__num { color: var(--color-exito); }
+/* ===== BOTONES DE CALIDAD =====
+   Definidos en _btn-calidad.css (consolidado, sin duplicación aquí).
+*/
 
 /* ===== TABS ===== */
 .mem-tabs {
@@ -306,7 +261,7 @@
   font-size: var(--texto-xs);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
   min-height: var(--toque-minimo);
 }
 
@@ -364,7 +319,7 @@
   background: transparent;
   color: var(--color-texto-secundario);
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
   padding: 0;
 }
 
@@ -387,7 +342,7 @@
 }
 
 .mem-asignar-cat {
-  animation: fadeIn 0.2s ease;
+  animation: fadeIn var(--transicion-rapida);
 }
 
 /* ===== RESPONSIVE ===== */
@@ -439,7 +394,7 @@
   border-radius: var(--radio-lg);
   font-weight: 600;
   cursor: pointer;
-  transition: transform 0.15s ease, opacity 0.15s ease;
+  transition: transform var(--transicion-rapida), opacity var(--transicion-rapida);
 }
 .banner-repaso:hover { transform: translateY(-1px); opacity: 0.95; }
 .banner-repaso span:nth-of-type(1) { flex: 1; }
@@ -476,13 +431,13 @@
 .chip-versiculo {
   padding: var(--espaciado-xs) var(--espaciado-md);
   border: 1px solid var(--color-borde);
-  border-radius: 999px;
+  border-radius: var(--radio-pill);
   background: var(--color-fondo);
   color: var(--color-texto);
   font-size: var(--texto-xs);
   font-weight: 600;
   cursor: pointer;
-  transition: all 0.15s ease;
+  transition: all var(--transicion-rapida);
 }
 .chip-versiculo:hover { border-color: var(--color-acento); color: var(--color-acento); }
 .chip-versiculo:disabled { opacity: 0.6; cursor: default; }
@@ -495,7 +450,7 @@
   transform: translateX(-50%);
   z-index: 60;
   padding: var(--espaciado-xs) var(--espaciado-md);
-  border-radius: 999px;
+  border-radius: var(--radio-pill);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
   box-shadow: var(--sombra-md);
@@ -522,7 +477,7 @@
   border-radius: var(--radio-lg);
   box-shadow: var(--sombra-md);
   cursor: pointer;
-  animation: toast-aparece 0.25s ease;
+  animation: toast-aparece var(--transicion-rapida);
 }
 @keyframes toast-aparece { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
 .toast-repaso__icono { color: var(--color-acento); display: flex; }
@@ -541,7 +496,7 @@
   font-size: 10px;
   font-weight: 700;
   padding: 2px 8px;
-  border-radius: 999px;
+  border-radius: var(--radio-pill);
   border: 1px solid;
   line-height: 1.4;
   text-transform: uppercase;
@@ -557,7 +512,7 @@
   border-radius: 50%;
   font-size: 11px;
   font-weight: 800;
-  color: #fff;
+  color: var(--color-texto-acento);
   background: var(--color-acento);
   line-height: 1;
 }
@@ -613,7 +568,7 @@
   font-size: var(--texto-base);
   text-align: center;
   outline: none;
-  transition: border-color 0.15s ease;
+  transition: border-color var(--transicion-rapida);
 }
 
 .mem-completar-input:focus {

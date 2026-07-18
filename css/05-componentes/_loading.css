@@ -9,12 +9,8 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+  background: linear-gradient(90deg, transparent, var(--color-shimmer), transparent);
   animation: skeleton-shimmer 1.5s infinite;
-}
-
-:root[data-theme="dark"] .skeleton::after {
-  background: linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
 }
 
 .skeleton--texto {
@@ -77,7 +73,7 @@
 }
 
 .splash-screen--loaded {
-  animation: splash-fade-out 0.6s ease forwards;
+  animation: splash-fade-out var(--transicion-lenta) forwards;
 }
 
 .splash-screen__logo {
@@ -89,7 +85,7 @@
   align-items: center;
   justify-content: center;
   box-shadow: var(--sombra-lg);
-  animation: splash-logo-pop 0.6s var(--easing-apple) forwards;
+  animation: splash-logo-pop var(--transicion-lenta) forwards;
   opacity: 0;
   transform: scale(0.8);
 }
@@ -106,7 +102,7 @@
   font-weight: 700;
   color: var(--color-texto);
   margin: 0;
-  animation: splash-text-in 0.5s ease 0.2s forwards;
+  animation: splash-text-in var(--transicion-normal) 0.2s forwards;
   opacity: 0;
   transform: translateY(16px);
 }
@@ -115,7 +111,7 @@
   font-size: var(--texto-base);
   color: var(--color-texto-secundario);
   margin: 0;
-  animation: splash-text-in 0.5s ease 0.3s forwards;
+  animation: splash-text-in var(--transicion-normal) 0.3s forwards;
   opacity: 0;
   transform: translateY(16px);
 }
@@ -126,7 +122,7 @@
   background: var(--color-fondo-alt);
   border-radius: var(--radio-pill);
   overflow: hidden;
-  animation: splash-text-in 0.5s ease 0.4s forwards;
+  animation: splash-text-in var(--transicion-normal) 0.4s forwards;
   opacity: 0;
   transform: translateY(16px);
 }
@@ -136,13 +132,13 @@
   height: 100%;
   background: linear-gradient(90deg, var(--color-acento), var(--color-acento-hover));
   border-radius: var(--radio-pill);
-  animation: splash-progress 1.2s ease forwards;
+  animation: splash-progress var(--transicion-lenta) forwards;
 }
 
 .splash-screen__status {
   font-size: var(--texto-xs);
   color: var(--color-texto-terciario);
-  animation: splash-text-in 0.5s ease 0.5s forwards;
+  animation: splash-text-in var(--transicion-normal) 0.5s forwards;
   opacity: 0;
   transform: translateY(16px);
 }

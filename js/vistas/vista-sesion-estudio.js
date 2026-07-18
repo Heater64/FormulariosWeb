@@ -46,23 +46,23 @@
       return `
         <div class="o-flecha o-flecha--between u-mb-3">
           <button class="btn-secundario" id="btnRetroceder">${window.Iconos.render('arrow-left')}</button>
-          <div class="u-texto-centrado" style="flex:1">
+          <div class="u-texto-centrado u-flex-1">
             <h3 style="margin:0">${titulo}</h3>
             ${sub ? `<span class="u-fs-xs u-color-texto-terciario">${sub}</span>` : ''}
           </div>
-          <span style="width:40px"></span>
+          <span class="u-min-ancho-40"></span>
         </div>`;
     },
 
     _renderInicio() {
       const { raiz, libro, capituloNum, numCaps } = this.estado;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila" style="padding-top:var(--espaciado-2xl);padding-bottom:calc(180px + env(safe-area-inset-bottom));min-height:100dvh">
+        <div class="o-contenedor o-pila u-app-shell--comfort">
           ${this._cabecera(libro.nombre, `Capítulo ${capituloNum} de ${numCaps}`)}
-          <div class="u-texto-centrado o-pila" style="align-items:center;margin-top:var(--espaciado-3xl)">
-            <div style="width:96px;height:96px;border-radius:var(--radio-2xl);background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;color:var(--color-acento)">${window.Iconos.render('book-open')}</div>
+          <div class="u-texto-centrado o-pila u-self-start" style="align-items:center;margin-top:var(--espaciado-3xl)">
+            <div class="u-icono-circular u-icono-circular--lg">${window.Iconos.render('book-open')}</div>
             <h2 class="u-mt-3">${libro.nombre} ${capituloNum}</h2>
-            <p class="u-color-texto-secundario u-fs-sm" style="max-width:320px">Vamos a leer este capítulo y luego responder algunas preguntas para repasar lo aprendido.</p>
+            <p class="u-color-texto-secundario u-fs-sm u-max-ancho-320">Vamos a leer este capítulo y luego responder algunas preguntas para repasar lo aprendido.</p>
           </div>
           <div class="barra-accion">
             <button class="btn-primario" id="btnEmpezar">${window.Iconos.render('play')} Empezar</button>
@@ -76,16 +76,16 @@
       const { raiz, libro, capituloNum } = this.estado;
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila" style="padding-top:var(--espaciado-2xl);padding-bottom:calc(180px + env(safe-area-inset-bottom));min-height:100dvh">
+        <div class="o-contenedor o-pila u-app-shell--comfort">
           ${this._cabecera(libro.nombre, `Capítulo ${capituloNum}`)}
-          <div class="u-texto-centrado o-pila" style="align-items:center;margin-top:var(--espaciado-2xl)">
-            <div style="width:96px;height:96px;border-radius:var(--radio-2xl);background:var(--color-acento-soft);display:flex;align-items:center;justify-content:center;color:var(--color-acento)">${I('book-open')}</div>
+          <div class="u-texto-centrado o-pila u-self-start" style="align-items:center;margin-top:var(--espaciado-2xl)">
+            <div class="u-icono-circular u-icono-circular--lg">${I('book-open')}</div>
             <h2 class="u-mt-3">Lee en tu Biblia</h2>
-            <p class="u-color-texto-secundario u-fs-base" style="max-width:340px;line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>
+            <p class="u-color-texto-secundario u-fs-base u-max-ancho-340" style="line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>
           </div>
-          <div class="o-pila" style="width:100%">
+          <div class="o-pila u-w-full">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">${I('edit-3')} Notas de la sesión (no se guardan como nota personal)</label>
-            <textarea id="notasLectura" rows="3" placeholder="Escribe aquí tus notas, reflexiones o versículos destacados..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
+            <textarea id="notasLectura" rows="3" placeholder="Escribe aquí tus notas, reflexiones o versículos destacados..." class="u-w-full u-input-textarea"></textarea>
           </div>
           <div class="barra-accion">
             <button class="btn-primario" id="btnLeido">${I('check')} Ya lo he leído</button>
@@ -158,11 +158,11 @@
       const esRepaso = e.ronda === 'repaso';
       const { raiz } = e;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila" style="padding-top:var(--espaciado-lg);padding-bottom:calc(160px + env(safe-area-inset-bottom));min-height:100dvh">
+        <div class="o-contenedor o-pila u-app-shell--compact">
           ${this._cabecera(e.libro.nombre, `Capítulo ${e.capituloNum}`)}
           <div class="u-mt-2">
             <div class="o-flecha o-flecha--between u-mb-1">
-              <span class="u-fs-xs u-fw-700 u-color-texto-terciario" style="text-transform:uppercase;letter-spacing:.05em">${esRepaso ? 'Repaso' : 'Pregunta'} ${num} de ${total}</span>
+              <span class="u-texto-etiqueta u-color-texto-terciario">${esRepaso ? 'Repaso' : 'Pregunta'} ${num} de ${total}</span>
               ${esRepaso ? `<span class="u-fs-xs u-fw-600 u-color-aviso">Corrige para avanzar</span>` : ''}
             </div>
             <div class="barra-progreso"><div class="barra-progreso__lleno" style="width:${(num / total) * 100}%"></div></div>
@@ -329,16 +329,16 @@
       }).join('');
       const { raiz } = e;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(160px + env(safe-area-inset-bottom));min-height:100dvh">
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell--compact">
           ${this._cabecera(e.libro.nombre, `Capítulo ${e.capituloNum} · Resumen`)}
           <div class="cuestion-resumen">
             <div class="cuestion-resumen__icono cuestion-resumen__icono--${tono}">${window.Iconos.render(tono === 'ok' ? 'check-circle' : 'alert-triangle')}</div>
             <h2 class="u-texto-centrado">${mensaje}</h2>
             <div class="cuestion-resumen__stats">
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Acertadas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${aciertos}</p></div>
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Falladas</p><p class="u-texto-2xl u-fw-700 ${hayErrores ? 'u-color-error' : 'u-color-texto-terciario'}">${fallos}</p></div>
+              <div class="tarjeta-capitulo u-texto-centrado"><p class="u-fs-xs u-color-texto-terciario">Acertadas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${aciertos}</p></div>
+              <div class="tarjeta-capitulo u-texto-centrado"><p class="u-fs-xs u-color-texto-terciario">Falladas</p><p class="u-texto-2xl u-fw-700 ${hayErrores ? 'u-color-error' : 'u-color-texto-terciario'}">${fallos}</p></div>
             </div>
-            ${hayErrores ? `<div class="o-pila" style="width:100%"><h3>Repaso de errores</h3><div class="o-pila">${listaErrores}</div></div>` : ''}
+            ${hayErrores ? `<div class="o-pila u-w-full"><h3>Repaso de errores</h3><div class="o-pila">${listaErrores}</div></div>` : ''}
           </div>
           <div class="barra-accion">
             ${hayErrores
@@ -360,15 +360,15 @@
       const corregidas = e.cola.length - restantes;
       const { raiz } = e;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(160px + env(safe-area-inset-bottom));min-height:100dvh">
+        <div class="o-contenedor o-pila o-pila--lg u-app-shell--compact">
           ${this._cabecera(e.libro.nombre, `Capítulo ${e.capituloNum} · Repaso`)}
           <div class="cuestion-resumen">
             <div class="cuestion-resumen__icono cuestion-resumen__icono--mal">${window.Iconos.render('alert-triangle')}</div>
             <h2 class="u-texto-centrado">Aún quedan por corregir</h2>
-            <p class="u-texto-centrado u-color-texto-secundario" style="max-width:320px">${restantes} ${restantes === 1 ? 'pregunta sin acertar' : 'preguntas sin acertar'}. Repítelas hasta responderlas bien.</p>
+            <p class="u-texto-centrado u-color-texto-secundario u-max-ancho-320">${restantes} ${restantes === 1 ? 'pregunta sin acertar' : 'preguntas sin acertar'}. Repítelas hasta responderlas bien.</p>
             <div class="cuestion-resumen__stats">
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Corregidas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${corregidas}</p></div>
-              <div class="tarjeta-capitulo" style="text-align:center"><p class="u-fs-xs u-color-texto-terciario">Pendientes</p><p class="u-texto-2xl u-fw-700 u-color-error">${restantes}</p></div>
+              <div class="tarjeta-capitulo u-texto-centrado"><p class="u-fs-xs u-color-texto-terciario">Corregidas</p><p class="u-texto-2xl u-fw-700 u-color-exito">${corregidas}</p></div>
+              <div class="tarjeta-capitulo u-texto-centrado"><p class="u-fs-xs u-color-texto-terciario">Pendientes</p><p class="u-texto-2xl u-fw-700 u-color-error">${restantes}</p></div>
             </div>
           </div>
           <div class="barra-accion">
@@ -415,10 +415,10 @@
       const { raiz } = e;
       const I = window.Iconos.render;
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-texto-centrado" style="padding-top:var(--espaciado-3xl);padding-bottom:calc(160px + env(safe-area-inset-bottom));min-height:100dvh;align-items:center">
-          <div class="cuestion-resumen__icono cuestion-resumen__icono--ok" style="width:96px;height:96px">${I('check-circle')}</div>
+        <div class="o-contenedor o-pila o-pila--lg u-texto-centrado u-app-shell--ceremony">
+          <div class="cuestion-resumen__icono cuestion-resumen__icono--ok u-icono-circular u-icono-circular--lg">${I('check-circle')}</div>
           <h2>¡Capítulo completado!</h2>
-          <p class="u-color-texto-secundario" style="max-width:320px">Has completado el estudio de ${e.libro.nombre} ${e.capituloNum}.</p>
+          <p class="u-color-texto-secundario u-max-ancho-320">Has completado el estudio de ${e.libro.nombre} ${e.capituloNum}.</p>
           <div class="barra-accion">
             ${haySiguiente
               ? `<button class="btn-primario" id="btnSig">${I('arrow-right')} Siguiente capítulo</button>`
@@ -467,8 +467,7 @@
           <div class="celebracion__titulo">${titulo}</div>
         </div>
         ${confeti}`;
-      overlay.style.pointerEvents = 'auto';
-      overlay.style.cursor = 'pointer';
+      overlay.classList.add('u-overlay-tap');
       overlay.onclick = () => overlay.remove();
       document.body.appendChild(overlay);
       setTimeout(() => { if (overlay.parentNode) overlay.remove(); }, reduced ? 2000 : 2800);

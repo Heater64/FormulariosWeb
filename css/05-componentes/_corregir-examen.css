@@ -245,10 +245,52 @@
   .corregir-alumno__header {
     flex-direction: column;
     align-items: flex-start;
+    gap: var(--espaciado-xs);
   }
-  
+  .corregir-alumno__meta {
+    flex-wrap: wrap;
+  }
+
   .corregir-pregunta__acciones {
     flex-direction: column;
+    align-items: stretch;
+    gap: var(--espaciado-xs);
+  }
+
+  .corregir-toggle {
+    width: 100%;
+    justify-content: stretch;
+  }
+  .corregir-toggle__btn {
+    flex: 1;
+    text-align: center;
+  }
+
+  .corregir-pregunta__puntos {
+    align-self: flex-start;
+  }
+  .corregir-pregunta__puntos-btn {
+    width: 36px;
+    height: 36px; /* diana táctil cómoda */
+  }
+
+  .corregir-bulk {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .corregir-nota-final {
+    flex-direction: column;
     align-items: flex-start;
+    gap: var(--espaciado-xs);
+  }
+}
+
+@media (max-width: 360px) {
+  .corregir-alumno__header {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
+  .corregir-alumno__detalle {
+    padding: 0 var(--espaciado-xs) var(--espaciado-xs);
   }
 }

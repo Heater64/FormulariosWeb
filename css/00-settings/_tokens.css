@@ -15,8 +15,26 @@
   --color-exito-soft: #D1FAE5;
   --color-error: #EF4444;
   --color-error-soft: #FEE2E2;
+  --color-error-hover: #DC2626;
   --color-aviso: #F59E0B;
   --color-aviso-soft: #FEF3C7;
+  --color-info: #3B82F6;
+  --color-info-soft: #DBEAFE;
+  --color-acento-fuerte: #1E40AF;
+  --color-acento-soft-hover: #BFDBFE;
+  /* Colores canónicos de testamento — invariantes al tema (semántica AT/NT, no decorativos) */
+  --color-testamento-at: #8B4513;
+  --color-testamento-nt: #2563EB;
+  /* Color neutro medio para bandas/secciones tipo header dentro de cards */
+  --color-seccion-banda: #555;
+  /* Texto blanco legible sobre fondo de banda sección (invariante al tema: bajo contraste deliberado) */
+  --color-seccion-texto: #fff;
+  --color-naranja: #F97316;
+  --color-naranja-soft: rgba(249, 115, 22, 0.1);
+  /* Tinte del shimmer (efecto "highlight" en skeletons) por tema.
+     Light: blanco semi-transparente sobre fondo gris claro.
+     Dark:  blanco aún más tenue para no quemar el dark mode. */
+  --color-shimmer: rgba(255, 255, 255, 0.35);
   --color-superficie-modal: rgba(0,0,0,0.32);
   --color-vidrio: rgba(255,255,255,0.72);
   --color-vidrio-borde: rgba(255,255,255,0.6);
@@ -61,6 +79,7 @@
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-entrada: cubic-bezier(0, 0, 0.2, 1);
   --easing-salida: cubic-bezier(0.4, 0, 1, 1);
+  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
   --transicion-rapida: 240ms var(--easing-apple);
   --transicion-normal: 380ms var(--easing-apple);
   --transicion-lenta: 640ms var(--easing-apple);
@@ -117,6 +136,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --color-texto: #FFFFFF;
+    --color-shimmer: rgba(255, 255, 255, 0.10);
     --color-texto-secundario: #94A3B8;
     --color-texto-terciario: #64748B;
     --color-fondo: #0F172A;
@@ -139,6 +159,7 @@
 
 :root[data-theme="dark"] {
   --color-texto: #FFFFFF;
+  --color-shimmer: rgba(255, 255, 255, 0.10);
   --color-texto-secundario: #94A3B8;
   --color-texto-terciario: #64748B;
   --color-fondo: #0F172A;

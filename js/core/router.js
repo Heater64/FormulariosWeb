@@ -3,7 +3,7 @@ class Router {
     this._rutas = new Map();
     this._vistaActual = null;
     this._primeraCarga = true;
-    this._transiciones = false;
+    this._transiciones = true;
     this._guardias = [];
     this._middlewares = [];
     this._cacheVistas = new Map();

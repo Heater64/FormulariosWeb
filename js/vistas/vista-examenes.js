@@ -65,9 +65,9 @@
               <input type="text" id="buscarExamen" placeholder="Buscar por título..." style="width:100%;padding-left:2.2rem">
             </div>
             <div id="listaExamenes" class="o-pila" style="gap:var(--espaciado-sm)"></div>
-            <div id="listaExamenesVacia" class="u-texto-centrado o-pila u-mt-4" style="align-items:center;display:none">
-              <p style="font-size:3rem;color:var(--color-texto-terciario);display:flex;justify-content:center">${window.Iconos.render('clipboard-check')}</p>
-              <p class="u-color-texto-secundario" id="textoVacio">No hay exámenes que coincidan</p>
+            <div id="listaExamenesVacia" class="empty-state empty-state--compacto" style="display:none">
+              <div class="empty-state__icono">${window.Iconos.render('clipboard-check')}</div>
+              <p class="empty-state__descripcion" id="textoVacio">No hay exámenes que coincidan con tu búsqueda.</p>
             </div>
           </div>`;
 

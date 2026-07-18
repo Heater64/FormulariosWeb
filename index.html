@@ -3,15 +3,63 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
-  <meta name="theme-color" content="#1e1e2e">
+  <meta name="theme-color" content="#FFFFFF">
 
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
   <link rel="apple-touch-icon" href="assets/iconos/180x180.png">
 
   <link rel="manifest" href="manifest.json">
+
+  <!-- ============================================================
+       Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
+       Lee preferencias de localStorage sincrónicamente y aplica
+       data-theme + un fondo inicial, antes de que se renderice el
+       CSS. Cuando los tokens (--color-fondo, etc.) se definan más
+       tarde, los componentes usarán esos valores. Importante: solo
+       aplicamos estilos INLINE sobre el propio elemento <html>, NO
+       sobre variables CSS (eso pisaría el sistema de tokens y
+       rompería los cambios de tema vía UI). Tambien sincroniza
+       la meta theme-color para que la statusbar del navegador
+       coincida con el tema elegido.
+       ============================================================ -->
+  <script>
+    (function () {
+      try {
+        var raw = localStorage.getItem('fb_preferencias');
+        var p = null;
+        try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
+        var tema = (p && p.tema) || localStorage.getItem('fb_tema');
+        if (tema === 'claro') tema = 'light';
+        else if (tema === 'oscuro') tema = 'dark';
+        var root = document.documentElement;
+        var isDark = tema === 'dark';
+        var isLight = tema === 'light';
+        if (isLight || isDark) root.setAttribute('data-theme', tema);
+        var hc = p && p.alto_contraste === true;
+        var bg = isDark ? (hc ? '#000000' : '#0F172A') : '#FFFFFF';
+        var txt = isDark ? '#FFFFFF' : '#0F172A';
+        // Color de fondo inmediato solo en el propio elemento root.
+        // Los tokens (--color-fondo) se definen luego desde CSS y
+        // se aplican a <body>, así que no hay conflicto de cascada.
+        root.style.backgroundColor = bg;
+        root.style.color = txt;
+        root.style.colorScheme = isDark ? 'dark' : 'light';
+        // Sincroniza la meta theme-color con el tema + HC
+        var meta = document.head.querySelector('meta[name="theme-color"]');
+        if (meta) meta.setAttribute('content', bg);
+      } catch (e) { /* offline / no localStorage -> defaults del navegador */ }
+    })();
+  </script>
+
+  <!-- Default body bg usando los tokens: una vez CSS se carga,
+       el body toma --color-fondo. Mientras tanto, html.style.backgroundColor
+       (definido arriba) mantiene el fondo correcto. -->
+  <style>
+    body { background: var(--color-fondo, #FFFFFF); color: var(--color-texto, #0F172A); }
+  </style>
 
   <title>FormsBiblicos</title>
   <link rel="icon" href="assets/iconos/icono.svg" type="image/svg+xml">
@@ -60,7 +108,6 @@
   <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
   <link rel="stylesheet" href="css/05-componentes/_update-card.css">
 
-  <!-- CSS: Utilities -->
   <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
   <link rel="stylesheet" href="css/05-componentes/_btn-calidad.css">
   <link rel="stylesheet" href="css/05-componentes/_seccion-admin.css">
@@ -85,14 +132,19 @@
   <link rel="stylesheet" href="css/05-componentes/_calificaciones.css">
   <link rel="stylesheet" href="css/05-componentes/_corregir-examen.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-preguntas.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-examenes.css">
+  <link rel="stylesheet" href="css/05-componentes/_empty-state.css">
   <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
   <link rel="stylesheet" href="css/05-componentes/_notas.css">
   <link rel="stylesheet" href="css/05-componentes/_explorar.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
+  <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
+  <link rel="stylesheet" href="css/05-componentes/_splash.css">
 
-  <!-- CSS: Utilities -->
+  <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
   <link rel="stylesheet" href="css/06-utilidades/_colores.css">
+  <link rel="stylesheet" href="css/06-utilidades/_estilos-inline.css">
   <link rel="stylesheet" href="css/06-utilidades/_accesibilidad.css">
 
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>

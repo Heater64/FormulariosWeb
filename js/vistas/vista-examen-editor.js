@@ -176,7 +176,6 @@
         { id: 'b5', texto: '¿Cuántos días y noches llovió durante el diluvio?', tipo: 'solo_numero', opciones: [], respuesta_correcta: '40', obligatoria: true, puntos: 3 }
       ];
 
-      this._inyectarEstilos();
       this._renderizarCompleto(raiz);
     },
 
@@ -191,75 +190,13 @@
           localStorage.setItem(this._draftKey, JSON.stringify(this._examen));
         } catch (e) {}
       }
-    },
-
-    _inyectarEstilos() {
-      if (document.getElementById('editor-forms-styles')) return;
-      const style = document.createElement('style');
-      style.id = 'editor-forms-styles';
-      style.innerHTML = `
-        .editor-root { display: flex; flex-direction: column; min-height: 100vh; background: var(--color-fondo-alt); font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
-        .editor-header-bar { display: flex; align-items: center; justify-content: space-between; padding: var(--espaciado-sm) var(--espaciado-md); background: var(--color-fondo-tarjeta); border-bottom: 1px solid var(--color-borde); position: sticky; top: 0; z-index: 100; box-shadow: var(--sombra-xs); }
-        .editor-tabs { display: flex; justify-content: center; background: var(--color-fondo-tarjeta); border-bottom: 1px solid var(--color-borde); position: sticky; top: 56px; z-index: 99; }
-        .editor-tab-btn { background: none; border: none; padding: var(--espaciado-sm) var(--espaciado-md); font-weight: 500; font-size: var(--texto-sm); color: var(--color-texto-secundario); cursor: pointer; position: relative; border-bottom: 3px solid transparent; transition: all 150ms var(--easing-apple); }
-        .editor-tab-btn--active { color: var(--color-acento); border-bottom-color: var(--color-acento); font-weight: 600; }
-        
-        .editor-workspace { display: grid; grid-template-columns: 1fr; gap: var(--espaciado-md); padding: var(--espaciado-md); max-width: 1050px; width: 100%; margin: 0 auto; box-sizing: border-box; flex: 1; }
-        .editor-workspace--con-panel { grid-template-columns: 1fr 320px; }
-        @media (max-width: 850px) { .editor-workspace--con-panel { grid-template-columns: 1fr; } }
-        
-        /* Tarjeta principal estilo Google Forms */
-        .forms-card { background: var(--color-fondo-tarjeta); border-radius: var(--radio-md); border: 1px solid var(--color-borde); border-top: 10px solid var(--color-acento); box-shadow: var(--sombra-sm); padding: var(--espaciado-md); position: relative; display: flex; flex-direction: column; gap: var(--espaciado-sm); transition: border-top-color 200ms ease; }
-        .forms-card--pregunta { border-top-width: 1px; border-left: 6px solid transparent; }
-        .forms-card--pregunta-active { border-left-color: var(--color-acento); box-shadow: var(--sombra-md); }
-        
-        /* Floating Toolbar style Google Forms */
-        .floating-toolbar { display: flex; flex-direction: column; gap: var(--espaciado-xs); background: var(--color-fondo-tarjeta); border: 1px solid var(--color-borde); border-radius: var(--radio-pill); padding: var(--espaciado-xs); box-shadow: var(--sombra-md); position: fixed; right: var(--espaciado-md); bottom: 100px; z-index: 90; }
-        @media (max-width: 600px) { .floating-toolbar { flex-direction: row; right: 50%; transform: translateX(50%); bottom: calc(75px + env(safe-area-inset-bottom)); border-radius: var(--radio-pill); } }
-        .toolbar-btn { background: none; border: none; width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; color: var(--color-texto-secundario); cursor: pointer; transition: background 150ms; }
-        .toolbar-btn:hover { background: var(--color-fondo-alt); color: var(--color-acento); }
-        
-        /* Panel Lateral de Configuración de Pregunta */
-        .config-sidebar { background: var(--color-fondo-tarjeta); border: 1px solid var(--color-borde); border-radius: var(--radio-md); padding: var(--espaciado-md); display: flex; flex-direction: column; gap: var(--espaciado-sm); box-shadow: var(--sombra-sm); height: fit-content; position: sticky; top: 120px; }
-        
-        /* Preguntas Grid */
-        .preguntas-lista { display: flex; flex-direction: column; gap: var(--espaciado-md); width: 100%; }
-        
-        /* Vista previa responsiva */
-        .preview-container { border: 1px solid var(--color-borde); border-radius: var(--radio-md); background: #f0f0f0; padding: var(--espaciado-md); display: flex; flex-direction: column; align-items: center; width: 100%; box-sizing: border-box; }
-        .preview-device { background: var(--color-fondo); border: 10px solid #222; border-radius: 20px; transition: all 300ms ease; width: 100%; box-shadow: var(--sombra-lg); overflow: hidden; }
-        .preview-device--ordenador { max-width: 100%; min-height: 600px; border-radius: var(--radio-md); border-width: 1px; border-color: var(--color-borde); }
-        .preview-device--tablet { max-width: 768px; min-height: 800px; }
-        .preview-device--movil { max-width: 375px; min-height: 650px; }
-        .preview-screen { background: var(--color-fondo-alt); height: 100%; overflow-y: auto; padding: var(--espaciado-md); box-sizing: border-box; }
-        
-        /* Banco de preguntas */
-        .banco-modal { max-width: 500px; width: 90%; }
-        .banco-pregunta-card { border: 1px solid var(--color-borde); border-radius: var(--radio-sm); padding: var(--espaciado-xs) var(--espaciado-sm); cursor: pointer; transition: background 150ms; display: flex; justify-content: space-between; align-items: center; }
-        .banco-pregunta-card:hover { background: var(--color-fondo-alt); border-color: var(--color-acento); }
-        
-        /* Colores selector */
-        .color-dot { width: 24px; height: 24px; border-radius: 50%; display: inline-block; cursor: pointer; border: 2px solid transparent; transition: scale 150ms; }
-        .color-dot:hover { scale: 1.15; }
-        .color-dot--selected { border-color: var(--color-texto); scale: 1.1; }
-
-        /* Respuestas */
-        .respuestas-tablas { display: flex; flex-direction: column; gap: var(--espaciado-md); width: 100%; }
-        .respuestas-metrica-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: var(--espaciado-sm); }
-        .respuestas-metrica-card { background: var(--color-fondo-tarjeta); border: 1px solid var(--color-borde); border-radius: var(--radio-md); padding: var(--espaciado-md); text-align: center; }
-        .respuestas-split { display: grid; grid-template-columns: 1fr 1fr; gap: var(--espaciado-md); }
-        @media (max-width: 750px) { .respuestas-split { grid-template-columns: 1fr; } }
-      `;
-      document.head.appendChild(style);
-    },
-
-    _renderizarCompleto(raiz) {
+    },    _renderizarCompleto(raiz) {
       const examen = this._examen;
       raiz.innerHTML = `
         <div class="editor-root" style="--color-acento: ${examen.color || '#673ab7'}">
           <!-- CABECERA PRINCIPAL -->
           <header class="editor-header-bar">
-            <div class="o-flecha" style="gap:var(--espaciado-sm)">
+            <div class="o-flecha u-gap-sm">
               <button class="btn-secundario btn-icono" id="btnEditorVolver" title="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
               <div style="line-height:1">
                 <span class="u-fs-xs u-color-texto-terciario">Editor Completo de Exámenes</span>
@@ -267,8 +204,8 @@
               </div>
             </div>
             
-            <div class="o-flecha" style="gap:var(--espaciado-xs)">
-              <span class="editor-draft-indicator" id="saveIndicator" style="font-size:var(--texto-xs);color:var(--color-texto-terciario);display:flex;align-items:center;gap:4px">
+            <div class="o-flecha u-gap-xs">
+              <span class="editor-draft-indicator u-flex-center u-gap-2xs" id="saveIndicator" style="font-size:var(--texto-xs);color:var(--color-texto-terciario);display:flex;align-items:center;gap:4px">
                 ${window.Iconos.render('check')} Autoguardado activado
               </span>
               <button class="btn-secundario btn-icono" id="btnGuardarEditor" title="Guardar borrador">${window.Iconos.render('save')}</button>
@@ -455,9 +392,7 @@
           <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Descripción o Instrucciones</label>
             <textarea id="infoDescripcion" rows="3" placeholder="Instrucciones para tus alumnos...">${window.helpers.escapeHtml(examen.descripcion || '')}</textarea>
-          </div>
-
-          <div class="o-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--espaciado-md)">
+          </div>          <div class="o-grid u-grid-2col-adapt u-gap-md">
             <div class="o-pila">
               <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Materia</label>
               <input type="text" id="infoMateria" value="${window.helpers.escapeHtml(examen.materia || '')}" placeholder="Ej: Historia de la Iglesia">
@@ -467,9 +402,7 @@
               <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Tema</label>
               <input type="text" id="infoTema" value="${window.helpers.escapeHtml(examen.tema || '')}" placeholder="Ej: Hechos 1-12">
             </div>
-          </div>
-
-          <div class="o-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--espaciado-md)">
+          </div>          <div class="o-grid u-grid-2col-adapt u-gap-md">
             <div class="o-pila">
               <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Evaluación</label>
               <select id="infoEvaluacion">
@@ -486,7 +419,7 @@
 
           <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Estado del Examen</label>
-            <div class="o-flecha" style="gap:var(--espaciado-md)">
+            <div class="o-flecha u-gap-md">
               <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="borrador" ${examen.estado === 'borrador' ? 'checked' : ''}> Borrador</label>
               <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="publicado" ${examen.estado === 'publicado' ? 'checked' : ''}> Publicado</label>
               <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="archivado" ${examen.estado === 'archivado' ? 'checked' : ''}> Archivado</label>
@@ -495,14 +428,14 @@
 
           <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Tema de Color del Examen</label>
-            <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap">
+            <div class="o-flecha u-gap-xs u-flex-wrap">
               ${selectColores}
             </div>
           </div>
 
           <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Icono Identificativo</label>
-            <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap">
+            <div class="o-flecha u-gap-xs u-flex-wrap">
               ${selectIconos}
             </div>
           </div>
@@ -598,10 +531,10 @@
         
         if (p.tipo === 'seccion') {
           return `
-            <div class="forms-card ${esSeleccionada ? 'forms-card--pregunta-active' : ''}" data-preg-idx="${i}" style="border-top:10px solid #555">
+            <div class="forms-card forms-card--seccion ${esSeleccionada ? 'forms-card--pregunta-active' : ''}" data-preg-idx="${i}">
               <div class="o-flecha o-flecha--between">
-                <span class="u-fs-xs u-fw-700 u-color-texto-terciario" style="background:#555;color:#fff;padding:2px 8px;border-radius:var(--radio-pill)">SECCIÓN</span>
-                <div class="o-flecha" style="gap:4px">
+                <span class="u-fs-xs u-fw-700 u-color-texto-terciario u-seccion-badge">SECCIÓN</span>
+                <div class="o-flecha u-gap-2xs">
                   <button class="btn-secundario btn-icono u-fs-xs btn-subir-p" data-idx="${i}">${window.Iconos.render('chevron-up')}</button>
                   <button class="btn-secundario btn-icono u-fs-xs btn-bajar-p" data-idx="${i}">${window.Iconos.render('chevron-down')}</button>
                   <button class="btn-secundario btn-icono u-fs-xs btn-duplicar-p" data-idx="${i}">${window.Iconos.render('copy')}</button>
@@ -618,18 +551,17 @@
           `<option value="${t.valor}" ${p.tipo === t.valor ? 'selected' : ''}>${t.nombre}</option>`
         ).join('');
 
-        return `
-          <div class="forms-card forms-card--pregunta ${esSeleccionada ? 'forms-card--pregunta-active' : ''}" data-preg-idx="${i}">
-            <div class="o-flecha o-flecha--between" style="align-items:center">
+        return `            <div class="forms-card forms-card--pregunta ${esSeleccionada ? 'forms-card--pregunta-active' : ''}" data-preg-idx="${i}">
+            <div class="o-flecha o-flecha--between u-flex-center">
               <span class="u-fs-xs u-fw-700 u-color-texto-terciario">PREGUNTA ${i + 1}</span>
-              <div class="o-flecha" style="gap:var(--espaciado-xs)">
+              <div class="o-flecha u-gap-xs">
                 <select class="select-tipo-p" data-idx="${i}" style="padding:4px 8px; font-size:var(--texto-xs)">
                   ${tipoSelect}
                 </select>
                 <button class="btn-secundario btn-icono u-fs-xs btn-subir-p" data-idx="${i}">${window.Iconos.render('chevron-up')}</button>
                 <button class="btn-secundario btn-icono u-fs-xs btn-bajar-p" data-idx="${i}">${window.Iconos.render('chevron-down')}</button>
                 <button class="btn-secundario btn-icono u-fs-xs btn-duplicar-p" data-idx="${i}">${window.Iconos.render('copy')}</button>
-                <button class="btn-secundario btn-icono u-fs-xs btn-eliminar-p" data-idx="${i}" style="color:var(--color-error)">${window.Iconos.render('trash-2')}</button>
+                <button class="btn-secundario btn-icono u-fs-xs btn-eliminar-p u-color-error" data-idx="${i}">${window.Iconos.render('trash-2')}</button>
               </div>
             </div>
 
@@ -660,41 +592,41 @@
       let html = '';
       if (p.tipo === 'multiple' || p.tipo === 'opcion_unica') {
         html += (p.opciones || []).map((o, oi) => `
-          <div class="o-flecha" style="gap:var(--espaciado-xs);margin-bottom:var(--espaciado-xxs)">
+          <div class="o-flecha u-gap-xs u-mb-xxs">
             <input type="radio" name="correcta_${i}" ${String(p.respuesta_correcta) === String(oi) ? 'checked' : ''} data-correcta-idx="${oi}" data-idx="${i}">
-            <input type="text" data-opcion-val="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Opción ${oi + 1}" style="flex:1">
-            <button class="btn-remove-opt" data-idx="${i}" data-opt-idx="${oi}" style="background:none;border:none;color:var(--color-error)">✕</button>
+            <input type="text" data-opcion-val="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Opción ${oi + 1}" class="u-flex-1">
+            <button class="btn-remove-opt u-color-error u-btn-ghost" data-idx="${i}" data-opt-idx="${oi}">✕</button>
           </div>
         `).join('');
-        html += `<button class="btn-secundario u-fs-xs btn-add-opt" data-idx="${i}" style="align-self:flex-start">+ Añadir opción</button>`;
+        html += `<button class="btn-secundario u-fs-xs btn-add-opt u-self-start" data-idx="${i}">+ Añadir opción</button>`;
       } else if (p.tipo === 'varias_opciones') {
         let seleccionadas = [];
         try { seleccionadas = JSON.parse(p.respuesta_correcta || '[]'); } catch (e) { seleccionadas = []; }
         html += (p.opciones || []).map((o, oi) => `
-          <div class="o-flecha" style="gap:var(--espaciado-xs);margin-bottom:var(--espaciado-xxs)">
+          <div class="o-flecha u-gap-xs u-mb-xxs">
             <input type="checkbox" ${seleccionadas.includes(oi) ? 'checked' : ''} data-correcta-check-idx="${oi}" data-idx="${i}">
-            <input type="text" data-opcion-val="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Opción ${oi + 1}" style="flex:1">
-            <button class="btn-remove-opt" data-idx="${i}" data-opt-idx="${oi}" style="background:none;border:none;color:var(--color-error)">✕</button>
+            <input type="text" data-opcion-val="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Opción ${oi + 1}" class="u-flex-1">
+            <button class="btn-remove-opt u-color-error u-btn-ghost" data-idx="${i}" data-opt-idx="${oi}">✕</button>
           </div>
         `).join('');
         html += `<button class="btn-secundario u-fs-xs btn-add-opt" data-idx="${i}" style="align-self:flex-start">+ Añadir opción</button>`;
       } else if (p.tipo === 'verdadero_falso') {
         html += `
-          <div class="o-flecha" style="gap:var(--espaciado-md)">
-            <label class="o-flecha" style="gap:4px"><input type="radio" name="vf_${i}" value="true" ${p.respuesta_correcta === 'true' ? 'checked' : ''} data-vf-val="true" data-idx="${i}"> Verdadero</label>
-            <label class="o-flecha" style="gap:4px"><input type="radio" name="vf_${i}" value="false" ${p.respuesta_correcta === 'false' ? 'checked' : ''} data-vf-val="false" data-idx="${i}"> Falso</label>
+          <div class="o-flecha u-gap-md">
+            <label class="o-flecha u-gap-2xs"><input type="radio" name="vf_${i}" value="true" ${p.respuesta_correcta === 'true' ? 'checked' : ''} data-vf-val="true" data-idx="${i}"> Verdadero</label>
+            <label class="o-flecha u-gap-2xs"><input type="radio" name="vf_${i}" value="false" ${p.respuesta_correcta === 'false' ? 'checked' : ''} data-vf-val="false" data-idx="${i}"> Falso</label>
           </div>
         `;
       } else if (p.tipo === 'respuesta_corta') {
-        html += `<input type="text" data-correcta-texto="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Respuesta correcta (variantes separadas por |)" style="width:100%">`;
+        html += `<input type="text" class="u-w-full" data-correcta-texto="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Respuesta correcta (variantes separadas por |)">`;
       } else if (p.tipo === 'texto_largo') {
-        html += `<textarea rows="2" placeholder="Respuesta de párrafo (se corregirá manualmente o con palabras clave)" disabled style="width:100%;opacity:0.6"></textarea>`;
+        html += `<textarea class="u-w-full u-input-desactivado" rows="2" placeholder="Respuesta de párrafo (se corregirá manualmente o con palabras clave)" disabled></textarea>`;
       } else if (p.tipo === 'solo_numero') {
-        html += `<input type="text" data-correcta-numero="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Ej: 42" style="width:100%">`;
+        html += `<input type="text" class="u-w-full" data-correcta-numero="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Ej: 42">`;
       } else if (p.tipo === 'fecha') {
-        html += `<input type="date" disabled style="width:100%;opacity:0.6">`;
+        html += `<input type="date" class="u-w-full u-input-desactivado" disabled>`;
       } else if (p.tipo === 'hora') {
-        html += `<input type="time" disabled style="width:100%;opacity:0.6">`;
+        html += `<input type="time" class="u-w-full u-input-desactivado" disabled>`;
       } else if (p.tipo === 'completar') {
         html += `<div id="editorHuecos_${i}"></div>`;
       } else if (p.tipo === 'relacionar') {
@@ -703,29 +635,29 @@
         let relacion = {};
         try { relacion = JSON.parse(p.respuesta_correcta || '{}'); } catch (e) { relacion = {}; }
         
-        html += `<div class="o-pila" style="gap:var(--espaciado-xs)">`;
+        html += `<div class="o-pila u-gap-xs">`;
         for (let pi = 0; pi < mitad; pi++) {
           html += `
-            <div class="o-flecha" style="gap:var(--espaciado-xs)">
-              <input type="text" data-rel-izq="${pi}" data-idx="${i}" value="${window.helpers.escapeHtml(opciones[pi] || '')}" placeholder="Izquierda ${pi + 1}" style="flex:1">
+            <div class="o-flecha u-gap-xs">
+              <input type="text" class="u-flex-1" data-rel-izq="${pi}" data-idx="${i}" value="${window.helpers.escapeHtml(opciones[pi] || '')}" placeholder="Izquierda ${pi + 1}">
               <span>→</span>
-              <input type="text" data-rel-der="${pi}" data-idx="${i}" value="${window.helpers.escapeHtml(opciones[mitad + pi] || '')}" placeholder="Derecha ${pi + 1}" style="flex:1">
+              <input type="text" class="u-flex-1" data-rel-der="${pi}" data-idx="${i}" value="${window.helpers.escapeHtml(opciones[mitad + pi] || '')}" placeholder="Derecha ${pi + 1}">
             </div>
           `;
         }
         html += `</div>`;
         html += `
-          <div class="o-flecha u-mt-1" style="gap:4px">
+          <div class="o-flecha u-mt-1 u-gap-2xs">
             <button class="btn-secundario u-fs-xs btn-add-par" data-idx="${i}">+ Par</button>
-            <button class="btn-secundario u-fs-xs btn-remove-par" data-idx="${i}" ${mitad <= 1 ? 'disabled style="opacity:0.3"' : ''}>- Par</button>
+            <button class="btn-secundario u-fs-xs btn-remove-par" data-idx="${i}" ${mitad <= 1 ? 'disabled class="u-input-desactivado"' : ''}>- Par</button>
           </div>
         `;
       } else if (p.tipo === 'ordenar') {
         html += (p.opciones || []).map((o, oi) => `
-          <div class="o-flecha" style="gap:var(--espaciado-xs);margin-bottom:var(--espaciado-xxs)">
+          <div class="o-flecha u-gap-xs u-mb-xxs">
             <span class="u-fw-600 u-fs-xs">${oi + 1}.</span>
-            <input type="text" data-orden-opt="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Elemento en su posición correcta" style="flex:1">
-            <button class="btn-remove-opt" data-idx="${i}" data-opt-idx="${oi}" style="background:none;border:none;color:var(--color-error)">✕</button>
+            <input type="text" class="u-flex-1" data-orden-opt="${oi}" data-idx="${i}" value="${window.helpers.escapeHtml(o)}" placeholder="Elemento en su posición correcta">
+            <button class="btn-remove-opt u-color-error u-btn-ghost" data-idx="${i}" data-opt-idx="${oi}">✕</button>
           </div>
         `).join('');
         html += `<button class="btn-secundario u-fs-xs btn-add-opt" data-idx="${i}">+ Añadir elemento</button>`;
@@ -967,17 +899,17 @@
       
       if (!p || p.tipo === 'seccion') {
         panel.innerHTML = `
-          <h4 style="margin-top:0">${window.Iconos.render('settings')} Propiedades</h4>
+          <h4 class="u-m-0">${window.Iconos.render('settings')} Propiedades</h4>
           <p class="u-fs-sm u-color-texto-secundario">Selecciona una pregunta para editar sus ajustes específicos de puntuación, validación y retroalimentación.</p>
         `;
         return;
       }
 
       panel.innerHTML = `
-        <h4 style="margin-top:0; border-bottom:1px solid var(--color-borde); padding-bottom:var(--espaciado-xs)">Ajustes Pregunta ${idx + 1}</h4>
-        
+        <h4 class="u-m-0 sidebar-titulo">Ajustes Pregunta ${idx + 1}</h4>
+
         <div class="o-pila">
-          <label class="o-flecha" style="gap:var(--espaciado-xs);cursor:pointer;justify-content:space-between">
+          <label class="o-flecha u-gap-xs u-cursor-pointer sidebar-toggle">
             <span class="u-fs-sm u-fw-600">Respuesta obligatoria</span>
             <input type="checkbox" id="sideObligatoria" ${p.obligatoria ? 'checked' : ''}>
           </label>
@@ -1014,7 +946,7 @@
         </div>
 
         <div class="o-pila u-mt-1">
-          <label class="o-flecha" style="gap:var(--espaciado-xs);cursor:pointer;justify-content:space-between">
+          <label class="o-flecha u-gap-xs u-cursor-pointer sidebar-toggle">
             <span class="u-fs-sm u-fw-600">Mostrar solución</span>
             <input type="checkbox" id="sideMostrarSolucion" ${p.mostrar_solucion !== false ? 'checked' : ''}>
           </label>
@@ -1389,7 +1321,7 @@
       areaPreguntas.innerHTML = preguntas.map((p, index) => {
         if (p.tipo === 'seccion') {
           return `
-            <div style="background:#555;color:#fff;padding:var(--espaciado-sm);border-radius:var(--radio-sm);margin-top:var(--espaciado-sm)">
+            <div class="u-seccion-bloque">
               <h4>${window.helpers.escapeHtml(p.texto)}</h4>
               <p class="u-fs-xs" style="opacity:0.8">${window.helpers.escapeHtml(p.explicacion || '')}</p>
             </div>
@@ -1421,15 +1353,33 @@
         } else if (p.tipo === 'texto_largo') {
           oHtml = `<textarea name="p_prev_${index}" rows="2" placeholder="Redacta tu respuesta aquí..." style="width:100%"></textarea>`;
         } else if (p.tipo === 'completar') {
-          if (p.huecos && p.huecos.length > 0) {
-            const partes = (p.texto || '').split(/\{\{HUECO_(\d+)\}\}/g);
-            oHtml += `<div class="o-flecha" style="flex-wrap:wrap;gap:4px">`;
-            oHtml += partes.map((parte, pi) => {
-              if (pi % 2 === 0) return `<span>${window.helpers.escapeHtml(parte)}</span>`;
-              const h = p.huecos.find(x => x.id === parseInt(parte));
-              if (!h) return `<span>{{HUECO_${parte}}}</span>`;
-              return `<input type="text" style="width:100px;padding:2px 4px;font-size:var(--texto-xs)" placeholder="Huevo">`;
-            }).join('');
+          // Renderizado paralelo al de vista-examen-tomar.js (renderer del alumno)
+          // para que el profesor vea exactamente lo que verá el alumno.
+          const huecos = Array.isArray(p.huecos) ? p.huecos : [];
+          const texto = p.texto || '';
+          if (!huecos.length) {
+            // Estado vacío: usuario cambió tipo pero aún no creó huecos.
+            // Wrapper plano (sin .pregunta-examen) para no heredar estilos de pregunta renderizada.
+            oHtml += `<div class="preview-hueco-vacio" data-pid="${p.id}">
+              <p class="u-fs-sm u-color-texto-terciario"><em>Edita esta pregunta en la pestaña <b>Preguntas</b> y selecciona palabras para convertirlas en huecos.</em></p>
+            </div>`;
+          } else {
+            const MARCADOR = /\{\{HUECO_(\d+)\}\}/g;
+            const partes = texto.split(MARCADOR);
+            oHtml += `<div class="pregunta-examen" data-pid="${p.id}">`;
+            partes.forEach((parte, pi) => {
+              if (pi % 2 === 0) {
+                oHtml += `<span>${window.helpers.escapeHtml(parte)}</span>`;
+                return;
+              }
+              const hIdx = huecos.findIndex(h => h.id === parseInt(parte));
+              if (hIdx === -1) {
+                // Hueco referenciado en texto pero ausente en el array (huérfano)
+                oHtml += `<span class="u-color-texto-terciario">[hueco ${parte} sin definir]</span>`;
+                return;
+              }
+              oHtml += `<span class="pregunta-examen__hueco-inline"><input type="text" class="pregunta-examen__hueco-input" data-pid="${p.id}" data-hidx="${hIdx}" placeholder="Hueco ${hIdx + 1}" readonly></span>`;
+            });
             oHtml += `</div>`;
           }
         } else if (p.tipo === 'relacionar') {

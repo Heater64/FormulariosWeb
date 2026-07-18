@@ -231,4 +231,65 @@
   .editor-pregunta__drag-handle {
     display: none;
   }
+
+  /* Mapeo de relación pasa a vertical en pantallas estrechas */
+  .editor-relacionar__mapeo-fila {
+    flex-wrap: wrap;
+    gap: var(--espaciado-xxs);
+  }
+  .editor-relacionar__mapeo-izq {
+    flex-basis: 100%;
+  }
+  .editor-relacionar__mapeo-select {
+    flex-basis: 100%;
+  }
+
+  /* Pares de relación / ordenar elementos: padding reducido */
+  .editor-relacionar__par,
+  .editor-ordenar__elemento {
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  select[data-campo="tipo"] {
+    min-width: 0;
+    width: 100%;
+    font-size: var(--texto-xs);
+  }
+
+  .editor-pregunta__accion-btn {
+    min-width: 32px;
+    min-height: 32px; /* diana táctil cómoda al hacer clic */
+    padding: var(--espaciado-xxs);
+  }
+
+  .editor-relacionar__par input,
+  .editor-ordenar__elemento input {
+    font-size: var(--texto-sm);
+  }
+
+  .editor-ordenar__numero {
+    width: 24px;
+    height: 24px;
+  }
+
+  .editor-preview-banner {
+    font-size: var(--texto-xs);
+    padding: var(--espaciado-xs);
+  }
+
+  .preview-hueco {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .editor-relacionar__mapeo {
+    padding: var(--espaciado-xs);
+  }
+  .editor-relacionar__mapeo-flecha {
+    font-size: var(--texto-sm);
+  }
 }

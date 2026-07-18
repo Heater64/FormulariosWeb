@@ -57,4 +57,25 @@
   .tarjeta-capitulo {
     padding: var(--espaciado-md);
   }
+  .tarjeta-capitulo__referencia {
+    font-size: var(--texto-base);
+  }
+  .tarjeta-capitulo__progreso {
+    flex-wrap: wrap;
+    gap: var(--espaciado-xxs);
+  }
+  .tarjeta-capitulo--completado,
+  .tarjeta-capitulo--en-progreso {
+    border-left-width: 3px;
+  }
+}
+
+@media (max-width: 360px) {
+  .tarjeta-capitulo {
+    padding: var(--espaciado-sm);
+    border-radius: var(--radio-lg);
+  }
+  .tarjeta-capitulo__referencia {
+    font-size: var(--texto-sm);
+  }
 }

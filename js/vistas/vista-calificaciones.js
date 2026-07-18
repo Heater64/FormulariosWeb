@@ -113,9 +113,8 @@
           <input type="text" id="filtroAlumno" placeholder="Buscar alumno..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)">
 
           ${evaluaciones.length === 0 && sueltos.length === 0
-            ? '<p class="u-color-texto-terciario">Aún no hay evaluaciones ni exámenes. Crea una evaluación y añade exámenes.</p>'
-            : alumnos.length === 0
-              ? '<p class="u-color-texto-terciario">No hay alumnos asignados a este grupo.</p>'
+            ? '<div class="empty-state"><div class="empty-state__icono">' + window.Iconos.render('graduation-cap') + '</div><h3 class="empty-state__titulo">Aún no hay evaluaciones ni exámenes</h3><p class="empty-state__descripcion">Crea una evaluación y añade exámenes para empezar a registrar calificaciones.</p></div>'              : alumnos.length === 0
+              ? `<div class="empty-state empty-state--compacto"><div class="empty-state__icono">${window.Iconos.render('users')}</div><p class="empty-state__descripcion">No hay alumnos asignados a este grupo.</p></div>`
               : evaluaciones.map(e => this._seccionEvaluacion(e, alumnos, notasPorExamen, mediaEval, completadosEval, mediaGrupoEval)).join('') +
                 (sueltos.length ? this._seccionSueltos(sueltos, alumnos, notasPorExamen) : '')}
         </div>`;

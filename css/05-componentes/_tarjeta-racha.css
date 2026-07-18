@@ -3,8 +3,8 @@
   align-items: center;
   gap: var(--espaciado-sm);
   padding: var(--espaciado-md);
-  background: linear-gradient(135deg, #FFF7ED 0%, #FFEDD5 100%);
-  border: 1px solid #FED7AA;
+  background: linear-gradient(135deg, var(--color-naranja-50) 0%, var(--color-naranja-100) 100%);
+  border: 1px solid var(--color-naranja-200);
   border-radius: var(--radio-xl);
   box-shadow: var(--sombra-sm);
   transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
@@ -14,7 +14,7 @@
   .tarjeta-racha:hover {
     transform: translateY(-3px);
     box-shadow: var(--sombra-lg);
-    border-color: #FDBA74;
+    border-color: var(--color-naranja-300);
   }
 }
 
@@ -27,8 +27,9 @@
   align-items: center;
   justify-content: center;
   color: var(--color-texto-acento);
-  background: radial-gradient(circle at 50% 35%, #FCD34D 0%, #FB923C 45%, #EF4444 100%);
-  box-shadow: 0 0 0 4px rgba(251, 146, 60, 0.18), 0 6px 16px -6px rgba(239, 68, 68, 0.6);
+  /* Llama ornamental: gradiente único con 3 puntos amarillo → naranja → rojo */
+  background: radial-gradient(circle at 50% 35%, var(--color-amarillo-300) 0%, var(--color-naranja-400) 45%, var(--color-error) 100%);
+  box-shadow: 0 0 0 4px var(--color-naranja-soft), 0 6px 16px -6px rgba(239, 68, 68, 0.6);
   animation: tarjeta-racha-flicker 1.8s ease-in-out infinite;
 }
 
@@ -44,7 +45,7 @@
 }
 
 .tarjeta-racha__info .u-texto-lg {
-  color: #C2410C;
+  color: var(--color-naranja-700);
 }
 
 @keyframes tarjeta-racha-flicker {
@@ -52,13 +53,14 @@
   50% { transform: scale(1.08) rotate(2deg); }
 }
 
+/* Modo oscuro: gradiente único naranja oscuro (hex ornamental) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .tarjeta-racha {
     background: linear-gradient(135deg, #431407, #7F1D1D);
     border-color: #7F1D1D;
   }
   :root:not([data-theme="light"]) .tarjeta-racha__info .u-texto-lg {
-    color: #FDBA74;
+    color: var(--color-naranja-300);
   }
 }
 
@@ -68,7 +70,7 @@
 }
 
 :root[data-theme="dark"] .tarjeta-racha__info .u-texto-lg {
-  color: #FDBA74;
+  color: var(--color-naranja-300);
 }
 
 @media (max-width: 480px) {

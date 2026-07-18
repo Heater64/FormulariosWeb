@@ -1,4 +1,5 @@
 :root {
+  --espaciado-2xs: clamp(2px, 0.4vw, 4px);
   --espaciado-xxs: clamp(4px, 0.6vw, 6px);
   --espaciado-xs: clamp(8px, 1vw, 10px);
   --espaciado-sm: clamp(12px, 1.6vw, 14px);

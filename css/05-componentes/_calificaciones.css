@@ -43,6 +43,54 @@
   }
 }
 
+/* === Mobile pequeño (< 480px): distribucion más fina, eval acciones apiladas === */
+@media (max-width: 480px) {
+  .calif-distribucion {
+    height: 56px;
+  }
+
+  .calif-distribucion__etiqueta {
+    font-size: var(--texto-xxs);
+  }
+
+  .calif-eval-acciones {
+    flex-direction: column;
+    align-items: stretch;
+    gap: var(--espaciado-xs);
+  }
+
+  .calif-eval-media {
+    text-align: center;
+  }
+
+  .calif-stats-grid {
+    flex-direction: column;
+  }
+
+  .calif-card__media {
+    font-size: var(--texto-lg);
+  }
+
+  .calif-card__examen-nombre {
+    max-width: 55%;
+  }
+}
+
+@media (max-width: 360px) {
+  .calif-distribucion {
+    height: 48px;
+    gap: 2px;
+  }
+
+  .calif-card {
+    padding: var(--espaciado-xs);
+  }
+
+  .calif-card__examen {
+    font-size: 10px;
+  }
+}
+
 .calif-card {
   padding: var(--espaciado-sm);
   border: 1px solid var(--color-borde);

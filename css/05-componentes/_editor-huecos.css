@@ -41,7 +41,7 @@
   min-width: 60px;
   padding: 2px 8px;
   margin: 0 2px;
-  border-bottom: 2.5px solid var(--color-acento);
+  border-bottom: 2px solid var(--color-acento);
   background: var(--color-acento-soft);
   color: var(--color-acento);
   font-weight: 600;
@@ -144,7 +144,7 @@
 .editor-hueco__input {
   width: 100%;
   padding: var(--espaciado-xs) var(--espaciado-sm);
-  border: 1.5px solid var(--color-borde);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-sm);
   background: var(--color-fondo);
   color: var(--color-texto);
@@ -324,7 +324,42 @@
     padding: 1px 6px;
     font-size: var(--texto-xs);
   }
+  .editor-hueco__btn-flotante {
+    font-size: 10px;
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+  }
   .selector-tipo-grid {
     grid-template-columns: repeat(3, 1fr);
+  }
+  .selector-tipo-opcion {
+    padding: var(--espaciado-xs);
+  }
+  .selector-tipo-opcion__icono {
+    font-size: 1.25rem;
+  }
+  .editor-hueco__item-eliminar {
+    width: 32px;
+    height: 32px; /* mantiene zona táctil cómoda */
+  }
+  .pregunta-examen__hueco-inline {
+    min-width: 60px;
+    max-width: 140px;
+  }
+  .pregunta-examen__hueco-input {
+    font-size: var(--texto-xs);
+    padding: 4px 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .editor-hueco__marcador {
+    min-width: 32px;
+    padding: 1px 4px;
+  }
+  .selector-tipo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .editor-hueco__item {
+    padding: var(--espaciado-xs);
   }
 }
