@@ -104,7 +104,9 @@
             <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
             <h3>${editando ? 'Editar' : 'Nuevo'} Examen</h3>
             <div class="o-flecha" style="gap:var(--espaciado-xs)">
-              <button class="btn-secundario" id="btnPreview" style="font-size:var(--texto-xs)">${window.Iconos.render('eye')} Vista previa</button>
+              <button class="btn-secundario u-fs-xs" id="btnImportarJSON">${window.Iconos.render('upload')} Importar</button>
+              <button class="btn-secundario u-fs-xs" id="btnExportarJSON">${window.Iconos.render('download')} Exportar</button>
+              <button class="btn-secundario u-fs-xs" id="btnPreview">${window.Iconos.render('eye')} Previsualizar</button>
               <span class="editor-draft-indicator" id="draftIndicator">${window.Iconos.render('save')} Borrador local</span>
             </div>
           </div>
@@ -145,16 +147,26 @@
         router.navegar('/examenes');
       };
 
-      // Preview
-      raiz.querySelector('#btnPreview').onclick = async () => {
+      // Preview inline
+      raiz.querySelector('#btnPreview').onclick = () => {
         this._sincronizarPreguntas(raiz);
-        // Save draft before preview
-        localStorage.setItem(this._draftKey, JSON.stringify(this._examen));
-        if (this._examen.id) {
-          router.navegar('/preview/' + this._examen.id);
+        const panelExistente = raiz.querySelector('#previewPanel');
+        if (panelExistente) {
+          panelExistente.remove();
         } else {
-          window.helpers.mostrarAlerta('Guarda el examen primero para previsualizarlo.', 'advertencia');
+          this._togglePreviewPanel(raiz, true);
         }
+      };
+
+      // Export JSON
+      raiz.querySelector('#btnExportarJSON').onclick = () => {
+        this._sincronizarPreguntas(raiz);
+        this._exportarJSON();
+      };
+
+      // Import JSON
+      raiz.querySelector('#btnImportarJSON').onclick = () => {
+        this._importarJSON(raiz);
       };
 
       const btnCrearEval = raiz.querySelector('#btnCrearEval');
@@ -209,6 +221,139 @@
       }, 30000);
     },
 
+    _togglePreviewPanel(raiz, visible) {
+      let panel = raiz.querySelector('#previewPanel');
+      if (!visible) {
+        if (panel) panel.remove();
+        return;
+      }
+      if (!panel) {
+        panel = document.createElement('div');
+        panel.id = 'previewPanel';
+        panel.style = 'border:1px solid var(--color-borde);border-radius:var(--radio-md);padding:var(--espaciado-md);background:var(--color-fondo-alt);margin-bottom:var(--espaciado-md)';
+        const preguntas = this._examen.preguntas;
+        panel.innerHTML = `
+          <div class="o-flecha o-flecha--between u-mb-2"><h4>${window.Iconos.render('eye')} Vista previa</h4><button class="btn-secundario u-fs-xs" id="btnCerrarPreview">Cerrar</button></div>
+          <div class="o-pila" style="gap:var(--espaciado-md)">
+            <div class="o-pila"><span class="u-fw-600 u-texto-lg">${window.helpers.escapeHtml(this._examen.titulo || 'Examen sin título')}</span>${this._examen.descripcion ? `<p class="u-fs-sm u-color-texto-secundario">${window.helpers.escapeHtml(this._examen.descripcion)}</p>` : ''}<p class="u-fs-xs u-color-texto-terciario">${preguntas.length} preguntas</p></div>
+            ${preguntas.map((p, i) => {
+              let previewHtml = `<p class="u-fw-600 u-fs-sm">${i + 1}. ${window.helpers.escapeHtml(p.texto || 'Pregunta vacía')}</p>`;
+              if (p.tipo === 'multiple' || p.tipo === 'opcion_unica' || p.tipo === 'varias_opciones') {
+                previewHtml += `<div class="o-pila u-mt-1" style="gap:4px">${(p.opciones || []).map((o, oi) => `<label style="display:flex;align-items:center;gap:var(--espaciado-xxs);font-size:var(--texto-sm);padding:var(--espaciado-xxs) 0"><input type="${p.tipo === 'varias_opciones' ? 'checkbox' : 'radio'}" disabled> ${window.helpers.escapeHtml(o || `Opción ${String.fromCharCode(65 + oi)}`)}</label>`).join('')}</div>`;
+              } else if (p.tipo === 'verdadero_falso') {
+                previewHtml += `<div class="o-flecha u-mt-1" style="gap:var(--espaciado-sm);font-size:var(--texto-sm)"><label><input type="radio" disabled> Verdadero</label><label><input type="radio" disabled> Falso</label></div>`;
+              } else if (p.tipo === 'respuesta_corta' || p.tipo === 'solo_numero') {
+                previewHtml += `<input type="text" placeholder="${p.tipo === 'solo_numero' ? 'Número' : 'Escribe tu respuesta'}" disabled style="width:100%;margin-top:var(--espaciado-xs);opacity:0.6">`;
+              } else if (p.tipo === 'texto_largo') {
+                previewHtml += `<textarea rows="2" placeholder="Escribe tu respuesta..." disabled style="width:100%;margin-top:var(--espaciado-xs);opacity:0.6"></textarea>`;
+              } else if (p.tipo === 'completar') {
+                if (p.huecos && p.huecos.length > 0) {
+                  const partes = (p.texto || '').split(/\{\{HUECO_(\d+)\}\}/g);
+                  previewHtml += `<div class="o-pila u-mt-1" style="gap:var(--espaciado-xs)">`;
+                  previewHtml += partes.map((parte, pi) => {
+                    if (pi % 2 === 0) return window.helpers.escapeHtml(parte);
+                    const h = p.huecos.find(x => x.id === parseInt(parte));
+                    if (!h) return `{{HUECO_${parte}}}`;
+                    return `<span class="preview-hueco" title="Respuesta: ${window.helpers.escapeHtml(h.respuesta_correcta)}">${window.helpers.escapeHtml(h.respuesta_correcta)}</span>`;
+                  }).join('');
+                  previewHtml += `</div>`;
+                }
+              } else if (p.tipo === 'relacionar') {
+                const pares = p.opciones || [];
+                const mit = Math.ceil(pares.length / 2);
+                if (mit > 0) {
+                  previewHtml += `<div class="o-pila u-mt-1" style="gap:4px">`;
+                  for (let ri = 0; ri < mit; ri++) {
+                    previewHtml += `<div class="o-flecha" style="gap:var(--espaciado-xs);font-size:var(--texto-sm)"><span style="flex:1;padding:2px 6px;background:var(--color-fondo-alt);border-radius:var(--radio-sm)">${window.helpers.escapeHtml(pares[ri] || '')}</span><span class="u-color-texto-terciario">→</span><span style="flex:1;padding:2px 6px;background:var(--color-fondo-alt);border-radius:var(--radio-sm)">${window.helpers.escapeHtml(pares[mit + ri] || '')}</span></div>`;
+                  }
+                  previewHtml += `</div>`;
+                }
+              } else if (p.tipo === 'ordenar') {
+                const items = p.opciones || [];
+                let orden;
+                try { orden = JSON.parse(p.respuesta_correcta); } catch (e) { orden = items.map((_, i) => i); }
+                if (orden.length > 0 && items.length > 0) {
+                  previewHtml += `<div class="o-pila u-mt-1" style="gap:2px">`;
+                  orden.forEach((oi, pos) => {
+                    previewHtml += `<div class="o-flecha" style="gap:var(--espaciado-xs);font-size:var(--texto-sm);padding:2px 6px;background:var(--color-fondo-alt);border-radius:var(--radio-sm)"><span style="min-width:20px;font-weight:600">${pos + 1}.</span><span>${window.helpers.escapeHtml(items[oi] || '')}</span></div>`;
+                  });
+                  previewHtml += `</div>`;
+                }
+              }
+              previewHtml += `<span class="u-fs-xs u-color-texto-terciario u-mt-1" style="display:block">Tipo: ${TIPOS_PREGUNTA.find(t => t.valor === p.tipo)?.nombre || p.tipo}</span>`;
+              return `<div style="border-left:3px solid var(--color-acento);padding-left:var(--espaciado-sm)">${previewHtml}</div>`;
+            }).join('')}
+          </div>`;
+        raiz.querySelector('#preguntasContainer').before(panel);
+        panel.querySelector('#btnCerrarPreview').onclick = () => panel.remove();
+      }
+      window.Iconos?.actualizar?.();
+    },
+
+    _exportarJSON() {
+      const data = {
+        titulo: this._examen.titulo,
+        descripcion: this._examen.descripcion,
+        preguntas: this._examen.preguntas.map(p => ({
+          texto: p.texto,
+          tipo: p.tipo,
+          opciones: p.tipo === 'multiple' || p.tipo === 'varias_opciones' || p.tipo === 'opcion_unica' ? (p.opciones || []) : undefined,
+          respuesta_correcta: !['completar', 'relacionar', 'ordenar'].includes(p.tipo) ? p.respuesta_correcta : undefined,
+          explicacion: p.explicacion || undefined,
+          huecos: p.tipo === 'completar' ? (p.huecos || []) : undefined
+        }))
+      };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = (this._examen.titulo || 'examen').replace(/[^a-z0-9]/gi, '_') + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+
+    _importarJSON(raiz) {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.json';
+      input.onchange = async (e) => {
+        const file = e.target.files[0];
+        if (!file) return;
+        try {
+          const text = await file.text();
+          const data = JSON.parse(text);
+          if (!data.preguntas || !Array.isArray(data.preguntas)) {
+            window.helpers.mostrarAlerta('El archivo no contiene preguntas válidas.', 'error');
+            return;
+          }
+          const confirmar = await window.helpers.confirmar(
+            `¿Importar ${data.preguntas.length} preguntas desde "${file.name}"?\nSe añadirán al final del examen actual.`,
+            { titulo: 'Importar preguntas', textoConfirmar: 'Importar' }
+          );
+          if (!confirmar) return;
+          const preguntasImportadas = data.preguntas.map(p => ({
+            id: Date.now() + '_' + Math.random().toString(36).slice(2, 6),
+            texto: p.texto || '',
+            tipo: p.tipo || 'multiple',
+            opciones: p.opciones || ['', ''],
+            respuesta_correcta: p.respuesta_correcta || '',
+            explicacion: p.explicacion || '',
+            huecos: p.huecos || []
+          }));
+          this._examen.preguntas.push(...preguntasImportadas);
+          if (data.titulo && !this._examen.titulo) {
+            this._examen.titulo = data.titulo;
+            raiz.querySelector('#examenTitulo').value = data.titulo;
+          }
+          this._renderizarPreguntas(raiz, this._examen.preguntas);
+          window.helpers.mostrarAlerta(`${data.preguntas.length} preguntas importadas.`, 'exito');
+        } catch (err) {
+          window.helpers.mostrarAlerta('Error al importar: ' + err.message, 'error');
+        }
+      };
+      input.click();
+    },
+
     _renderizarPreguntas(raiz, preguntas) {
       const cont = raiz.querySelector('#preguntasContainer');
       this._editoresHueco = {};
@@ -239,7 +384,7 @@
       `).join('');
 
       // Sync events
-      cont.querySelectorAll('[data-campo]').forEach(el => {
+      cont.querySelectorAll('[data-campo], [data-relmapeo]').forEach(el => {
         el.addEventListener('change', () => this._sincronizarPreguntas(raiz));
         el.addEventListener('input', () => this._sincronizarPreguntas(raiz));
       });
@@ -403,13 +548,10 @@
     },
 
     _renderCuerpoPregunta(p, i) {
-      let html = `<textarea class="u-mb-1" data-campo="texto" data-idx="${i}" rows="2" placeholder="Escribe la pregunta...">${window.helpers.escapeHtml(p.texto)}</textarea>`;
       if (p.tipo === 'completar') {
-        html += `<div id="editorHuecos_${i}"></div>`;
-      } else {
-        html += this._renderCamposTipo(p, i);
+        return `<div id="editorHuecos_${i}"></div>`;
       }
-      return html;
+      return `<textarea class="u-mb-1" data-campo="texto" data-idx="${i}" rows="2" placeholder="Escribe la pregunta...">${window.helpers.escapeHtml(p.texto)}</textarea>` + this._renderCamposTipo(p, i);
     },
 
     _renderCamposTipo(p, i) {
@@ -449,14 +591,11 @@
       const pregunta = this._examen.preguntas[idx];
       const cont = raiz.querySelector(`[data-cuerpo-pregunta="${idx}"]`);
       if (!cont) return;
-      let html = `<textarea class="u-mb-1" data-campo="texto" data-idx="${idx}" rows="2" placeholder="Escribe la pregunta...">${window.helpers.escapeHtml(pregunta.texto)}</textarea>`;
-      if (tipo === 'completar') {
-        html += `<div id="editorHuecos_${idx}"></div>`;
-      } else {
-        html += this._renderCamposTipo(pregunta, idx);
-      }
+      let html = tipo === 'completar'
+        ? `<div id="editorHuecos_${idx}"></div>`
+        : `<textarea class="u-mb-1" data-campo="texto" data-idx="${idx}" rows="2" placeholder="Escribe la pregunta...">${window.helpers.escapeHtml(pregunta.texto)}</textarea>` + this._renderCamposTipo(pregunta, idx);
       cont.innerHTML = html;
-      cont.querySelectorAll('[data-campo]').forEach(el => {
+      cont.querySelectorAll('[data-campo], [data-relmapeo]').forEach(el => {
         el.addEventListener('change', () => this._sincronizarPreguntas(raiz));
         el.addEventListener('input', () => this._sincronizarPreguntas(raiz));
       });
@@ -497,10 +636,14 @@
     _renderRelacionar(p, idx) {
       const opciones = p.opciones || ['', '', ''];
       const mitad = Math.ceil(opciones.length / 2);
+      const izq = opciones.slice(0, mitad);
+      const der = opciones.slice(mitad);
 
-      // Build visual pairs with auto-generated correct pairs
+      let relacion;
+      try { relacion = JSON.parse(p.respuesta_correcta || '{}'); } catch (e) { relacion = {}; }
+
       let html = '<div class="editor-relacionar__pares">';
-      html += `<p class="u-fs-xs u-color-texto-terciario u-mb-1">Pares izquierda → derecha (la respuesta correcta se genera automáticamente):</p>`;
+      html += `<p class="u-fs-xs u-color-texto-terciario u-mb-1">Pares izquierda → derecha:</p>`;
 
       for (let pi = 0; pi < mitad; pi++) {
         html += `<div class="editor-relacionar__par">
@@ -514,6 +657,23 @@
         <button class="btn-secundario u-fs-xs btn-add-pair" data-idx="${idx}">${window.Iconos.render('plus')} Par</button>
         <button class="btn-secundario u-fs-xs btn-remove-pair" data-idx="${idx}" ${(mitad <= 2) ? 'disabled style="opacity:0.3"' : ''}>${window.Iconos.render('minus')} Par</button>
       </div>`;
+
+      // Mapping section: explicit left → right assignment
+      if (mitad > 0 && der.length > 0) {
+        html += `<div class="editor-relacionar__mapeo u-mt-1">
+          <p class="u-fs-xs u-color-texto-terciario u-mb-1">Relación correcta (izquierda → derecha):</p>`;
+        for (let mi = 0; mi < mitad; mi++) {
+          html += `<div class="o-flecha editor-relacionar__mapeo-fila">
+            <span class="editor-relacionar__mapeo-izq">${window.helpers.escapeHtml(izq[mi] || `Izq ${mi + 1}`)}</span>
+            <span class="editor-relacionar__mapeo-flecha">→</span>
+            <select data-relmapeo="${idx}" data-idx="${mi}" class="editor-relacionar__mapeo-select">
+              <option value="">— Seleccionar —</option>
+              ${der.map((d, di) => `<option value="${di}" ${relacion[mi] == di ? 'selected' : ''}>${window.helpers.escapeHtml(d || `Der ${di + 1}`)}</option>`).join('')}
+            </select>
+          </div>`;
+        }
+        html += '</div>';
+      }
 
       html += '</div>';
       return html;
@@ -690,13 +850,12 @@
         }
       });
 
-      // Sync relational pairs (auto-generate correct answer)
+      // Sync relational pairs (left/right text)
       cont.querySelectorAll('[data-relizq]').forEach(el => {
         const idx = parseInt(el.dataset.relizq);
         if (idx >= preguntas.length) return;
         if (!preguntas[idx].opciones) preguntas[idx].opciones = [];
         preguntas[idx].opciones[parseInt(el.dataset.idx)] = el.value;
-        this._autoGenerarRespuestaCorrecta(preguntas[idx]);
       });
       cont.querySelectorAll('[data-relder]').forEach(el => {
         const idx = parseInt(el.dataset.relder);
@@ -704,7 +863,36 @@
         if (!preguntas[idx].opciones) preguntas[idx].opciones = [];
         const mitad = Math.ceil(preguntas[idx].opciones.length / 2);
         preguntas[idx].opciones[mitad + parseInt(el.dataset.idx)] = el.value;
-        this._autoGenerarRespuestaCorrecta(preguntas[idx]);
+        // Update mapping dropdown option texts in real-time
+        const selectEls = cont.querySelectorAll(`select[data-relmapeo="${idx}"]`);
+        selectEls.forEach(sel => {
+          Array.from(sel.options).forEach(opt => {
+            if (opt.value !== '') {
+              const oi = parseInt(opt.value);
+              opt.textContent = window.helpers.escapeHtml(preguntas[idx].opciones[mitad + oi] || `Der ${oi + 1}`);
+            }
+          });
+        });
+      });
+
+      // Sync relational mapping dropdown (explicit correct answer)
+      cont.querySelectorAll('[data-relmapeo]').forEach(el => {
+        const idx = parseInt(el.dataset.relmapeo);
+        if (idx >= preguntas.length) return;
+        const p = preguntas[idx];
+        const relIzq = parseInt(el.dataset.idx);
+        if (el.value === '') return;
+        let mapeo;
+        try { mapeo = JSON.parse(p.respuesta_correcta || '{}'); } catch (e) { mapeo = {}; }
+        mapeo[String(relIzq)] = parseInt(el.value);
+        p.respuesta_correcta = JSON.stringify(mapeo);
+      });
+
+      // Auto-generate default mapping if none set yet
+      preguntas.forEach((p, i) => {
+        if ((p.tipo === 'relacionar' || p.tipo === 'ordenar') && (!p.respuesta_correcta || p.respuesta_correcta === '' || p.respuesta_correcta === '{}')) {
+          this._autoGenerarRespuestaCorrecta(p);
+        }
       });
 
       // Sync order elements (auto-generate correct answer)

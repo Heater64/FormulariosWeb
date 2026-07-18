@@ -78,6 +78,36 @@
   border-color: var(--color-exito);
 }
 
+.examen-dot--flag {
+  border-color: var(--color-aviso);
+}
+
+.examen-dot--flag::after {
+  content: '⚑';
+  position: absolute;
+  top: -8px;
+  right: -4px;
+  font-size: 8px;
+  color: var(--color-aviso);
+}
+
+.examen-dot {
+  position: relative;
+}
+
+.examen-timer {
+  font-variant-numeric: tabular-nums;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  padding: var(--espaciado-xxs) var(--espaciado-xs);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  transition: color 0.3s;
+}
+
 .examen-nav {
   display: flex;
   justify-content: space-between;

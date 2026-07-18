@@ -72,7 +72,7 @@
   <link rel="stylesheet" href="css/05-componentes/_loading.css">
   <link rel="stylesheet" href="css/05-componentes/_sync-indicator.css">
   <link rel="stylesheet" href="css/05-componentes/_animaciones.css">
-  <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
+
   <link rel="stylesheet" href="css/05-componentes/_skeleton.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-imagen.css">
   <link rel="stylesheet" href="css/05-componentes/_install-banner.css">
@@ -86,7 +86,9 @@
   <link rel="stylesheet" href="css/05-componentes/_corregir-examen.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-preguntas.css">
   <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
+  <link rel="stylesheet" href="css/05-componentes/_notas.css">
   <link rel="stylesheet" href="css/05-componentes/_explorar.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
 
   <!-- CSS: Utilities -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -122,15 +124,15 @@
   <script src="js/utilidades/animaciones.js"></script>
   <script src="js/utilidades/haptica.js"></script>
   <script src="js/utilidades/gestos-navegacion.js"></script>
-  <script src="js/utilidades/pull-to-refresh.js"></script>
+
   <script src="js/utilidades/skeleton.js"></script>
   <script src="js/utilidades/memoria.js"></script>
+  <script src="js/utilidades/accesibilidad.js"></script>
   <script src="js/componentes/editor-imagen.js"></script>
+  <script src="js/componentes/editor-tiptap.js"></script>
+  <script src="js/componentes/version-history.js"></script>
 
   <!-- JS: Core (nuevos) -->
-<script src="js/core/update-manager.js"></script>
-<script src="js/core/connection-indicator.js"></script>
-<script src="js/core/sync-status.js"></script>
 <script src="js/core/notifications.js"></script>
 
   <!-- JS: Domain Logic -->
@@ -292,11 +294,7 @@
     <span class="connection-indicator__text">Conectado</span>
   </div>
 
-  <!-- Sync Status Indicator -->
-  <div id="syncIndicator" class="sync-indicator u-oculto" aria-live="polite" aria-atomic="true">
-    <span class="sync-indicator__icon" aria-hidden="true"></span>
-    <span class="sync-indicator__text">Todo sincronizado</span>
-  </div>
+  <!-- Sync Status Indicator (se crea dinámicamente via JS) -->
 
   <main id="app-root"></main>
   <nav id="barra-navegacion" class="barra-nav-inferior"></nav>

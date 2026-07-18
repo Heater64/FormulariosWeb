@@ -172,6 +172,21 @@
               <span class="perfil-boton-seccion__flecha">${I('chevron-right')}</span>
             </button>` : ''}
 
+            <!-- ALMACENAMIENTO -->
+            <div class="perfil-seccion">
+              <div class="perfil-seccion__cabecera">
+                <div class="perfil-seccion__icono" style="background:var(--color-aviso-soft);color:var(--color-aviso)">${I('database')}</div>
+                <div>
+                  <h4 class="perfil-seccion__titulo">Almacenamiento</h4>
+                  <p class="perfil-seccion__desc">Gestión de caché y datos temporales</p>
+                </div>
+              </div>
+              <p class="u-fs-xs" style="color:var(--color-texto-terciario);margin-bottom:var(--espaciado-sm);line-height:1.5">
+                Elimina los datos guardados localmente (caché de Supabase, imágenes en memoria, etc.). La app se recargará y volverá a descargar todo desde el servidor. <strong>Tu progreso y cuenta no se perderán.</strong>
+              </p>
+              <button class="btn-secundario" id="btnLimpiarCache" style="width:100%;justify-content:center;font-size:var(--texto-xs)">${I('trash-2')} Limpiar caché de la app</button>
+            </div>
+
             <!-- SEGURIDAD -->
             <div class="perfil-seccion">
               <div class="perfil-seccion__cabecera">
@@ -272,6 +287,17 @@
       if (btnAdmin) btnAdmin.onclick = () => router.navegar('/admin');
       const btnOwner = raiz.querySelector('#btnOwner');
       if (btnOwner) btnOwner.onclick = () => router.navegar('/owner');
+
+      raiz.querySelector('#btnLimpiarCache').onclick = async () => {
+        const ok = await window.helpers.confirmar(
+          'Esto eliminará la caché local (datos de Supabase, imágenes temporales, etc.). La app se recargará automáticamente. Tu cuenta y progreso en línea NO se perderán.',
+          { titulo: '¿Limpiar caché de la app?', textoConfirmar: 'Limpiar y recargar' }
+        );
+        if (!ok) return;
+        window.helpers.mostrarAlerta('Limpiando caché...', 'info', 1500);
+        try { await window.cacheDatos.limpiarTodo(); } catch (e) {}
+        setTimeout(() => window.location.reload(), 1200);
+      };
 
       raiz.querySelector('#btnMasInfo').onclick = () => {
         const overlay = document.createElement('div');

@@ -49,6 +49,19 @@
       const total = intentos.length;
       const pct = total > 0 ? Math.round((corregidos / total) * 100) : 0;
 
+      // Statistics
+      const notas = intentos.filter(i => i.corregido && i.nota != null).map(i => i.nota);
+      const promedio = notas.length > 0 ? (notas.reduce((s, n) => s + n, 0) / notas.length) : null;
+      const maxNota = notas.length > 0 ? Math.max(...notas) : null;
+      const minNota = notas.length > 0 ? Math.min(...notas) : null;
+      const distribucion = notas.length > 0
+        ? [
+            { label: '0-4', min: 0, max: 4, count: notas.filter(n => n < 4).length },
+            { label: '4-7', min: 4, max: 7, count: notas.filter(n => n >= 4 && n < 7).length },
+            { label: '7-10', min: 7, max: 10, count: notas.filter(n => n >= 7).length },
+          ].map(d => ({ ...d, height: Math.max(1, Math.round((d.count / notas.length) * 100)) }))
+        : [];
+
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
@@ -61,6 +74,35 @@
               <button class="btn-secundario" id="btnExportar" style="font-size:var(--texto-xs)">${window.Iconos.render('download')} CSV</button>
             </div>
           </div>
+
+          ${notas.length > 0 ? `
+          <div class="corregir-estadisticas" style="display:flex;gap:var(--espaciado-sm);flex-wrap:wrap">
+            <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
+              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${promedio != null ? promedio.toFixed(1) : '—'}</p>
+              <p class="tarjeta-estadistica__etiqueta">Promedio</p>
+            </div>
+            <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
+              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-exito)">${maxNota != null ? maxNota.toFixed(1) : '—'}</p>
+              <p class="tarjeta-estadistica__etiqueta">Máxima</p>
+            </div>
+            <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
+              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-error)">${minNota != null ? minNota.toFixed(1) : '—'}</p>
+              <p class="tarjeta-estadistica__etiqueta">Mínima</p>
+            </div>
+            <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
+              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${notas.length}</p>
+              <p class="tarjeta-estadistica__etiqueta">Calificados</p>
+            </div>
+            ${distribucion.length > 0 ? `<div class="tarjeta-estadistica" style="flex:2;min-width:150px">
+              <p class="tarjeta-estadistica__etiqueta">Distribución</p>
+              <div style="display:flex;gap:4px;align-items:flex-end;height:48px;padding-top:var(--espaciado-xs)">
+                ${distribucion.map(d => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
+                  <div style="height:${d.height}%;width:100%;border-radius:var(--radio-sm) var(--radio-sm) 0 0;background:${d.min >= 7 ? 'var(--color-exito)' : d.min >= 4 ? 'var(--color-aviso)' : 'var(--color-error)'};opacity:${d.count > 0 ? 1 : 0.3};min-height:4px"></div>
+                  <span style="font-size:9px;color:var(--color-texto-terciario)">${d.count}</span>
+                </div>`).join('')}
+              </div>
+            </div>` : ''}
+          </div>` : ''}
 
           <div class="corregir-progreso">
             <div class="corregir-progreso__barra">

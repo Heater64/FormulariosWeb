@@ -1,67 +1,111 @@
 const repeticionEspaciada = {
-  _PROGRESION_FACIL: [7, 14, 30, 60, 90, 180, 365],
+  EF_INICIAL: 2.5,
+  EF_MIN: 1.3,
+  INTERVALO_MAX: 365,
+
+  crearTarjeta() {
+    return {
+      repeticiones: 0,
+      intervalo: 0,
+      factorFacilidad: this.EF_INICIAL,
+      proximoRepaso: new Date().toISOString(),
+      ultimoRepaso: null,
+      rachaActual: 0,
+      mejorRacha: 0,
+      vecesOlvidado: 0,
+      ultimaCalificacion: null
+    };
+  },
 
   calcularProximoRepaso(tarjeta, calidad) {
-    const calidadNum = Math.max(0, Math.min(5, Math.round(calidad)));
-    const intervaloActual = tarjeta.intervalo || 0;
-    const rachaActual = tarjeta.racha_actual || 0;
-    const mejorRacha = tarjeta.mejor_racha || 0;
-    const vecesOlvidado = tarjeta.veces_olvidado || 0;
-    const totalRepeticiones = (tarjeta.repeticiones || 0) + 1;
+    const q = Math.max(0, Math.min(5, Math.round(calidad)));
+    const fallo = q < 3;
 
-    let intervalo;
-    let nuevaRacha;
-    let nuevosOlvidados = vecesOlvidado;
+    const anterior = {
+      repeticiones: tarjeta.repeticiones || 0,
+      intervalo: tarjeta.intervalo || 0,
+      factorFacilidad: tarjeta.factorFacilidad || this.EF_INICIAL,
+      rachaActual: tarjeta.rachaActual || 0,
+      mejorRacha: tarjeta.mejorRacha || 0,
+      vecesOlvidado: tarjeta.vecesOlvidado || 0
+    };
 
-    if (calidadNum === 0) {
+    let { repeticiones, intervalo, factorFacilidad, rachaActual, mejorRacha, vecesOlvidado } = anterior;
+    const totalRepeticiones = repeticiones + 1;
+
+    const nuevoEF = this._calcularEF(factorFacilidad, q);
+    const efAjustado = Math.max(this.EF_MIN, nuevoEF);
+
+    if (fallo) {
+      repeticiones = 0;
       intervalo = 1;
-      nuevaRacha = 0;
-      nuevosOlvidados = vecesOlvidado + 1;
-    } else if (calidadNum === 1) {
-      intervalo = 1;
-      nuevaRacha = 0;
-    } else if (calidadNum === 3) {
-      intervalo = 3;
-      nuevaRacha = rachaActual + 1;
+      rachaActual = 0;
+      vecesOlvidado += 1;
     } else {
-      intervalo = this._siguienteIntervaloFacil(intervaloActual);
-      nuevaRacha = rachaActual + 1;
+      rachaActual += 1;
+      if (rachaActual > mejorRacha) mejorRacha = rachaActual;
+
+      if (repeticiones === 0) {
+        intervalo = 1;
+      } else if (repeticiones === 1) {
+        intervalo = 6;
+      } else {
+        intervalo = Math.round(intervalo * efAjustado);
+      }
+
+      repeticiones += 1;
     }
 
-    const nuevaMejorRacha = Math.max(mejorRacha, nuevaRacha);
+    intervalo = Math.min(intervalo, this.INTERVALO_MAX);
+    factorFacilidad = efAjustado;
 
     const proximo = new Date();
     proximo.setDate(proximo.getDate() + intervalo);
 
     return {
-      repeticiones: totalRepeticiones,
+      repeticiones,
       intervalo,
-      proximo_repaso: proximo.toISOString(),
-      ultimo_repaso: new Date().toISOString(),
-      mejor_racha: nuevaMejorRacha,
-      veces_olvidado: nuevosOlvidados,
-      ultima_calificacion: calidadNum,
-      racha_actual: nuevaRacha
+      factorFacilidad: Math.round(factorFacilidad * 100) / 100,
+      proximoRepaso: proximo.toISOString(),
+      ultimoRepaso: new Date().toISOString(),
+      rachaActual,
+      mejorRacha,
+      vecesOlvidado,
+      ultimaCalificacion: q
     };
   },
 
-  _siguienteIntervaloFacil(intervaloActual) {
-    for (const intervalo of this._PROGRESION_FACIL) {
-      if (intervaloActual < intervalo) return intervalo;
-    }
-    return this._PROGRESION_FACIL[this._PROGRESION_FACIL.length - 1];
+  _calcularEF(efAnterior, q) {
+    return efAnterior + (0.1 - (5 - q) * (0.08 + (5 - q) * 0.02));
   },
 
   calcularNivel(intervalo) {
     const i = intervalo || 0;
-    if (i < 2) return 0;
-    if (i < 7) return 1;
-    if (i < 14) return 2;
-    if (i < 30) return 3;
-    if (i < 60) return 4;
-    if (i < 180) return 5;
-    if (i < 365) return 6;
-    return 7;
+    if (i <= 0) return 0;
+    const niveles = [1, 2, 7, 14, 30, 60, 120, 180, 365];
+    for (let n = 0; n < niveles.length; n++) {
+      if (i <= niveles[n]) return n + 1;
+    }
+    return niveles.length + 1;
+  },
+
+  programarRepasos(tarjetas) {
+    const hoy = new Date();
+    return tarjetas
+      .map(t => ({
+        ...t,
+        diasRestantes: Math.ceil(
+          (new Date(t.proximoRepaso || t.proximo_repaso) - hoy) / (1000 * 60 * 60 * 24)
+        )
+      }))
+      .sort((a, b) => a.diasRestantes - b.diasRestantes);
+  },
+
+  estadoAprendizaje(rachaActual, intervalo) {
+    if (rachaActual >= 5 && intervalo >= 21) return 'consolidado';
+    if (rachaActual >= 3 && intervalo >= 7) return 'aprendido';
+    if (intervalo <= 1) return 'nuevo';
+    return 'repasando';
   }
 };
 

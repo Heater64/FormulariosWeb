@@ -21,6 +21,31 @@
     return 'Insuficiente';
   }
 
+  function pesosEval(evalId) {
+    try { return JSON.parse(localStorage.getItem('fb_pesos_eval_' + evalId)) || {}; } catch { return {}; }
+  }
+  function guardarPesos(evalId, pesos) {
+    localStorage.setItem('fb_pesos_eval_' + evalId, JSON.stringify(pesos));
+  }
+  function mediaPonderada(evalObj, alumnoId, notasPorExamen) {
+    const exs = evalObj.examenes || [];
+    if (!exs.length) return null;
+    const pesos = pesosEval(evalObj.id);
+    const tienePesos = exs.some(e => pesos[e.id] != null && pesos[e.id] > 0);
+    if (!tienePesos) {
+      // Simple average
+      const ns = exs.map(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId]).filter(n => n != null);
+      return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
+    }
+    let sumaPonderada = 0, sumaPesos = 0;
+    exs.forEach(e => {
+      const nota = notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId];
+      const peso = pesos[e.id] || 1;
+      if (nota != null) { sumaPonderada += nota * peso; sumaPesos += peso; }
+    });
+    return sumaPesos > 0 ? redondear(sumaPonderada / sumaPesos) : null;
+  }
+
   window.vistaCalificaciones = {
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
@@ -54,13 +79,10 @@
       const completadosEval = (evalObj, alumnoId) => {
         return (evalObj.examenes || []).filter(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId] != null).length;
       };
-      const mediaEval = (evalObj, alumnoId) => {
-        const ns = (evalObj.examenes || []).map(e => notasPorExamen[e.id] && notasPorExamen[e.id][alumnoId]).filter(n => n != null);
-        return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
-      };
+      const mediaEval = (evalObj, alumnoId) => mediaPonderada(evalObj, alumnoId, notasPorExamen);
       const mediaGrupoEval = (evalObj) => {
-        const ns = [];
-        (evalObj.examenes || []).forEach(e => { const m = notasPorExamen[e.id]; if (m) Object.values(m).forEach(n => ns.push(n)); });
+        const alumnosIds = alumnos.map(a => a.id);
+        const ns = alumnosIds.map(aId => mediaPonderada(evalObj, aId, notasPorExamen)).filter(n => n != null);
         return ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : null;
       };
 
@@ -75,6 +97,7 @@
             <div class="o-flecha" style="gap:var(--espaciado-xs)">
               <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
               <button class="btn-secundario calif-exportar-btn" id="btnExportarCalif">${window.Iconos.render('download')} CSV</button>
+              <button class="btn-secundario calif-exportar-btn" id="btnExportarPDF">${window.Iconos.render('file-text')} PDF</button>
               <button class="btn-primario" id="btnCrearEval">+ Crear evaluación</button>
             </div>
           </div>
@@ -135,6 +158,19 @@
       raiz.querySelector('#btnExportarCalif').onclick = () => {
         this._exportarCSV(evaluaciones, sueltos, alumnos, notasPorExamen);
       };
+      // Export PDF
+      raiz.querySelector('#btnExportarPDF').onclick = () => {
+        this._exportarPDF(evaluaciones, sueltos, alumnos, notasPorExamen);
+      };
+
+      // Configure weights
+      raiz.querySelectorAll('[data-pesos]').forEach(b => {
+        b.onclick = () => {
+          const id = b.getAttribute('data-pesos');
+          const ev = evaluaciones.find(x => x.id === id);
+          if (ev) this._modalPesos(raiz, ev);
+        };
+      });
 
       // Edit evaluations
       raiz.querySelectorAll('[data-editar-eval]').forEach(b => {
@@ -315,11 +351,15 @@
       const totalEx = examenes.length;
       const menuId = 'menu-eval-' + e.id;
 
+      const currentPesos = pesosEval(e.id);
+      const tienePesos = examenes.some(x => currentPesos[x.id] != null && currentPesos[x.id] > 0);
+
       const cabecera = `
         <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
           <div>
             <h3 class="u-fw-700">${window.helpers.escapeHtml(e.titulo)}</h3>
             ${e.asignatura ? `<span class="u-fs-xs u-color-texto-secundario">${window.helpers.escapeHtml(e.asignatura)}</span>` : ''}
+            ${tienePesos ? '<span class="u-fs-xs u-color-texto-terciario u-ml-1">(ponderada)</span>' : ''}
           </div>
           <div class="calif-eval-acciones">
             <span class="calif-eval-media" style="color:${colorNota(mg)}">Media: ${mg != null ? mg : '—'}</span>
@@ -330,6 +370,9 @@
               <div class="calif-menu" id="${menuId}" style="position:absolute;right:0;top:100%;margin-top:4px;background:var(--color-fondo-tarjeta);border:1px solid var(--color-borde);border-radius:var(--radio-md);box-shadow:var(--sombra-lg);z-index:50;min-width:160px;display:none;padding:var(--espaciado-xxs) 0">
                 <button class="calif-menu-item" data-editar-eval="${e.id}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-texto);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
                   ${window.Iconos.render('edit-3')} Editar
+                </button>
+                <button class="calif-menu-item" data-pesos="${e.id}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-texto);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
+                  ${window.Iconos.render('scale')} Pesos
                 </button>
                 <button class="calif-menu-item" data-anadir="${e.id}" style="width:100%;text-align:left;padding:var(--espaciado-xs) var(--espaciado-sm);background:none;border:none;color:var(--color-texto);cursor:pointer;font:inherit;font-size:var(--texto-sm);display:flex;align-items:center;gap:var(--espaciado-xs)">
                   ${window.Iconos.render('plus')} Añadir examen
@@ -476,6 +519,69 @@
       return `<section class="tarjeta-capitulo o-pila" style="padding:var(--espaciado-md)">${cabecera}${cardsMovil}${tabla}</section>`;
     },
 
+    _modalPesos(raiz, evalObj) {
+      const exs = evalObj.examenes || [];
+      if (!exs.length) { window.helpers.mostrarAlerta('Añade exámenes a la evaluación primero.', 'advertencia'); return; }
+      const pesosActuales = pesosEval(evalObj.id);
+
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-pesos-title" style="max-width:400px">
+          <div class="o-flecha o-flecha--between" style="margin-bottom:var(--espaciado-sm)">
+            <h3 id="modal-pesos-title">Pesos: ${window.helpers.escapeHtml(evalObj.titulo)}</h3>
+            <button class="btn-secundario btn-icono" id="btnCerrarModalPesos" aria-label="Cerrar">${window.Iconos.render('x')}</button>
+          </div>
+          <p class="u-fs-xs u-color-texto-secundario u-mb-2">Asigna un peso (porcentaje) a cada examen. Si todos están en 0 o vacíos, se usa media simple.</p>
+          <div class="o-pila" style="gap:var(--espaciado-xs)" id="pesosLista">
+            ${exs.map(ex => `
+              <label class="o-flecha o-flecha--centro" style="gap:var(--espaciado-sm);padding:var(--espaciado-xs);border:1px solid var(--color-borde);border-radius:var(--radio-sm)">
+                <span style="flex:1;font-size:var(--texto-sm)">${window.helpers.escapeHtml(ex.titulo)}</span>
+                <input type="number" class="peso-input" data-exid="${ex.id}" value="${pesosActuales[ex.id] || ''}" min="0" max="100" placeholder="%" style="width:64px;text-align:center">
+                <span class="u-fs-xs u-color-texto-terciario">%</span>
+              </label>
+            `).join('')}
+          </div>
+          <p class="u-fs-xs u-color-texto-terciario u-mt-1" id="pesosSumaMsg"></p>
+          <div class="o-flecha" style="justify-content:flex-end;gap:var(--espaciado-xs);margin-top:var(--espaciado-md)">
+            <button class="btn-secundario" id="btnCerrarPesos2">Cancelar</button>
+            <button class="btn-primario" id="btnGuardarPesos">Guardar pesos</button>
+          </div>
+        </div>`;
+
+      document.body.appendChild(overlay);
+      window.Iconos.actualizar();
+
+      const cerrar = () => overlay.remove();
+      overlay.querySelector('#btnCerrarModalPesos').onclick = cerrar;
+      overlay.querySelector('#btnCerrarPesos2').onclick = cerrar;
+      overlay.onclick = (e) => { if (e.target === overlay) cerrar(); };
+
+      const sumarPesos = () => {
+        const inputs = overlay.querySelectorAll('.peso-input');
+        let suma = 0;
+        inputs.forEach(inp => { const v = parseFloat(inp.value); if (!isNaN(v)) suma += v; });
+        const msg = overlay.querySelector('#pesosSumaMsg');
+        if (suma === 0) msg.textContent = 'Media simple (sin ponderación)';
+        else msg.textContent = suma === 100 ? '✓ Suma 100%' : `Suma: ${suma}% (debe sumar 100%)`;
+        msg.style.color = suma === 100 || suma === 0 ? 'var(--color-exito)' : 'var(--color-aviso)';
+      };
+      overlay.querySelectorAll('.peso-input').forEach(inp => inp.addEventListener('input', sumarPesos));
+      sumarPesos();
+
+      overlay.querySelector('#btnGuardarPesos').onclick = () => {
+        const pesos = {};
+        overlay.querySelectorAll('.peso-input').forEach(inp => {
+          const v = parseFloat(inp.value);
+          if (!isNaN(v) && v > 0) pesos[inp.dataset.exid] = v;
+        });
+        guardarPesos(evalObj.id, pesos);
+        window.helpers.mostrarAlerta('Pesos guardados. La media se recalculará.', 'exito');
+        cerrar();
+        router._ejecutar();
+      };
+    },
+
     _exportarCSV(evaluaciones, sueltos, alumnos, notasPorExamen) {
       const cabeceras = ['Alumno'];
       const examenesPorEval = [];
@@ -520,6 +626,81 @@
 
       window.helpers.descargarCSV('calificaciones_grupo', cabeceras, filas);
       window.helpers.mostrarAlerta('CSV exportado correctamente.', 'exito');
+    },
+
+    _exportarPDF(evaluaciones, sueltos, alumnos, notasPorExamen) {
+      if (!alumnos.length) { window.helpers.mostrarAlerta('No hay alumnos para exportar.', 'advertencia'); return; }
+
+      const filas = [];
+      let cabeceras = ['Alumno'];
+      let examenesList = [];
+
+      evaluaciones.forEach(e => {
+        (e.examenes || []).forEach(ex => {
+          cabeceras.push(ex.titulo);
+          examenesList.push(ex);
+        });
+        cabeceras.push(e.titulo + ' (media)');
+      });
+      sueltos.forEach(x => {
+        cabeceras.push(x.titulo);
+        examenesList.push(x);
+      });
+
+      if (cabeceras.length === 1) { window.helpers.mostrarAlerta('No hay datos para exportar.', 'advertencia'); return; }
+
+      const tablaRows = alumnos.map(a => {
+        const celdas = [`<td style="font-weight:600;padding:4px 8px;border:1px solid #ccc">${window.helpers.escapeHtml(window.helpers.nombreAlumno(a))}</td>`];
+        evaluaciones.forEach(e => {
+          (e.examenes || []).forEach(ex => {
+            const m = notasPorExamen[ex.id];
+            const nota = m && m[a.id] != null ? m[a.id] : '';
+            celdas.push(`<td style="text-align:center;padding:4px 8px;border:1px solid #ccc">${nota}</td>`);
+          });
+          const media = mediaPonderada(e, a.id, notasPorExamen);
+          celdas.push(`<td style="text-align:center;padding:4px 8px;border:1px solid #ccc;font-weight:600">${media != null ? media : '—'}</td>`);
+        });
+        sueltos.forEach(x => {
+          const m = notasPorExamen[x.id];
+          const nota = m && m[a.id] != null ? m[a.id] : '';
+          celdas.push(`<td style="text-align:center;padding:4px 8px;border:1px solid #ccc">${nota}</td>`);
+        });
+        return `<tr>${celdas.join('')}</tr>`;
+      });
+
+      const html = `<!DOCTYPE html>
+<html><head><meta charset="utf-8"><title>Calificaciones</title>
+<style>
+  body { font-family:Arial,sans-serif; font-size:12px; margin:20px; }
+  h1 { font-size:18px; margin-bottom:4px; }
+  h2 { font-size:14px; font-weight:400; color:#555; margin-top:0; }
+  table { border-collapse:collapse; width:100%; margin-top:12px; }
+  th { background:#f5f5f5; font-size:11px; padding:4px 8px; border:1px solid #ccc; text-align:center; }
+  td { font-size:11px; }
+  .footer { margin-top:20px; font-size:10px; color:#999; text-align:center; }
+  @media print { body { margin:10mm; } }
+</style></head>
+<body>
+  <h1>Libro de Calificaciones</h1>
+  <h2>${new Date().toLocaleDateString()}</h2>
+  <table><thead><tr>${cabeceras.map(c => `<th>${window.helpers.escapeHtml(c)}</th>`).join('')}</tr></thead>
+  <tbody>${tablaRows.join('')}</tbody></table>
+  <div class="footer">Generado el ${new Date().toLocaleString()}</div>
+  <script>window.print();<\/script>
+</body></html>`;
+
+      const blob = new Blob([html], { type: 'text/html' });
+      const url = URL.createObjectURL(blob);
+      const w = window.open(url, '_blank');
+      if (!w) {
+        // Fallback: download as HTML file
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'calificaciones_grupo.html';
+        a.click();
+      }
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      window.helpers.mostrarAlerta('PDF generado. Usa Ctrl+P para guardar como PDF.', 'info');
     }
   };
 })();

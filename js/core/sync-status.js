@@ -140,8 +140,6 @@ class SyncStatus {
         window.Haptics.success();
       }
       
-      window.helpers?.mostrarAlerta('Todo sincronizado correctamente', 'exito', 2000);
-      
     } catch (e) {
       console.warn('[SyncStatus] Error en sincronización:', e);
       window.helpers?.mostrarAlerta('Error al sincronizar', 'error', 2000);

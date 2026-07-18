@@ -50,8 +50,17 @@
         this._renderizar(raiz);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     },
-    _renderizar(raiz) {
+    async _cargarAuditoria() {
+      try {
+        const data = await window.adminRepository.obtenerAuditoria();
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    },
+    async _renderizar(raiz) {
       const { usuarios, grupos, examenes, stats, usuario } = this._datos;
+      const auditoria = await this._cargarAuditoria();
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
@@ -60,12 +69,62 @@
           </div>
 
           <!-- DASHBOARD -->
-          <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Usuarios</p><p class="u-texto-xl u-fw-700">${stats.usuarios}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Grupos</p><p class="u-texto-xl u-fw-700">${grupos.length}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Exámenes</p><p class="u-texto-xl u-fw-700">${stats.examenes}</p></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-xl u-fw-700">${stats.lecturas}</p></div>
+          <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
+            <div class="tarjeta-estadistica">
+              <div class="tarjeta-estadistica__icono">${I('users')}</div>
+              <div>
+                <p class="tarjeta-estadistica__valor">${stats.usuarios}</p>
+                <p class="tarjeta-estadistica__etiqueta">Usuarios</p>
+              </div>
+            </div>
+            <div class="tarjeta-estadistica">
+              <div class="tarjeta-estadistica__icono">${I('layout')}</div>
+              <div>
+                <p class="tarjeta-estadistica__valor">${grupos.length}</p>
+                <p class="tarjeta-estadistica__etiqueta">Grupos</p>
+              </div>
+            </div>
+            <div class="tarjeta-estadistica">
+              <div class="tarjeta-estadistica__icono">${I('file-text')}</div>
+              <div>
+                <p class="tarjeta-estadistica__valor">${stats.examenes}</p>
+                <p class="tarjeta-estadistica__etiqueta">Exámenes</p>
+              </div>
+            </div>
+            <div class="tarjeta-estadistica">
+              <div class="tarjeta-estadistica__icono">${I('book-open')}</div>
+              <div>
+                <p class="tarjeta-estadistica__valor">${stats.lecturas}</p>
+                <p class="tarjeta-estadistica__etiqueta">Capítulos leídos</p>
+              </div>
+            </div>
+            <div class="tarjeta-estadistica">
+              <div class="tarjeta-estadistica__icono">${I('brain')}</div>
+              <div>
+                <p class="tarjeta-estadistica__valor">${stats.tarjetas}</p>
+                <p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p>
+              </div>
+            </div>
           </div>
+
+          <!-- ACTIVIDAD RECIENTE -->
+          ${auditoria.length ? `
+          <div class="o-pila">
+            <h3>${I('activity')} Actividad reciente</h3>
+            <div class="o-pila" style="gap:var(--espaciado-xs)">
+              ${auditoria.slice(0, 5).map(a => `
+                <div class="tarjeta-capitulo u-fs-sm" style="padding:var(--espaciado-sm)">
+                  <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs);flex-wrap:wrap">
+                    <span>${window.helpers?.escapeHtml(a.accion) || a.accion}</span>
+                    <span class="u-color-texto-terciario u-fs-xs">
+                      ${a.perfiles?.nombre_completo || a.perfiles?.username || ''}
+                      ${a.creado_en ? '· ' + new Date(a.creado_en).toLocaleDateString() : ''}
+                    </span>
+                  </div>
+                </div>
+              `).join('')}
+            </div>
+          </div>` : ''}
 
           <!-- USUARIOS -->
           <div class="o-pila">

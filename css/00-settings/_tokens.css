@@ -31,6 +31,13 @@
   --texto-2xl: 1.5rem;
   --texto-3xl: 1.875rem;
   --texto-4xl: 2.25rem;
+  --texto-peso-normal: 400;
+  --texto-peso-medio: 500;
+  --texto-peso-semibold: 600;
+  --texto-peso-bold: 700;
+  --texto-altura-linea-titulo: 1.2;
+  --texto-altura-linea-cuerpo: 1.6;
+  --lectura-max-ancho: 72ch;
   --espaciado-xxs: 6px;
   --espaciado-xs: 10px;
   --espaciado-sm: 14px;
@@ -52,10 +59,58 @@
   --sombra-nav: 0 -1px 0 rgba(15,23,42,0.04), 0 -8px 24px -16px rgba(15,23,42,0.25);
   --easing-apple: cubic-bezier(0.32, 0.72, 0, 1);
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-entrada: cubic-bezier(0, 0, 0.2, 1);
+  --easing-salida: cubic-bezier(0.4, 0, 1, 1);
   --transicion-rapida: 240ms var(--easing-apple);
   --transicion-normal: 380ms var(--easing-apple);
   --transicion-lenta: 640ms var(--easing-apple);
   --toque-minimo: 48px;
+}
+
+@media (prefers-reduced-data: reduce) {
+  :root {
+    --desenfoque-vidrio: none;
+  }
+}
+
+@media (prefers-contrast: more) {
+  :root:not([data-hc="false"]) {
+    --color-texto: #000000;
+    --color-texto-secundario: #1a1a1a;
+    --color-texto-terciario: #333333;
+    --color-fondo: #FFFFFF;
+    --color-fondo-alt: #F0F0F0;
+    --color-fondo-tarjeta: #FFFFFF;
+    --color-borde: #000000;
+    --color-acento: #0033CC;
+    --color-acento-soft: #CCDDFF;
+    --color-exito: #006600;
+    --color-error: #CC0000;
+    --color-aviso: #996600;
+    --color-vidrio: rgba(255,255,255,0.95);
+    --color-vidrio-borde: rgba(0,0,0,0.3);
+  }
+}
+
+@media (prefers-contrast: more) and (prefers-color-scheme: dark) {
+  :root:not([data-hc="false"]):not([data-theme="light"]) {
+    --color-texto: #FFFFFF;
+    --color-texto-secundario: #EEEEEE;
+    --color-texto-terciario: #CCCCCC;
+    --color-fondo: #000000;
+    --color-fondo-alt: #0A0A0A;
+    --color-fondo-tarjeta: #1A1A1A;
+    --color-borde: #FFFFFF;
+    --color-acento: #88BBFF;
+    --color-acento-soft: #002244;
+    --color-texto-acento: #000000;
+    --color-exito: #66FF66;
+    --color-error: #FF6666;
+    --color-aviso: #FFDD66;
+    --color-vidrio: rgba(0,0,0,0.9);
+    --color-vidrio-borde: rgba(255,255,255,0.3);
+    --sombra-nav: 0 -1px 0 rgba(255,255,255,0.15), 0 -8px 24px -16px rgba(0,0,0,0.6);
+  }
 }
 
 /* ===== THEME: Dark ===== */

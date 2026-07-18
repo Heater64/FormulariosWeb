@@ -2,7 +2,7 @@
 // sw.js - Service Worker para FormsBiblicos
 // ============================================================
 
-const CACHE_VERSION = 'v1.0.0';
+const CACHE_VERSION = 'v1.0.1';
 const CACHE_NAME = `formsbiblicos-${CACHE_VERSION}`;
 
 // Recursos a cachear en la instalación
@@ -221,6 +221,81 @@ self.addEventListener('message', (event) => {
     console.log('[SW] Precargando recursos de actualización en segundo plano...');
     _precacheUpdate();
   }
+
+  // Limpiar caché de API para forzar recarga fresca
+  if (event.data?.type === 'CLEAR_API_CACHE') {
+    caches.delete('formsbiblicos-api').then(() => {
+      console.log('[SW] Caché de API limpiada');
+    });
+  }
+});
+
+// ============================================================
+// BACKGROUND SYNC - Reintentar operaciones pendientes
+// ============================================================
+
+self.addEventListener('sync', (event) => {
+  if (event.tag === 'sync-operations') {
+    console.log('[SW] Sincronización en segundo plano iniciada');
+    event.waitUntil(flushSyncQueue());
+  }
+
+  if (event.tag === 'sync-data') {
+    console.log('[SW] Sincronización de datos en segundo plano');
+    event.waitUntil(
+      Promise.all([
+        _refreshDataCache(),
+        _refreshApiCache()
+      ])
+    );
+  }
+});
+
+async function flushSyncQueue() {
+  try {
+    const allClients = await self.clients.matchAll();
+    for (const client of allClients) {
+      client.postMessage({ type: 'BACKGROUND_SYNC_TRIGGERED' });
+    }
+  } catch (e) {
+    console.warn('[SW] Error en flushSyncQueue:', e);
+  }
+}
+
+async function _refreshDataCache() {
+  try {
+    const cache = await caches.open('formsbiblicos-data');
+    const requests = await cache.keys();
+    for (const req of requests) {
+      try {
+        const res = await fetch(req, { cache: 'no-store' });
+        if (res.ok) cache.put(req, res);
+      } catch (e) {}
+    }
+  } catch (e) {}
+}
+
+async function _refreshApiCache() {
+  try {
+    const cache = await caches.open('formsbiblicos-api');
+    const requests = await cache.keys();
+    for (const req of requests) {
+      try {
+        const res = await fetch(req, { cache: 'no-store' });
+        if (res.ok) cache.put(req, res);
+      } catch (e) {}
+    }
+  } catch (e) {}
+}
+
+// ============================================================
+// PERIODIC SYNC - Actualizar datos periódicamente (Chrome 80+)
+// ============================================================
+
+self.addEventListener('periodicsync', (event) => {
+  if (event.tag === 'update-data') {
+    event.waitUntil(_refreshDataCache());
+  }
 });
 
 // Descargar en background todos los recursos estáticos para que al recargar sea instantáneo
@@ -243,6 +318,9 @@ self.addEventListener('fetch', (event) => {
   const request = event.request;
   const url = new URL(request.url);
 
+  // Ignorar peticiones que no sean http/https (extensiones, blob, data, etc.)
+  if (url.protocol !== 'http:' && url.protocol !== 'https:') return;
+
   // ============================================================
   // 1. API DE SUPABASE - Network First con fallback a caché
   // ============================================================
@@ -250,12 +328,12 @@ self.addEventListener('fetch', (event) => {
     event.respondWith(
       fetch(request)
         .then((response) => {
-          // Solo cachear respuestas exitosas
-          if (response.ok) {
+          // Solo cachear respuestas exitosas con método GET (HEAD no soportado por Cache API)
+          if (response.ok && request.method === 'GET') {
             const clone = response.clone();
             caches.open('formsbiblicos-api').then((cache) => {
               cache.put(request, clone);
-            });
+            }).catch(() => {});
           }
           return response;
         })

@@ -10,9 +10,9 @@
 
   window.vistaExamenes = {
     _cleanup: null,
+    _filtroActivo: 'todos',
 
     async montar(raiz) {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
       const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
@@ -46,6 +46,10 @@
             .examen-badge--calificado { background:var(--color-exito-soft); color:var(--color-exito); }
             .examen-badge--pendiente { background:var(--color-aviso-soft); color:var(--color-aviso); }
             .examen-badge--disponible { background:var(--color-acento-soft); color:var(--color-acento); }
+            .examen-filtro { display:flex; gap:var(--espaciado-xxs); overflow-x:auto; padding:var(--espaciado-xs) 0; -webkit-overflow-scrolling:touch; }
+            .examen-filtro-btn { flex-shrink:0; padding:var(--espaciado-xxs) var(--espaciado-sm); border:1px solid var(--color-borde); border-radius:var(--radio-pill); background:var(--color-fondo); font-size:var(--texto-xs); cursor:pointer; transition:all var(--transicion-rapida); white-space:nowrap; }
+            .examen-filtro-btn:hover { border-color:var(--color-acento); }
+            .examen-filtro-btn--activa { background:var(--color-acento); color:var(--color-fondo); border-color:var(--color-acento); }
           </style>
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
@@ -55,7 +59,16 @@
                 ${esProfesor ? '<button class="btn-primario" id="btnNuevoExamen">+ Nuevo</button>' : ''}
               </div>
             </div>
+            <div class="examen-filtro" id="filtroExamenes" role="tablist" aria-label="Filtrar exámenes"></div>
+            <div class="notas-buscar" style="position:relative">
+              <span style="position:absolute;left:var(--espaciado-sm);top:50%;transform:translateY(-50%);color:var(--color-texto-terciario);display:flex">${window.Iconos.render('search')}</span>
+              <input type="text" id="buscarExamen" placeholder="Buscar por título..." style="width:100%;padding-left:2.2rem">
+            </div>
             <div id="listaExamenes" class="o-pila" style="gap:var(--espaciado-sm)"></div>
+            <div id="listaExamenesVacia" class="u-texto-centrado o-pila u-mt-4" style="align-items:center;display:none">
+              <p style="font-size:3rem;color:var(--color-texto-terciario);display:flex;justify-content:center">${window.Iconos.render('clipboard-check')}</p>
+              <p class="u-color-texto-secundario" id="textoVacio">No hay exámenes que coincidan</p>
+            </div>
           </div>`;
 
         if (esProfesor) {
@@ -69,26 +82,97 @@
             esProfesor ? 'Usa "+ Nuevo" para crear un examen y "Notas" para revisar resultados.' : 'Toca un examen publicado para responderlo.']
         });
 
-        const cont = raiz.querySelector('#listaExamenes');
-        if (examenes.length === 0) {
-          cont.innerHTML = `<div class="u-texto-centrado o-pila u-mt-4" style="align-items:center">
-            <p style="font-size:3rem;color:var(--color-texto-terciario);display:flex;justify-content:center">${window.Iconos.render('clipboard-check')}</p>
-            <p class="u-color-texto-secundario">No hay exámenes disponibles</p>
-            ${esProfesor ? '<p class="u-fs-xs u-color-texto-terciario">Crea tu primer examen con "+ Nuevo"</p>' : ''}
-          </div>`;
-          return;
-        }
+        this._examenes = examenes;
+        this._misIntentos = misIntentos;
+        this._esProfesor = esProfesor;
 
-        cont.innerHTML = examenes.map(ex => this._tarjetaExamen(ex, misIntentos, esProfesor)).join('');
-        this._conectarEventos(raiz, cont, examenes, esProfesor);
-        window.Iconos.actualizar();
+        const filtroCont = raiz.querySelector('#filtroExamenes');
+        const filtros = this._obtenerFiltros(esProfesor);
+        filtroCont.innerHTML = filtros.map(f =>
+          `<button class="examen-filtro-btn${f.id === this._filtroActivo ? ' examen-filtro-btn--activa' : ''}" data-filtro="${f.id}" role="tab" aria-selected="${f.id === this._filtroActivo}">${f.etiqueta}</button>`
+        ).join('');
+        filtroCont.querySelectorAll('[data-filtro]').forEach(btn => {
+          btn.onclick = () => {
+            if (this._cleanup) this._cleanup();
+            this._filtroActivo = btn.dataset.filtro;
+            filtroCont.querySelectorAll('.examen-filtro-btn--activa').forEach(b => { b.classList.remove('examen-filtro-btn--activa'); b.setAttribute('aria-selected', 'false'); });
+            btn.classList.add('examen-filtro-btn--activa');
+            btn.setAttribute('aria-selected', 'true');
+            this._renderizarLista();
+          };
+        });
 
+        const buscarInput = raiz.querySelector('#buscarExamen');
+        buscarInput.addEventListener('input', () => {
+          if (this._timerBusqueda) clearTimeout(this._timerBusqueda);
+          this._timerBusqueda = setTimeout(() => this._renderizarLista(), 200);
+        });
+
+        this._renderizarLista();
         this._notificarExamenesNuevos(examenes, esProfesor);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
+    },
 
-      if (window.pullToRefresh) {
-        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, () => this.montar(raiz));
+    _obtenerFiltros(esProfesor) {
+      if (esProfesor) {
+        return [
+          { id: 'todos', etiqueta: 'Todos' },
+          { id: 'publicados', etiqueta: 'Publicados' },
+          { id: 'borradores', etiqueta: 'Borradores' },
+        ];
       }
+      return [
+        { id: 'todos', etiqueta: 'Todos' },
+        { id: 'disponibles', etiqueta: 'Disponibles' },
+        { id: 'progreso', etiqueta: 'En progreso' },
+        { id: 'completados', etiqueta: 'Completados' },
+      ];
+    },
+
+    _renderizarLista() {
+      const { _examenes, _misIntentos, _esProfesor, _filtroActivo } = this;
+      const raiz = document.querySelector('#listaExamenes');
+      if (!raiz) return;
+      const vacioDiv = document.querySelector('#listaExamenesVacia');
+      const textoVacio = vacioDiv?.querySelector('#textoVacio');
+      const buscarVal = (document.querySelector('#buscarExamen')?.value || '').toLowerCase().trim();
+
+      let filtrados = _examenes.filter(ex => {
+        if (buscarVal && !ex.titulo.toLowerCase().includes(buscarVal)) return false;
+        if (_filtroActivo === 'todos') return true;
+        const miIntento = _misIntentos.find(i => i.examen_id === ex.id);
+        if (_esProfesor) {
+          if (_filtroActivo === 'publicados') return ex.publicado;
+          if (_filtroActivo === 'borradores') return !ex.publicado;
+          return true;
+        }
+        if (_filtroActivo === 'disponibles') {
+          return ex.publicado && (!miIntento || miIntento.estado === 'en_progreso');
+        }
+        if (_filtroActivo === 'progreso') {
+          return miIntento && miIntento.estado === 'en_progreso';
+        }
+        if (_filtroActivo === 'completados') {
+          return miIntento && (miIntento.estado === 'completado' || miIntento.estado === 'calificado');
+        }
+        return true;
+      });
+
+      filtrados.sort((a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0));
+
+      if (filtrados.length === 0) {
+        raiz.innerHTML = '';
+        if (vacioDiv) vacioDiv.style.display = '';
+        if (textoVacio) {
+          textoVacio.textContent = buscarVal ? `Sin resultados para "${buscarVal}"` : 'No hay exámenes en esta categoría';
+        }
+        return;
+      }
+      if (vacioDiv) vacioDiv.style.display = 'none';
+
+      raiz.innerHTML = filtrados.map(ex => this._tarjetaExamen(ex, _misIntentos, _esProfesor)).join('');
+      this._conectarEventos(raiz.parentElement, raiz, this._examenes, this._esProfesor);
+      window.Iconos.actualizar();
     },
 
     _notificarExamenesNuevos(examenes, esProfesor) {
@@ -106,7 +190,7 @@
 
     desmontar() {
       if (this._cleanup) { this._cleanup(); this._cleanup = null; }
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
+      if (this._timerBusqueda) { clearTimeout(this._timerBusqueda); this._timerBusqueda = null; }
     },
 
     _tarjetaExamen(ex, misIntentos, esProfesor) {

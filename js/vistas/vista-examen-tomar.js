@@ -61,20 +61,27 @@
       const respondidas = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
       const porcentaje = Math.round((respondidas / preguntas.length) * 100);
 
+      const duracionMinutos = examen.duracion_minutos || 0;
       raiz.innerHTML = `
         <div class="examen-page o-contenedor o-pila o-pila--lg">
           <div class="o-pila">
-            <div class="o-flecha o-flecha--between o-flecha--centro">
+            <div class="o-flecha o-flecha--between o-flecha--centro" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
               <div>
                 <h2 class="u-mb-0">${window.helpers.escapeHtml(examen.titulo)}</h2>
                 ${examen.descripcion ? `<p class="u-color-texto-secundario u-fs-sm u-mt-1">${window.helpers.escapeHtml(examen.descripcion)}</p>` : ''}
               </div>
-              <span class="u-fs-xs u-color-texto-terciario" style="white-space:nowrap">${preguntas.length} preguntas</span>
+              <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center">
+                ${duracionMinutos > 0 ? `<span class="examen-timer" id="examenTimer">${window.Iconos.render('clock')} ${Math.floor(duracionMinutos / 60)}:${String(duracionMinutos % 60).padStart(2, '0')}</span>` : ''}
+                <span class="u-fs-xs u-color-texto-terciario" style="white-space:nowrap">${preguntas.length} preguntas</span>
+              </div>
             </div>
             <div class="examen-progreso u-mt-2">
               <div class="examen-progreso__lleno" id="barraProgresoExamen" style="width:${porcentaje}%"></div>
             </div>
-            <p class="u-fs-xs u-color-texto-terciario" id="contadorProgreso">${respondidas}/${preguntas.length} respondidas</p>
+            <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs)">
+              <p class="u-fs-xs u-color-texto-terciario" id="contadorProgreso">${respondidas}/${preguntas.length} respondidas</p>
+              <span class="u-fs-xs u-color-texto-terciario" id="flagCount">0 marcadas</span>
+            </div>
           </div>
           <div id="preguntasExamen" class="o-pila examen-sin-paginar"></div>
           <div class="examen-paginado" id="examenPaginado">
@@ -210,6 +217,82 @@
 
       renderPagina(0);
 
+      // Flag system
+      const flags = {};
+      preguntas.forEach((p, i) => { flags[p.id] = false; });
+      const actualizarFlagCount = () => {
+        const count = Object.values(flags).filter(Boolean).length;
+        const el = raiz.querySelector('#flagCount');
+        if (el) el.textContent = count > 0 ? `${window.Iconos.render('flag')} ${count} marcadas` : '0 marcadas';
+        window.Iconos?.actualizar?.();
+      };
+
+      // Keyboard shortcuts
+      const tecladoHandler = (e) => {
+        if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+        if (e.key === 'ArrowLeft' && pagActual > 0) { _syncPaginaRespuestas(); renderPagina(pagActual - 1); }
+        if (e.key === 'ArrowRight' && pagActual < preguntas.length - 1) { _syncPaginaRespuestas(); renderPagina(pagActual + 1); }
+        if (e.key === 'f' || e.key === 'F') {
+          const pid = preguntas[pagActual].id;
+          flags[pid] = !flags[pid];
+          dotsCont.querySelectorAll('.examen-dot')[pagActual]?.classList.toggle('examen-dot--flag', flags[pid]);
+          actualizarFlagCount();
+        }
+      };
+      document.addEventListener('keydown', tecladoHandler);
+
+      // Timer
+      let timerInterval = null;
+      if (duracionMinutos > 0) {
+        let segundosRestantes = duracionMinutos * 60;
+        const timerEl = raiz.querySelector('#examenTimer');
+        timerInterval = setInterval(() => {
+          segundosRestantes--;
+          if (timerEl) {
+            const mins = Math.floor(segundosRestantes / 60);
+            const segs = segundosRestantes % 60;
+            timerEl.innerHTML = `${window.Iconos.render('clock')} ${mins}:${String(segs).padStart(2, '0')}`;
+            if (segundosRestantes <= 300) {
+              timerEl.style.color = segundosRestantes <= 60 ? 'var(--color-error)' : 'var(--color-aviso)';
+            }
+          }
+          if (segundosRestantes <= 0) {
+            clearInterval(timerInterval);
+            raiz.querySelector('#btnEntregar').click();
+          }
+        }, 1000);
+      }
+
+      // Also add flag button in each paginated question
+      const addFlagBtnToPagina = () => {
+        const pagina = raiz.querySelector('#preguntasPagina');
+        if (!pagina) return;
+        const pid = preguntas[pagActual].id;
+        let flagBtn = pagina.querySelector('.flag-btn');
+        if (!flagBtn) {
+          flagBtn = document.createElement('button');
+          flagBtn.className = 'flag-btn';
+          flagBtn.setAttribute('aria-label', 'Marcar/desmarcar pregunta');
+          flagBtn.style.cssText = 'background:none;border:none;cursor:pointer;display:inline-flex;font-size:var(--texto-lg);padding:var(--espaciado-xxs);float:right';
+          const textoPreg = pagina.querySelector('.pregunta-examen__texto');
+          if (textoPreg) textoPreg.after(flagBtn);
+        }
+        flagBtn.innerHTML = window.Iconos.render('flag');
+        flagBtn.style.color = flags[pid] ? 'var(--color-aviso)' : 'var(--color-texto-terciario)';
+        flagBtn.onclick = () => {
+          flags[pid] = !flags[pid];
+          flagBtn.style.color = flags[pid] ? 'var(--color-aviso)' : 'var(--color-texto-terciario)';
+          dotsCont.querySelectorAll('.examen-dot')[pagActual]?.classList.toggle('examen-dot--flag', flags[pid]);
+          actualizarFlagCount();
+        };
+        window.Iconos?.actualizar?.();
+      };
+      const origRenderPagina = renderPagina;
+      renderPagina = (idx) => {
+        origRenderPagina(idx);
+        addFlagBtnToPagina();
+      };
+
       cont.querySelectorAll('input, select, textarea').forEach(el => {
         el.addEventListener('change', guardarYActualizarBarra);
         if (el.tagName === 'INPUT' && el.type !== 'hidden') el.addEventListener('input', actualizarBarra);
@@ -218,8 +301,15 @@
       cont.querySelectorAll('.btn-ordenar-down').forEach(btn => this._setupOrdenar(btn, cont, guardarYActualizarBarra));
 
       raiz.querySelector('#btnEntregar').onclick = async () => {
-        const ok = await window.helpers.confirmar('¿Estás seguro de entregar el examen? No podrás cambiar las respuestas después.', { titulo: 'Entregar examen', textoConfirmar: 'Entregar' });
+        const preguntasFlaggeadas = Object.entries(flags).filter(([, v]) => v).length;
+        let msg = '¿Estás seguro de entregar el examen? No podrás cambiar las respuestas después.';
+        if (preguntasFlaggeadas > 0) {
+          msg = `Tienes ${preguntasFlaggeadas} pregunta${preguntasFlaggeadas > 1 ? 's' : ''} marcada${preguntasFlaggeadas > 1 ? 's' : ''} para revisar. ¿Entregar de todas formas?`;
+        }
+        const ok = await window.helpers.confirmar(msg, { titulo: 'Entregar examen', textoConfirmar: 'Entregar' });
         if (!ok) return;
+        if (timerInterval) clearInterval(timerInterval);
+        document.removeEventListener('keydown', tecladoHandler);
         try {
           this._guardarRespuesta(cont, intento, preguntas, usuario);
           const respuestasFinales = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
@@ -245,8 +335,11 @@
 
       _cleanup = () => {
         if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
+        if (timerInterval) clearInterval(timerInterval);
+        document.removeEventListener('keydown', tecladoHandler);
         raiz.querySelector('#btnEntregar').onclick = null;
       };
+      actualizarFlagCount();
     },
 
     _renderPregunta(p, rActual, i) {

@@ -2,7 +2,6 @@
   'use strict';
   window.vistaEstudio = {
     async montar(raiz) {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       raiz.innerHTML = window.skeleton ? window.skeleton.estudio() : '<div class="o-contenedor o-pila o-pila--lg u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
       const usuario = store.obtener('usuario');
       const sb = window.supabaseClient;
@@ -123,13 +122,8 @@
         window.helpers.registrarGuias(raiz, guias);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
 
-      if (window.pullToRefresh) {
-        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, () => this.montar(raiz));
-      }
     },
 
-    desmontar() {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
-    }
+    desmontar() {}
   };
 })();

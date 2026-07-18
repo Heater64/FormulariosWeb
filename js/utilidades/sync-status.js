@@ -87,8 +87,6 @@
       const pend = e.pendientes || 0;
       if (pend === 0) {
         setUltima(Date.now());
-        // "Conectado": aparece una vez y desaparece solo (no permanente)
-        mostrar({ texto: '🟢 Conectado', estado: 'ok', duracion: 2500, unaVez: true });
       } else {
         mostrar({ texto: `🟠 Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
       }

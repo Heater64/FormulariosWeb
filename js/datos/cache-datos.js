@@ -96,6 +96,33 @@
         return fresco;
       }
       return null;
+    },
+
+    // Limpiar toda la caché: Service Worker caches + IndexedDB + localStorage temporal
+    async limpiarTodo() {
+      // 1. Borrar todas las caches del Service Worker
+      if ('caches' in window) {
+        try {
+          const names = await caches.keys();
+          await Promise.all(names.filter(n => n.startsWith('formsbiblicos')).map(n => caches.delete(n)));
+        } catch (e) {}
+      }
+      // 2. Borrar la IndexedDB de caché de datos
+      try {
+        indexedDB.deleteDatabase(DB_NOMBRE);
+      } catch (e) {}
+      // 3. Resetear la promesa de BD para que se vuelva a abrir
+      dbPromesa = null;
+      // 4. Limpiar claves temporales de localStorage (mantener sesión y preferencias)
+      try {
+        const clavesPreservar = new Set(['fb_usuario', 'fb_recordar_sesion', 'fb_setup_completado', 'fb_examenes_vistos']);
+        const clavesBorrar = [];
+        for (let i = 0; i < localStorage.length; i++) {
+          const k = localStorage.key(i);
+          if (k && k.startsWith('fb_') && !clavesPreservar.has(k)) clavesBorrar.push(k);
+        }
+        clavesBorrar.forEach(k => localStorage.removeItem(k));
+      } catch (e) {}
     }
   };
 })();

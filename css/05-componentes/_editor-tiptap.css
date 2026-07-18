@@ -1,0 +1,55 @@
+/* === TipTap Editor Styles === */
+.tiptap-editor {
+  outline: none;
+  min-height: 200px;
+  padding: var(--espaciado-sm);
+  font: inherit;
+  line-height: 1.7;
+  color: var(--color-texto);
+}
+
+.tiptap-editor:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+.tiptap-editor p {
+  margin: 0.25em 0;
+}
+
+.tiptap-editor h3 {
+  margin: 0.5em 0 0.25em;
+  font-size: var(--texto-base);
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
+.tiptap-editor li {
+  margin-bottom: 0.15em;
+}
+
+.tiptap-editor em {
+  font-style: italic;
+}
+
+.tiptap-editor strong {
+  font-weight: 600;
+}
+
+.tiptap-editor u {
+  text-decoration: underline;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-texto-terciario);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}

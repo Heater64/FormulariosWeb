@@ -146,6 +146,60 @@
   border-top: 2px solid var(--color-acento);
 }
 
+/* === Editor: Relacionar mapping dropdown === */
+.editor-relacionar__mapeo {
+  margin-top: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde);
+}
+
+.editor-relacionar__mapeo-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xxs) 0;
+}
+
+.editor-relacionar__mapeo-izq {
+  flex: 1;
+  font-size: var(--texto-sm);
+  padding: 4px 8px;
+  background: var(--color-fondo);
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+  word-break: break-word;
+}
+
+.editor-relacionar__mapeo-flecha {
+  color: var(--color-acento);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.editor-relacionar__mapeo-select {
+  flex: 1;
+  font-size: var(--texto-sm);
+}
+
+/* === Preview: Inline hueco (completar) === */
+.preview-hueco {
+  display: inline-block;
+  padding: 0 8px;
+  min-width: 60px;
+  border-bottom: 2px dashed var(--color-acento);
+  color: var(--color-acento);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  cursor: help;
+}
+
+/* === Preview: Related pair === */
+.preview-relacionar__row {
+  font-size: var(--texto-sm);
+}
+
 /* === Editor: Preview banner === */
 .editor-preview-banner {
   display: flex;

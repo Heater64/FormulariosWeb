@@ -108,6 +108,8 @@
 
       window.eventBus.suscribir('route:change', () => {
         this._renderizarBarraNavegacion();
+        // Cancelar watchdog: la app ya cargó correctamente
+        if (this._watchdogTimer) { clearTimeout(this._watchdogTimer); this._watchdogTimer = null; }
         // Ocultar splash tras montar la primera vista
         if (this._splash && !this._splashOculto) {
           this.splashEstado('Cargando datos...');
@@ -136,6 +138,9 @@
       };
       this._splashEstado = actualizarEstado;
 
+      // Watchdog: si en 15s la app no ha cargado, limpiar caché y recargar
+      this._watchdogTimer = setTimeout(() => this._watchdogRecargar(), 15000);
+
       // Secuencia inicial de carga
       actualizarEstado('Cargando usuario...');
 
@@ -161,6 +166,14 @@
       setTimeout(() => {
         if (this._splash && this._splash.parentNode) this._splash.remove();
       }, 600);
+    },
+
+    // Watchdog: si la app no carga en 15s, limpiar caché y recargar
+    async _watchdogRecargar() {
+      if (this._splashOculto) return;
+      if (this._splashStatus) this._splashStatus.textContent = 'Reiniciando por tiempo de espera...';
+      try { await window.cacheDatos?.limpiarTodo(); } catch (e) {}
+      setTimeout(() => window.location.reload(), 1500);
     },
 
     _mostrarSetupInicial(usuario) {
@@ -384,7 +397,7 @@
       router.registrar('/calificaciones', window.vistaCalificaciones);
       router.registrar('/memorizacion', window.vistaMemorizacion);
       router.registrar('/notas', window.vistaNotas);
-      router.registrar('/progreso', window.vistaExplorar);
+      router.registrar('/progreso', window.vistaProgreso);
       router.registrar('/explorar', window.vistaExplorar);
       router.registrar('/perfil', window.vistaPerfil);
       router.registrar('/admin', window.vistaPanelAdmin);

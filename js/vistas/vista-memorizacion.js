@@ -192,7 +192,6 @@
 
     /* ── Montaje ──────────────────────────────────────────── */
     async montar(raiz) {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
       raiz.innerHTML = window.skeleton ? window.skeleton.memorizacion() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
@@ -218,26 +217,9 @@
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar</p></div>';
       }
 
-      if (window.pullToRefresh) {
-        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, async () => {
-          const [tarjetas, pendientes, total, repasos, libros] = await Promise.all([
-            window.memorizacionRepository.listarTarjetas(usuario.id),
-            window.memorizacionRepository.tarjetasPendientes(usuario.id),
-            window.memorizacionRepository.contarTarjetas(usuario.id),
-            window.memorizacionRepository.totalRepasos(usuario.id),
-            window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
-          ]);
-          this._pintar(raiz, {
-            tarjetas, pendientes, total, repasos,
-            libros: libros.data || [], usuario, pestana: getPestana(),
-          });
-        });
-      }
     },
 
-    desmontar() {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
-    },
+    desmontar() {},
 
     /* ── Pintado principal (stats + pestañas + contenido) ── */
     _pintar(raiz, d) {

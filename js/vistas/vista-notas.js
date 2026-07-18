@@ -18,7 +18,6 @@
     },
 
     async montar(raiz) {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
       raiz.innerHTML = window.skeleton ? window.skeleton.notas() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
@@ -32,19 +31,9 @@
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar notas</p></div>';
       }
 
-      if (window.pullToRefresh) {
-        this._ptrDestruir = window.pullToRefresh.initPullToRefresh(raiz, async () => {
-          const [notas, libros] = await Promise.all([
-            window.notasRepository.listar(usuario.id, 'personal'),
-            window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
-          ]);
-          this._pintar(raiz, { notas, libros: libros.data || [], usuario });
-        });
-      }
     },
 
     desmontar() {
-      if (this._ptrDestruir) { this._ptrDestruir(); this._ptrDestruir = null; }
       if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
     },
 
@@ -74,11 +63,20 @@
         porLibro[n.libro_nombre].push(n);
       });
 
+      const todasNotasFlat = notas;
+
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <h2>${I('file-text')} Notas personales</h2>
+          <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
+            <h2>${I('file-text')} Notas personales</h2>
+          </div>
+          <div class="notas-buscar" style="position:relative">
+            <span style="position:absolute;left:var(--espaciado-sm);top:50%;transform:translateY(-50%);color:var(--color-texto-terciario);display:flex">${I('search')}</span>
+            <input type="text" id="buscarNotas" placeholder="Buscar en todas las notas..." style="width:100%;padding-left:2.2rem">
+          </div>
+          <div id="resultadosBusqueda" class="o-pila" style="display:none"></div>
           <button class="btn-primario" id="btnNueva" style="width:100%;justify-content:center">${I('plus')} Nueva nota</button>
-          <div class="o-pila">
+          <div class="o-pila" id="listaNotasLibros">
             ${Object.entries(porLibro).map(([libro, items]) => `
               <div class="tarjeta-capitulo" style="cursor:pointer" data-libro="${E(libro)}">
                 <div class="o-flecha o-flecha--between">
@@ -93,6 +91,46 @@
       raiz.querySelector('#btnNueva').onclick = () => this._nuevaNota(raiz, d);
       $$(raiz, '[data-libro]').forEach((el) => {
         el.onclick = () => this._listaCapitulos(raiz, el.dataset.libro, d);
+      });
+
+      // Search handler
+      const buscarInput = raiz.querySelector('#buscarNotas');
+      const resultadosDiv = raiz.querySelector('#resultadosBusqueda');
+      const listaLibrosDiv = raiz.querySelector('#listaNotasLibros');
+      buscarInput.addEventListener('input', () => {
+        const q = buscarInput.value.toLowerCase().trim();
+        if (q.length < 2) {
+          resultadosDiv.style.display = 'none';
+          listaLibrosDiv.style.display = '';
+          return;
+        }
+        const resultados = todasNotasFlat.filter(n =>
+          (n.contenido && n.contenido.toLowerCase().includes(q)) ||
+          (n.titulo && n.titulo.toLowerCase().includes(q)) ||
+          (n.libro_nombre && n.libro_nombre.toLowerCase().includes(q))
+        );
+        if (resultados.length === 0) {
+          resultadosDiv.innerHTML = '<p class="u-color-texto-terciario u-fs-sm u-mt-2">Sin resultados</p>';
+        } else {
+          resultadosDiv.innerHTML = resultados.slice(0, 20).map(n => `
+            <div class="tarjeta-capitulo" style="cursor:pointer;padding:var(--espaciado-sm)" data-id="${n.id}">
+              <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs);flex-wrap:wrap">
+                <span class="u-fw-600 u-fs-sm">${I('file-text')} ${E(n.titulo || 'Nota')}</span>
+                <span class="u-fs-xs u-color-texto-terciario">${E(n.libro_nombre)} ${n.capitulo_numero || ''}</span>
+              </div>
+              <p class="u-fs-xs u-color-texto-secundario u-mt-1 truncar-2">${E((n.contenido || '').slice(0, 120))}${(n.contenido || '').length > 120 ? '...' : ''}</p>
+            </div>
+          `).join('');
+          resultadosDiv.querySelectorAll('[data-id]').forEach(el => {
+            el.onclick = () => {
+              const n = todasNotasFlat.find(x => x.id === el.dataset.id);
+              if (n) this._verNota(raiz, n, d);
+            };
+          });
+        }
+        resultadosDiv.style.display = '';
+        listaLibrosDiv.style.display = 'none';
+        window.Iconos?.actualizar?.();
       });
     },
 
@@ -164,7 +202,7 @@
               <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
             </div>
           </div>
-          <div style="white-space:pre-wrap;font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${E(n.contenido)}</div>
+          <div class="nota-contenido" style="font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${n.contenido}</div>
           <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
         </div>`;
     },
@@ -217,7 +255,7 @@
                 <button class="btn-icono btn-icono--peligro" id="btnDel" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
               </div>
             </div>
-            <div style="white-space:pre-wrap;font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${E(nota.contenido)}</div>
+            <div class="nota-contenido" style="font-size:var(--texto-sm);line-height:1.7;color:var(--color-texto)">${nota.contenido}</div>
           </div>
           <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(nota.actualizado_en || nota.creado_en)}</p>
         </div>`;
@@ -244,25 +282,121 @@
     /* ── Editar nota existente (por id) ── */
     _editarNota(raiz, nota, d) {
       const libro = nota.libro_nombre, capitulo = nota.capitulo_numero;
+      let _tiptapEditor = null;
+      let _autoSave = null;
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <button class="btn-secundario" id="btnV" style="align-self:flex-start">← Volver</button>
           <h2>${I('pencil')} Editar nota — ${E(libro)} ${capitulo}</h2>
-          <textarea id="fContenido" rows="8" style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit">${E(nota.contenido)}</textarea>
-          <button class="btn-primario" id="btnGuardar" style="width:100%;justify-content:center">Guardar cambios</button>
+          <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;padding:var(--espaciado-xs) 0">
+            <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
+            <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
+            <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
+            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
+            <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
+            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
+            <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
+            <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+            <button type="button" class="btn-icono" id="btnVersiones" title="Historial de versiones" aria-label="Historial de versiones" style="font-size:var(--texto-xs)">${I('clock')} Versiones</button>
+          </div>
+          <div id="fContenido" style="width:100%;min-height:200px;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)"></div>
+          <div class="o-flecha o-flecha--between u-mt-1">
+            <span class="u-fs-xs u-color-texto-terciario" id="versionStatus"></span>
+            <button class="btn-primario" id="btnGuardar" style="width:auto;justify-content:center">Guardar cambios</button>
+          </div>
+          <div id="versionesPanel" style="display:none" class="o-pila u-mt-2"></div>
         </div>`;
 
-      raiz.querySelector('#btnV').onclick = () => this._verNota(raiz, nota, d);
-      this._conectarGestoVolver(raiz, () => this._verNota(raiz, nota, d));
+      raiz.querySelector('#btnV').onclick = async () => {
+        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
+        if (_autoSave) _autoSave.detener();
+        this._verNota(raiz, nota, d);
+      };
+      this._conectarGestoVolver(raiz, async () => {
+        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
+        if (_autoSave) _autoSave.detener();
+        this._verNota(raiz, nota, d);
+      });
+
+      // Initialize TipTap editor
+      const editorEl = raiz.querySelector('#fContenido');
+      window.editorTiptap.crear(editorEl, nota.contenido, {
+        ariaLabel: 'Editor de nota',
+        onUpdate: (html) => {
+          if (_autoSave) _autoSave.trigger();
+        }
+      }).then(editor => {
+        _tiptapEditor = editor;
+
+        // Toolbar
+        const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
+        raiz.querySelector('#tip-bold').onclick = () => exec('toggleBold');
+        raiz.querySelector('#tip-italic').onclick = () => exec('toggleItalic');
+        raiz.querySelector('#tip-underline').onclick = () => exec('toggleUnderline');
+        raiz.querySelector('#tip-list').onclick = () => exec('toggleBulletList');
+        raiz.querySelector('#tip-heading').onclick = () => exec('toggleHeading', { level: 3 });
+        raiz.querySelector('#tip-undo').onclick = () => exec('undo');
+        raiz.querySelector('#tip-redo').onclick = () => exec('redo');
+
+        // Version history auto-save
+        _autoSave = window.versionHistory.iniciarAutoSave(
+          nota.id,
+          () => editor.getHTML(),
+          () => {
+            const status = raiz.querySelector('#versionStatus');
+            if (status) status.textContent = 'Versión guardada ' + new Date().toLocaleTimeString();
+          }
+        );
+        editor.on('update', () => { if (_autoSave) _autoSave.trigger(); });
+
+        // View versions
+        raiz.querySelector('#btnVersiones').onclick = async () => {
+          const panel = raiz.querySelector('#versionesPanel');
+          if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
+          const versiones = await window.versionHistory.listar(nota.id);
+          if (!versiones.length) {
+            panel.innerHTML = '<p class="u-fs-xs u-color-texto-terciario">Sin versiones anteriores.</p>';
+          } else {
+            panel.innerHTML = '<p class="u-fs-xs u-fw-600">Versiones anteriores:</p>' +
+              versiones.slice(0, 20).map(v => `
+                <div class="tarjeta-capitulo" style="padding:var(--espaciado-xs);cursor:pointer" data-version-id="${v.id}">
+                  <div class="o-flecha o-flecha--between u-fs-xs">
+                    <span>${new Date(v.creado).toLocaleString()}</span>
+                    <button class="btn-enlace u-fs-xs restaurar-version" data-vid="${v.id}">Restaurar</button>
+                  </div>
+                </div>
+              `).join('');
+            panel.querySelectorAll('.restaurar-version').forEach(btn => {
+              btn.onclick = async (e) => {
+                e.stopPropagation();
+                const v = await window.versionHistory.obtener(btn.dataset.vid);
+                if (v && v.contenido && _tiptapEditor) {
+                  _tiptapEditor.commands.setContent(v.contenido);
+                  window.helpers.mostrarAlerta('Versión restaurada.', 'exito');
+                  panel.style.display = 'none';
+                }
+              };
+            });
+          }
+          panel.style.display = '';
+        };
+      });
+
       raiz.querySelector('#btnGuardar').onclick = async () => {
-        const contenido = raiz.querySelector('#fContenido').value.trim();
-        if (!contenido) { window.helpers.mostrarAlerta('La nota no puede estar vacía.', 'advertencia'); return; }
+        if (!_tiptapEditor) return;
+        const contenido = _tiptapEditor.getHTML().trim();
+        if (!contenido || contenido === '<p></p>') { window.helpers.mostrarAlerta('La nota no puede estar vacía.', 'advertencia'); return; }
         try {
           await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido, { id: nota.id, tipo: 'personal', titulo: nota.titulo });
           nota.contenido = contenido;
           nota.actualizado_en = new Date().toISOString();
+          if (_autoSave) await _autoSave.guardarAhora();
           if (window.haptica) window.haptica.exito();
           window.helpers.mostrarAlerta('Nota actualizada.', 'exito');
+          if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
+          if (_autoSave) _autoSave.detener();
           this._verNota(raiz, nota, d);
         } catch {
           window.helpers.mostrarAlerta('Error al guardar.', 'error');
@@ -273,6 +407,8 @@
     /* ── Nueva nota ── */
     _nuevaNota(raiz, d, libroPre, capPre) {
       const opts = (d.libros || []).map((l) => l.nombre);
+      let _tiptapEditor = null;
+      let _autoSave = null;
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
@@ -286,25 +422,59 @@
             <label class="u-fs-sm u-fw-600">Capítulo</label>
             <input type="number" id="fCap" min="1" placeholder="Ej: 3" value="${capPre || ''}" style="width:100%">
             <label class="u-fs-sm u-fw-600">Contenido de la nota *</label>
-            <textarea id="fContenido" rows="8" placeholder="Escribe tu nota aquí..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit"></textarea>
+            <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;padding:var(--espaciado-xs) 0">
+              <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
+              <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
+              <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
+              <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+              <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
+              <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
+              <span style="width:1px;background:var(--color-borde);margin:0 4px"></span>
+              <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
+              <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
+            </div>
+            <div id="fContenido" style="width:100%;min-height:200px;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)"></div>
           </div>
-          <button class="btn-primario" id="btnGuardar" style="width:100%;justify-content:center">Guardar</button>
+          <div class="o-flecha o-flecha--between u-mt-1">
+            <span class="u-fs-xs u-color-texto-terciario" id="versionStatus"></span>
+            <button class="btn-primario" id="btnGuardar" style="width:auto;justify-content:center">Guardar</button>
+          </div>
         </div>`;
 
       const volver = () => {
+        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
+        if (_autoSave) _autoSave.detener();
         if (libroPre && capPre) this._listaNotasCap(raiz, libroPre, capPre, d);
         else this._pintar(raiz, d);
       };
       raiz.querySelector('#btnV').onclick = volver;
       this._conectarGestoVolver(raiz, volver);
+
+      // Initialize TipTap
+      const editorEl = raiz.querySelector('#fContenido');
+      window.editorTiptap.crear(editorEl, '<p></p>', {
+        ariaLabel: 'Editor de nota',
+        onUpdate: () => { if (_autoSave) _autoSave.trigger(); }
+      }).then(editor => {
+        _tiptapEditor = editor;
+        const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
+        raiz.querySelector('#tip-bold').onclick = () => exec('toggleBold');
+        raiz.querySelector('#tip-italic').onclick = () => exec('toggleItalic');
+        raiz.querySelector('#tip-underline').onclick = () => exec('toggleUnderline');
+        raiz.querySelector('#tip-list').onclick = () => exec('toggleBulletList');
+        raiz.querySelector('#tip-heading').onclick = () => exec('toggleHeading', { level: 3 });
+        raiz.querySelector('#tip-undo').onclick = () => exec('undo');
+        raiz.querySelector('#tip-redo').onclick = () => exec('redo');
+      });
+
       raiz.querySelector('#btnGuardar').onclick = async () => {
         const libro = raiz.querySelector('#fLibro').value;
         const cap = raiz.querySelector('#fCap').value.trim();
-        const contenido = raiz.querySelector('#fContenido').value.trim();
+        const contenido = _tiptapEditor ? _tiptapEditor.getHTML().trim() : '';
 
         if (!libro) { window.helpers.mostrarAlerta('Selecciona un libro.', 'advertencia'); return; }
         if (!cap) { window.helpers.mostrarAlerta('Escribe el capítulo.', 'advertencia'); return; }
-        if (!contenido) { window.helpers.mostrarAlerta('Escribe el contenido de la nota.', 'advertencia'); return; }
+        if (!contenido || contenido === '<p></p>') { window.helpers.mostrarAlerta('Escribe el contenido de la nota.', 'advertencia'); return; }
 
         const capitulo = parseInt(cap, 10);
         const num = await window.notasRepository.contarPorCapitulo(d.usuario.id, libro, capitulo) + 1;
@@ -318,6 +488,8 @@
           return;
         }
 
+        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
+        if (_autoSave) _autoSave.detener();
         d.notas = await window.notasRepository.listar(d.usuario.id, 'personal');
         this._listaNotasCap(raiz, libro, capitulo, d);
       };
