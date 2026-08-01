@@ -55,3 +55,57 @@
   -webkit-box-orient: vertical;
   overflow: hidden;
 }
+
+/* === Notas fijadas (pinned) === */
+.tarjeta-capitulo--fijada {
+  border-left: 4px solid var(--color-acento);
+}
+
+.nota-pin-icono {
+  display: inline-flex;
+  align-items: center;
+  color: var(--color-acento);
+}
+
+/* Barra de acciones rápida en las tarjetas de notas */
+.nota-acciones {
+  display: flex;
+  gap: var(--espaciado-xxs);
+  flex-wrap: wrap;
+}
+
+.nota-acciones .btn-icono {
+  font-size: var(--texto-xs);
+  padding: var(--espaciado-xxs) var(--espaciado-xs);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  background: var(--color-fondo);
+  cursor: pointer;
+  min-height: auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  transition: all var(--transicion-rapida);
+}
+
+.nota-acciones .btn-icono:hover {
+  background: var(--color-acento-soft);
+  border-color: var(--color-acento);
+}
+
+.nota-acciones .btn-icono--peligro:hover {
+  background: var(--color-error-soft);
+  border-color: var(--color-error);
+  color: var(--color-error);
+}
+
+/* === Responsive notas === */
+@media (max-width: 480px) {
+  .nota-acciones {
+    width: 100%;
+  }
+  .nota-acciones .btn-icono {
+    flex: 1;
+    justify-content: center;
+  }
+}

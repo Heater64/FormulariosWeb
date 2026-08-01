@@ -91,11 +91,15 @@ BEGIN
 END $$;
 
 -- Usuarios por defecto
+-- Usuarios demo. El password se guarda como hash SHA-256 (hex),
+-- igual que hace el panel de administración al crear usuarios.
+-- Contraseñas reales: owner/owner123 · admin1/admin123 · editor1/editor123 · alumno/alumno123 · usuario/usuario
 INSERT INTO perfiles (username, password, nombre_completo, rol) VALUES
-('owner',  'owner123',  'Propietario',    'owner'),
-('admin1', 'admin123',  'Admin Central',  'admin'),
-('editor1','editor123', 'Editor Demo',    'editor'),
-('alumno', 'alumno123', 'Alumno Demo',    'usuario')
+('owner',  '43a0d17178a9d26c9e0fe9a74b0b45e38d32f27aed887a008a54bf6e033bf7b9', 'Propietario',    'owner'),
+('admin1', '240be518fabd2724ddb6f04eeb1da5967448d7e831c08c8fa822809f74c720a9', 'Admin Central',  'admin'),
+('editor1','ef5e5a1fb95055e0e56cccf98a41e784a132c14e7f6e1ba244302f0e72b29baf', 'Editor Demo',    'editor'),
+('alumno', 'c1042ecc51482cef39f2e89e1273a35074db7f873f1ac6050efd546a9bceefc0', 'Alumno Demo',    'usuario'),
+('usuario','9250e222c4c71f0c58d4c54b50a880a312e9f9fed55d5c3aa0b0e860ded99165', 'Usuario Demo',   'usuario')
 ON CONFLICT (username) DO NOTHING;
 
 -- Grupo por defecto

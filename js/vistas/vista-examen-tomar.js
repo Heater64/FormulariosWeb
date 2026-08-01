@@ -39,7 +39,25 @@
           if (p.tipo === 'completar' && !Array.isArray(p.huecos)) p.huecos = [];
         });
         const misIntentos = await window.examenesRepository.misIntentos(usuario.id);
-        const terminado = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
+        const config = this._configDe(examen);
+
+        // Ventana de fechas de disponibilidad (solo alumnos) — usa esProfesor ya declarado arriba
+        if (!esProfesor) {
+          const ahora = Date.now();
+          if (config.fecha_inicio && ahora < new Date(config.fecha_inicio).getTime()) {
+            raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está disponible. Vuelve en la fecha de inicio indicada.</p></div>';
+            return;
+          }
+          if (config.fecha_fin && ahora > new Date(config.fecha_fin).getTime()) {
+            raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">El plazo para realizar este examen ha finalizado.</p></div>';
+            return;
+          }
+        }
+
+        // Nº de intentos permitidos (config.intentos: '1', '2', '3', 'ilimitados')
+        const permitidos = config.intentos === 'ilimitados' ? Infinity : (parseInt(config.intentos, 10) || 1);
+        const completados = misIntentos.filter(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
+        const terminado = completados.length >= permitidos ? completados[0] : null;
         if (terminado) { this._renderResultados(raiz, examen, preguntas, terminado, usuario); return; }
         let intento = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'en_progreso' || i.estado === 'pendiente'));
         if (!intento) {
@@ -64,10 +82,13 @@
     },
 
     _renderizar(raiz, examen, preguntas, intento, respuestas, usuario) {
-      const respondidas = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
+      const config = this._configDe(examen);
+      const duracionMinutos = this._minutosDesdeConfig(config);
+      // Aleatorizar el orden de las preguntas (las respuestas se guardan por id, seguro)
+      const preguntasRender = config.aleatorizar_preguntas ? [...preguntas].sort(() => Math.random() - 0.5) : preguntas;
+      const respondidas = preguntasRender.filter(p => this._tieneRespuesta(respuestas, p)).length;
       const porcentaje = Math.round((respondidas / preguntas.length) * 100);
 
-      const duracionMinutos = examen.duracion_minutos || 0;
       raiz.innerHTML = `
         <div class="examen-page o-contenedor o-pila o-pila--lg">
           <div class="o-pila">
@@ -105,7 +126,7 @@
         </div>`;
 
       const cont = raiz.querySelector('#preguntasExamen');
-      cont.innerHTML = preguntas.map((p, i) => this._renderPregunta(p, respuestas[p.id], i)).join('');
+      cont.innerHTML = preguntasRender.map((p, i) => this._renderPregunta(p, respuestas[p.id], i)).join('');
 
       const paginaCont = raiz.querySelector('#preguntasPagina');
       const dotsCont = raiz.querySelector('#examenDots');
@@ -119,26 +140,31 @@
         });
       };
 
-      const _syncPaginaRespuestas = () => {
-        if (!paginaCont) return;
+      // --- Sincronización robusta: fusiona la vista paginada (móvil) y la lista
+      // completa oculta (escritorio) prefiriendo siempre el valor NO vacío, para
+      // que ninguna vista sobreescriba las respuestas reales del alumno.
+      const _esVacio = (v) =>
+        v === undefined || v === null || v === '' ||
+        (Array.isArray(v) && v.every(x => x === '' || x === undefined || x === null));
+
+      const _leerContenedor = (contenedor, p) => {
+        if (!contenedor) return undefined;
+        const val = this._obtenerValorRespuesta(contenedor, p);
+        return _esVacio(val) ? undefined : val;
+      };
+
+      const _sincronizarRespuestas = () => {
         preguntas.forEach(p => {
-          const val = this._obtenerValorRespuesta(paginaCont, p);
-          if (val !== undefined) respuestas[p.id] = val;
-        });
-        preguntas.forEach(p => {
-          const val = this._obtenerValorRespuesta(cont, p);
-          if (val !== undefined) respuestas[p.id] = val;
+          const valPagina = _leerContenedor(paginaCont, p);
+          const valLista = _leerContenedor(cont, p);
+          const nuevo = valPagina !== undefined ? valPagina : valLista;
+          if (nuevo !== undefined) respuestas[p.id] = nuevo;
         });
         _actualizarDots();
       };
 
       const actualizarBarra = () => {
-        preguntas.forEach(p => {
-          const valP = this._obtenerValorRespuesta(paginaCont, p);
-          const valD = this._obtenerValorRespuesta(cont, p);
-          if (valP !== undefined) respuestas[p.id] = valP;
-          if (valD !== undefined) respuestas[p.id] = valD;
-        });
+        _sincronizarRespuestas();
         const count = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
         const barra = raiz.querySelector('#barraProgresoExamen');
         const texto = raiz.querySelector('#contadorProgreso');
@@ -148,14 +174,14 @@
       };
 
       const guardarYActualizarBarra = () => {
-        _syncPaginaRespuestas();
-        this._guardarRespuesta(cont, intento, preguntas, usuario);
+        _sincronizarRespuestas();
+        this._guardarRespuesta(respuestas, intento);
         actualizarBarra();
       };
 
       let renderPagina = (idx) => {
         pagActual = idx;
-        const p = preguntas[idx];
+        const p = preguntasRender[idx];
         const rActual = respuestas[p.id] !== undefined ? respuestas[p.id] : '';
         paginaCont.innerHTML = `<div class="pregunta-examen" data-pid="${p.id}">${this._renderPreguntaInner(p, rActual, idx)}</div>`;
         const nuevaPreg = paginaCont.firstElementChild;
@@ -164,7 +190,7 @@
         paginaCont.querySelectorAll('input[type="radio"]').forEach(el => {
           el.addEventListener('change', () => {
             guardarYActualizarBarra();
-            if (idx < preguntas.length - 1) {
+            if (idx < preguntasRender.length - 1) {
               _autoTimer = setTimeout(() => { renderPagina(idx + 1); }, 1200);
             }
           });
@@ -179,28 +205,28 @@
           d.classList.toggle('examen-dot--activa', di === idx);
         });
         raiz.querySelector('#btnAnterior').disabled = idx === 0;
-        raiz.querySelector('#btnSiguiente').textContent = idx === preguntas.length - 1 ? 'Entregar' : 'Siguiente →';
-        raiz.querySelector('#paginacionInfo').textContent = `${idx + 1}/${preguntas.length}`;
+        raiz.querySelector('#btnSiguiente').textContent = idx === preguntasRender.length - 1 ? 'Entregar' : 'Siguiente →';
+        raiz.querySelector('#paginacionInfo').textContent = `${idx + 1}/${preguntasRender.length}`;
         window.Iconos?.actualizar?.();
       };
 
-      preguntas.forEach((p, i) => {
+      preguntasRender.forEach((p, i) => {
         const dot = document.createElement('button');
         dot.className = 'examen-dot';
         dot.setAttribute('aria-label', `Pregunta ${i + 1}`);
         if (this._tieneRespuesta(respuestas, p)) dot.classList.add('examen-dot--respondida');
         dot.addEventListener('click', () => {
-          _syncPaginaRespuestas();
+          _sincronizarRespuestas();
           renderPagina(i);
         });
         dotsCont.appendChild(dot);
       });
 
       raiz.querySelector('#btnAnterior').addEventListener('click', () => {
-        if (pagActual > 0) { _syncPaginaRespuestas(); renderPagina(pagActual - 1); }
+        if (pagActual > 0) { _sincronizarRespuestas(); renderPagina(pagActual - 1); }
       });
       raiz.querySelector('#btnSiguiente').addEventListener('click', () => {
-        _syncPaginaRespuestas();
+        _sincronizarRespuestas();
         if (pagActual < preguntas.length - 1) {
           renderPagina(pagActual + 1);
         } else {
@@ -211,12 +237,12 @@
       if (window.gestosNavegacion) {
         window.gestosNavegacion.initGestosNavegacion(raiz, {
           onIzquierda: () => {
-            _syncPaginaRespuestas();
+            _sincronizarRespuestas();
             if (pagActual < preguntas.length - 1) renderPagina(pagActual + 1);
             else raiz.querySelector('#btnEntregar').click();
           },
           onDerecha: () => {
-            if (pagActual > 0) { _syncPaginaRespuestas(); renderPagina(pagActual - 1); }
+            if (pagActual > 0) { _sincronizarRespuestas(); renderPagina(pagActual - 1); }
           },
         });
       }
@@ -236,8 +262,8 @@
       // Keyboard shortcuts
       const tecladoHandler = (e) => {
         if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
-        if (e.key === 'ArrowLeft' && pagActual > 0) { _syncPaginaRespuestas(); renderPagina(pagActual - 1); }
-        if (e.key === 'ArrowRight' && pagActual < preguntas.length - 1) { _syncPaginaRespuestas(); renderPagina(pagActual + 1); }
+        if (e.key === 'ArrowLeft' && pagActual > 0) { _sincronizarRespuestas(); renderPagina(pagActual - 1); }
+        if (e.key === 'ArrowRight' && pagActual < preguntas.length - 1) { _sincronizarRespuestas(); renderPagina(pagActual + 1); }
         if (e.key === 'f' || e.key === 'F') {
           const pid = preguntas[pagActual].id;
           flags[pid] = !flags[pid];
@@ -317,10 +343,12 @@
         if (timerInterval) clearInterval(timerInterval);
         document.removeEventListener('keydown', tecladoHandler);
         try {
-          this._guardarRespuesta(cont, intento, preguntas, usuario);
-          const respuestasFinales = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
+          _sincronizarRespuestas();
+          this._guardarRespuesta(respuestas, intento);
+          const respuestasFinales = respuestas;
           const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
-          const esLibre = preguntas.some(p => p.tipo === 'texto_largo');
+          // Corrección manual pendiente: texto_largo y respuesta_corta (coherente con vista corregir)
+          const esLibre = preguntas.some(p => p.tipo === 'texto_largo' || p.tipo === 'respuesta_corta');
           await window.examenesRepository.guardarIntento({
             id: intento.id, examen_id: examen.id, alumno_id: usuario.id,
             respuestas: JSON.stringify(respuestasFinales),
@@ -360,6 +388,21 @@
         <div class="pregunta-examen__opciones">${this._renderRespuesta(p, rActual, i)}</div>`;
     },
 
+    _configDe(examen) {
+      if (!examen || !examen.config) return {};
+      if (typeof examen.config === 'string') {
+        try { return JSON.parse(examen.config) || {}; } catch (e) { return {}; }
+      }
+      return examen.config || {};
+    },
+
+    _minutosDesdeConfig(config) {
+      const g = config && config.temporizador_global;
+      if (!g || g === 'sin_limite') return 0;
+      if (g === 'personalizado') return parseInt(config.temporizador_personalizado, 10) || 0;
+      return parseInt(g, 10) || 0;
+    },
+
     _tieneRespuesta(respuestas, pregunta) {
       const r = respuestas[pregunta.id];
       if (r === undefined || r === '') return false;
@@ -385,8 +428,12 @@
       }
       const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
       const correccionMap = (intento.correccion && typeof intento.correccion === 'string') ? JSON.parse(intento.correccion) : (intento.correccion || {});
-      const esLibre = preguntas.some(p => p.tipo === 'texto_largo');
-      const correccionVisible = intento.corregido || !esLibre;
+      const esLibre = preguntas.some(p => p.tipo === 'texto_largo' || p.tipo === 'respuesta_corta');
+      const config = this._configDe(examen);
+      const visibilidad = config.resultados_visibles || 'al_terminar';
+      // El profesor siempre ve los resultados; el alumno según config
+      const puedeVerResultados = usuarioEsProfesor || visibilidad === 'al_terminar' || (visibilidad === 'al_publicar' && intento.corregido);
+      const correccionVisible = puedeVerResultados && (intento.corregido || !esLibre);
       const calculo = window.puntuacionExamen.calcularConCorreccion(preguntas, respuestas, correccionMap);
       if (window.haptica && correccionVisible && calculo.aciertos < preguntas.length) {
         window.haptica.fallo();
@@ -406,7 +453,7 @@
             ${nota}
             ${intento.observaciones ? `<div class="u-mt-2 u-p-2" style="background:var(--color-acento-soft);border-radius:var(--radio-sm)"><p class="u-fs-xs u-color-texto-secundario">Observación del profesor:</p><p class="u-fs-sm">${window.helpers.escapeHtml(intento.observaciones)}</p></div>` : ''}
           </div>
-          ${correccionVisible ? `<div class="o-pila" id="desgloseResultados"></div>` : '<p class="u-color-texto-terciario u-fs-sm">La corrección estará disponible cuando el profesor califique el examen.</p>'}
+          ${correccionVisible ? `<div class="o-pila" id="desgloseResultados"></div>` : `<p class="u-color-texto-terciario u-fs-sm">${visibilidad === 'nunca' ? 'Este examen no muestra las respuestas a los alumnos.' : 'Los resultados estarán disponibles cuando el profesor los publique.'}</p>`}
         </div>`;
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
       if (!correccionVisible) return;
@@ -628,37 +675,7 @@
       return inp ? inp.value : undefined;
     },
 
-    _guardarRespuesta(cont, intento, preguntas) {
-      const respuestas = {};
-      preguntas.forEach(p => {
-        if (p.tipo === 'multiple' || p.tipo === 'opcion_unica' || p.tipo === 'verdadero_falso') {
-          const sel = cont.querySelector(`input[name="p_${p.id}"]:checked`);
-          if (sel) respuestas[p.id] = sel.value;
-        } else if (p.tipo === 'varias_opciones') {
-          const checks = cont.querySelectorAll(`input[data-multi="${p.id}"]:checked`);
-          respuestas[p.id] = JSON.stringify(Array.from(checks).map(c => parseInt(c.value)));
-        } else if (p.tipo === 'relacionar') {
-          const selects = cont.querySelectorAll(`select[data-relacion="${p.id}"]`);
-          const rel = {};
-          selects.forEach(s => { if (s.value) rel[parseInt(s.dataset.idx)] = parseInt(s.value); });
-          respuestas[p.id] = JSON.stringify(rel);
-        } else if (p.tipo === 'ordenar') {
-          const hiddens = cont.querySelectorAll(`input[data-orden="${p.id}"]`);
-          const orden = Array.from(hiddens).sort((a, b) => parseInt(a.dataset.pos) - parseInt(b.dataset.pos)).map(h => parseInt(h.value));
-          respuestas[p.id] = JSON.stringify(orden);
-        } else if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos) && p.huecos.length > 0) {
-          const inputs = cont.querySelectorAll('.pregunta-examen__hueco-input[data-hidx]');
-          const arr = new Array(p.huecos.length).fill('');
-          inputs.forEach(inp => {
-            const hidx = parseInt(inp.dataset.hidx);
-            if (!isNaN(hidx) && hidx < arr.length) arr[hidx] = inp.value;
-          });
-          if (arr.some(v => v !== '')) respuestas[p.id] = arr;
-        } else {
-          const inp = cont.querySelector(`[data-pid="${p.id}"]`);
-          if (inp) respuestas[p.id] = inp.value;
-        }
-      });
+    _guardarRespuesta(respuestas, intento) {
       intento.respuestas = JSON.stringify(respuestas);
       window.examenesRepository.guardarIntento({ id: intento.id, respuestas: intento.respuestas });
     },

@@ -64,7 +64,7 @@
               <span style="position:absolute;left:var(--espaciado-sm);top:50%;transform:translateY(-50%);color:var(--color-texto-terciario);display:flex">${window.Iconos.render('search')}</span>
               <input type="text" id="buscarExamen" placeholder="Buscar por título..." style="width:100%;padding-left:2.2rem">
             </div>
-            <div id="listaExamenes" class="o-pila" style="gap:var(--espaciado-sm)"></div>
+            <div id="listaExamenes" class="o-pila" style="gap:var(--espaciado-md)"></div>
             <div id="listaExamenesVacia" class="empty-state empty-state--compacto" style="display:none">
               <div class="empty-state__icono">${window.Iconos.render('clipboard-check')}</div>
               <p class="empty-state__descripcion" id="textoVacio">No hay exámenes que coincidan con tu búsqueda.</p>
@@ -257,6 +257,7 @@
         const items = [];
         items.push(`<button class="examen-menu-item btn-editar-examen" data-id="${ex.id}">${window.Iconos.render('edit')} Editar</button>`);
         items.push(`<button class="examen-menu-item btn-duplicar-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}">${window.Iconos.render('copy')} Duplicar</button>`);
+        items.push(`<button class="examen-menu-item btn-gestionar-alumnos" data-id="${ex.id}">${window.Iconos.render('users')} Gestionar alumnos</button>`);
         
         if (ex.publicado) {
           items.push(`<button class="examen-menu-item btn-compartir-examen" data-id="${ex.id}" data-titulo="${window.helpers.escapeHtml(ex.titulo)}">${window.Iconos.render('share-2')} Compartir</button>`);
@@ -423,15 +424,26 @@
         });
       });
 
-      // Close menus on outside click (with cleanup)
-      const closeMenus = (e) => {
-        if (!e.target.closest('.examen-menu-wrap')) {
-          cont.querySelectorAll('.examen-menu--abierto').forEach(m => m.classList.remove('examen-menu--abierto'));
-          cont.querySelectorAll('.examen-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+      // Close menus on outside click (with cleanup) — sin fugas: se reutiliza
+      // el mismo handler si esta vista ya lo registró antes.
+      if (!this._closeMenusHandler) {
+        this._closeMenusHandler = (e) => {
+          if (!e.target.closest('.examen-menu-wrap')) {
+            const lista = document.querySelector('#listaExamenes');
+            if (lista) {
+              lista.querySelectorAll('.examen-menu--abierto').forEach(m => m.classList.remove('examen-menu--abierto'));
+              lista.querySelectorAll('.examen-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
+            }
+          }
+        };
+        document.addEventListener('click', this._closeMenusHandler);
+      }
+      this._cleanup = () => {
+        if (this._closeMenusHandler) {
+          document.removeEventListener('click', this._closeMenusHandler);
+          this._closeMenusHandler = null;
         }
       };
-      document.addEventListener('click', closeMenus);
-      this._cleanup = () => document.removeEventListener('click', closeMenus);
     },
 
     _modalGestionarAlumnos(raiz, examenId) {

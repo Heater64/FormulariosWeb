@@ -10,7 +10,10 @@ const authRepository = {
       .single();
 
     if (error || !data) throw new Error('Usuario no encontrado');
-    if (data.password !== password) throw new Error('Contraseña incorrecta');
+    // La BD almacena el password como hash SHA-256; también se acepta
+    // coincidencia directa por si alguna cuenta legacy está en texto plano.
+    const hash = await window.helpers.hashPassword(password);
+    if (data.password !== password && data.password !== hash) throw new Error('Contraseña incorrecta');
     if (!data.activo) throw new Error('Cuenta desactivada');
 
     store.asignar({ usuario: data, sesion: { autenticado: true, inicio: Date.now() } });
@@ -43,10 +46,14 @@ const authRepository = {
     const sb = window.supabaseClient;
     if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
     const tablas = [
-      ['repasos_memorizacion', 'usuario_id'],
-      ['tarjetas_memorizacion', 'usuario_id'],
+      ['notas_capitulo', 'usuario_id'],
+      ['categorias_tarjetas', 'usuario_id'],
+      ['categorias_memorizacion', 'usuario_id'],
+      ['mazos_memorizacion', 'usuario_id'],
+      ['miembros_grupo', 'usuario_id'],
       ['logros_usuario', 'usuario_id'],
       ['progreso_lectura', 'usuario_id'],
+      ['tarjetas_memorizacion', 'usuario_id'], // repasos_memorizacion se borran en cascada
       ['intentos_examen_personalizado', 'alumno_id']
     ];
     for (const [tabla, col] of tablas) {

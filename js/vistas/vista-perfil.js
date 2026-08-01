@@ -58,9 +58,18 @@
               <h3 id="nombrePerfil">${window.helpers.escapeHtml(usuario.nombre_completo)}</h3>
               <button class="perfil-btn-editar" id="btnEditarNombre" title="Editar nombre">${I('edit-3')}</button>
             </div>
-            <span class="perfil-meta">@${usuario.username} · ${rolBonito(usuario.rol)}</span>
+            <span class="perfil-rol-badge perfil-rol-badge--${(usuario.rol || 'usuario').toLowerCase()}">${I(usuario.rol === 'owner' ? 'crown' : usuario.rol === 'admin' ? 'shield' : usuario.rol === 'editor' ? 'book-open' : 'user')} ${rolBonito(usuario.rol)}</span>
+            <span class="perfil-meta">@${window.helpers.escapeHtml(usuario.username)}</span>
             ${usuario.email ? `<span class="perfil-email">${I('mail')} ${window.helpers.escapeHtml(usuario.email)}</span>` : ''}
             <span class="perfil-miembro">${I('calendar')} Miembro desde ${fechaLarga(usuario.creado_en)}</span>
+          </div>
+
+          <!-- ESTADÍSTICAS -->
+          <div class="perfil-stats" id="perfilStats" aria-label="Estadísticas de estudio">
+            <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${I('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-2xl u-fw-700" id="statRacha">—</p></div></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-2xl u-fw-700" id="statCaps">—</p></div>
+            <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-2xl u-fw-700" id="statPct">—</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" id="statPctBarra" style="width:0%"></div></div></div>
+            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Tarjetas por repasar</p><p class="u-texto-2xl u-fw-700" id="statTarjetas">—</p></div>
           </div>
 
           <!-- SECCIONES -->
@@ -130,7 +139,7 @@
                 <label class="switch"><input type="checkbox" id="chkLetra" ${prefs.letra_grande ? 'checked' : ''}><span class="slider"></span></label>
               </div>
 
-              <button class="btn-secundario u-mt-2" id="btnResetPrefs" style="width:100%;justify-content:center;font-size:var(--texto-xs)">Restablecer preferencias</button>
+              <button class="btn-secundario u-mt-2 perfil-btn-full" id="btnResetPrefs">Restablecer preferencias</button>
             </div>
 
             <!-- INFORMACIÓN -->
@@ -148,8 +157,33 @@
                   <p class="perfil-info-card__version">Versión 1.0.0</p>
                   <p class="perfil-info-card__sync" id="perfilUltimaSync"></p>
                 </div>
-                <button class="btn-secundario" id="btnMasInfo" style="font-size:var(--texto-xs)">Más información</button>
+                <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
               </div>
+            </div>
+
+            <!-- SUGERENCIAS -->
+            <div class="perfil-seccion">
+              <div class="perfil-seccion__cabecera">
+                <div class="perfil-seccion__icono" style="background:var(--color-info-soft);color:var(--color-info)">${I('message-square')}</div>
+                <div>
+                  <h4 class="perfil-seccion__titulo">Sugerencias</h4>
+                  <p class="perfil-seccion__desc">Reporta errores, comparte ideas o propón mejoras</p>
+                </div>
+              </div>
+              <p class="u-fs-xs" style="color:var(--color-texto-terciario);margin-bottom:var(--espaciado-sm);line-height:1.5">
+                ¿Encontraste un error o tienes una idea? Escríbela aquí. El equipo la revisará y podrás seguir su estado desde tu perfil.
+              </p>
+              <div class="sug-form">
+                <select id="sugCategoria" aria-label="Categoría de la sugerencia" style="width:100%">
+                  ${window.sugerenciasRepository ? window.sugerenciasRepository.CATEGORIAS.map(c => `<option value="${c.valor}">${c.texto}</option>`).join('') : ''}
+                </select>
+                <textarea id="sugTexto" rows="3" maxlength="1000" placeholder="Ej: En la sección de exámenes, al publicar uno con varias preguntas..." aria-label="Texto de la sugerencia"></textarea>
+                <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center">
+                  <span class="u-fs-xxs u-color-texto-terciario" id="sugContador">0/1000</span>
+                  <button class="btn-primario" id="btnEnviarSugerencia" style="margin-left:auto">${I('send')} Enviar sugerencia</button>
+                </div>
+              </div>
+              <div class="o-pila" id="listaMisSugerencias" style="gap:var(--espaciado-xs);margin-top:var(--espaciado-sm)"></div>
             </div>
 
             <!-- ADMIN / OWNER -->
@@ -184,7 +218,7 @@
               <p class="u-fs-xs" style="color:var(--color-texto-terciario);margin-bottom:var(--espaciado-sm);line-height:1.5">
                 Elimina los datos guardados localmente (caché de Supabase, imágenes en memoria, etc.). La app se recargará y volverá a descargar todo desde el servidor. <strong>Tu progreso y cuenta no se perderán.</strong>
               </p>
-              <button class="btn-secundario" id="btnLimpiarCache" style="width:100%;justify-content:center;font-size:var(--texto-xs)">${I('trash-2')} Limpiar caché de la app</button>
+              <button class="btn-secundario perfil-btn-full" id="btnLimpiarCache">${I('trash-2')} Limpiar caché de la app</button>
             </div>
 
             <!-- SEGURIDAD -->
@@ -222,6 +256,40 @@
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
+
+      // Cargar estadísticas de estudio (racha, capítulos, % y tarjetas pendientes)
+      const cargarStats = async () => {
+        const elRacha = raiz.querySelector('#statRacha');
+        const elCaps = raiz.querySelector('#statCaps');
+        const elPct = raiz.querySelector('#statPct');
+        const elPctBarra = raiz.querySelector('#statPctBarra');
+        const elTarjetas = raiz.querySelector('#statTarjetas');
+        if (!elCaps) return;
+        // Racha (localStorage, ya la calcula Estudio)
+        try {
+          const rachaGuardada = parseInt(localStorage.getItem('fb_racha') || '0', 10);
+          if (elRacha) elRacha.textContent = rachaGuardada > 0 ? rachaGuardada + ' días' : '0 días';
+        } catch (e) { if (elRacha) elRacha.textContent = '0 días'; }
+        // Capítulos leídos y % general
+        try {
+          const [librosRes, progresoRes] = await Promise.all([
+            window.supabaseClient.from('libros_biblicos').select('num_capitulos'),
+            window.supabaseClient.from('progreso_lectura').select('id').eq('usuario_id', usuario.id).eq('completado', true)
+          ]);
+          const totalCaps = (librosRes.data || []).reduce((s, l) => s + (l.num_capitulos || 0), 0);
+          const leidos = (progresoRes.data || []).length;
+          const pct = totalCaps ? Math.round((leidos / totalCaps) * 100) : 0;
+          if (elCaps) elCaps.textContent = leidos;
+          if (elPct) elPct.textContent = pct + '%';
+          if (elPctBarra) elPctBarra.style.width = pct + '%';
+        } catch (e) {}
+        // Tarjetas pendientes de repaso
+        try {
+          const pend = await window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => []);
+          if (elTarjetas) elTarjetas.textContent = (pend || []).length;
+        } catch (e) { if (elTarjetas) elTarjetas.textContent = '0'; }
+      };
+      cargarStats();
 
       if (usuario.foto_perfil) {
         const avatar = raiz.querySelector('#avatarPerfil');
@@ -286,7 +354,7 @@
       const btnAdmin = raiz.querySelector('#btnAdmin');
       if (btnAdmin) btnAdmin.onclick = () => router.navegar('/admin');
       const btnOwner = raiz.querySelector('#btnOwner');
-      if (btnOwner) btnOwner.onclick = () => router.navegar('/owner');
+      if (btnOwner) btnOwner.onclick = () => { window.location.href = 'paginas/admin/panel-owner.html'; };
 
       raiz.querySelector('#btnLimpiarCache').onclick = async () => {
         const ok = await window.helpers.confirmar(
@@ -298,6 +366,12 @@
         try { await window.cacheDatos.limpiarTodo(); } catch (e) {}
         setTimeout(() => window.location.reload(), 1200);
       };
+
+      const elSync = raiz.querySelector('#perfilUltimaSync');
+      if (elSync && window.syncStatus) {
+        const ts = window.syncStatus.getUltima();
+        elSync.textContent = ts ? `Última sincronización: ${window.syncStatus.fmtHace(ts)}` : 'Sin sincronizar aún';
+      }
 
       raiz.querySelector('#btnMasInfo').onclick = () => {
         const overlay = document.createElement('div');
@@ -319,14 +393,7 @@
             <button class="btn-primario u-mt-2" id="btnCerrarInfo" style="width:100%;justify-content:center">Cerrar</button>
           </div>`;
         document.body.appendChild(overlay);
-      if (window.Iconos) window.Iconos.actualizar();
-
-      const elSync = raiz.querySelector('#perfilUltimaSync');
-      if (elSync && window.syncStatus) {
-        const ts = window.syncStatus.getUltima();
-        elSync.textContent = ts ? `Última sincronización: ${window.syncStatus.fmtHace(ts)}` : 'Sin sincronizar aún';
-      }
-
+        if (window.Iconos) window.Iconos.actualizar();
         overlay.querySelector('#btnCerrarInfo').onclick = () => overlay.remove();
         overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
       };
@@ -353,6 +420,67 @@
           router._ejecutar();
         } catch (e) { window.helpers.mostrarAlerta('Error al eliminar: ' + e.message, 'error'); }
       };
+
+      // ============================================================
+      // SUGERENCIAS: enviar + listar mis sugerencias con su estado
+      // ============================================================
+      const sugerenciasRepo = window.sugerenciasRepository;
+      const contador = raiz.querySelector('#sugContador');
+      const txtSug = raiz.querySelector('#sugTexto');
+      const listaSug = raiz.querySelector('#listaMisSugerencias');
+
+      const renderMisSugerencias = async () => {
+        if (!listaSug || !sugerenciasRepo) return;
+        listaSug.innerHTML = '<p class="u-fs-xs u-color-texto-terciario">Cargando...</p>';
+        let lista = [];
+        try { lista = await sugerenciasRepo.listarMias(usuario.id); } catch (e) { lista = []; }
+        if (!lista.length) {
+          listaSug.innerHTML = '<p class="u-fs-xs u-color-texto-terciario">Aún no has enviado sugerencias.</p>';
+          return;
+        }
+        listaSug.innerHTML = lista.slice(0, 8).map(s => {
+          const est = sugerenciasRepo.estadoInfo(s.estado);
+          const cat = sugerenciasRepo.CATEGORIAS.find(c => c.valor === s.categoria) || sugerenciasRepo.CATEGORIAS[sugerenciasRepo.CATEGORIAS.length - 1];
+          return `
+            <div class="sug-item">
+              <div class="sug-item__cabecera">
+                <span class="sug-item__categoria">${cat ? cat.texto : '📝'}</span>
+                <span class="sug-estado ${est.clase}">${est.texto}</span>
+              </div>
+              <p class="sug-item__texto">${window.helpers.escapeHtml(s.texto)}</p>
+              ${s.respuesta ? `<p class="sug-item__respuesta"><strong>Respuesta:</strong> ${window.helpers.escapeHtml(s.respuesta)}</p>` : ''}
+              <span class="sug-item__fecha">${window.helpers.formatearFecha(s.creado_en)}</span>
+            </div>`;
+        }).join('');
+      };
+
+      if (txtSug && contador) {
+        txtSug.addEventListener('input', () => {
+          contador.textContent = txtSug.value.length + '/1000';
+        });
+      }
+
+      const btnSug = raiz.querySelector('#btnEnviarSugerencia');
+      if (btnSug && sugerenciasRepo) {
+        btnSug.onclick = async () => {
+          const texto = txtSug ? txtSug.value.trim() : '';
+          if (!texto) { window.helpers.mostrarAlerta('Escribe tu sugerencia antes de enviar.', 'advertencia'); return; }
+          const categoria = raiz.querySelector('#sugCategoria')?.value || 'otro';
+          btnSug.disabled = true;
+          try {
+            await sugerenciasRepo.crear(usuario.id, categoria, texto);
+            window.helpers.mostrarAlerta('Sugerencia enviada. ¡Gracias por tu aporte!', 'exito');
+            if (txtSug) txtSug.value = '';
+            if (contador) contador.textContent = '0/1000';
+            await renderMisSugerencias();
+          } catch (e) {
+            window.helpers.mostrarAlerta(e.message || 'No se pudo enviar.', 'error');
+          } finally {
+            btnSug.disabled = false;
+          }
+        };
+      }
+      renderMisSugerencias();
 
       raiz.querySelector('#btnEditarNombre').onclick = async () => {
         const datos = await window.helpers.formulario({

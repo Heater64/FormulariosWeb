@@ -37,6 +37,22 @@
   font-weight: 600;
 }
 
+/* ===== PROGRESO DE SESIÓN ===== */
+.mem-sesion-progreso-track {
+  height: 4px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  overflow: hidden;
+  margin-bottom: var(--espaciado-sm);
+}
+
+.mem-sesion-progreso {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: var(--color-acento);
+  transition: width var(--transicion-normal);
+}
+
 /* ===== FLASHCARD ===== */
 .flashcard-container {
   perspective: 1200px;
@@ -86,6 +102,13 @@
 .flashcard-cara--atras {
   transform: rotateY(180deg);
   pointer-events: none;
+}
+
+/* El frente tiene pointer-events:none (para que el tap caiga en el contenedor y
+   voltee la tarjeta), pero los botones internos (pista) deben seguir clicables. */
+.flashcard-cara button,
+.flashcard-cara .flashcard-btn {
+  pointer-events: auto;
 }
 
 .flashcard-referencia {
@@ -279,7 +302,7 @@
 /* ===== GRID ESTADÍSTICAS ===== */
 .mem-grid-tarjetas {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
   gap: var(--espaciado-sm);
   margin-bottom: var(--espaciado-md);
 }
@@ -503,6 +526,27 @@
   letter-spacing: 0.04em;
 }
 
+.mem-estado-badge--nuevo {
+  background: var(--color-aviso-soft);
+  border-color: var(--color-aviso);
+  color: var(--color-aviso);
+}
+.mem-estado-badge--repasando {
+  background: var(--color-acento-soft);
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+}
+.mem-estado-badge--aprendido {
+  background: var(--color-exito-soft);
+  border-color: var(--color-exito);
+  color: var(--color-exito);
+}
+.mem-estado-badge--consolidado {
+  background: var(--color-exito-soft);
+  border-color: var(--color-exito);
+  color: var(--color-exito);
+}
+
 .mem-nivel-badge {
   display: inline-flex;
   align-items: center;
@@ -607,4 +651,184 @@
 #memBuscar::placeholder {
   color: var(--color-texto-terciario);
   opacity: 0.7;
+}
+
+/* ===== MAZOS (sistema flashcards tipo Anki) ===== */
+.mem-mazos-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: var(--espaciado-sm);
+}
+
+.mem-mazo-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-top: 4px solid var(--mazo-color, var(--color-acento));
+  border-radius: var(--radio-lg);
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.mem-mazo-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-md);
+}
+
+.mem-mazo-card__top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+}
+
+.mem-mazo-card__nombre {
+  font-weight: 700;
+  font-size: var(--texto-base);
+  color: var(--color-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mem-mazo-card__cuenta {
+  flex-shrink: 0;
+  min-width: 28px;
+  height: 28px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.mem-mazo-card__desc {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  line-height: 1.4;
+}
+
+.mem-mazo-card__progreso {
+  height: 6px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  overflow: hidden;
+}
+
+.mem-mazo-card__barra {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: var(--mazo-color, var(--color-acento));
+  transition: width var(--transicion-normal);
+}
+
+.mem-mazo-card__stats {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.mem-mazo-card__pend {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  color: var(--color-acento);
+  font-weight: 600;
+}
+
+/* Detalle de mazo */
+.mem-mazo-detalle {
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-left: 4px solid var(--mazo-color, var(--color-acento));
+  border-radius: var(--radio-lg);
+}
+
+.mem-mazo-detalle h3 {
+  margin: 0;
+}
+
+/* Selector de tipo de tarjeta */
+.mem-tipo-toggle {
+  display: flex;
+  gap: var(--espaciado-xs);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 4px;
+}
+
+.mem-tipo-btn {
+  flex: 1;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  padding: var(--espaciado-sm);
+  border: none;
+  border-radius: var(--radio-md);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+}
+
+.mem-tipo-btn--activo {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+/* Selector de color de mazo */
+.mem-color-picker {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+}
+
+.mem-color-dot {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.mem-color-dot:hover { transform: scale(1.1); }
+.mem-color-dot--activo { border-color: var(--color-texto); transform: scale(1.15); }
+
+/* Badge de tipo de tarjeta (V versículo / Q libre) */
+.mem-tipo-badge {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-texto-acento);
+  background: var(--color-acento);
+}
+
+.mem-tipo-badge--libre {
+  background: var(--color-info);
+}
+
+@media (max-width: 480px) {
+  .mem-mazos-grid {
+    grid-template-columns: 1fr;
+  }
 }

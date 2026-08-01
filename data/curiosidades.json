@@ -2,76 +2,149 @@
   {
     "categoria": "Datos asombrosos",
     "icono": "sparkles",
+    "emoji": "✨",
     "items": [
-      { "titulo": "El versículo más corto", "texto": "Juan 11:35 — «Jesús lloró.» Solo dos palabras en español, pero plenas de emoción.", "ref": "Juan 11:35" },
+      { "titulo": "El versículo más corto", "texto": "Juan 11:35 — «Jesús lloró.» Solo dos palabras en español, pero plenas de emoción.", "ref": "Juan 11:35", "destacado": true },
       { "titulo": "El capítulo más largo", "texto": "Salmo 119 tiene 176 versículos, todos centrados en la Palabra de Dios.", "ref": "Salmo 119" },
+      { "titulo": "El capítulo más corto", "texto": "Salmo 117 tiene solo 2 versículos: el capítulo más breve de toda la Biblia.", "ref": "Salmo 117" },
       { "titulo": "El libro más corto", "texto": "2 Juan tiene solo 13 versículos. Una carta breve de amor y verdad.", "ref": "2 Juan" },
+      { "titulo": "El libro más largo", "texto": "Salmos, con 150 capítulos, es el libro más extenso de la Biblia.", "ref": "Salmos" },
       { "titulo": "La persona más longeva", "texto": "Matusalén vivió 969 años, la edad más avanzada registrada en la Biblia.", "ref": "Génesis 5:27" },
+      { "titulo": "La mujer más longeva", "texto": "Sara vivió 127 años y dio a luz a Isaac a los 90.", "ref": "Génesis 23:1" },
       { "titulo": "El evento más antiguo", "texto": "La creación del universo, descrita en Génesis 1.", "ref": "Génesis 1:1" },
       { "titulo": "El milagro más extenso", "texto": "La resurrección de Lázaro, que involucró una cueva, una piedra y el poder de Jesús.", "ref": "Juan 11:1-44" },
       { "titulo": "La Biblia tiene 66 libros", "texto": "39 en el Antiguo Testamento y 27 en el Nuevo Testamento.", "ref": "Canon bíblico" },
-      { "titulo": "El libro más vendido", "texto": "La Biblia es el libro más traducido y distribuido de la historia.", "ref": "Historia" }
+      { "titulo": "El libro más vendido", "texto": "La Biblia es el libro más traducido y distribuido de la historia.", "ref": "Historia" },
+      { "titulo": "El nombre más largo", "texto": "Maher-salal-hasbaz, el nombre simbólico del hijo de Isaías, es uno de los más largos de la Biblia.", "ref": "Isaías 8:1" }
     ]
   },
   {
     "categoria": "Números interesantes",
     "icono": "hash",
+    "emoji": "🔢",
     "items": [
       { "titulo": "7 días de creación", "texto": "Dios creó el mundo en 6 días y descansó en el séptimo.", "ref": "Génesis 1-2" },
       { "titulo": "40 días y 40 noches", "texto": "El diluvio duró 40 días. Jesús ayunó 40 días en el desierto. Israel vagó 40 años.", "ref": "Génesis 7:12, Mateo 4:2" },
       { "titulo": "12 tribus de Israel", "texto": "Descendientes de los 12 hijos de Jacob.", "ref": "Génesis 49" },
-      { "titulo": "30 monedas de plata", "texto": "El precio por el que Judas traicionó a Jesús.", "ref": "Mateo 26:15" },
+      { "titulo": "613 mandamientos", "texto": "La tradición judía cuenta 613 preceptos en la Ley de Moisés.", "ref": "Torá" },
+      { "titulo": "10 plagas de Egipto", "texto": "Desde las aguas en sangre hasta la muerte de los primogénitos.", "ref": "Éxodo 7-12" },
+      { "titulo": "30 monedas de plata", "texto": "El precio por el que Judas traicionó a Jesús.", "ref": "Mateo 26:15", "destacado": true },
       { "titulo": "7 iglesias del Apocalipsis", "texto": "Jesús dictó cartas a 7 iglesias en Asia Menor.", "ref": "Apocalipsis 2-3" },
       { "titulo": "144,000 sellados", "texto": "El número de elegidos mencionado en Apocalipsis.", "ref": "Apocalipsis 7:4" },
       { "titulo": "150 salmos", "texto": "El libro de Salmos tiene exactamente 150 cánticos.", "ref": "Salmos" },
-      { "titulo": "3 días en el sepulcro", "texto": "Jesús resucitó al tercer día después de su crucifixión.", "ref": "Mateo 28:1" }
+      { "titulo": "3 días en el sepulcro", "texto": "Jesús resucitó al tercer día después de su crucifixión.", "ref": "Mateo 28:1" },
+      { "titulo": "5.000 alimentados", "texto": "Con 5 panes y 2 peces, Jesús alimentó a una multitud de unos cinco mil hombres.", "ref": "Mateo 14:17-21" },
+      { "titulo": "39 azotes", "texto": "Pablo recibió «cuarenta azotes menos uno» en cinco ocasiones.", "ref": "2 Corintios 11:24" }
     ]
   },
   {
     "categoria": "Curiosidades de la creación",
     "icono": "leaf",
+    "emoji": "🌱",
     "items": [
       { "titulo": "La primera profesión", "texto": "Adán fue el primer agricultor: trabajaba el huerto de Edén.", "ref": "Génesis 2:15" },
       { "titulo": "La primera canción", "texto": "Moisés cantó después del cruce del Mar Rojo.", "ref": "Éxodo 15" },
-      { "titulo": "La primera boda", "texto": "Adán y Eva, oficiada por Dios mismo.", "ref": "Génesis 2:22-24" },
+      { "titulo": "La primera boda", "texto": "Adán y Eva, oficiada por Dios mismo.", "ref": "Génesis 2:22-24", "destacado": true },
       { "titulo": "La primera mentira", "texto": "La serpiente engañó a Eva en el Edén.", "ref": "Génesis 3:1-5" },
       { "titulo": "El primer asesinato", "texto": "Caín mató a su hermano Abel por envidia.", "ref": "Génesis 4:8" },
       { "titulo": "El primer arcoíris", "texto": "Dios puso el arcoíris como señal de su alianza después del diluvio.", "ref": "Génesis 9:13" },
-      { "titulo": "La primera oración", "texto": "La biblia no registra una primera oración formal, pero Caín y Abel ofrecieron ofrendas a Dios.", "ref": "Génesis 4:3-4" }
+      { "titulo": "La primera oración", "texto": "La biblia no registra una primera oración formal, pero Caín y Abel ofrecieron ofrendas a Dios.", "ref": "Génesis 4:3-4" },
+      { "titulo": "La primera promesa del Mesías", "texto": "En Génesis 3:15 Dios anuncia que la simiente de la mujer vencerá a la serpiente.", "ref": "Génesis 3:15" },
+      { "titulo": "El primer músico", "texto": "Jubal, descendiente de Caín, fue «padre de todos los que tocan arpa y flauta».", "ref": "Génesis 4:21" },
+      { "titulo": "El primer metalúrgico", "texto": "Tubal-caín fue artífice de todo instrumento de bronce y de hierro.", "ref": "Génesis 4:22" }
     ]
   },
   {
     "categoria": "Palabras y lenguas",
     "icono": "message-square",
+    "emoji": "💬",
     "items": [
-      { "titulo": "La torre de Babel", "texto": "Dios confundió las lenguas de la humanidad por su arrogancia.", "ref": "Génesis 11:1-9" },
+      { "titulo": "La torre de Babel", "texto": "Dios confundió las lenguas de la humanidad por su arrogancia.", "ref": "Génesis 11:1-9", "destacado": true },
       { "titulo": "Pentateuco", "texto": "Los primeros 5 libros de la Biblia, escritos por Moisés.", "ref": "Génesis – Deuteronomio" },
       { "titulo": "Aleluya", "texto": "Una de las palabras más conocidas, aparece en muchos salmos.", "ref": "Salmo 150" },
+      { "titulo": "Amén", "texto": "Significa «así sea» o «ciertamente»; Jesús lo usaba para afirmar la verdad.", "ref": "Mateo 6:13" },
       { "titulo": "Biblia", "texto": "La palabra viene del griego 'biblos' que significa 'libros'.", "ref": "Etimología" },
       { "titulo": "Emanuel", "texto": "Significa 'Dios con nosotros', el nombre profetizado para el Mesías.", "ref": "Isaías 7:14, Mateo 1:23" },
-      { "titulo": "Jesús", "texto": "Su nombre en hebreo es 'Yeshúa', que significa 'salvación'.", "ref": "Mateo 1:21" }
+      { "titulo": "Jesús", "texto": "Su nombre en hebreo es 'Yeshúa', que significa 'salvación'.", "ref": "Mateo 1:21" },
+      { "titulo": "Hosanna", "texto": "Significa «sálvanos ahora»; el pueblo lo gritó al entrar Jesús en Jerusalén.", "ref": "Mateo 21:9" },
+      { "titulo": "Abba", "texto": "Palabra aramea que significa «padre», usada por Jesús al orar con intimidad.", "ref": "Marcos 14:36" },
+      { "titulo": "Rabbí", "texto": "Título hebreo que significa «mi maestro», con el que se dirigían a Jesús.", "ref": "Juan 1:38" }
     ]
   },
   {
     "categoria": "Libros únicos",
     "icono": "book-open",
+    "emoji": "📖",
     "items": [
-      { "titulo": "El libro de Ester", "texto": "No menciona a Dios ni una sola vez, pero Su presencia se siente en cada evento.", "ref": "Ester" },
+      { "titulo": "El libro de Ester", "texto": "No menciona a Dios ni una sola vez, pero Su presencia se siente en cada evento.", "ref": "Ester", "destacado": true },
       { "titulo": "El libro de Proverbios", "texto": "Contiene 31 capítulos, uno para cada día del mes.", "ref": "Proverbios" },
       { "titulo": "El libro de Job", "texto": "Es el libro más antiguo de la Biblia, escrito probablemente antes que Génesis.", "ref": "Job" },
       { "titulo": "El Cantar de los Cantares", "texto": "Es un poema de amor, el libro más poético de la Biblia.", "ref": "Cantar 1" },
-      { "titulo": "Apocalipsis", "texto": "Es el único libro profético del Nuevo Testamento.", "ref": "Apocalipsis 1:1" }
+      { "titulo": "Apocalipsis", "texto": "Es el único libro profético del Nuevo Testamento.", "ref": "Apocalipsis 1:1" },
+      { "titulo": "Lamentaciones", "texto": "Tiene 5 capítulos acrósticos: cada uno inicia con una letra del alfabeto hebreo.", "ref": "Lamentaciones" },
+      { "titulo": "1 Corintios 13", "texto": "El capítulo del amor, recitado en incontables bodas alrededor del mundo.", "ref": "1 Corintios 13" },
+      { "titulo": "El libro de Rut", "texto": "Solo 4 capítulos, pero incluye la genealogía del rey David y de Jesús.", "ref": "Rut" }
     ]
   },
   {
     "categoria": "Costumbres bíblicas",
     "icono": "users",
+    "emoji": "🤝",
     "items": [
       { "titulo": "El beso de Judas", "texto": "Judas señaló a Jesús con un beso, costumbre de identificación en esa época.", "ref": "Mateo 26:48-49" },
       { "titulo": "Polvo de los pies", "texto": "Cuando alguien rechazaba el mensaje, se sacudían el polvo de los pies.", "ref": "Mateo 10:14" },
       { "titulo": "Derramar la ira", "texto": "Sobre la cabeza de los reos se derramaba agua, símbolo de responsabilidad.", "ref": " Mateo 27:24" },
       { "titulo": "Sangre y agua", "texto": "Al ser crucificado, de Jesús salió sangre y agua, símbolo de sacrificio y vida.", "ref": "Juan 19:34" },
-      { "titulo": "Las cenizas del becerro", "texto": "Moisés roció al pueblo con agua mezclada con cenizas del becerro de oro.", "ref": "Éxodo 32:20" }
+      { "titulo": "Las cenizas del becerro", "texto": "Moisés roció al pueblo con agua mezclada con cenizas del becerro de oro.", "ref": "Éxodo 32:20" },
+      { "titulo": "El lavamiento de pies", "texto": "Jesús lavó los pies de sus discípulos como ejemplo de humildad y servicio.", "ref": "Juan 13:14" },
+      { "titulo": "Rasgar las vestiduras", "texto": "Signo de gran dolor o duelo: el sumo sacerdote lo hizo ante Jesús.", "ref": "Mateo 26:65" },
+      { "titulo": "El velo de la novia", "texto": "Rebeca se cubrió con el velo al ver a Isaac: costumbre de la ceremonia nupcial.", "ref": "Génesis 24:65" }
+    ]
+  },
+  {
+    "categoria": "Animales en la Biblia",
+    "icono": "paw-print",
+    "emoji": "🦁",
+    "items": [
+      { "titulo": "El león de Judá", "texto": "Título de Jesús, que vence como león pero murió como cordero.", "ref": "Apocalipsis 5:5", "destacado": true },
+      { "titulo": "La serpiente de bronce", "texto": "Moisés la levantó en el desierto y quien la miraba vivía: imagen de la cruz.", "ref": "Números 21:9" },
+      { "titulo": "Los cuervos de Elías", "texto": "Alimentaron al profeta junto al arroyo de Querit durante la sequía.", "ref": "1 Reyes 17:6" },
+      { "titulo": "La burra de Balaam", "texto": "Vio al ángel antes que su amo y llegó a hablar.", "ref": "Números 22:28" },
+      { "titulo": "Los leones de Daniel", "texto": "No le hicieron daño porque Dios envió su ángel a cerrar sus bocas.", "ref": "Daniel 6:22" },
+      { "titulo": "La gran ballena de Jonás", "texto": "Jonás pasó tres días en su vientre, figura de la resurrección de Cristo.", "ref": "Jonás 1:17" },
+      { "titulo": "La paloma del Espíritu", "texto": "Descendió sobre Jesús en su bautismo, símbolo de paz y pureza.", "ref": "Mateo 3:16" },
+      { "titulo": "El águila que renueva", "texto": "Los que esperan a Jehová renovarán sus fuerzas «como las águilas».", "ref": "Isaías 40:31" },
+      { "titulo": "La hormiga laboriosa", "texto": "Proverbios la pone como ejemplo de previsión y diligencia.", "ref": "Proverbios 6:6" }
+    ]
+  },
+  {
+    "categoria": "Mujeres de fe",
+    "icono": "heart",
+    "emoji": "🌸",
+    "items": [
+      { "titulo": "Rut, la fiel", "texto": "«A dondequiera que tú fueres, iré yo»: lealtad que entró en la genealogía de Jesús.", "ref": "Rut 1:16", "destacado": true },
+      { "titulo": "Ester, la valiente", "texto": "«Si perezco, que perezca»: salvó a su pueblo arriesgando su vida.", "ref": "Ester 4:16" },
+      { "titulo": "María, la madre de Jesús", "texto": "Aceptó con humildad ser la madre del Salvador: «Hágase conmigo conforme a tu palabra».", "ref": "Lucas 1:38" },
+      { "titulo": "Débora, la juez", "texto": "Profetisa y jueza que guió a Israel a la victoria.", "ref": "Jueces 4:4" },
+      { "titulo": "Ana, la orante", "texto": "Oró con lágrimas por un hijo y Dios le dio a Samuel.", "ref": "1 Samuel 1:20" },
+      { "titulo": "María Magdalena", "texto": "Primera testigo de la resurrección, enviada a anunciar la buena noticia.", "ref": "Juan 20:18" },
+      { "titulo": "Lidia, la emprendedora", "texto": "Vendedora de púrpura y primera convertida de Europa, que abrió su casa a Pablo.", "ref": "Hechos 16:14" },
+      { "titulo": "Sara, la madre de Isaac", "texto": "Concibió a los 90 años, cumpliendo la promesa que parecía imposible.", "ref": "Génesis 21:2" }
+    ]
+  },
+  {
+    "categoria": "Lugares célebres",
+    "icono": "map-pin",
+    "emoji": "📍",
+    "items": [
+      { "titulo": "El Edén", "texto": "El jardín plantado por Dios donde comenzó la historia humana.", "ref": "Génesis 2:8" },
+      { "titulo": "El monte Sinaí", "texto": "Allí recibió Moisés las tablas de la Ley.", "ref": "Éxodo 19:20" },
+      { "titulo": "Jericó", "texto": "La ciudad cuyos muros cayeron al sonido de las trompetas.", "ref": "Josué 6:20" },
+      { "titulo": "Belén", "texto": "Pequeña ciudad profetizada como cuna del Mesías; allí nació Jesús.", "ref": "Miqueas 5:2", "destacado": true },
+      { "titulo": "Getsemaní", "texto": "El huerto donde Jesús oró antes de ser entregado.", "ref": "Mateo 26:36" },
+      { "titulo": "El Mar de Galilea", "texto": "Escenario de muchos milagros y enseñanzas de Jesús.", "ref": "Marcos 1:16" },
+      { "titulo": "La torre de Siloé", "texto": "Jesús la mencionó al hablar de arrepentimiento y juicio.", "ref": "Lucas 13:4" },
+      { "titulo": "El monte de los Olivos", "texto": "Desde donde Jesús ascendió y a donde prometió volver.", "ref": "Hechos 1:12" }
     ]
   }
 ]

@@ -19,34 +19,162 @@
   font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
 }
 
-/* --- Header sticky ------------------------------------------------------- */
+/* ==========================================================================
+   SIMPLIFICACIÓN VISUAL (2026)
+   Reducción de ruido: header compacto, tabs scrollables en móvil y
+   tarjetas de pregunta más limpias.
+   ========================================================================== */
+
+.editor-header-bar {
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+/* Ocultar el subtítulo decorativo del editor para reducir ruido visual */
+.editor-header-bar .u-fs-xs {
+  display: none;
+}
+
+.editor-tabs {
+  justify-content: flex-start;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.editor-tabs::-webkit-scrollbar { display: none; }
+
+.editor-tab-btn {
+  flex-shrink: 0;
+  white-space: nowrap;
+}
+
+/* Tarjetas de pregunta: menos énfasis en el borde superior */
+.forms-card--pregunta {
+  border-top-width: 1px;
+}
+
+.forms-card--pregunta .o-flecha--between {
+  gap: var(--espaciado-xs);
+}
+
+/* Botones de acción de tarjeta: más pequeños y agrupados */
+.forms-card .btn-icono {
+  padding: 6px;
+  min-height: 36px;
+  min-width: 36px;
+}
+
+/* Select de tipo de pregunta: compacto y legible */
+.select-tipo-p {
+  max-width: 150px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-sm);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+  font: inherit;
+}
+
+/* Workspace: aire generoso y hueco inferior para la barra flotante */
+.editor-workspace {
+  padding: var(--espaciado-xl);
+  padding-bottom: calc(var(--espaciado-2xl) + 120px);
+}
+
+/* Panel lateral: sticky con límite de altura para no dominar la pantalla */
+.config-sidebar {
+  max-height: calc(100vh - 90px);
+  overflow-y: auto;
+}
+
+/* ==========================================================================
+   RESPONSIVE MÓVIL / TABLET
+   ========================================================================== */
+@media (max-width: 768px) {
+  .editor-header-bar #btnPublicarEditor {
+    font-size: var(--texto-xs);
+    padding: var(--espaciado-xxs) var(--espaciado-sm);
+  }
+
+  .editor-header-bar #cabeceraTituloExamen {
+    max-width: 45vw;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .forms-card--pregunta {
+    border-top-width: 1px;
+  }
+
+  /* Acciones de tarjeta: ocultan texto de iconos que sobran en móvil */
+  .forms-card .btn-icono span {
+    display: none;
+  }
+}
+
+@media (max-width: 480px) {
+  /* Botones del editor: conservan su tamaño y se ven todos con scroll horizontal */
+  .editor-header-bar .o-flecha.u-gap-xs {
+    width: auto;
+    justify-content: flex-end;
+    flex-shrink: 0;
+  }
+
+  .editor-header-bar #btnPublicarEditor {
+    flex: 0 0 auto;
+    justify-content: center;
+  }
+
+  /* Tabs: scroll horizontal con flechas de contexto */
+  /* Cuerpo de pregunta: inputs a ancho completo */
+  .forms-card textarea,
+  .forms-card input[type="text"],
+  .forms-card input[type="number"] {
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .floating-toolbar .toolbar-btn {
+    width: 44px;
+    height: 44px;
+  }
+}
+
+/* --- Header (no sticky: el título hace scroll, sin solapamientos) --------- */
 .editor-header-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--espaciado-sm) var(--espaciado-md);
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-md) var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border-bottom: 1px solid var(--color-borde);
+  flex-wrap: nowrap;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+
+.editor-header-bar::-webkit-scrollbar { display: none; }
+
+.editor-tabs {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: var(--espaciado-2xs);
+  padding: 0 var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
   border-bottom: 1px solid var(--color-borde);
   position: sticky;
   top: 0;
-  z-index: 100;
-  box-shadow: var(--sombra-sm);
-}
-
-.editor-tabs {
-  display: flex;
-  justify-content: center;
-  background: var(--color-fondo-tarjeta);
-  border-bottom: 1px solid var(--color-borde);
-  position: sticky;
-  top: 56px;
   z-index: 99;
 }
 
 .editor-tab-btn {
   background: none;
   border: none;
-  padding: var(--espaciado-sm) var(--espaciado-md);
+  padding: var(--espaciado-sm) var(--espaciado-lg);
   font-weight: 500;
   font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
@@ -66,9 +194,10 @@
 .editor-workspace {
   display: grid;
   grid-template-columns: 1fr;
-  gap: var(--espaciado-md);
-  padding: var(--espaciado-md);
-  max-width: 1050px;
+  gap: var(--espaciado-lg);
+  padding: var(--espaciado-xl);
+  padding-bottom: calc(var(--espaciado-2xl) + 120px);
+  max-width: 1100px;
   width: 100%;
   margin: 0 auto;
   box-sizing: border-box;
@@ -85,18 +214,17 @@
   }
 }
 
-/* --- Tarjeta principal estilo Google Forms ------------------------------ */
+/* --- Tarjeta principal estilo Google Forms (minimalista) ----------------- */
 .forms-card {
   background: var(--color-fondo-tarjeta);
-  border-radius: var(--radio-md);
+  border-radius: var(--radio-lg);
   border: 1px solid var(--color-borde);
-  border-top: 10px solid var(--color-acento);
-  box-shadow: var(--sombra-sm);
-  padding: var(--espaciado-md);
+  border-top: 6px solid var(--color-acento);
+  padding: var(--espaciado-lg);
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--espaciado-sm);
+  gap: var(--espaciado-md);
   transition: border-top-color var(--transicion-rapida) var(--easing-apple);
 }
 
@@ -110,30 +238,23 @@
   box-shadow: var(--sombra-md);
 }
 
-/* --- Floating Toolbar estilo Google Forms -------------------------------- */
+/* --- Floating Toolbar: píldora centrada en todos los tamaños -------------
+   Nunca tapa el sidebar ni el contenido: queda centrada sobre el workspace
+   y el workspace reserva hueco inferior (padding-bottom). */
 .floating-toolbar {
   display: flex;
-  flex-direction: column;
-  gap: var(--espaciado-xs);
+  flex-direction: row;
+  gap: var(--espaciado-2xs);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-pill);
-  padding: var(--espaciado-xs);
+  padding: var(--espaciado-2xs);
   box-shadow: var(--sombra-md);
   position: fixed;
-  right: var(--espaciado-md);
-  bottom: 100px;
+  left: 50%;
+  transform: translateX(-50%);
+  bottom: calc(88px + env(safe-area-inset-bottom));
   z-index: 90;
-}
-
-@media (max-width: 600px) {
-  .floating-toolbar {
-    flex-direction: row;
-    right: 50%;
-    transform: translateX(50%);
-    bottom: calc(75px + env(safe-area-inset-bottom));
-    border-radius: var(--radio-pill);
-  }
 }
 
 .toolbar-btn {
@@ -159,22 +280,21 @@
 .config-sidebar {
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio-md);
-  padding: var(--espaciado-md);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-lg);
   display: flex;
   flex-direction: column;
-  gap: var(--espaciado-sm);
-  box-shadow: var(--sombra-sm);
+  gap: var(--espaciado-md);
   height: fit-content;
   position: sticky;
-  top: 120px;
+  top: 72px;
 }
 
 /* --- Lista vertical de preguntas ---------------------------------------- */
 .preguntas-lista {
   display: flex;
   flex-direction: column;
-  gap: var(--espaciado-md);
+  gap: var(--espaciado-lg);
   width: 100%;
 }
 
@@ -316,5 +436,84 @@
 @media (max-width: 750px) {
   .respuestas-split {
     grid-template-columns: 1fr;
+  }
+}
+
+/* ==========================================================================
+   BOTONES EN MÓVIL/TABLET: conservan su tamaño y se ven todos con scroll
+   horizontal. Sin deformaciones: cada botón mantiene su ancho/alto natural
+   y la fila desborda en horizontal (deslizar para ver el resto).
+   ========================================================================== */
+@media (max-width: 768px) {
+  /* Cabecera principal del editor (volver, guardar, publicar) */
+  .editor-header-bar {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .editor-header-bar::-webkit-scrollbar { display: none; }
+
+  .editor-header-bar > .o-flecha,
+  .editor-header-bar .btn-secundario,
+  .editor-header-bar .btn-primario {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+
+  /* Cabecera de tarjeta de pregunta y de sección: tipo + acciones intactas */
+  .forms-card--pregunta > .o-flecha--between,
+  .forms-card--seccion > .o-flecha--between {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  .forms-card--pregunta > .o-flecha--between::-webkit-scrollbar,
+  .forms-card--seccion > .o-flecha--between::-webkit-scrollbar { display: none; }
+
+  .forms-card--pregunta > .o-flecha--between > span,
+  .forms-card--seccion > .o-flecha--between > span,
+  .forms-card--pregunta > .o-flecha--between > .o-flecha,
+  .forms-card--seccion > .o-flecha--between > .o-flecha,
+  .forms-card--pregunta .select-tipo-p,
+  .forms-card--pregunta .btn-icono,
+  .forms-card--seccion .btn-icono {
+    flex-shrink: 0;
+    white-space: nowrap;
+  }
+}
+
+/* ==========================================================================
+   RESPONSIVE MÓVIL/TABLET: overrides reales de padding y layout.
+   Van al final del archivo para ganar en cascada sobre las definiciones
+   base (misma especificidad => gana la que aparece después en el fuente).
+   ========================================================================== */
+@media (max-width: 768px) {
+  .editor-header-bar {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+  }
+
+  .editor-workspace {
+    padding: var(--espaciado-md);
+    padding-bottom: calc(var(--espaciado-2xl) + 110px + env(safe-area-inset-bottom));
+    gap: var(--espaciado-md);
+  }
+
+  .forms-card {
+    padding: var(--espaciado-md);
+  }
+
+  .config-sidebar {
+    position: static;
+    max-height: none;
+    border-radius: var(--radio-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .editor-tab-btn {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    font-size: var(--texto-xs);
   }
 }

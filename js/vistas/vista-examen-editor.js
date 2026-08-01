@@ -565,8 +565,8 @@
               </div>
             </div>
 
-            <!-- Cuerpo de Pregunta -->
-            <textarea class="u-fw-600" rows="2" data-campo-pregunta="texto" data-idx="${i}" placeholder="Pregunta sin título">${window.helpers.escapeHtml(p.texto)}</textarea>
+            <!-- Cuerpo de Pregunta (oculto para 'completar': el texto vive en el editor de huecos) -->
+            ${p.tipo === 'completar' ? '' : `<textarea class="u-fw-600" rows="2" data-campo-pregunta="texto" data-idx="${i}" placeholder="Pregunta sin título">${window.helpers.escapeHtml(p.texto)}</textarea>`}
             
             <!-- Zona Multimedia (opcional, si tiene valor asignado) -->
             ${p.imagen ? `<div style="position:relative"><img src="${p.imagen}" style="max-height:150px;border-radius:var(--radio-sm)"><button class="btn-secundario btn-icono btn-remove-img" data-idx="${i}" style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.8)">✕</button></div>` : ''}
@@ -986,9 +986,9 @@
         const card = cont.querySelector(`.forms-card[data-preg-idx="${i}"]`);
         if (!card) return;
 
-        // Texto o título principal
+        // Texto o título principal (para 'completar' lo gestiona el editor de huecos)
         const txtInput = card.querySelector(`[data-campo-pregunta="texto"]`);
-        if (txtInput) p.texto = txtInput.value;
+        if (txtInput && p.tipo !== 'completar') p.texto = txtInput.value;
 
         // Si es sección, también lee descripción
         if (p.tipo === 'seccion') {
@@ -1660,8 +1660,10 @@
           preguntas: JSON.stringify(examen.preguntas),
           config: JSON.stringify(examen.config),
           puntos_totales: examen.preguntas.reduce((acc, p) => acc + (p.puntos || 0), 0),
-          publicado: publicar,
-          estado: publicar ? 'publicado' : (examen.estado === 'archivado' ? 'archivado' : 'borrador')
+          // Un guardado normal NO despublica: solo cambia el estado si se publica
+          // o se archiva explícitamente; si ya estaba publicado, se mantiene.
+          publicado: publicar ? true : (examen.estado === 'archivado' ? false : (examen.publicado || examen.estado === 'publicado')),
+          estado: publicar ? 'publicado' : (examen.estado === 'archivado' ? 'archivado' : ((examen.publicado || examen.estado === 'publicado') ? 'publicado' : 'borrador'))
         });
 
         if (publicar && guardado && guardado.id) {

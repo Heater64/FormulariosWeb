@@ -1,7 +1,7 @@
 [
   {
     "nombre": "Abraham",
-    "acimiento": "Ur de los caldeos",
+    "nacimiento": "Ur de los caldeos",
     "muerte": "Hebrón",
     "padre": "Tara",
     "hijos": ["Isaac", "Ismael"],
@@ -12,7 +12,7 @@
   },
   {
     "nombre": "Moisés",
-    "acimiento": "Egipto",
+    "nacimiento": "Egipto",
     "muerte": "Monte Nebo",
     "padre": "Amram",
     "hijos": ["Gersón", "Eliezer"],
@@ -23,7 +23,7 @@
   },
   {
     "nombre": "David",
-    "acimiento": "Belén",
+    "nacimiento": "Belén",
     "muerte": "Jerusalén",
     "padre": "Isai",
     "hijos": ["Absalón", "Salomón", "Adonías"],
@@ -34,7 +34,7 @@
   },
   {
     "nombre": "Elías",
-    "acimiento": "Tishbe (Galaad)",
+    "nacimiento": "Tishbe (Galaad)",
     "muerte": "Arrebatado en un carruaje de fuego",
     "padre": "Desconocido",
     "hijos": [],
@@ -45,7 +45,7 @@
   },
   {
     "nombre": "Isaías",
-    "acimiento": "Jerusalén",
+    "nacimiento": "Jerusalén",
     "muerte": "Mártir (según la tradición)",
     "padre": "Amoz",
     "hijos": ["Sear-iasún", "Maer-salal-bazaz"],
@@ -56,7 +56,7 @@
   },
   {
     "nombre": "Pedro (Simón)",
-    "acimiento": "Betsaida",
+    "nacimiento": "Betsaida",
     "muerte": "Roma (crucificado boca abajo)",
     "padre": "Jonás",
     "hijos": [],
@@ -67,7 +67,7 @@
   },
   {
     "nombre": "Pablo ( Saulo )",
-    "acimiento": "Tarsos",
+    "nacimiento": "Tarsos",
     "muerte": "Mártir en Roma",
     "padre": "Fariseo",
     "hijos": [],
@@ -78,7 +78,7 @@
   },
   {
     "nombre": "Noé",
-    "acimiento": "Desconocido",
+    "nacimiento": "Desconocido",
     "muerte": "Desconocido",
     "padre": "Lamec",
     "hijos": ["Sem", "Cam", "Jafet"],
@@ -89,7 +89,7 @@
   },
   {
     "nombre": "José (patriarca)",
-    "acimiento": "Canaán",
+    "nacimiento": "Canaán",
     "muerte": "Egipto",
     "padre": "Jacob",
     "hijos": ["Efraín", "Manasés"],
@@ -100,7 +100,7 @@
   },
   {
     "nombre": "Rut",
-    "acimiento": "Moab",
+    "nacimiento": "Moab",
     "muerte": "Belén",
     "padre": "Desconocido",
     "hijos": ["Obed"],

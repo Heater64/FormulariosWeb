@@ -39,33 +39,45 @@
             <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--espaciado-sm)">
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('flame')}</div>
-                <p class="tarjeta-estadistica__valor">${racha}</p>
-                <p class="tarjeta-estadistica__etiqueta">Racha (días)</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor">${racha}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Racha (días)</p>
+                </div>
               </div>
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('book-open')}</div>
-                <p class="tarjeta-estadistica__valor">${lecturas}</p>
-                <p class="tarjeta-estadistica__etiqueta">Capítulos leídos</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor">${lecturas}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Capítulos leídos</p>
+                </div>
               </div>
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('brain')}</div>
-                <p class="tarjeta-estadistica__valor">${tarjetas}</p>
-                <p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor">${tarjetas}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p>
+                </div>
               </div>
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('clipboard-check')}</div>
-                <p class="tarjeta-estadistica__valor">${examenesRealizados.length}</p>
-                <p class="tarjeta-estadistica__etiqueta">Exámenes hechos</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor">${examenesRealizados.length}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Exámenes hechos</p>
+                </div>
               </div>
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('award')}</div>
-                <p class="tarjeta-estadistica__valor" style="color:${promedioExamenes !== '—' && parseFloat(promedioExamenes) >= 7 ? 'var(--color-exito)' : 'var(--color-aviso)'}">${promedioExamenes}</p>
-                <p class="tarjeta-estadistica__etiqueta">Promedio exámenes</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor" style="color:${promedioExamenes !== '—' && parseFloat(promedioExamenes) >= 7 ? 'var(--color-exito)' : 'var(--color-aviso)'}">${promedioExamenes}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Promedio exámenes</p>
+                </div>
               </div>
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('file-text')}</div>
-                <p class="tarjeta-estadistica__valor">${notas.length}</p>
-                <p class="tarjeta-estadistica__etiqueta">Notas personales</p>
+                <div class="tarjeta-estadistica__info">
+                  <p class="tarjeta-estadistica__valor">${notas.length}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Notas personales</p>
+                </div>
               </div>
             </div>
 

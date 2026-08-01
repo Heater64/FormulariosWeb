@@ -195,12 +195,11 @@
         'id', 'examen_id', 'alumno_id', 'respuestas', 'puntuacion', 'nota',
         'corregido', 'corregido_por', 'observaciones', 'estado',
         'fecha_inicio', 'fecha_completado', 'fecha_corregido',
-        'creado_en', 'correccion',
-        'pendiente_sync'
+        'creado_en', 'correccion'
       ]);
       const limpio = {};
       for (const k of Object.keys(intento || {})) {
-        if (CAMPOS_VALIDOS.has(k)) limpio[k] = intento[k];
+        if (CAMPOS_VALIDOS.has(k) && k !== 'pendiente_sync') limpio[k] = intento[k];
       }
       if (!sb() || !navigator.onLine) {
         try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', limpio, { onConflict: 'id' }); } catch (e) { console.warn('guardarIntento offline queue:', e); }

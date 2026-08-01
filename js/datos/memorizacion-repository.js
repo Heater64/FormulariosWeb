@@ -6,35 +6,93 @@
   function clavePendientes(usuarioId) { return `memorizacion:pendientes:${usuarioId}`; }
 
   window.memorizacionRepository = {
-    async listarTarjetas(usuarioId) {
-      const fnRed = async () => {
-        const { data } = await sb().from('tarjetas_memorizacion')
+    /* ===== Mazos (mazos_memorizacion) ===== */
+    async listarMazos(usuarioId) {
+      if (!sb()) return [];
+      try {
+        const { data } = await sb()
+          .from('mazos_memorizacion')
           .select('*')
           .eq('usuario_id', usuarioId)
-          .eq('activa', true)
-          .order('creado_en', { ascending: false });
+          .order('creado_en', { ascending: true });
+        return data || [];
+      } catch (e) { return []; }
+    },
+    async crearMazo(usuarioId, { nombre, descripcion, color }) {
+      const datos = { usuario_id: usuarioId, nombre: nombre || '', descripcion: descripcion || '', color: color || '#3B82F6' };
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('insert', 'mazos_memorizacion', datos);
+        return { id: null, ...datos, pendiente: true };
+      }
+      try {
+        const { data, error } = await sb().from('mazos_memorizacion').insert(datos).select().single();
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        window.colaSync.encolar('insert', 'mazos_memorizacion', datos);
+        return { id: null, ...datos, pendiente: true };
+      }
+    },
+    async actualizarMazo(id, { nombre, descripcion, color }) {
+      if (!id) return;
+      const cambios = {};
+      if (nombre !== undefined) cambios.nombre = nombre;
+      if (descripcion !== undefined) cambios.descripcion = descripcion;
+      if (color !== undefined) cambios.color = color;
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('update', 'mazos_memorizacion', cambios, { id });
+        return;
+      }
+      await sb().from('mazos_memorizacion').update(cambios).eq('id', id);
+    },
+    async eliminarMazo(id) {
+      if (!id) return;
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('delete', 'mazos_memorizacion', {}, { id });
+        return;
+      }
+      await sb().from('mazos_memorizacion').delete().eq('id', id);
+    },
+
+    async listarTarjetas(usuarioId, mazoId) {
+      const fnRed = async () => {
+        let q = sb().from('tarjetas_memorizacion')
+          .select('*')
+          .eq('usuario_id', usuarioId)
+          .eq('activa', true);
+        if (mazoId) q = q.eq('mazo_id', mazoId);
+        const { data } = await q.order('creado_en', { ascending: false });
         return data || [];
       };
-      return await window.cacheDatos.leerOCachear(claveLista(usuarioId), fnRed);
+      return await window.cacheDatos.leerOCachear(claveLista(usuarioId) + (mazoId ? ':' + mazoId : ''), fnRed);
     },
-    async tarjetasPendientes(usuarioId) {
+    async tarjetasPendientes(usuarioId, mazoId) {
       const fnRed = async () => {
         const ahora = new Date().toISOString();
-        const { data } = await sb().from('tarjetas_memorizacion')
+        let q = sb().from('tarjetas_memorizacion')
           .select('*')
           .eq('usuario_id', usuarioId)
           .eq('activa', true)
-          .lte('proximo_repaso', ahora)
-          .order('proximo_repaso');
+          .lte('proximo_repaso', ahora);
+        if (mazoId) q = q.eq('mazo_id', mazoId);
+        const { data } = await q.order('proximo_repaso');
         return data || [];
       };
-      return await window.cacheDatos.leerOCachear(clavePendientes(usuarioId), fnRed);
+      return await window.cacheDatos.leerOCachear(clavePendientes(usuarioId) + (mazoId ? ':' + mazoId : ''), fnRed);
     },
-    async agregarTarjetaManual(usuarioId, { referencia, texto, pista }) {
-      const datos = { usuario_id: usuarioId, referencia: referencia || '', texto: texto || '', pista: pista || '', activa: true };
+    async agregarTarjetaManual(usuarioId, { referencia, texto, pista, mazo_id, tipo }) {
+      const datos = {
+        usuario_id: usuarioId,
+        referencia: referencia || '',
+        texto: texto || '',
+        pista: pista || '',
+        mazo_id: mazo_id || null,
+        tipo: tipo || 'versiculo',
+        activa: true
+      };
       if (!sb() || !navigator.onLine) {
         window.colaSync.encolar('insert', 'tarjetas_memorizacion', datos);
-        return { referencia, texto, pista, pendiente: true };
+        return { referencia, texto, pista, mazo_id, tipo, pendiente: true };
       }
       try {
         const { data, error } = await sb().from('tarjetas_memorizacion').insert(datos).select().single();
@@ -42,7 +100,7 @@
         return data;
       } catch (e) {
         window.colaSync.encolar('insert', 'tarjetas_memorizacion', datos);
-        return { referencia, texto, pista, pendiente: true };
+        return { referencia, texto, pista, mazo_id, tipo, pendiente: true };
       }
     },
     async actualizarTarjeta(tarjeta) {
@@ -64,19 +122,17 @@
       }
       await sb().from('tarjetas_memorizacion').update(datos).eq('id', tarjeta.id);
     },
-    async actualizarContenido(id, { referencia, texto, pista }) {
-      if (!sb() || !navigator.onLine) {
-        const updates = {};
-        if (referencia !== undefined) updates.referencia = referencia;
-        if (texto !== undefined) updates.texto = texto;
-        if (pista !== undefined) updates.pista = pista;
-        window.colaSync.encolar('update', 'tarjetas_memorizacion', updates, { id });
-        return;
-      }
+    async actualizarContenido(id, { referencia, texto, pista, mazo_id, tipo }) {
       const updates = {};
       if (referencia !== undefined) updates.referencia = referencia;
       if (texto !== undefined) updates.texto = texto;
       if (pista !== undefined) updates.pista = pista;
+      if (mazo_id !== undefined) updates.mazo_id = mazo_id || null;
+      if (tipo !== undefined) updates.tipo = tipo;
+      if (!sb() || !navigator.onLine) {
+        window.colaSync.encolar('update', 'tarjetas_memorizacion', updates, { id });
+        return;
+      }
       await sb().from('tarjetas_memorizacion').update(updates).eq('id', id);
     },
     async registrarRepaso(tarjetaId, calidad) {

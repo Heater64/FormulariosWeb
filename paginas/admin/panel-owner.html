@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>FormsBiblicos — Panel de Propietario</title>
+  <link rel="icon" href="../../assets/iconos/icono.svg" type="image/svg+xml">
+  <!-- CSS: Settings -->
+  <link rel="stylesheet" href="../../css/00-settings/_tokens.css">
+  <link rel="stylesheet" href="../../css/00-settings/_colores.css">
+  <link rel="stylesheet" href="../../css/00-settings/_tipografia.css">
+  <link rel="stylesheet" href="../../css/00-settings/_espaciado.css">
+  <!-- CSS: Generic -->
+  <link rel="stylesheet" href="../../css/02-generic/_reset.css">
+  <!-- CSS: Elements -->
+  <link rel="stylesheet" href="../../css/03-elements/_body.css">
+  <link rel="stylesheet" href="../../css/03-elements/_heading.css">
+  <link rel="stylesheet" href="../../css/03-elements/_paragraph.css">
+  <link rel="stylesheet" href="../../css/03-elements/_button.css">
+  <link rel="stylesheet" href="../../css/03-elements/_input.css">
+  <!-- CSS: Objects -->
+  <link rel="stylesheet" href="../../css/04-objects/_contenedor.css">
+  <link rel="stylesheet" href="../../css/04-objects/_pila.css">
+  <link rel="stylesheet" href="../../css/04-objects/_grid.css">
+  <link rel="stylesheet" href="../../css/04-objects/_flecha.css">
+  <!-- CSS: Components -->
+  <link rel="stylesheet" href="../../css/05-componentes/_boton-primario.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_boton-secundario.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_tarjeta-capitulo.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_tarjeta-estadistica.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_modal.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_zona-peligro.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_perfil.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_sugerencias.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_alerta.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_skeleton.css">
+  <!-- CSS: Utilities -->
+  <link rel="stylesheet" href="../../css/06-utilidades/_utilidades.css">
+  <link rel="stylesheet" href="../../css/06-utilidades/_accesibilidad.css">
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <script src="../../js/vendor/lucide.min.js"></script>
+  <script src="../../js/core/store.js"></script>
+  <script src="../../js/core/eventBus.js"></script>
+  <script src="../../js/core/router.js"></script>
+  <script src="../../js/datos/supabase-client.js"></script>
+  <script src="../../js/datos/auth-repository.js"></script>
+  <script src="../../js/datos/admin-repository.js"></script>
+  <script src="../../js/datos/sugerencias-repository.js"></script>
+  <script src="../../js/utilidades/dom-helpers.js"></script>
+  <script src="../../js/utilidades/iconos.js"></script>
+  <script src="../../js/utilidades/skeleton.js"></script>
+  <script src="../../js/dominio/progreso-lectura.js"></script>
+  <script src="../../js/dominio/repeticion-espaciada.js"></script>
+  <script src="../../js/componentes/profile-editor.js"></script>
+  <script src="../../js/vistas/admin/admin-comunes.js"></script>
+  <script src="../../js/vistas/admin/vista-owner.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Restaurar sesión persistida (la guarda el SPA en localStorage/sessionStorage)
+      const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
+      if (guardado) {
+        try { store.asignar({ usuario: JSON.parse(guardado) }); } catch (e) {}
+      }
+      const usuario = store.obtener('usuario');
+      const rol = (usuario?.rol || '').toString().trim().toLowerCase();
+      if (!usuario) {
+        window.location.href = '../login.html';
+        return;
+      }
+      // El panel de propietario es exclusivo del rol owner. Los admins van a su panel.
+      if (rol === 'admin') {
+        window.location.href = 'panel-admin.html';
+        return;
+      }
+      if (rol !== 'owner') {
+        window.location.href = '../login.html';
+        return;
+      }
+      // El botón "← Volver" de la vista usa router.navegar; en esta página standalone
+      // no hay rutas registradas, así que redirigimos al SPA manualmente.
+      window.vistaOwner._volverAlSpa = () => {
+        window.location.href = '../../index.html#!/perfil';
+      };
+      window.vistaOwner.montar(document.getElementById('app-root'));
+    });
+  </script>
+</head>
+<body>
+  <main id="app-root"></main>
+</body>
+</html>

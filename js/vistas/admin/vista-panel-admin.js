@@ -3,10 +3,7 @@
   const I = (n) => window.Iconos.render(n);
   const E = (h) => window.helpers.escapeHtml(h);
 
-  function rolBonito(rol) {
-    const map = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor', usuario: 'Alumno' };
-    return map[rol] || rol;
-  }
+  const rolBonito = (rol) => window.adminComunes.rolBonito(rol);
 
   const TABS = [
     { id: 'dashboard', icono: 'bar-chart-2', texto: 'Dashboard' },
@@ -41,10 +38,14 @@
         { valor: 'owner', texto: 'Propietario' }
       ].filter(o => this._rangoRol(o.valor) <= this._rangoRol(actor.rol));
     },
+    _volver() {
+      // En la página standalone no hay rutas registradas: usar hook si existe, si no router.
+      window.adminComunes.volver(this);
+    },
     async montar(raiz) {
       const usuario = store.obtener('usuario');
       if (!usuario || !['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase())) {
-        raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" onclick="router.navegar(\'/estudio\')">Volver</button></div>'; return;
+        raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" onclick="window.vistaPanelAdmin._volver()">Volver</button></div>'; return;
       }
       raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(8, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando panel...</p></div>';
       try {
@@ -64,41 +65,43 @@
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     },
     async _renderizar(raiz) {
-      const { usuarios, grupos, examenes, stats, usuario } = this._datos;
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <h2>${I('settings')} Administración</h2>
-            <button class="btn-secundario" onclick="router.navegar('/perfil')">← Volver</button>
-          </div>
-          <div class="admin-tabs">${TABS.map(t => `
-            <button class="admin-tab${this._tabActivo === t.id ? ' admin-tab--activo' : ''}" data-tab="${t.id}">${I(t.icono)} ${t.texto}</button>`
-          ).join('')}</div>
-          <div id="adminContenido">${this._renderTabContent(raiz)}</div>
-        </div>`;
-      this._bindTabs(raiz);
-      this._bindTabContent(raiz);
+      window.adminComunes.renderizarPanel(this, raiz, {
+        titulo: 'Administración',
+        icono: 'settings',
+        contenedorId: 'adminContenido',
+        tabs: TABS,
+        nombreVista: 'vistaPanelAdmin'
+      });
     },
     _renderTabContent(raiz) {
       const { usuarios, grupos, examenes, stats, usuario } = this._datos;
       switch (this._tabActivo) {
         case 'dashboard': return this._renderDashboard(stats, grupos, examenes);
         case 'usuarios': return this._renderUsuarios(usuarios, usuario);
-        case 'grupos': return this._renderGrupos(grupos);
+        case 'grupos': return this._renderGrupos(grupos, examenes);
         case 'examenes': return this._renderExamenes(examenes);
         default: return '';
       }
+    },
+    _estadoBadge(estado) {
+      const map = {
+        'publicado': ['admin-tabla-badge--publicado', 'Publicado'],
+        'borrador': ['admin-tabla-badge--borrador', 'Borrador'],
+        'archivado': ['admin-tabla-badge--archivado', 'Archivado']
+      };
+      const [clase, texto] = map[estado] || ['admin-tabla-badge--borrador', estado || '—'];
+      return `<span class="admin-tabla-badge ${clase}">${E(texto)}</span>`;
     },
     _renderDashboard(stats, grupos, examenes) {
       const porRol = stats.porRol || {};
       return `
         <div class="o-pila o-pila--lg">
           <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr))">
-            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('users')}</div><div><p class="tarjeta-estadistica__valor">${stats.usuarios}</p><p class="tarjeta-estadistica__etiqueta">Usuarios</p></div></div>
-            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('layout')}</div><div><p class="tarjeta-estadistica__valor">${grupos.length}</p><p class="tarjeta-estadistica__etiqueta">Grupos</p></div></div>
-            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('file-text')}</div><div><p class="tarjeta-estadistica__valor">${stats.examenes}</p><p class="tarjeta-estadistica__etiqueta">Exámenes</p></div></div>
-            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('book-open')}</div><div><p class="tarjeta-estadistica__valor">${stats.lecturas}</p><p class="tarjeta-estadistica__etiqueta">Capítulos leídos</p></div></div>
-            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('brain')}</div><div><p class="tarjeta-estadistica__valor">${stats.tarjetas}</p><p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p></div></div>
+            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('users')}</div><div class="tarjeta-estadistica__info"><p class="tarjeta-estadistica__valor">${stats.usuarios}</p><p class="tarjeta-estadistica__etiqueta">Usuarios</p></div></div>
+            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('layout')}</div><div class="tarjeta-estadistica__info"><p class="tarjeta-estadistica__valor">${grupos.length}</p><p class="tarjeta-estadistica__etiqueta">Grupos</p></div></div>
+            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('file-text')}</div><div class="tarjeta-estadistica__info"><p class="tarjeta-estadistica__valor">${stats.examenes}</p><p class="tarjeta-estadistica__etiqueta">Exámenes</p></div></div>
+            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('book-open')}</div><div class="tarjeta-estadistica__info"><p class="tarjeta-estadistica__valor">${stats.lecturas}</p><p class="tarjeta-estadistica__etiqueta">Capítulos leídos</p></div></div>
+            <div class="tarjeta-estadistica"><div class="tarjeta-estadistica__icono">${I('brain')}</div><div class="tarjeta-estadistica__info"><p class="tarjeta-estadistica__valor">${stats.tarjetas}</p><p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p></div></div>
           </div>
           <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fit,minmax(120px,1fr))">
             <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Propietarios</p><p class="u-texto-lg u-fw-700">${porRol.owner || 0}</p></div>
@@ -159,8 +162,22 @@
             <button class="btn-secundario" id="btnBatchLimpiar">Limpiar</button>
           </div>` : ''}
           ${filtrados.length > this._porPagina ? this._renderPaginacion(pag, totalPag, 'pagUsuarios') : ''}
-          <div class="o-pila" id="listaUsuarios">
-            ${pagina.map(u => this._renderizarUsuarioCard(u, usuario)).join('')}
+          <div class="admin-tabla-wrapper">
+            <table class="admin-tabla">
+              <thead>
+                <tr>
+                  <th style="width:40px" aria-label="Seleccionar"></th>
+                  <th>Usuario</th>
+                  <th>Rol</th>
+                  <th>Grupo</th>
+                  <th>Estado</th>
+                  <th style="text-align:right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody id="listaUsuarios">
+                ${pagina.length === 0 ? '<tr><td colspan="6" class="u-color-texto-terciario u-fs-sm">Sin usuarios para mostrar.</td></tr>' : pagina.map(u => this._renderizarUsuarioFila(u, usuario)).join('')}
+              </tbody>
+            </table>
           </div>
           ${filtrados.length > this._porPagina ? this._renderPaginacion(pag, totalPag, 'pagUsuarios') : ''}
         </div>`;
@@ -175,7 +192,7 @@
         <button class="admin-paginacion__btn" data-pag="${idPrefijo}" data-val="${Math.min(total, pag + 1)}" ${pag >= total ? 'disabled style="opacity:0.4"' : ''}>${I('chevron-right')}</button>
       </div>`;
     },
-    _renderGrupos(grupos) {
+    _renderGrupos(grupos, examenes) {
       return `
         <div class="o-pila">
           <div class="o-flecha o-flecha--between">
@@ -185,66 +202,100 @@
             <input type="text" id="nuevoGrupoNombre" placeholder="Nombre del grupo" style="min-width:160px;flex:1">
             <button class="btn-primario" id="btnCrearGrupo">Crear grupo</button>
           </div>
-          <div class="o-grid-tarjetas" style="grid-template-columns:repeat(auto-fill,minmax(220px,1fr))">
-            ${grupos.map(g => `<div class="admin-grupo-card btn-ver-grupo-admin" data-gid="${g.id}">
-              <div class="o-flecha o-flecha--between">
-                <p class="admin-grupo-card__nombre">${E(g.nombre)}</p>
-                <button class="btn-eliminar-grupo" data-id="${g.id}" style="background:none;border:none;color:var(--color-error);cursor:pointer;display:inline-flex;font-size:var(--texto-xs)">${I('x')}</button>
-              </div>
-              <div class="admin-grupo-card__stats">
-                <span class="admin-grupo-card__stat">${I('user')} Admin: ${g.perfiles?.nombre_completo || g.perfiles?.username || 'N/A'}</span>
-              </div>
-            </div>`).join('')}
+          <div class="admin-tabla-wrapper">
+            <table class="admin-tabla">
+              <thead>
+                <tr>
+                  <th>Grupo</th>
+                  <th>Administrador</th>
+                  <th>Exámenes</th>
+                  <th style="text-align:right">Acciones</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${grupos.length === 0 ? '<tr><td colspan="4" class="u-color-texto-terciario u-fs-sm">Sin grupos.</td></tr>' : grupos.map(g => {
+                  const exCount = (examenes || []).filter(ex => ex.grupo_id === g.id).length;
+                  return `<tr class="btn-ver-grupo-admin" data-gid="${g.id}" style="cursor:pointer" title="Ver miembros de ${E(g.nombre)}">
+                  <td class="admin-tabla__nombre">${E(g.nombre)}</td>
+                  <td class="u-fs-xs">${g.perfiles?.nombre_completo || g.perfiles?.username || 'Sin admin'}</td>
+                  <td class="u-fs-xs u-color-texto-terciario">${exCount} examen${exCount !== 1 ? 'es' : ''}</td>
+                  <td>
+                    <div class="admin-tabla__acciones">
+                      <button class="btn-icono btn-icono--peligro btn-eliminar-grupo" data-id="${g.id}" title="Eliminar grupo" aria-label="Eliminar grupo ${E(g.nombre)}">${I('x')}</button>
+                    </div>
+                  </td>
+                </tr>`;
+                }).join('')}
+              </tbody>
+            </table>
           </div>
         </div>`;
     },
     _renderExamenes(examenes) {
       return `
         <div class="o-pila">
-          <h3>${I('file-text')} Exámenes (${examenes.length})</h3>
-          <div class="o-pila">${examenes.length === 0 ? '<p class="u-color-texto-terciario u-fs-sm">Sin exámenes</p>' : examenes.map(ex => `
-            <div class="tarjeta-capitulo">
-              <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-                <span class="u-fw-600">${E(ex.titulo)}</span>
-                <span class="u-fs-xs u-color-texto-terciario">${ex.estado} · ${ex.grupos?.nombre || ''} · ${ex.perfiles?.nombre_completo || ''}</span>
-              </div>
-            </div>`).join('')}
+          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
+            <h3>${I('file-text')} Exámenes (${examenes.length})</h3>
+            ${examenes.length ? `<span class="u-fs-xs u-color-texto-terciario">${examenes.filter(e => e.estado === 'publicado').length} publicados · ${examenes.filter(e => e.estado === 'borrador').length} borradores</span>` : ''}
+          </div>
+          <div class="admin-tabla-wrapper">
+            <table class="admin-tabla">
+              <thead>
+                <tr>
+                  <th>Examen</th>
+                  <th>Grupo</th>
+                  <th>Autor</th>
+                  <th>Estado</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${examenes.length === 0 ? '<tr><td colspan="4" class="u-color-texto-terciario u-fs-sm">Sin exámenes</td></tr>' : examenes.map(ex => `
+                <tr>
+                  <td class="admin-tabla__nombre">${E(ex.titulo)}</td>
+                  <td class="u-fs-xs">${E(ex.grupos?.nombre || 'Sin grupo')}</td>
+                  <td class="u-fs-xs u-color-texto-terciario">${E(ex.perfiles?.nombre_completo || 'Autor desconocido')}</td>
+                  <td>${this._estadoBadge(ex.estado)}</td>
+                </tr>`).join('')}
+              </tbody>
+            </table>
           </div>
         </div>`;
     },
-    _renderizarUsuarioCard(u, actor) {
+    _renderizarUsuarioFila(u, actor) {
       const inicial = (u.nombre_completo || u.username || '?').charAt(0).toUpperCase();
       const foto = u.foto_perfil;
       const activo = u.activo !== false;
       const puedeEditar = this._puedeEditar(actor, u);
       const puedeEliminar = this._puedeEliminar(actor, u);
       const sel = this._seleccion.has(u.id);
+      const grupoNombre = u.grupo_id ? (this._datos.grupos.find(g => g.id === u.grupo_id)?.nombre || '') : '';
       return `
-        <div class="admin-usuario-card${sel ? ' admin-usuario-card--selected' : ''}" data-id="${u.id}" data-inactivo="${!activo}" data-nombre="${E(u.nombre_completo)}" data-username="${E(u.username)}" data-rol="${u.rol}">
-          <div class="admin-usuario-card__cabecera">
-            <input type="checkbox" class="admin-select-cb" data-sel-id="${u.id}" ${sel ? 'checked' : ''}>
-            <div class="admin-usuario-card__avatar">${foto ? `<img src="${foto}" alt="">` : inicial}</div>
-            <div class="admin-usuario-card__info" style="cursor:pointer" data-ver-detalle="${u.id}">
-              <p class="admin-usuario-card__nombre">${E(u.nombre_completo)}</p>
-              <p class="admin-usuario-card__meta">@${E(u.username)} · ${rolBonito(u.rol)}${u.grupo_id ? ' · ' + (this._datos.grupos.find(g => g.id === u.grupo_id)?.nombre || '') : ''}</p>
+        <tr class="${sel ? 'admin-tabla-fila--seleccionada' : ''}${!activo ? ' admin-tabla-fila--inactiva' : ''}" data-id="${u.id}" data-nombre="${E(u.nombre_completo)}" data-username="${E(u.username)}" data-rol="${u.rol}">
+          <td><input type="checkbox" class="admin-select-cb" data-sel-id="${u.id}" ${sel ? 'checked' : ''} aria-label="Seleccionar a ${E(u.nombre_completo)}"></td>
+          <td>
+            <div class="admin-tabla__usuario" style="cursor:pointer" data-ver-detalle="${u.id}" title="Ver detalle de ${E(u.nombre_completo)}">
+              <span class="admin-tabla__avatar">${foto ? `<img src="${foto}" alt="">` : inicial}</span>
+              <span style="min-width:0">
+                <span class="admin-tabla__nombre">${E(u.nombre_completo)}</span><br>
+                <span class="admin-tabla__meta">@${E(u.username)}</span>
+              </span>
             </div>
-            <span class="admin-usuario-card__badge ${activo ? 'admin-usuario-card__badge--activo' : 'admin-usuario-card__badge--inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span>
-          </div>
-          <div class="admin-usuario-card__acciones">
-            ${puedeEditar ? `<button class="admin-btn-editar btn-editar-usuario" data-id="${u.id}">${I('edit-3')} Editar</button>` : ''}
-            ${puedeEditar ? `<button class="admin-btn-permisos btn-cambiar-rol" data-id="${u.id}" data-rol="${u.rol}">${I('shield')} Permisos</button>` : ''}
-            ${puedeEliminar ? `<button class="admin-btn-eliminar btn-eliminar-usuario" data-id="${u.id}" data-nombre="${E(u.nombre_completo)}">${I('trash-2')} Eliminar</button>` : ''}
-            <button class="admin-btn-editar btn-ver-detalle" data-id="${u.id}">${I('info')} Detalle</button>
-          </div>
-        </div>`;
+          </td>
+          <td><span class="u-fs-xs">${rolBonito(u.rol)}</span></td>
+          <td><span class="u-fs-xs u-color-texto-terciario">${E(grupoNombre || 'Sin grupo')}</span></td>
+          <td><span class="admin-tabla-badge ${activo ? 'admin-tabla-badge--activo' : 'admin-tabla-badge--inactivo'}">${activo ? 'Activo' : 'Inactivo'}</span></td>
+          <td>
+            <div class="admin-tabla__acciones">
+              ${puedeEditar ? `<button class="btn-icono btn-editar-usuario" data-id="${u.id}" title="Editar" aria-label="Editar a ${E(u.nombre_completo)}">${I('edit-3')}</button>` : ''}
+              ${puedeEditar ? `<button class="btn-icono btn-cambiar-rol" data-id="${u.id}" data-rol="${u.rol}" title="Permisos" aria-label="Permisos de ${E(u.nombre_completo)}">${I('shield')}</button>` : ''}
+              ${puedeEliminar ? `<button class="btn-icono btn-icono--peligro btn-eliminar-usuario" data-id="${u.id}" data-nombre="${E(u.nombre_completo)}" title="Eliminar" aria-label="Eliminar a ${E(u.nombre_completo)}">${I('trash-2')}</button>` : ''}
+              <button class="btn-icono btn-ver-detalle" data-id="${u.id}" title="Detalle" aria-label="Detalle de ${E(u.nombre_completo)}">${I('info')}</button>
+            </div>
+          </td>
+        </tr>`;
     },
     _bindTabs(raiz) {
-      raiz.querySelectorAll('.admin-tab').forEach(btn => {
-        btn.onclick = () => {
-          this._tabActivo = btn.dataset.tab;
-          this._renderizar(raiz);
-        };
-      });
+      window.adminComunes.bindTabs(this, raiz);
     },
     _bindTabContent(raiz) {
       this._bindUsuarios(raiz);
@@ -259,10 +310,7 @@
       r.querySelector('#btnExportCSV')?.addEventListener('click', async () => {
         try {
           const csv = await window.adminRepository.exportarUsuariosCSV();
-          const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a'); a.href = url; a.download = 'usuarios.csv'; a.click();
-          URL.revokeObjectURL(url);
+          window.adminComunes.descargarCSVTexto('usuarios.csv', csv);
         } catch { window.helpers.mostrarAlerta('Error al exportar', 'error'); }
       });
     },
@@ -386,7 +434,7 @@
                 });
                 if (!ok) return;
                 try {
-                  await window.adminRepository.eliminarUsuario(u.id);
+                  await window.adminRepository.eliminarUsuario(u.id, usuario.id);
                   await window.adminRepository.registrarAuditoria('usuario:eliminar', `Usuario "${u.nombre_completo}" eliminado`, usuario.id);
                   window.helpers.mostrarAlerta('Usuario eliminado.', 'exito');
                   const nuevos = await window.adminRepository.listarUsuarios();
@@ -431,7 +479,7 @@
           });
           if (!ok) return;
           try {
-            await window.adminRepository.eliminarUsuario(btn.dataset.id);
+            await window.adminRepository.eliminarUsuario(btn.dataset.id, usuario.id);
             await window.adminRepository.registrarAuditoria('usuario:eliminar', `Usuario "${btn.dataset.nombre}" eliminado`, usuario.id);
             window.helpers.mostrarAlerta('Usuario eliminado.', 'exito');
             const nuevos = await window.adminRepository.listarUsuarios();
@@ -537,38 +585,9 @@
       r.querySelectorAll('.btn-ver-grupo-admin').forEach(el => {
         el.onclick = async (e) => {
           if (e.target.closest('.btn-eliminar-grupo')) return;
-          const gid = el.dataset.gid;
-          const grupo = grupos.find(g => g.id === gid);
+          const grupo = grupos.find(g => g.id === el.dataset.gid);
           if (!grupo) return;
-          try {
-            const { data: miembros } = await window.supabaseClient.from('perfiles').select('id, nombre_completo, username, rol').eq('grupo_id', gid).order('nombre_completo');
-            const admins = (miembros || []).filter(m => m.rol === 'admin');
-            const editores = (miembros || []).filter(m => m.rol === 'editor');
-            const alumnos = (miembros || []).filter(m => m.rol === 'usuario');
-            const overlay = document.createElement('div');
-            overlay.className = 'modal-overlay';
-            overlay.innerHTML = `
-              <div class="modal">
-                <div class="o-pila" style="gap:var(--espaciado-md)">
-                  <h3>${E(grupo.nombre)}</h3>
-                  <div class="perfil-fila"><span class="perfil-fila__label">Total miembros</span><span class="perfil-fila__valor">${(miembros || []).length}</span></div>
-                  <div class="o-pila">
-                    <h4>Administradores (${admins.length})</h4>${admins.length ? admins.map(a => `<div class="tarjeta-capitulo u-fs-sm">${E(a.nombre_completo || a.username)}</div>`).join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin administradores</p>'}
-                  </div>
-                  <div class="o-pila">
-                    <h4>Profesores (${editores.length})</h4>${editores.length ? editores.map(e => `<div class="tarjeta-capitulo u-fs-sm">${E(e.nombre_completo || e.username)}</div>`).join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin profesores</p>'}
-                  </div>
-                  <div class="o-pila">
-                    <h4>Alumnos (${alumnos.length})</h4>${alumnos.length ? alumnos.map(a => `<div class="tarjeta-capitulo u-fs-sm">${E(a.nombre_completo || a.username)}</div>`).join('') : '<p class="u-fs-sm u-color-texto-terciario">Sin alumnos</p>'}
-                  </div>
-                </div>
-                <button class="btn-primario u-mt-2" id="btnCerrarDetalle" style="width:100%;justify-content:center">Cerrar</button>
-              </div>`;
-            document.body.appendChild(overlay);
-            window.Iconos?.actualizar();
-            overlay.querySelector('#btnCerrarDetalle').onclick = () => overlay.remove();
-            overlay.addEventListener('click', ev => { if (ev.target === overlay) overlay.remove(); });
-          } catch (err) { window.helpers.mostrarAlerta('Error: ' + err.message, 'error'); }
+          await window.adminComunes.abrirModalGrupo(grupo);
         };
       });
     }

@@ -35,7 +35,8 @@
         const prev = guardado[p.id] || {};
         if (prev.es_correcta !== undefined && prev.es_correcta !== null) {
           map[p.id] = { es_correcta: prev.es_correcta, puntos: prev.puntos != null ? prev.puntos : (prev.es_correcta ? pts : 0), comentario: prev.comentario || '' };
-        } else if (p.tipo === 'respuesta_corta') {
+        } else if (p.tipo === 'respuesta_corta' || p.tipo === 'texto_largo') {
+          // Texto libre: siempre corrección manual (nunca auto)
           map[p.id] = { es_correcta: null, puntos: 0, comentario: '' };
         } else {
           map[p.id] = { es_correcta: auto, puntos: auto ? pts : 0, comentario: '' };
@@ -78,28 +79,38 @@
           ${notas.length > 0 ? `
           <div class="corregir-estadisticas" style="display:flex;gap:var(--espaciado-sm);flex-wrap:wrap">
             <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
-              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${promedio != null ? promedio.toFixed(1) : '—'}</p>
-              <p class="tarjeta-estadistica__etiqueta">Promedio</p>
+              <div class="tarjeta-estadistica__info">
+                <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${promedio != null ? promedio.toFixed(1) : '—'}</p>
+                <p class="tarjeta-estadistica__etiqueta">Promedio</p>
+              </div>
             </div>
             <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
-              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-exito)">${maxNota != null ? maxNota.toFixed(1) : '—'}</p>
-              <p class="tarjeta-estadistica__etiqueta">Máxima</p>
+              <div class="tarjeta-estadistica__info">
+                <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-exito)">${maxNota != null ? maxNota.toFixed(1) : '—'}</p>
+                <p class="tarjeta-estadistica__etiqueta">Máxima</p>
+              </div>
             </div>
             <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
-              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-error)">${minNota != null ? minNota.toFixed(1) : '—'}</p>
-              <p class="tarjeta-estadistica__etiqueta">Mínima</p>
+              <div class="tarjeta-estadistica__info">
+                <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg);color:var(--color-error)">${minNota != null ? minNota.toFixed(1) : '—'}</p>
+                <p class="tarjeta-estadistica__etiqueta">Mínima</p>
+              </div>
             </div>
             <div class="tarjeta-estadistica" style="flex:1;min-width:90px">
-              <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${notas.length}</p>
-              <p class="tarjeta-estadistica__etiqueta">Calificados</p>
+              <div class="tarjeta-estadistica__info">
+                <p class="tarjeta-estadistica__valor" style="font-size:var(--texto-lg)">${notas.length}</p>
+                <p class="tarjeta-estadistica__etiqueta">Calificados</p>
+              </div>
             </div>
             ${distribucion.length > 0 ? `<div class="tarjeta-estadistica" style="flex:2;min-width:150px">
+              <div class="tarjeta-estadistica__info">
               <p class="tarjeta-estadistica__etiqueta">Distribución</p>
               <div style="display:flex;gap:4px;align-items:flex-end;height:48px;padding-top:var(--espaciado-xs)">
                 ${distribucion.map(d => `<div style="flex:1;display:flex;flex-direction:column;align-items:center;gap:2px">
                   <div style="height:${d.height}%;width:100%;border-radius:var(--radio-sm) var(--radio-sm) 0 0;background:${d.min >= 7 ? 'var(--color-exito)' : d.min >= 4 ? 'var(--color-aviso)' : 'var(--color-error)'};opacity:${d.count > 0 ? 1 : 0.3};min-height:4px"></div>
                   <span style="font-size:9px;color:var(--color-texto-terciario)">${d.count}</span>
                 </div>`).join('')}
+              </div>
               </div>
             </div>` : ''}
           </div>` : ''}
@@ -187,12 +198,8 @@
       let rUserHtml;
       if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos) && p.huecos.length > 0) {
         rUserHtml = this._renderCompletarCorreccion(p, rUser);
-      } else if (p.tipo === 'multiple') {
-        rUserHtml = window.helpers.escapeHtml(rUser !== undefined && p.opciones && p.opciones[parseInt(rUser, 10)] !== undefined ? p.opciones[parseInt(rUser, 10)] : '(sin respuesta)');
-      } else if (p.tipo === 'verdadero_falso') {
-        rUserHtml = window.helpers.escapeHtml(rUser === 'true' ? 'Verdadero' : rUser === 'false' ? 'Falso' : '(sin respuesta)');
       } else {
-        rUserHtml = window.helpers.escapeHtml(rUser !== undefined ? String(rUser) : '(sin respuesta)');
+        rUserHtml = window.helpers.escapeHtml(this._formatearRespuesta(p, rUser));
       }
       let correctaHtml = '';
       if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos) && p.huecos.length > 0) {
@@ -462,17 +469,45 @@
       return dd + ' ' + mes + ' ' + aa + ', ' + hh + ':' + mm;
     },
 
+    _formatearRespuesta(p, rUser) {
+      if (rUser === undefined || rUser === null || rUser === '') return '(sin respuesta)';
+      if (p.tipo === 'multiple' || p.tipo === 'opcion_unica') {
+        const idx = parseInt(rUser, 10);
+        return (p.opciones && p.opciones[idx] !== undefined) ? p.opciones[idx] : String(rUser);
+      }
+      if (p.tipo === 'verdadero_falso') return rUser === 'true' ? 'Verdadero' : rUser === 'false' ? 'Falso' : String(rUser);
+      if (p.tipo === 'varias_opciones') {
+        try {
+          const arr = JSON.parse(rUser);
+          if (Array.isArray(arr)) return arr.map(i => p.opciones && p.opciones[i] !== undefined ? p.opciones[i] : i).join(', ');
+        } catch (e) {}
+        return String(rUser);
+      }
+      if (p.tipo === 'relacionar') {
+        try {
+          const rel = JSON.parse(rUser);
+          const mit = Math.ceil((p.opciones || []).length / 2);
+          return Object.entries(rel).map(([k, v]) => `${p.opciones[Number(k)] || k} → ${p.opciones[mit + Number(v)] || v}`).join(' | ');
+        } catch (e) {}
+        return String(rUser);
+      }
+      if (p.tipo === 'ordenar') {
+        try {
+          const arr = JSON.parse(rUser);
+          if (Array.isArray(arr)) return arr.map(i => p.opciones && p.opciones[i] !== undefined ? p.opciones[i] : i).join(' → ');
+        } catch (e) {}
+        return String(rUser);
+      }
+      return String(rUser);
+    },
+
     _textoRespuesta(p, rUser) {
       if (rUser === undefined || rUser === null || rUser === '') return '';
       if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos) && Array.isArray(rUser)) {
         return p.huecos.map((h, i) => (rUser[i] || '…') + ' → ' + h.respuesta_correcta).join(', ');
       }
-      if (p.tipo === 'multiple') {
-        const idx = parseInt(rUser, 10);
-        return (p.opciones && p.opciones[idx] !== undefined) ? p.opciones[idx] : String(rUser);
-      }
-      if (p.tipo === 'verdadero_falso') return rUser === 'true' ? 'Verdadero' : 'Falso';
-      return String(rUser);
+      const txt = this._formatearRespuesta(p, rUser);
+      return txt === '(sin respuesta)' ? '' : txt;
     }
   };
 })();

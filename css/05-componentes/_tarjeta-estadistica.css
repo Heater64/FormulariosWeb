@@ -1,23 +1,86 @@
 .tarjeta-estadistica {
-  padding: var(--espaciado-sm) var(--espaciado-md);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   box-shadow: var(--sombra-sm);
-  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
 }
 
-.tarjeta-estadistica:hover {
-  box-shadow: var(--sombra-md);
+@media (hover: hover) {
+  .tarjeta-estadistica:hover {
+    box-shadow: var(--sombra-md);
+    border-color: var(--color-acento-soft);
+    transform: translateY(-2px);
+  }
 }
 
 .tarjeta-estadistica p {
-  margin: var(--espaciado-xxs) 0 0;
+  margin: 0;
+}
+
+.tarjeta-estadistica__icono {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.tarjeta-estadistica__icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tarjeta-estadistica__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.tarjeta-estadistica__valor {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  line-height: 1.1;
+  color: var(--color-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tarjeta-estadistica__etiqueta {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  margin-top: 2px;
 }
 
 @media (max-width: 480px) {
   .tarjeta-estadistica {
     min-width: calc(50% - var(--espaciado-xs));
     flex: 1 1 calc(50% - var(--espaciado-xs));
+    padding: var(--espaciado-sm);
+  }
+
+  .tarjeta-estadistica__icono {
+    width: 34px;
+    height: 34px;
+  }
+
+  .tarjeta-estadistica__icono svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .tarjeta-estadistica__valor {
+    font-size: var(--texto-lg);
   }
 }

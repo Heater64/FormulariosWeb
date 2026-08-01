@@ -28,7 +28,7 @@
       const { data, error } = await sb().from('perfiles').insert({
         nombre_completo: nombre_completo,
         username: username,
-        password: password,
+        password: await window.helpers.hashPassword(password || ''),
         rol: rol || 'usuario',
         grupo_id: grupo_id || null,
         activo: true
@@ -47,14 +47,26 @@
       if (!sb()) throw new Error('Sin conexión');
       await sb().from('perfiles').update({ rol }).eq('id', usuarioId);
     },
-    async eliminarUsuario(usuarioId) {
+    async eliminarUsuario(usuarioId, actorId) {
       if (!sb()) return;
-      // Limpiar referencias RESTRICT antes de borrar el perfil
+      if (!actorId) throw new Error('Se requiere el administrador que ejecuta la acción.');
+      // Limpiar referencias hijas antes de borrar el perfil (las FKs impiden borrarlo antes)
       await sb().from('auditoria').delete().eq('actor_id', usuarioId);
-      await sb().from('calificaciones').delete().eq('alumno_id', usuarioId);
-      await sb().from('calificaciones').delete().eq('corregido_por', usuarioId);
-      await sb().from('examenes_personalizados').update({ creado_por: null }).eq('creado_por', usuarioId);
+      await sb().from('miembros_grupo').delete().eq('usuario_id', usuarioId);
+      await sb().from('notas_capitulo').delete().eq('usuario_id', usuarioId);
+      await sb().from('categorias_tarjetas').delete().eq('usuario_id', usuarioId);
+      await sb().from('categorias_memorizacion').delete().eq('usuario_id', usuarioId);
+      await sb().from('mazos_memorizacion').delete().eq('usuario_id', usuarioId);
+      await sb().from('logros_usuario').delete().eq('usuario_id', usuarioId);
+      await sb().from('progreso_lectura').delete().eq('usuario_id', usuarioId);
+      // repasos_memorizacion se borran en cascada al eliminar tarjetas_memorizacion
+      await sb().from('tarjetas_memorizacion').delete().eq('usuario_id', usuarioId);
+      await sb().from('intentos_examen_personalizado').delete().eq('alumno_id', usuarioId);
+      await sb().from('intentos_examen_personalizado').update({ corregido_por: null }).eq('corregido_por', usuarioId);
+      await sb().from('preguntas_sistema').update({ creado_por: null }).eq('creado_por', usuarioId);
       await sb().from('evaluaciones').update({ creado_por: null }).eq('creado_por', usuarioId);
+      // Exámenes creados por el usuario: creado_por es NOT NULL, se reasignan al actor.
+      await sb().from('examenes_personalizados').update({ creado_por: actorId }).eq('creado_por', usuarioId);
       await sb().from('grupos').update({ admin_id: null }).eq('admin_id', usuarioId);
       const { error } = await sb().from('perfiles').delete().eq('id', usuarioId);
       if (error) throw error;
@@ -67,7 +79,7 @@
         rol: rol,
         grupo_id: grupo_id || null
       };
-      if (password !== undefined && password !== '') updates.password = password;
+      if (password !== undefined && password !== '') updates.password = await window.helpers.hashPassword(password);
       const { error } = await sb().from('perfiles').update(updates).eq('id', usuarioId);
       if (error) throw error;
     },
@@ -131,21 +143,23 @@
       if (!sb()) return { examenes: 0, lecturas: 0, repasos: 0, ultimoAcceso: null };
       try {
         const [examenes, lecturas, repasos] = await Promise.all([
-          sb().from('evaluaciones').select('id', { count: 'exact', head: true }).eq('alumno_id', userId),
+          sb().from('intentos_examen_personalizado').select('id', { count: 'exact', head: true }).eq('alumno_id', userId),
           sb().from('progreso_lectura').select('id', { count: 'exact', head: true }).eq('usuario_id', userId),
-          sb().from('historial_repaso').select('id', { count: 'exact', head: true }).eq('tarjeta_id', userId)
+          sb().from('repasos_memorizacion').select('id, tarjetas_memorizacion!inner(usuario_id)', { count: 'exact', head: true }).eq('tarjetas_memorizacion.usuario_id', userId)
         ]);
         return { examenes: examenes.count || 0, lecturas: lecturas.count || 0, repasos: repasos.count || 0 };
       } catch { return { examenes: 0, lecturas: 0, repasos: 0 }; }
     },
     async listarConfiguracion() {
       if (!sb()) return {};
-      const { data } = await sb().from('configuracion').select('*').maybeSingle();
-      return data || {};
+      const { data } = await sb().from('configuracion').select('*');
+      const mapa = {};
+      (data || []).forEach(fila => { if (fila && fila.clave) mapa[fila.clave] = fila.valor; });
+      return mapa;
     },
     async guardarConfiguracion(clave, valor) {
       if (!sb()) return;
-      await sb().from('configuracion').upsert({ clave, valor }, { onConflict: 'clave' });
+      await sb().from('configuracion').upsert({ clave, valor, actualizado_en: new Date().toISOString() }, { onConflict: 'clave' });
     }
   };
 })();

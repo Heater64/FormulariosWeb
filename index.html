@@ -136,6 +136,7 @@
   <link rel="stylesheet" href="css/05-componentes/_empty-state.css">
   <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
   <link rel="stylesheet" href="css/05-componentes/_notas.css">
+  <link rel="stylesheet" href="css/05-componentes/_sugerencias.css">
   <link rel="stylesheet" href="css/05-componentes/_explorar.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
   <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
@@ -169,6 +170,7 @@
   <script src="js/datos/examenes-repository.js"></script>
   <script src="js/datos/memorizacion-repository.js"></script>
   <script src="js/datos/notas-repository.js"></script>
+  <script src="js/datos/sugerencias-repository.js"></script>
   <script src="js/datos/admin-repository.js"></script>
   <script src="js/datos/sync-queue.js"></script>
   <script src="js/utilidades/sync-status.js"></script>
@@ -181,7 +183,10 @@
   <script src="js/utilidades/memoria.js"></script>
   <script src="js/utilidades/accesibilidad.js"></script>
   <script src="js/componentes/editor-imagen.js"></script>
-  <script src="js/componentes/editor-tiptap.js"></script>
+  <!-- Cargado como módulo: el archivo usa import() dinámico (esm.sh) y Vite le inyecta
+       un import de /@vite/client al inicio; como script clásico lanzaba
+       'Cannot use import statement outside a module' y el editor quedaba roto. -->
+  <script type="module" src="js/componentes/editor-tiptap.js"></script>
   <script src="js/componentes/version-history.js"></script>
 
   <!-- JS: Core (nuevos) -->
@@ -214,6 +219,7 @@
   <script src="js/vistas/vista-progreso.js"></script>
   <script src="js/vistas/vista-explorar.js"></script>
   <script src="js/vistas/vista-perfil.js"></script>
+  <script src="js/vistas/admin/admin-comunes.js"></script>
   <script src="js/vistas/admin/vista-panel-admin.js"></script>
   <script src="js/vistas/admin/vista-owner.js"></script>
 

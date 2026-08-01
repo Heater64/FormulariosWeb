@@ -7,6 +7,7 @@
   <meta name="description" content="FormsBiblicos es una plataforma educativa para el estudio sistemático de la Biblia con repaso inteligente, evaluaciones personalizadas y seguimiento de progreso.">
   <link rel="icon" href="../assets/iconos/icono.svg" type="image/svg+xml">
   <link rel="stylesheet" href="../css/00-settings/_tokens.css">
+  <link rel="stylesheet" href="../css/00-settings/_colores.css">
   <link rel="stylesheet" href="../css/00-settings/_tipografia.css">
   <link rel="stylesheet" href="../css/00-settings/_espaciado.css">
   <link rel="stylesheet" href="../css/02-generic/_reset.css">
@@ -16,6 +17,8 @@
   <link rel="stylesheet" href="../css/04-objects/_contenedor.css">
   <link rel="stylesheet" href="../css/04-objects/_pila.css">
   <link rel="stylesheet" href="../css/05-componentes/_boton-primario.css">
+  <link rel="stylesheet" href="../css/05-componentes/_boton-secundario.css">
+  <link rel="stylesheet" href="../css/05-componentes/_login.css">
   <link rel="stylesheet" href="../css/06-utilidades/_utilidades.css">
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
@@ -23,10 +26,31 @@
   <script src="../js/core/eventBus.js"></script>
   <script src="../js/datos/supabase-client.js"></script>
   <script src="../js/datos/auth-repository.js"></script>
+  <script src="../js/utilidades/dom-helpers.js"></script>
   <script src="../js/utilidades/iconos.js"></script>
   <script src="../js/vistas/vista-login.js"></script>
   <script>
+    // Página standalone: persistir sesión y redirigir al SPA al iniciar sesión
+    window.eventBus.suscribir('auth:login', (payload) => {
+      const usuario = payload.usuario || payload;
+      if (payload.recordar !== false) {
+        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        localStorage.setItem('fb_recordar_sesion', 'true');
+      } else {
+        localStorage.removeItem('fb_usuario');
+        localStorage.removeItem('fb_recordar_sesion');
+        sessionStorage.setItem('fb_usuario', JSON.stringify(usuario));
+      }
+      window.location.href = '../index.html#!/estudio';
+    });
+
     document.addEventListener('DOMContentLoaded', () => {
+      // Si ya hay sesión activa, ir directo al SPA
+      const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
+      if (guardado) {
+        window.location.href = '../index.html#!/estudio';
+        return;
+      }
       window.vistaLogin.montar(document.getElementById('app-root'));
     });
   </script>

@@ -170,7 +170,11 @@
     _listaNotasCap(raiz, libro, capitulo, d) {
       const notasCap = d.notas
         .filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo))
-        .sort((a, b) => new Date(a.creado_en || 0) - new Date(b.creado_en || 0));
+        .sort((a, b) => {
+          // Fijadas primero; luego por fecha (más reciente arriba)
+          if (!!a.fijada !== !!b.fijada) return a.fijada ? -1 : 1;
+          return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
+        });
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg u-app-shell">
@@ -193,10 +197,11 @@
     _tarjetaNota(n, i, libro, capitulo, d) {
       const titulo = n.titulo || `Nota ${i + 1}`;
       return `
-        <div class="tarjeta-capitulo o-pila" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer" title="Leer esta nota">
+        <div class="tarjeta-capitulo o-pila${n.fijada ? ' tarjeta-capitulo--fijada' : ''}" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer" title="Leer esta nota">
           <div class="o-flecha o-flecha--between">
-            <span class="u-fw-600">${E(titulo)}</span>
-            <div class="o-flecha" style="gap:4px" onclick="event.stopPropagation()">
+            <span class="u-fw-600" style="display:flex;align-items:center;gap:6px">${n.fijada ? `<span class="nota-pin-icono" title="Nota fijada">${I('pin')}</span>` : ''}${E(titulo)}</span>
+            <div class="o-flecha nota-acciones" onclick="event.stopPropagation()">
+              <button class="btn-icono" data-pin="${n.id}" data-fijada="${n.fijada ? '1' : '0'}" aria-label="${n.fijada ? 'Quitar fijación' : 'Fijar nota'}" title="${n.fijada ? 'Quitar fijación' : 'Fijar nota'}">${n.fijada ? I('pin-off') : I('pin')}</button>
               <button class="btn-icono" data-edit="${n.id}" aria-label="Editar nota" title="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
               <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota" title="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
             </div>
@@ -215,6 +220,20 @@
       });
       cont.querySelectorAll('[data-edit]').forEach((b) => {
         b.onclick = () => { const n = d.notas.find(x => x.id === b.dataset.edit); if (n) this._editarNota(raiz, n, d); };
+      });
+      cont.querySelectorAll('[data-pin]').forEach((b) => {
+        b.onclick = async () => {
+          const n = d.notas.find(x => x.id === b.dataset.pin);
+          if (!n) return;
+          const nueva = n.fijada ? false : true;
+          try {
+            await window.notasRepository.fijar(n.id, nueva);
+            n.fijada = nueva;
+            window.helpers.mostrarAlerta(nueva ? 'Nota fijada.' : 'Fijación quitada.', 'exito');
+            d.notas = await window.notasRepository.listar(d.usuario.id, 'personal');
+            this._listaNotasCap(raiz, libro, capitulo, d);
+          } catch (e) { window.helpers.mostrarAlerta(e.message || 'Error al fijar.', 'error'); }
+        };
       });
       cont.querySelectorAll('[data-del]').forEach((b) => {
         b.onclick = async () => {
@@ -246,10 +265,11 @@
         <div class="o-contenedor o-pila o-pila--lg u-app-shell">
           <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
           <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
-          <div class="tarjeta-capitulo o-pila" style="gap:var(--espaciado-sm)">
+          <div class="tarjeta-capitulo o-pila${nota.fijada ? ' tarjeta-capitulo--fijada' : ''}" style="gap:var(--espaciado-sm)">
             <div class="o-flecha o-flecha--between">
-              <span class="u-fw-600">${E(titulo)}</span>
-              <div class="o-flecha" style="gap:4px">
+              <span class="u-fw-600" style="display:flex;align-items:center;gap:6px">${nota.fijada ? `<span class="nota-pin-icono" title="Nota fijada">${I('pin')}</span>` : ''}${E(titulo)}</span>
+              <div class="o-flecha nota-acciones">
+                <button class="btn-icono" id="btnPin" aria-label="${nota.fijada ? 'Quitar fijación' : 'Fijar nota'}">${nota.fijada ? I('pin-off') : I('pin')}</button>
                 <button class="btn-icono" id="btnEdit" aria-label="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
                 <button class="btn-icono btn-icono--peligro" id="btnDel" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
               </div>
@@ -261,6 +281,15 @@
 
       raiz.querySelector('#btnV').onclick = () => this._listaNotasCap(raiz, libro, capitulo, d);
       this._conectarGestoVolver(raiz, () => this._listaNotasCap(raiz, libro, capitulo, d));
+      raiz.querySelector('#btnPin').onclick = async () => {
+        const nueva = nota.fijada ? false : true;
+        try {
+          await window.notasRepository.fijar(nota.id, nueva);
+          nota.fijada = nueva;
+          window.helpers.mostrarAlerta(nueva ? 'Nota fijada.' : 'Fijación quitada.', 'exito');
+          this._verNota(raiz, nota, d);
+        } catch (e) { window.helpers.mostrarAlerta(e.message || 'Error al fijar.', 'error'); }
+      };
       raiz.querySelector('#btnEdit').onclick = () => this._editarNota(raiz, nota, d);
       raiz.querySelector('#btnDel').onclick = async () => {
         const ok = await window.helpers.confirmar('¿Eliminar esta nota personal?', { titulo: 'Eliminar nota', textoConfirmar: 'Eliminar' });

@@ -612,9 +612,9 @@
             const m = evalNotas[ex.id];
             fila.push(m && m[a.id] != null ? m[a.id] : '');
           });
-          // Media eval
-          const ns = (e.examenes || []).map(ex => notasPorExamen[ex.id] && notasPorExamen[ex.id][a.id]).filter(n => n != null);
-          fila.push(ns.length ? redondear(ns.reduce((s, n) => s + n, 0) / ns.length) : '');
+          // Media eval (usa la misma media ponderada que la interfaz y el PDF)
+          const mediaEval = mediaPonderada(e, a.id, notasPorExamen);
+          fila.push(mediaEval != null ? mediaEval : '');
         });
         sueltos.forEach(x => {
           const m = notasPorExamen[x.id];

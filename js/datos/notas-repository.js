@@ -14,26 +14,44 @@
     await window.cacheDatos.set(claveLista(usuarioId, tipo), lista);
   }
 
+  // La migración 019 puede estar parcialmente aplicada (faltan fijada/pendiente_sync).
+  // Estas funciones ordenan/limpian sin depender de esas columnas para que la app
+  // siga funcionando aunque la migración aún no se haya ejecutado.
+  function _ordenarNotas(lista) {
+    return [...(lista || [])].sort((a, b) => {
+      if (!!a.fijada !== !!b.fijada) return a.fijada ? -1 : 1;
+      return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
+    });
+  }
+  function _sinPendienteSync(objeto) {
+    const copia = { ...objeto };
+    delete copia.pendiente_sync;
+    return copia;
+  }
+
   window.notasRepository = {
     /* Listar notas de un usuario. tipo: 'personal' | 'sesion' | undefined (todas) */
     async listar(usuarioId, tipo) {
       if (!sb()) {
         const todas = await _leerCache(usuarioId, 'todas');
-        return tipo ? todas.filter(n => (n.tipo || 'personal') === tipo) : todas;
+        return _ordenarNotas(tipo ? todas.filter(n => (n.tipo || 'personal') === tipo) : todas);
       }
       try {
         let q = sb().from('notas_capitulo')
           .select('*')
           .eq('usuario_id', usuarioId);
         if (tipo) q = q.eq('tipo', tipo);
+        // No ordenar por 'fijada' en el servidor: si la columna no existe (migración
+        // 019 parcial) la consulta entera falla y la lista queda vacía. Se ordena en cliente.
         q = q.order('creado_en', { ascending: false });
-        const { data } = await q;
-        const lista = data || [];
+        const { data, error } = await q;
+        if (error) throw error;
+        const lista = _ordenarNotas(data || []);
         await _escribirCache(usuarioId, 'todas', lista);
-        return tipo ? lista : lista;
+        return lista;
       } catch (e) {
         const todas = await _leerCache(usuarioId, 'todas');
-        return tipo ? todas.filter(n => (n.tipo || 'personal') === tipo) : todas;
+        return _ordenarNotas(tipo ? todas.filter(n => (n.tipo || 'personal') === tipo) : todas);
       }
     },
 
@@ -83,24 +101,43 @@
       return this._upsert(notaBase, null, usuarioId);
     },
 
+    /* Fijar / desfijar una nota (aparece primero en la lista) */
+    async fijar(id, fijada) {
+      if (!sb()) throw new Error('Sin conexión');
+      try {
+        const { error } = await sb().from('notas_capitulo').update({ fijada: !!fijada }).eq('id', id);
+        if (error) throw error;
+      } catch (e) {
+        // Si la columna fijada no existe (migración 019 pendiente), la fijación
+        // no se puede persistir: se informa con un mensaje claro en lugar de fallar silencioso.
+        if (e && e.code === '42703') {
+          throw new Error('Fijar notas requiere aplicar la migración 019 en la base de datos.');
+        }
+        throw new Error('No se pudo actualizar la nota: ' + (e.message || e));
+      }
+    },
+
     async _upsert(notaBase, id, usuarioId) {
       const esUpdate = !!id;
+      // No enviar pendiente_sync al servidor: si la columna no existe (migración 019
+      // parcial) el insert/update entero falla y la nota se pierde en la cola offline.
+      const payload = _sinPendienteSync(notaBase);
       if (!sb() || !navigator.onLine) {
         const notaLocal = { ...notaBase, id: id || 'local_' + Date.now() };
         const lista = await _leerCache(usuarioId, 'todas');
         const idx = lista.findIndex(n => n.id === notaLocal.id);
         if (idx >= 0) lista[idx] = notaLocal; else lista.unshift(notaLocal);
-        await _escribirCache(usuarioId, 'todas', lista);
-        window.colaSync.encolar('upsert', 'notas_capitulo', notaBase, { onConflict: 'id' });
+        await _escribirCache(usuarioId, 'todas', _ordenarNotas(lista));
+        window.colaSync.encolar('upsert', 'notas_capitulo', payload, { onConflict: 'id' });
         return notaLocal.id;
       }
       try {
         let data, error;
         if (esUpdate) {
-          const r = await sb().from('notas_capitulo').update(notaBase).eq('id', id).select('*').single();
+          const r = await sb().from('notas_capitulo').update(payload).eq('id', id).select('*').single();
           data = r.data; error = r.error;
         } else {
-          const r = await sb().from('notas_capitulo').insert(notaBase).select('*').single();
+          const r = await sb().from('notas_capitulo').insert(payload).select('*').single();
           data = r.data; error = r.error;
         }
         if (error) throw error;
@@ -108,14 +145,14 @@
         const fresca = { ...data, pendiente_sync: false };
         const idx = lista.findIndex(n => n.id === fresca.id);
         if (idx >= 0) lista[idx] = fresca; else lista.unshift(fresca);
-        await _escribirCache(usuarioId, 'todas', lista);
+        await _escribirCache(usuarioId, 'todas', _ordenarNotas(lista));
         return fresca.id;
       } catch (e) {
         const notaLocal = { ...notaBase, id: id || 'local_' + Date.now() };
         const lista = await _leerCache(usuarioId, 'todas');
         lista.unshift(notaLocal);
-        await _escribirCache(usuarioId, 'todas', lista);
-        window.colaSync.encolar('upsert', 'notas_capitulo', notaBase, { onConflict: 'id' });
+        await _escribirCache(usuarioId, 'todas', _ordenarNotas(lista));
+        window.colaSync.encolar('upsert', 'notas_capitulo', payload, { onConflict: 'id' });
         return notaLocal.id;
       }
     },

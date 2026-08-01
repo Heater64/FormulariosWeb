@@ -293,8 +293,10 @@
   border-radius: var(--radio-sm);
   background: var(--color-acento-soft);
   color: var(--color-acento);
+  font: inherit;
   font-size: var(--texto-xs);
   font-weight: 600;
+  line-height: 1.4;
   cursor: pointer;
   transition: background var(--transicion-rapida), color var(--transicion-rapida), transform var(--transicion-rapida);
   border: 1px solid transparent;
@@ -314,6 +316,216 @@
 
 .explorar__ref:active {
   transform: scale(0.94);
+}
+
+.explorar__ref--cumplimiento {
+  background: var(--color-exito-soft, rgba(16, 185, 129, 0.12));
+  color: var(--color-exito, #10b981);
+}
+
+.explorar__ref--cumplimiento:hover {
+  background: var(--color-exito, #10b981);
+  color: #fff;
+}
+
+/* ===== Head body (flex 1 dentro del header) ===== */
+
+.explorar__card-head-body {
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== Contador en títulos de sección ===== */
+
+.explorar__seccion-count {
+  margin-left: 8px;
+  min-width: 22px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 7px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+/* ===== Badge de rey (etiqueta según calificación) ===== */
+
+.explorar__rey-badge {
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-width: 45%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 10px;
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  border: 1px solid transparent;
+}
+
+.explorar__rey-badge--fiel {
+  background: var(--color-exito-soft, rgba(16, 185, 129, 0.12));
+  color: var(--color-exito, #10b981);
+}
+
+.explorar__rey-badge--mixto {
+  background: var(--color-aviso-soft, rgba(245, 158, 11, 0.14));
+  color: var(--color-aviso, #f59e0b);
+}
+
+.explorar__rey-badge--infiel {
+  background: var(--color-error-soft, rgba(239, 68, 68, 0.12));
+  color: var(--color-error, #ef4444);
+}
+
+/* ===== Estrellas de calificación ===== */
+
+.explorar__rey-estrellas {
+  display: inline-flex;
+  gap: 2px;
+  margin-top: var(--espaciado-xs);
+}
+
+.explorar__rey-estrella {
+  display: inline-flex;
+  color: var(--color-borde);
+}
+
+.explorar__rey-estrella svg {
+  width: 14px;
+  height: 14px;
+}
+
+.explorar__rey-estrella--activa {
+  color: var(--color-aviso, #f59e0b);
+}
+
+/* ===== Chips de datos (personajes, lugares, objetos) ===== */
+
+.explorar__datos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xxs);
+  margin-top: var(--espaciado-sm);
+}
+
+.explorar__dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: var(--espaciado-xxs) var(--espaciado-xs);
+  border-radius: var(--radio-sm);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-xs);
+  font-weight: 500;
+}
+
+.explorar__dato svg {
+  width: 12px;
+  height: 12px;
+  flex-shrink: 0;
+  color: var(--color-acento);
+}
+
+/* ===== Detalle suave (objetos: segunda línea) ===== */
+
+.explorar__card-detalle--suave {
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+}
+
+/* ===== Nombre destacado en timeline (genealogía) ===== */
+
+.explorar__timeline-nombre--destacado {
+  color: var(--color-acento);
+  font-size: var(--texto-md);
+}
+
+/* ===== Barra de resultados de búsqueda ===== */
+
+.explorar__resultados {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  margin-bottom: var(--espaciado-md);
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.explorar__resultados svg {
+  width: 14px;
+  height: 14px;
+}
+
+.explorar__resultados strong {
+  font-weight: 800;
+}
+
+/* ===== Skeleton de carga ===== */
+
+.explorar__skeleton {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: var(--espaciado-sm);
+}
+
+.explorar__skeleton-card {
+  height: 150px;
+  border-radius: var(--radio-xl);
+  background: linear-gradient(90deg, var(--color-fondo-alt) 25%, var(--color-fondo-tarjeta) 50%, var(--color-fondo-alt) 75%);
+  background-size: 200% 100%;
+  animation: explorarSkeleton 1.4s ease-in-out infinite;
+}
+
+@keyframes explorarSkeleton {
+  0% { background-position: 200% 0; }
+  100% { background-position: -200% 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .explorar__skeleton-card {
+    animation: none;
+  }
+}
+
+/* ===== Dots del hero de curiosidades ===== */
+
+.curiosidades-hero__dots {
+  position: absolute;
+  bottom: var(--espaciado-md);
+  right: var(--espaciado-lg);
+  display: flex;
+  gap: 6px;
+}
+
+.curiosidades-hero__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: var(--radio-pill);
+  background: rgba(255, 255, 255, 0.35);
+  transition: width var(--transicion-normal), background var(--transicion-normal);
+}
+
+.curiosidades-hero__dot--activo {
+  width: 18px;
+  background: rgba(255, 255, 255, 0.95);
+}
+
+@media (max-width: 480px) {
+  .curiosidades-hero__dots {
+    right: var(--espaciado-lg);
+    bottom: var(--espaciado-sm);
+  }
 }
 
 /* ===== Tags ===== */
@@ -574,6 +786,209 @@
   font-size: var(--texto-sm);
   color: var(--color-texto-terciario);
   margin: 0;
+}
+
+/* ===== Curiosidades (rediseño) ===== */
+
+.curiosidades-hero {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  gap: var(--espaciado-md);
+  align-items: flex-start;
+  background: linear-gradient(135deg, var(--color-acento) 0%, var(--color-acento-hover) 100%);
+  border-radius: var(--radio-xl);
+  padding: var(--espaciado-xl);
+  margin-bottom: var(--espaciado-lg);
+  color: var(--color-texto-acento);
+  box-shadow: 0 8px 24px -10px rgba(37, 99, 235, 0.5);
+  animation: explorarFadeIn var(--transicion-normal);
+}
+
+.curiosidades-hero::after {
+  content: '';
+  position: absolute;
+  right: -40px;
+  top: -40px;
+  width: 160px;
+  height: 160px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.12);
+  pointer-events: none;
+}
+
+.curiosidades-hero__emoji {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 2rem;
+  background: rgba(255, 255, 255, 0.18);
+  border-radius: var(--radio-lg);
+}
+
+.curiosidades-hero__body {
+  flex: 1;
+  min-width: 0;
+}
+
+.curiosidades-hero__badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radio-pill);
+  background: rgba(255, 255, 255, 0.18);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.curiosidades-hero__badge svg {
+  width: 14px;
+  height: 14px;
+}
+
+.curiosidades-hero__titulo {
+  margin: var(--espaciado-sm) 0 var(--espaciado-xxs);
+  font-size: var(--texto-lg);
+  font-weight: 800;
+  color: #fff;
+  line-height: var(--altura-linea-titulo);
+}
+
+.curiosidades-hero__texto {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: rgba(255, 255, 255, 0.92);
+  line-height: var(--altura-linea-cuerpo);
+}
+
+.curiosidades-hero .explorar__ref {
+  background: rgba(255, 255, 255, 0.92);
+  color: var(--color-acento);
+}
+
+.curiosidades-hero .explorar__ref:hover {
+  background: #fff;
+}
+
+.curiosidades-hero .explorar__card-refs {
+  margin-top: var(--espaciado-sm);
+}
+
+/* ===== Chips de categorías ===== */
+
+.curiosidades-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xxs);
+  margin-bottom: var(--espaciado-lg);
+}
+
+.curiosidades-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  border-radius: var(--radio-pill);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.curiosidades-chip:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.curiosidades-chip:active {
+  transform: scale(0.95);
+}
+
+.curiosidades-chip__emoji {
+  font-size: 1rem;
+  line-height: 1;
+}
+
+.curiosidades-chip__count {
+  min-width: 20px;
+  height: 20px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 6px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+  font-size: 0.7rem;
+  font-weight: 700;
+}
+
+/* ===== Secciones e ítems ===== */
+
+.curiosidades-seccion {
+  scroll-margin-top: var(--espaciado-lg);
+}
+
+.curiosidades-seccion__emoji {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+.curiosidades-seccion__count {
+  margin-left: auto;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  background: var(--color-fondo-alt);
+  padding: 2px 10px;
+  border-radius: var(--radio-pill);
+  font-weight: 700;
+}
+
+.curiosidades-item {
+  position: relative;
+  overflow: hidden;
+}
+
+.curiosidades-item::before {
+  content: attr(data-emoji);
+  position: absolute;
+  right: -6px;
+  top: -14px;
+  font-size: 4rem;
+  opacity: 0.08;
+  pointer-events: none;
+  transform: rotate(-12deg);
+}
+
+.curiosidades-item__emoji {
+  font-size: 1.8rem;
+  line-height: 1;
+  margin-bottom: var(--espaciado-xs);
+}
+
+@media (max-width: 480px) {
+  .curiosidades-hero {
+    flex-direction: column;
+    padding: var(--espaciado-lg);
+  }
+
+  .curiosidades-hero__emoji {
+    width: 48px;
+    height: 48px;
+    font-size: 1.6rem;
+  }
 }
 
 /* ===== Responsive ===== */
