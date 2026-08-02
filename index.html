@@ -105,6 +105,7 @@
   <link rel="stylesheet" href="css/05-componentes/_pregunta-examen.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-pregunta.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
+  <link rel="stylesheet" href="css/05-componentes/_memorizacion-juego.css">
   <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
   <link rel="stylesheet" href="css/05-componentes/_update-card.css">
 
@@ -139,8 +140,10 @@
   <link rel="stylesheet" href="css/05-componentes/_sugerencias.css">
   <link rel="stylesheet" href="css/05-componentes/_explorar.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
+  <link rel="stylesheet" href="css/05-componentes/_editor-dibujo.css">
   <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
   <link rel="stylesheet" href="css/05-componentes/_splash.css">
+  <link rel="stylesheet" href="css/05-componentes/_admin-panel.css">
 
   <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -169,6 +172,7 @@
   <script src="js/datos/progreso-repository.js"></script>
   <script src="js/datos/examenes-repository.js"></script>
   <script src="js/datos/memorizacion-repository.js"></script>
+  <script src="js/datos/sembrador-memorizacion.js"></script>
   <script src="js/datos/notas-repository.js"></script>
   <script src="js/datos/sugerencias-repository.js"></script>
   <script src="js/datos/admin-repository.js"></script>
@@ -183,6 +187,7 @@
   <script src="js/utilidades/memoria.js"></script>
   <script src="js/utilidades/accesibilidad.js"></script>
   <script src="js/componentes/editor-imagen.js"></script>
+  <script src="js/componentes/editor-dibujo.js"></script>
   <!-- Cargado como módulo: el archivo usa import() dinámico (esm.sh) y Vite le inyecta
        un import de /@vite/client al inicio; como script clásico lanzaba
        'Cannot use import statement outside a module' y el editor quedaba roto. -->
@@ -214,6 +219,7 @@
   <script src="js/vistas/vista-examen-tomar.js"></script>
   <script src="js/vistas/vista-examen-corregir.js"></script>
   <script src="js/vistas/vista-calificaciones.js"></script>
+  <script src="js/dominio/ejercicios-memorizacion.js"></script>
   <script src="js/vistas/vista-memorizacion.js"></script>
   <script src="js/vistas/vista-notas.js"></script>
   <script src="js/vistas/vista-progreso.js"></script>

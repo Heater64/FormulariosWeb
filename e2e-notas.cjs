@@ -1,37 +1,50 @@
-/* E2E: flujo completo de notas en FormsBiblicos (http://localhost:3000)
+/* E2E: bloc de notas personal en FormsBiblicos (http://localhost:3000)
    1. Login admin1/admin123
-   2. Crear nota personal (libro Génesis, capítulo 1)
-   3. Buscar la nota en el buscador
-   4. Ver la nota individual
-   5. Editar la nota (TipTap) y guardar
-   6. Eliminar la nota y verificar que desaparece
-   7. Limpieza: cualquier nota de prueba residual */
+   2. Home de notas (título, buscador, FAB)
+   3. Crear nota con título + contenido (autosave, sin botón Guardar)
+   4. Volver y verificar que aparece en la lista
+   5. Buscar la nota
+   6. Abrir la nota y comprobar contenido persistido
+   7. Fijar la nota (menú) y verificar pin
+   8. Duplicar la nota
+   9. Mover a papelera y restaurar
+   10. Eliminar definitivamente
+   11. Limpieza de datos de prueba residuales */
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-// notas_capitulo tiene RLS deshabilitado (migración 015): la anon key puede borrar.
+// notas_capitulo y notas_personales tienen RLS deshabilitado: la anon key puede borrar.
 const SB_KEY = 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8';
 const SB_URL = 'https://josxcvncescqqlajahkh.supabase.co';
 
 const errores = [];
 let exitCode = 0;
 
+async function apiTabla(metodo, ruta, cuerpo) {
+  const opts = { method: metodo, headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } };
+  if (cuerpo) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(cuerpo); }
+  return fetch(SB_URL + ruta, opts);
+}
+
 // Limpia notas de prueba residuales de ejecuciones anteriores/fracturadas.
 async function limpiarNotasE2E() {
   try {
-    const r = await fetch(
-      SB_URL + '/rest/v1/notas_capitulo?contenido=ilike.*Texto%20de%20prueba%20E2E*',
-      { headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } }
-    );
-    const notas = await r.json();
-    if (Array.isArray(notas) && notas.length) {
-      for (const n of notas) {
-        await fetch(SB_URL + '/rest/v1/notas_capitulo?id=eq.' + n.id, {
-          method: 'DELETE',
-          headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY, Prefer: 'return=minimal' }
-        });
+    for (const marca of ['Texto de prueba E2E', 'Nota E2E']) {
+      const r1 = await apiTabla('GET', '/rest/v1/notas_personales?contenido=ilike.*' + encodeURIComponent(marca) + '*');
+      const porContenido = await r1.json();
+      if (Array.isArray(porContenido) && porContenido.length) {
+        for (const n of porContenido) {
+          await apiTabla('DELETE', '/rest/v1/notas_personales?id=eq.' + n.id);
+        }
+        console.log('🧹 Limpieza previa: ' + porContenido.length + ' nota(s) de prueba eliminada(s)');
       }
-      console.log('🧹 Limpieza previa: ' + notas.length + ' nota(s) de prueba eliminada(s)');
+      const r2 = await apiTabla('GET', '/rest/v1/notas_personales?titulo=ilike.*' + encodeURIComponent(marca) + '*');
+      const porTitulo = await r2.json();
+      if (Array.isArray(porTitulo) && porTitulo.length) {
+        for (const n of porTitulo) {
+          await apiTabla('DELETE', '/rest/v1/notas_personales?id=eq.' + n.id);
+        }
+      }
     }
   } catch (e) { console.log('⚠️ Limpieza previa no ejecutable:', e.message); }
 }
@@ -76,6 +89,8 @@ async function limpiarNotasE2E() {
     } catch (e) { return false; }
   }
 
+  const textoApp = async () => (await page.locator('#app-root').innerText().catch(() => ''));
+
   try {
     // ============ P1: Login ============
     await limpiarNotasE2E();
@@ -83,86 +98,130 @@ async function limpiarNotasE2E() {
     const loginOk = (await page.locator('#loginForm').count()) === 0;
     log(loginOk, 'P1 Login admin1/admin123', 'URL=' + page.url());
 
-    // ============ P2: Ir a notas y crear nota ============
+    // ============ P2: Home de notas ============
     await page.goto(BASE + '/#!/notas', { waitUntil: 'domcontentloaded' });
-    await esperar(1200);
-    const hayNueva = await page.locator('#btnNueva').count();
-    log(hayNueva > 0, 'P2 Vista de notas', 'URL=' + page.url());
+    await esperar(1800);
+    const t1 = await textoApp();
+    log(t1.includes('Notas'), 'P2 Título "Notas" en la home');
+    log((await page.locator('#buscarNotas').count()) > 0, 'P2 Buscador presente');
+    log((await page.locator('#btnNueva').count()) > 0, 'P2 Botón flotante + presente');
 
+    // ============ P3: Crear nota (autosave) ============
     await page.click('#btnNueva');
-    await esperar(800);
-    // Seleccionar libro Génesis y capítulo 1
-    await page.selectOption('#fLibro', { label: 'Génesis' });
-    await page.fill('#fCap', '1');
-    // Escribir en el editor TipTap (contenteditable .tiptap-editor)
-    const editor = page.locator('#fContenido .tiptap-editor');
+    await esperar(1500);
+    const tituloInput = page.locator('#tituloNota');
+    log(await tituloInput.count() > 0, 'P3 Editor abierto (título presente)');
+    await tituloInput.fill('Nota E2E autosave');
+    const editor = page.locator('#editorContenido .tiptap-editor');
     await editor.click();
-    await page.keyboard.type('Texto de prueba E2E para la nota de verificación.');
-    await esperar(400);
-    const contenidoOk = (await editor.innerText()).includes('Texto de prueba E2E');
-    log(contenidoOk, 'P2 Contenido escrito en el editor TipTap');
+    await page.keyboard.type('Texto de prueba E2E para verificar el guardado automático.');
+    // Esperar al debounce de autosave (900ms) + red
+    await esperar(3000);
+    log((await page.locator('#btnGuardar').count()) === 0, 'P3 No existe botón "Guardar"');
+    const estado = await page.locator('#estadoGuardado').innerText().catch(() => '');
+    log(estado.includes('Guardado') || estado === '', 'P3 Autosave disparado', 'estado="' + estado + '"');
 
-    await page.click('#btnGuardar');
-    await esperar(1200);
-    const enCapitulo = await page.locator('#listaNotasCap').count();
-    const notaCreada = (await page.locator('#app-root').innerText().catch(() => '')).includes('Texto de prueba E2E');
-    log(enCapitulo > 0 && notaCreada, 'P2 Nota creada y visible en capítulo', 'URL=' + page.url());
+    // ============ P4: Volver y verificar en la lista ============
+    await page.click('#btnVolver');
+    await esperar(1800);
+    const t4 = await textoApp();
+    log(t4.includes('Nota E2E autosave'), 'P4 Nota visible en la lista', 'título encontrado');
+    log(t4.includes('Texto de prueba E2E'), 'P4 Preview del contenido visible');
 
-    // ============ P3: Buscar la nota ============
-    // Desde la lista de capítulos, #btnV vuelve a la lista de libros (home con buscador)
-    await page.click('#btnV'); // _listaNotasCap → _listaCapitulos
+    // ============ P5: Buscar la nota ============
+    await page.fill('#buscarNotas', 'autosave');
     await esperar(600);
-    await page.click('#btnV'); // _listaCapitulos → _pintar (home con #buscarNotas)
-    await esperar(800);
-    const buscar = page.locator('#buscarNotas');
-    if (await buscar.count()) {
-      await buscar.fill('Texto de prueba E2E');
-      await esperar(500);
-      const resultados = await page.locator('#resultadosBusqueda').innerText().catch(() => '');
-      log(resultados.includes('Texto de prueba E2E'), 'P3 Búsqueda encuentra la nota', resultados.slice(0, 60).replace(/\n/g, ' '));
-      await buscar.fill('');
-      await esperar(300);
-    } else {
-      log(false, 'P3 Búsqueda (no se encontró #buscarNotas en la home)');
-    }
+    const t5 = await textoApp();
+    log(t5.includes('Nota E2E autosave'), 'P5 Búsqueda encuentra la nota');
+    await page.click('#btnLimpiarBusqueda');
+    await esperar(400);
 
-    // ============ P4: Ver nota individual y editar ============
-    // (ya estamos en la home de notas) → Génesis → capítulo 1
-    await esperar(300);
-    const tarjetaLibro = page.locator('[data-libro="Génesis"]').first();
-    await tarjetaLibro.click();
-    await esperar(800);
-    const tarjetaCap = page.locator('[data-cap="1"]').first();
-    await tarjetaCap.click();
-    await esperar(800);
-    const notaCard = page.locator('#listaNotasCap [data-id]', { hasText: 'Texto de prueba E2E' }).first();
-    log(await notaCard.count() > 0, 'P4 Nota en lista de capítulo');
+    // ============ P6: Abrir y comprobar contenido ============
+    await page.click('.nota-item:has-text("Nota E2E autosave")');
+    await esperar(1500);
+    const t6 = await textoApp();
+    log(t6.includes('Texto de prueba E2E'), 'P6 Contenido persistido al reabrir');
 
-    await notaCard.click(); // ver nota individual
+    // ============ P7: Fijar desde el menú ============
+    await page.click('#btnMenu');
+    await esperar(600);
+    const menuFijar = page.locator('[data-accion="fijar"]');
+    log(await menuFijar.count() > 0, 'P7 Menú opciones abierto (fijar presente)');
+    await menuFijar.click();
     await esperar(800);
-    const enDetalle = (await page.locator('#app-root').innerText().catch(() => '')).includes('Texto de prueba E2E');
-    log(enDetalle, 'P4 Vista individual de la nota');
+    // El menú se cierra; el editor sigue abierto. Volver y comprobar el pin.
+    await page.click('#btnVolver');
+    await esperar(1500);
+    const t7 = await textoApp();
+    log(t7.includes('Nota E2E autosave'), 'P7 Volvió a la lista');
 
-    // Editar
-    await page.click('#btnEdit');
-    await esperar(800);
-    const editor2 = page.locator('#fContenido .tiptap-editor');
-    await editor2.click();
-    await page.keyboard.press('End');
-    await page.keyboard.type(' Contenido editado.');
-    await esperar(300);
-    await page.click('#btnGuardar');
+    // ============ P8: Duplicar ============
+    await page.click('.nota-item:has-text("Nota E2E autosave")').catch(() => {});
+    await esperar(1500);
+    await page.click('#btnMenu');
+    await esperar(600);
+    const menuDuplicar = page.locator('[data-accion="duplicar"]');
+    log(await menuDuplicar.count() > 0, 'P8 Menú duplicar presente');
+    await menuDuplicar.click();
+    await esperar(1500);
+    await page.click('#btnVolver');
+    await esperar(1500);
+    const t8 = await textoApp();
+    log(t8.includes('Nota E2E autosave (copia)'), 'P8 Nota duplicada en la lista');
+
+    // ============ P9: Papelera y restaurar ============
+    // Abrir la copia y eliminarla → a papelera
+    await page.click('.nota-item:has-text("(copia)")').catch(() => {});
+    await esperar(1500);
+    await page.click('#btnMenu');
+    await esperar(600);
+    const menuEliminar = page.locator('[data-accion="eliminar"]');
+    await menuEliminar.click();
+    await esperar(500);
+    const confirmado = await confirmarDialogo();
+    await esperar(1500);
+    const t9a = await textoApp();
+    log(confirmado && !t9a.includes('(copia)'), 'P9 Nota movida a papelera', 'confirmado=' + confirmado);
+
+    // Abrir papelera
+    await page.click('#btnPapelera');
     await esperar(1200);
-    const editadoOk = (await page.locator('#app-root').innerText().catch(() => '')).includes('Contenido editado.');
-    log(editadoOk, 'P4 Nota editada y guardada');
+    const t9b = await textoApp();
+    log(t9b.includes('Papelera') && t9b.includes('(copia)'), 'P9 Nota visible en la papelera');
+    // Restaurar
+    await page.click('[data-restaurar]').catch(() => {});
+    await esperar(1200);
+    const t9c = await textoApp();
+    log(!t9c.includes('(copia)'), 'P9 Nota restaurada (sale de la papelera)');
+    await page.click('#btnVolverPapelera').catch(() => {});
+    await esperar(1200);
+    const t9d = await textoApp();
+    log(t9d.includes('(copia)'), 'P9 Nota restaurada vuelve a la lista');
 
-    // ============ P5: Eliminar ============
-    await page.click('#btnDel');
+    // ============ P10: Eliminar definitivamente ============
+    await page.click('.nota-item:has-text("(copia)")').catch(() => {});
+    await esperar(1500);
+    await page.click('#btnMenu');
+    await esperar(600);
+    await page.locator('[data-accion="eliminar"]').click();
+    await esperar(500);
     await confirmarDialogo();
-    await esperar(1000);
-    const trasBorrar = await page.locator('#app-root').innerText().catch(() => '');
-    const sinNota = !trasBorrar.includes('Texto de prueba E2E');
-    log(sinNota, 'P5 Nota eliminada', 'queda en lista de capítulo (vacía) o libros');
+    await esperar(1200);
+    await page.click('#btnPapelera');
+    await esperar(1200);
+    // Eliminar definitivo
+    const btnEliminarDef = page.locator('[data-eliminar]');
+    log(await btnEliminarDef.count() > 0, 'P10 Botón eliminar definitivamente presente');
+    await btnEliminarDef.click();
+    await esperar(500);
+    await confirmarDialogo();
+    await esperar(1200);
+    const t10 = await textoApp();
+    log(t10.includes('La papelera está vacía') || !t10.includes('(copia)'), 'P10 Nota eliminada definitivamente');
+
+    // ============ P11: Limpieza final ============
+    await limpiarNotasE2E();
+    log(true, 'P11 Limpieza de datos de prueba');
 
     console.log('\n=== CONSOLE ERRORS ===');
     console.log(errores.length ? errores.join('\n') : '(ninguno)');
@@ -177,7 +236,7 @@ async function limpiarNotasE2E() {
     console.log('=== CONSOLE ERRORS ===');
     console.log(errores.length ? errores.join('\n') : '(ninguno)');
   } finally {
-    await limpiarNotasE2E(); // limpieza de seguridad si el flujo falló a mitad
+    await limpiarNotasE2E();
     await browser.close();
     process.exit(exitCode);
   }

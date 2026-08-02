@@ -6,5 +6,6 @@
 
 .o-pila--xs { gap: var(--espaciado-xs); }
 .o-pila--sm { gap: var(--espaciado-sm); }
+.o-pila--md { gap: var(--espaciado-md); }
 .o-pila--lg { gap: var(--espaciado-lg); }
 .o-pila--xl { gap: var(--espaciado-xl); }

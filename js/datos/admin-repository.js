@@ -160,6 +160,256 @@
     async guardarConfiguracion(clave, valor) {
       if (!sb()) return;
       await sb().from('configuracion').upsert({ clave, valor, actualizado_en: new Date().toISOString() }, { onConflict: 'clave' });
+    },
+
+    // ============================================================
+    // NUEVO PANEL: Métricas de exámenes (intentos, pendientes, nota media)
+    // Defensivo: si la consulta falla devuelve un mapa vacío.
+    // ============================================================
+    async obtenerResumenExamenes() {
+      if (!sb()) return {};
+      try {
+        const { data } = await sb().from('intentos_examen_personalizado').select('examen_id, estado, nota');
+        const resumen = {};
+        (data || []).forEach(i => {
+          if (!resumen[i.examen_id]) resumen[i.examen_id] = { intentos: 0, pendientes: 0, notas: [] };
+          resumen[i.examen_id].intentos++;
+          if (i.estado === 'pendiente' || i.estado === 'en_progreso') resumen[i.examen_id].pendientes++;
+          if (i.nota != null && !isNaN(Number(i.nota))) resumen[i.examen_id].notas.push(Number(i.nota));
+        });
+        const out = {};
+        Object.keys(resumen).forEach(k => {
+          const r = resumen[k];
+          out[k] = { intentos: r.intentos, pendientes: r.pendientes, media: r.notas.length ? (r.notas.reduce((a, b) => a + b, 0) / r.notas.length) : null };
+        });
+        return out;
+      } catch (e) { console.warn('No se pudo obtener resumen de exámenes:', e.message); return {}; }
+    },
+
+    // ============================================================
+    // NUEVO PANEL: Exámenes — duplicar, publicar, eliminar
+    // ============================================================
+    async duplicarExamen(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data: ex } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
+      if (!ex) throw new Error('Examen no encontrado');
+      const { data, error } = await sb().from('examenes_personalizados').insert({
+        grupo_id: ex.grupo_id,
+        creado_por: ex.creado_por,
+        titulo: (ex.titulo || 'Examen') + ' (copia)',
+        descripcion: ex.descripcion || '',
+        referencia_biblica: ex.referencia_biblica || null,
+        preguntas: ex.preguntas || [],
+        puntos_totales: ex.puntos_totales || 0,
+        fecha_limite: null,
+        estado: 'borrador',
+        publicado: false,
+        materia: ex.materia || '',
+        tema: ex.tema || '',
+        profesor: ex.profesor || '',
+        color: ex.color || '#673ab7',
+        icono: ex.icono || '📘',
+        portada: ex.portada || '',
+        config: ex.config || {}
+      }).select().single();
+      if (error) throw error;
+      return data;
+    },
+    async publicarExamen(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data, error } = await sb().from('examenes_personalizados').update({ estado: 'publicado', publicado: true, actualizado_en: new Date().toISOString() }).eq('id', id).select().single();
+      if (error) throw error;
+      return data;
+    },
+    async eliminarExamen(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { error } = await sb().from('examenes_personalizados').delete().eq('id', id);
+      if (error) throw error;
+    },
+
+    // ============================================================
+    // NUEVO PANEL: Backups (tabla `backups`, migración 022)
+    // ============================================================
+    async listarBackups() {
+      if (!sb()) return [];
+      try {
+        const { data } = await sb().from('backups').select('id, nombre, tamano_bytes, estado, notas, creado_en').order('creado_en', { ascending: false }).limit(30);
+        return data || [];
+      } catch (e) { console.warn('No se pudieron listar backups:', e.message); return []; }
+    },
+    async crearBackup(actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const [perfiles, grupos, examenes, configuracion, sugerencias] = await Promise.all([
+        sb().from('perfiles').select('*'),
+        sb().from('grupos').select('*'),
+        sb().from('examenes_personalizados').select('*'),
+        sb().from('configuracion').select('*'),
+        sb().from('sugerencias').select('*')
+      ]);
+      const snapshot = {
+        app: 'FormsBiblicos',
+        version: '1.0.1',
+        creado_en: new Date().toISOString(),
+        perfiles: perfiles.data || [],
+        grupos: grupos.data || [],
+        examenes: examenes.data || [],
+        configuracion: configuracion.data || [],
+        sugerencias: sugerencias.data || []
+      };
+      const nombre = 'backup-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-');
+      const json = JSON.stringify(snapshot);
+      const tamanoBytes = new Blob([json]).size;
+      const { data, error } = await sb().from('backups').insert({
+        creado_por: actorId,
+        nombre,
+        tamano_bytes: tamanoBytes,
+        snapshot,
+        estado: 'ok'
+      }).select().single();
+      if (error) throw error;
+      await this.registrarAuditoria('backup:crear', `Copia de seguridad "${nombre}" creada (${Math.round(tamanoBytes / 1024)} KB)`, actorId);
+      return data;
+    },
+    async eliminarBackup(id, actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      await sb().from('backups').delete().eq('id', id);
+      await this.registrarAuditoria('backup:eliminar', 'Copia de seguridad eliminada', actorId);
+    },
+    async restaurarBackup(id, actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data: b } = await sb().from('backups').select('*').eq('id', id).single();
+      if (!b || !b.snapshot) throw new Error('Copia no encontrada');
+      const s = b.snapshot || {};
+      const grupos = Array.isArray(s.grupos) ? s.grupos : [];
+      const perfiles = Array.isArray(s.perfiles) ? s.perfiles : [];
+      const examenes = Array.isArray(s.examenes) ? s.examenes : [];
+      // Restaurar grupos (upsert)
+      for (const g of grupos) {
+        if (!g || !g.id) continue;
+        await sb().from('grupos').upsert({
+          id: g.id,
+          nombre: g.nombre || 'Grupo',
+          descripcion: g.descripcion || '',
+          admin_id: g.admin_id || null,
+          creado_en: g.creado_en || new Date().toISOString()
+        }).catch(() => {});
+      }
+      // Restaurar perfiles (upsert; solo password si viene incluida)
+      for (const p of perfiles) {
+        if (!p || !p.id) continue;
+        const ups = {
+          id: p.id,
+          nombre_completo: p.nombre_completo || 'Usuario',
+          username: p.username || ('usuario_' + String(p.id).slice(0, 6)),
+          rol: p.rol || 'usuario',
+          activo: p.activo !== false,
+          grupo_id: p.grupo_id || null,
+          creado_en: p.creado_en || new Date().toISOString()
+        };
+        if (p.password) ups.password = p.password;
+        if (p.foto_perfil) ups.foto_perfil = p.foto_perfil;
+        if (p.preferencias) ups.preferencias = p.preferencias;
+        if (p.ultimo_acceso) ups.ultimo_acceso = p.ultimo_acceso;
+        await sb().from('perfiles').upsert(ups).catch(() => {});
+      }
+      // Restaurar exámenes (upsert)
+      for (const ex of examenes) {
+        if (!ex || !ex.id) continue;
+        await sb().from('examenes_personalizados').upsert(ex).catch(() => {});
+      }
+      await this.registrarAuditoria('backup:restaurar', `Copia "${b.nombre}" restaurada (${perfiles.length} perfiles, ${grupos.length} grupos, ${examenes.length} exámenes)`, actorId);
+      return { perfiles: perfiles.length, grupos: grupos.length, examenes: examenes.length };
+    },
+
+    // ============================================================
+    // NUEVO PANEL: Exportar / Importar datos
+    // ============================================================
+    async exportarDatosJSON() {
+      if (!sb()) return null;
+      const [perfiles, grupos, examenes, configuracion, sugerencias] = await Promise.all([
+        sb().from('perfiles').select('*'),
+        sb().from('grupos').select('*'),
+        sb().from('examenes_personalizados').select('*'),
+        sb().from('configuracion').select('*'),
+        sb().from('sugerencias').select('*')
+      ]);
+      return {
+        app: 'FormsBiblicos',
+        version: '1.0.1',
+        exportado: new Date().toISOString(),
+        perfiles: perfiles.data || [],
+        grupos: grupos.data || [],
+        examenes: examenes.data || [],
+        configuracion: configuracion.data || [],
+        sugerencias: sugerencias.data || []
+      };
+    },
+    // Importa usuarios desde CSV (Nombre,Username,Contraseña,Rol,Grupo).
+    // Devuelve { creados: [usernames], errores: [mensajes] }.
+    async importarUsuariosCSV(texto, actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const lineas = String(texto || '').split(/\r?\n/).map(l => l.trim()).filter(Boolean);
+      if (lineas.length < 2) throw new Error('El archivo no contiene suficientes filas.');
+      const primera = lineas[0].split(',').map(c => c.replace(/^"|"$/g, '').trim().toLowerCase());
+      const tieneCabecera = /nombre|username|usuario|password|contrase|rol|grupo/.test(primera.join(' '));
+      const filas = tieneCabecera ? lineas.slice(1) : lineas;
+      const grupos = await this.listarGrupos();
+      const creados = [];
+      const errores = [];
+      for (const fila of filas) {
+        let username = '';
+        try {
+          const partes = fila.split(',').map(c => c.replace(/^"|"$/g, '').trim());
+          const [nombre, usr, pass, rol, grupoNombre] = partes;
+          username = usr || '';
+          if (!nombre || !usr || !pass) { errores.push((usr || fila.slice(0, 24)) + ': faltan campos (nombre, username, contraseña)'); continue; }
+          const rolOk = ['usuario', 'editor', 'admin'].includes(rol) ? rol : 'usuario';
+          let grupoId = null;
+          if (grupoNombre) {
+            const g = grupos.find(x => String(x.nombre).toLowerCase() === String(grupoNombre).toLowerCase());
+            if (g) grupoId = g.id;
+            else errores.push(usr + ': grupo "' + grupoNombre + '" no existe');
+          }
+          await this.crearUsuario({ nombre_completo: nombre, username: usr, password: pass, rol: rolOk, grupo_id: grupoId });
+          creados.push(usr);
+        } catch (e) {
+          errores.push(username + ': ' + e.message);
+        }
+      }
+      if (creados.length) await this.registrarAuditoria('usuario:importar', `Importados ${creados.length} usuarios desde CSV`, actorId);
+      return { creados, errores };
+    },
+
+    // ============================================================
+    // NUEVO PANEL: Modo mantenimiento (configuracion) y limpieza
+    // ============================================================
+    async obtenerModoMantenimiento() {
+      const c = await this.listarConfiguracion();
+      return c['modo_mantenimiento'] === '1';
+    },
+    async establecerModoMantenimiento(activo, actorId) {
+      await this.guardarConfiguracion('modo_mantenimiento', activo ? '1' : '0');
+      await this.registrarAuditoria('config:mantenimiento', activo ? 'Modo mantenimiento activado' : 'Modo mantenimiento desactivado', actorId);
+    },
+    async limpiarAuditoriaCompleta(actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      await sb().from('auditoria').delete().neq('id', '00000000-0000-0000-0000-000000000000');
+      await this.registrarAuditoria('config:limpiar', 'Auditoría completa vaciada', actorId);
+    },
+    async limpiarSugerenciasRechazadas(actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data } = await sb().from('sugerencias').delete().eq('estado', 'rechazada').select('id');
+      const n = (data || []).length;
+      await this.registrarAuditoria('config:limpiar', `Sugerencias rechazadas eliminadas (${n})`, actorId);
+      return n;
+    },
+    async limpiarIntentosViejos(actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const hace90 = new Date(Date.now() - 90 * 86400000).toISOString();
+      const { data } = await sb().from('intentos_examen_personalizado').delete().lt('creado_en', hace90).eq('estado', 'pendiente').select('id');
+      const n = (data || []).length;
+      await this.registrarAuditoria('config:limpiar', `Intentos pendientes antiguos eliminados (${n})`, actorId);
+      return n;
     }
   };
 })();

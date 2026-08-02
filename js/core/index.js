@@ -29,30 +29,6 @@
       
       // Verificar sesión
       this._verificarSesion();
-      
-      // ============================================================
-      // NUEVO: Inicializar gestor de actualizaciones
-      // ============================================================
-      if (window.updateManager) {
-        // Ya se inicializa en DOMContentLoaded
-        console.log('[App] Gestor de actualizaciones listo');
-      }
-      
-      // ============================================================
-      // NUEVO: Inicializar indicador de conexión
-      // ============================================================
-      if (window.connectionIndicator) {
-        // Ya se inicializa en DOMContentLoaded
-        console.log('[App] Indicador de conexión listo');
-      }
-      
-      // ============================================================
-      // NUEVO: Inicializar sincronización inteligente
-      // ============================================================
-      if (window.syncStatus) {
-        // Ya se inicializa en DOMContentLoaded
-        console.log('[App] Estado de sincronización listo');
-      }
 
       // ============================================================
       // Eventos de autenticación
@@ -79,12 +55,8 @@
         
         this._renderizarBarraNavegacion();
 
-        if (window._loginUI) {
-          await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
-        }
-
-        this._notificarRepasos();
-
+        // Navegar a /estudio ANTES de esperar el welcome (1200ms): evita que un
+        // cambio de ruta del usuario durante el arranque sea sobrescrito.
         const esPrimeraVez = !localStorage.getItem('fb_setup_completado') && 
                             !usuario.preferencias?.tema && 
                             usuario.preferencias?.tema !== null;
@@ -95,6 +67,12 @@
         } else {
           router.reemplazar('/estudio');
         }
+
+        if (window._loginUI) {
+          await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
+        }
+
+        this._notificarRepasos();
       });
 
       window.eventBus.suscribir('auth:logout', () => {

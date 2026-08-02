@@ -1,7 +1,7 @@
 (function() {
   'use strict';
 
-  // Indicador de conexión: 🟢 Conectado / 🔴 Sin conexión.
+  // Indicador de conexión: Conectado / Sin conexión.
   // Aparece al cambiar de estado y desaparece solo tras unos segundos.
 
   let el = null;

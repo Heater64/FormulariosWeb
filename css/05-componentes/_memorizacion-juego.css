@@ -1,0 +1,854 @@
+/* ════════════════════════════════════════════════════════════
+   MEMORIZACIÓN — Modo juego (estilo Duolingo · Apple · Material 3)
+   Mobile first. Nada debe parecer un examen: se siente como un
+   juego educativo profesional.
+   ════════════════════════════════════════════════════════════ */
+
+/* ── HOME: grid de mazos ───────────────────────────────────── */
+.mem-juego-home {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+.mem-juego-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+}
+
+.mem-juego-cabecera h2 {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  margin: 0;
+}
+
+.mem-juego-racha {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border-radius: var(--radio-pill);
+  background: var(--color-naranja-soft, var(--color-fondo-alt));
+  color: var(--color-naranja);
+  font-weight: 700;
+  font-size: var(--texto-sm);
+}
+
+.mem-juego-sub {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  margin: 0;
+}
+
+/* Tarjeta de mazo (Duolingo: color de fondo por mazo) */
+.mem-juego-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaciado-md);
+}
+
+@media (min-width: 560px) {
+  .mem-juego-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 960px) {
+  .mem-juego-grid { grid-template-columns: repeat(3, 1fr); }
+}
+
+.mem-juego-mazo {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-lg);
+  border-radius: 24px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  cursor: pointer;
+  overflow: hidden;
+  transition: transform var(--transicion-normal), box-shadow var(--transicion-normal);
+  text-align: left;
+  font: inherit;
+}
+
+.mem-juego-mazo:hover {
+  transform: translateY(-3px);
+  box-shadow: var(--sombra-md);
+}
+.mem-juego-mazo:active { transform: scale(0.98); }
+
+.mem-juego-mazo::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 6px;
+  background: var(--mazo-color, var(--color-acento));
+}
+
+.mem-juego-mazo__top {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+}
+
+.mem-juego-mazo__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 52px;
+  height: 52px;
+  border-radius: 16px;
+  background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 14%, white);
+  color: var(--mazo-color, var(--color-acento));
+  flex-shrink: 0;
+}
+
+.mem-juego-mazo__icono svg { width: 26px; height: 26px; }
+
+.mem-juego-mazo__porcentaje {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  color: var(--mazo-color, var(--color-acento));
+  line-height: 1;
+}
+
+.mem-juego-mazo__nombre {
+  font-size: var(--texto-lg);
+  font-weight: 800;
+  color: var(--color-texto);
+  margin: 0;
+}
+
+.mem-juego-mazo__desc {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.45;
+  margin: 0;
+  flex: 1;
+}
+
+.mem-juego-mazo__barra {
+  height: 8px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  overflow: hidden;
+}
+
+.mem-juego-mazo__progreso {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: var(--mazo-color, var(--color-acento));
+  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-juego-mazo__stats {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+.mem-juego-mazo__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 14px;
+  border: none;
+  border-radius: 16px;
+  background: var(--mazo-color, var(--color-acento));
+  color: #fff;
+  font-size: var(--texto-base);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), filter var(--transicion-rapida);
+}
+
+.mem-juego-mazo__btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
+.mem-juego-mazo__btn:active { transform: scale(0.97); }
+
+.mem-juego-mazo__btn--completado {
+  background: var(--color-exito);
+  animation: mem-pulso-exito 1.2s ease-in-out infinite;
+}
+
+@keyframes mem-pulso-exito {
+  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
+  50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+}
+
+/* ── Estado vacío ── */
+.mem-juego-vacio {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xl) var(--espaciado-lg);
+  text-align: center;
+  border: 2px dashed var(--color-borde);
+  border-radius: 24px;
+}
+
+.mem-juego-vacio__icono {
+  font-size: 3rem;
+  color: var(--color-acento);
+  display: flex;
+}
+
+.mem-juego-vacio__icono svg { width: 48px; height: 48px; }
+
+/* ── DETALLE DE MAZO ── */
+.mem-juego-detalle {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-lg);
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+.mem-juego-detalle__hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  text-align: center;
+  padding: var(--espaciado-xl) var(--espaciado-lg);
+  border-radius: 24px;
+  background: linear-gradient(160deg, color-mix(in srgb, var(--mazo-color, var(--color-acento)) 12%, var(--color-fondo-tarjeta)), var(--color-fondo-tarjeta));
+  border: 1px solid var(--color-borde);
+}
+
+.mem-juego-detalle__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 72px;
+  height: 72px;
+  border-radius: 22px;
+  background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 16%, white);
+  color: var(--mazo-color, var(--color-acento));
+}
+.mem-juego-detalle__icono svg { width: 36px; height: 36px; }
+
+.mem-juego-detalle h2 { margin: 0; }
+.mem-juego-detalle__desc { color: var(--color-texto-secundario); margin: 0; max-width: 420px; }
+
+.mem-juego-detalle__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espaciado-sm);
+  width: 100%;
+  max-width: 420px;
+}
+
+.mem-juego-detalle__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--espaciado-sm);
+  border-radius: 16px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+}
+
+.mem-juego-detalle__stat-valor {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  color: var(--color-texto);
+  margin: 0;
+}
+.mem-juego-detalle__stat-etiqueta {
+  font-size: 11px;
+  color: var(--color-texto-terciario);
+  margin: 0;
+}
+
+.mem-juego-empezar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  width: 100%;
+  max-width: 420px;
+  padding: 18px;
+  border: none;
+  border-radius: 18px;
+  background: var(--mazo-color, var(--color-acento));
+  color: #fff;
+  font-size: var(--texto-lg);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), filter var(--transicion-rapida);
+  align-self: center;
+}
+
+.mem-juego-empezar:hover { transform: translateY(-2px); filter: brightness(1.06); }
+.mem-juego-empezar:active { transform: scale(0.97); }
+.mem-juego-empezar:disabled { opacity: 0.5; cursor: default; transform: none; }
+
+/* ── SESIÓN DE JUEGO ── */
+.mem-juego-sesion {
+  display: flex;
+  flex-direction: column;
+  min-height: calc(100vh - 160px);
+  padding-top: var(--espaciado-md);
+  padding-bottom: calc(90px + env(safe-area-inset-bottom));
+}
+
+.mem-juego-sesion__barra {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-lg);
+}
+
+.mem-juego-sesion__track {
+  flex: 1;
+  height: 10px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  overflow: hidden;
+}
+
+.mem-juego-sesion__fill {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: var(--color-exito);
+  transition: width 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-juego-sesion__corazones {
+  display: inline-flex;
+  gap: 3px;
+  color: var(--color-error);
+  font-size: var(--texto-lg);
+}
+
+.mem-juego-sesion__corazones svg { width: 22px; height: 22px; }
+
+/* Tarjeta de ejercicio central */
+.mem-juego-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-lg);
+  border-radius: 24px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
+  animation: mem-entra 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes mem-entra {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.mem-juego-tarjeta--salida {
+  animation: mem-sale 0.25s ease-in forwards;
+}
+@keyframes mem-sale {
+  to { opacity: 0; transform: translateY(-10px) scale(0.98); }
+}
+
+.mem-juego-tipo {
+  display: inline-flex;
+  align-items: center;
+  align-self: flex-start;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radio-pill);
+  background: var(--color-acento-soft, var(--color-fondo-alt));
+  color: var(--color-acento);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.mem-juego-tarjeta__instruccion {
+  font-size: var(--texto-base);
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+  margin: 0;
+}
+
+.mem-juego-tarjeta__enunciado {
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  line-height: 1.45;
+  color: var(--color-texto);
+  margin: 0;
+}
+
+.mem-juego-tarjeta__ref {
+  font-size: var(--texto-sm);
+  font-style: italic;
+  color: var(--color-texto-terciario);
+  margin: 0;
+}
+
+/* Botones de respuesta (opciones múltiples / V/F) */
+.mem-juego-opciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.mem-juego-opcion {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: 16px;
+  border-radius: 16px;
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo-tarjeta);
+  font-size: var(--texto-base);
+  font-weight: 600;
+  color: var(--color-texto);
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+  transition: border-color var(--transicion-rapida), background var(--transicion-rapida), transform var(--transicion-rapida);
+}
+
+.mem-juego-opcion:hover { border-color: var(--color-acento); transform: translateY(-1px); }
+.mem-juego-opcion:active { transform: scale(0.99); }
+
+.mem-juego-opcion--sel {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft, var(--color-acento));
+  color: var(--color-acento);
+}
+
+.mem-juego-opcion--ok {
+  border-color: var(--color-exito);
+  background: var(--color-exito-soft, var(--color-verde-50));
+  color: var(--color-exito);
+}
+
+.mem-juego-opcion--ko {
+  border-color: var(--color-error);
+  background: var(--color-error-soft, var(--color-rojo-50));
+  color: var(--color-error);
+  animation: mem-sacudida 0.4s;
+}
+
+@keyframes mem-sacudida {
+  0%, 100% { transform: translateX(0); }
+  25% { transform: translateX(-6px); }
+  50% { transform: translateX(6px); }
+  75% { transform: translateX(-4px); }
+}
+
+/* Letra del badge de opción (A/B/C/D, ✓/✗) */
+.mem-juego-opcion__letra {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  font-weight: 800;
+  flex-shrink: 0;
+}
+
+.mem-juego-opcion__letra svg { width: 16px; height: 16px; }
+
+.mem-juego-opcion--sel .mem-juego-opcion__letra { background: var(--color-acento); color: #fff; }
+.mem-juego-opcion--ok .mem-juego-opcion__letra { background: var(--color-exito); color: #fff; }
+.mem-juego-opcion--ko .mem-juego-opcion__letra { background: var(--color-error); color: #fff; }
+
+/* Completar palabras */
+.mem-juego-completar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px 8px;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--texto-lg);
+  line-height: var(--altura-linea-lectura);
+}
+
+.mem-juego-hueco {
+  min-width: 90px;
+  max-width: 150px;
+  padding: 4px 10px;
+  border: none;
+  border-bottom: 3px solid var(--color-acento);
+  background: var(--color-acento-soft, var(--color-fondo-alt));
+  border-radius: 8px 8px 0 0;
+  font: inherit;
+  font-size: var(--texto-base);
+  text-align: center;
+  outline: none;
+  color: var(--color-texto);
+}
+
+.mem-juego-hueco--ok { border-bottom-color: var(--color-exito); color: var(--color-exito); background: var(--color-exito-soft, var(--color-verde-50)); }
+.mem-juego-hueco--ko { border-bottom-color: var(--color-error); color: var(--color-error); background: var(--color-error-soft, var(--color-rojo-50)); }
+
+/* Ordenar palabras */
+.mem-juego-ordenar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+}
+
+.mem-juego-palabras {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: center;
+}
+
+.mem-juego-palabra {
+  padding: 10px 16px;
+  border-radius: 14px;
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo-tarjeta);
+  font-size: var(--texto-base);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+  user-select: none;
+}
+
+.mem-juego-palabra:hover { border-color: var(--color-acento); transform: translateY(-1px); }
+.mem-juego-palabra--usada { opacity: 0.25; cursor: default; transform: none; }
+
+.mem-juego-frase {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  min-height: 52px;
+  padding: var(--espaciado-sm);
+  border-radius: 16px;
+  border: 2px dashed var(--color-borde);
+  align-items: center;
+  justify-content: center;
+}
+
+.mem-juego-frase__palabra {
+  padding: 8px 14px;
+  border-radius: 12px;
+  background: var(--color-acento);
+  color: #fff;
+  font-size: var(--texto-base);
+  font-weight: 700;
+  cursor: pointer;
+  animation: mem-pop 0.25s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes mem-pop {
+  from { transform: scale(0.6); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+/* Corrección al ordenar: palabras en verde/rojo */
+.mem-juego-frase__palabra--ok { background: var(--color-exito); cursor: default; }
+.mem-juego-frase__palabra--ko { background: var(--color-error); cursor: default; }
+
+/* Relacionar */
+.mem-juego-relacionar {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--espaciado-md);
+}
+
+.mem-juego-rel-col {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.mem-juego-rel-item {
+  padding: 12px 14px;
+  border-radius: 14px;
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo-tarjeta);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  text-align: center;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.mem-juego-rel-item:hover { border-color: var(--color-acento); }
+.mem-juego-rel-item--sel { border-color: var(--color-acento); background: var(--color-acento-soft, var(--color-acento)); color: var(--color-acento); }
+.mem-juego-rel-item--ok { border-color: var(--color-exito); background: var(--color-exito-soft, var(--color-verde-50)); color: var(--color-exito); }
+.mem-juego-rel-item--ko { border-color: var(--color-error); background: var(--color-error-soft, var(--color-rojo-50)); color: var(--color-error); }
+.mem-juego-rel-item--disabled { opacity: 0.4; cursor: default; }
+
+/* Respuesta escrita */
+.mem-juego-escrita {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.mem-juego-input {
+  width: 100%;
+  padding: 16px;
+  border-radius: 16px;
+  border: 2px solid var(--color-borde);
+  background: var(--color-fondo);
+  font: inherit;
+  font-size: var(--texto-lg);
+  text-align: center;
+  color: var(--color-texto);
+  outline: none;
+  transition: border-color var(--transicion-rapida);
+}
+
+.mem-juego-input:focus { border-color: var(--color-acento); }
+.mem-juego-input--ok { border-color: var(--color-exito); color: var(--color-exito); }
+.mem-juego-input--ko { border-color: var(--color-error); color: var(--color-error); }
+
+/* Pista */
+.mem-juego-pista {
+  align-self: center;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 14px;
+  border-radius: var(--radio-pill);
+  border: 1px solid var(--color-borde);
+  background: transparent;
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+}
+.mem-juego-pista svg { width: 14px; height: 14px; }
+.mem-juego-pista__box {
+  padding: var(--espaciado-sm);
+  border-radius: 12px;
+  background: var(--color-fondo-alt);
+  font-size: var(--texto-sm);
+  font-style: italic;
+  color: var(--color-texto-secundario);
+  text-align: center;
+}
+
+/* Botón continuar */
+.mem-juego-continuar {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  width: 100%;
+  padding: 16px;
+  border: none;
+  border-radius: 16px;
+  background: var(--color-exito);
+  color: #fff;
+  font-size: var(--texto-lg);
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), filter var(--transicion-rapida);
+  margin-top: auto;
+}
+
+.mem-juego-continuar:hover { transform: translateY(-1px); filter: brightness(1.06); }
+.mem-juego-continuar:active { transform: scale(0.97); }
+.mem-juego-continuar:disabled { opacity: 0.5; cursor: default; }
+
+/* ── Feedback de corrección ── */
+.mem-juego-feedback {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md);
+  border-radius: 16px;
+  animation: mem-entra 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-juego-feedback--ok {
+  background: var(--color-exito-soft, var(--color-verde-50));
+  border: 1px solid var(--color-exito);
+}
+
+.mem-juego-feedback--ko {
+  background: var(--color-error-soft, var(--color-rojo-50));
+  border: 1px solid var(--color-error);
+}
+
+.mem-juego-feedback__titulo {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--texto-lg);
+  font-weight: 800;
+  margin: 0;
+}
+.mem-juego-feedback--ok .mem-juego-feedback__titulo { color: var(--color-exito); }
+.mem-juego-feedback--ko .mem-juego-feedback__titulo { color: var(--color-error); }
+
+.mem-juego-feedback__respuesta {
+  font-size: var(--texto-base);
+  font-weight: 600;
+  color: var(--color-texto);
+  margin: 0;
+}
+
+.mem-juego-feedback__ref {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--color-acento);
+  margin: 0;
+}
+
+.mem-juego-feedback__expl {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+  margin: 0;
+}
+
+/* ── FIN DE SESIÓN ── */
+.mem-juego-fin {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-md);
+  text-align: center;
+  padding: var(--espaciado-xl) var(--espaciado-lg);
+  animation: mem-entra 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-juego-fin__icono {
+  font-size: 4.5rem;
+  display: flex;
+  justify-content: center;
+  color: var(--color-exito);
+  animation: mem-caida 0.8s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-juego-fin__icono svg { width: 64px; height: 64px; }
+
+@keyframes mem-caida {
+  0% { transform: translateY(-30px) scale(0.4); opacity: 0; }
+  60% { transform: translateY(6px) scale(1.1); }
+  100% { transform: translateY(0) scale(1); opacity: 1; }
+}
+
+.mem-juego-fin h2 { margin: 0; font-size: var(--texto-2xl); }
+
+.mem-juego-fin__sub { color: var(--color-texto-secundario); margin: 0; }
+
+.mem-juego-fin__stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaciado-sm);
+  width: 100%;
+  max-width: 400px;
+}
+
+.mem-juego-fin__stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  padding: var(--espaciado-md);
+  border-radius: 18px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+}
+
+.mem-juego-fin__stat-valor { font-size: var(--texto-2xl); font-weight: 800; margin: 0; }
+.mem-juego-fin__stat--ok .mem-juego-fin__stat-valor { color: var(--color-exito); }
+.mem-juego-fin__stat--ko .mem-juego-fin__stat-valor { color: var(--color-error); }
+.mem-juego-fin__stat-etiqueta { font-size: var(--texto-xs); color: var(--color-texto-terciario); margin: 0; }
+
+.mem-juego-fin__anillo {
+  position: relative;
+  width: 140px;
+  height: 140px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: conic-gradient(var(--color-exito) calc(var(--precision, 0) * 1%), var(--color-fondo-alt) 0);
+}
+
+.mem-juego-fin__anillo-inner {
+  width: 112px;
+  height: 112px;
+  border-radius: 50%;
+  background: var(--color-fondo-tarjeta);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+}
+
+.mem-juego-fin__anillo-valor { font-size: var(--texto-2xl); font-weight: 800; color: var(--color-texto); }
+
+.mem-juego-fin__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  width: 100%;
+  max-width: 400px;
+}
+
+/* ── Badge de nivel ── */
+.mem-juego-nivel {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px;
+  border-radius: var(--radio-pill);
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: var(--nivel-color, var(--color-fondo-alt));
+  color: var(--color-texto-secundario);
+}
+
+/* Indicador de progreso por tarjeta en el mazo */
+.mem-juego-puntos {
+  display: flex;
+  gap: 3px;
+  align-items: center;
+}
+
+.mem-juego-punto {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--color-fondo-alt);
+}
+
+.mem-juego-punto--activo { background: var(--mazo-color, var(--color-acento)); }
+
+@media (max-width: 480px) {
+  .mem-juego-detalle__stats { grid-template-columns: repeat(3, 1fr); gap: var(--espaciado-xs); }
+  .mem-juego-relacionar { grid-template-columns: 1fr; }
+  .mem-juego-fin__stats { grid-template-columns: repeat(2, 1fr); }
+  .mem-juego-tarjeta__enunciado { font-size: var(--texto-lg); }
+}

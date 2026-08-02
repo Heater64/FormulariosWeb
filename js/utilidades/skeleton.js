@@ -69,13 +69,21 @@
       </div>`;
   }
 
-  /* Skeleton para Notas */
+  /* Skeleton para Notas (bloc de notas: buscador + lista compacta) */
   function notas() {
     return `
-      <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg)">
-        ${bloque('28px', '50%', 'border-radius:var(--radio-md);margin-bottom:var(--espaciado-md)')}
-        <div class="o-pila" style="gap:var(--espaciado-sm)">
-          ${tarjetas(6, { ancho: '100%' })}
+      <div class="notas-home">
+        <div style="padding:var(--espaciado-lg) var(--espaciado-lg) var(--espaciado-xs)">
+          ${bloque('30px', '40%', 'border-radius:var(--radio-md)')}
+        </div>
+        <div style="margin:var(--espaciado-sm) var(--espaciado-lg) var(--espaciado-md)">
+          ${bloque('44px', '100%', 'border-radius:var(--radio-pill)')}
+        </div>
+        <div class="o-pila" style="gap:var(--espaciado-xs);padding:0 var(--espaciado-lg)">
+          ${bloque('64px', '100%', 'border-radius:var(--radio-lg)')}
+          ${bloque('64px', '100%', 'border-radius:var(--radio-lg)')}
+          ${bloque('64px', '100%', 'border-radius:var(--radio-lg)')}
+          ${bloque('64px', '100%', 'border-radius:var(--radio-lg)')}
         </div>
       </div>`;
   }

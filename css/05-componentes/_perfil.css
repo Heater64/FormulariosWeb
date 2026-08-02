@@ -143,22 +143,6 @@
   justify-content: center;
 }
 
-/* ===== Fila de estadísticas ===== */
-
-.perfil-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
-  gap: var(--espaciado-sm);
-  margin-bottom: var(--espaciado-md);
-}
-
-@media (max-width: 480px) {
-  .perfil-stats {
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--espaciado-xs);
-  }
-}
-
 /* ===== Botón a lo ancho (limpiar estilos inline) ===== */
 
 .perfil-btn-full {
@@ -778,6 +762,21 @@
   letter-spacing: 0.04em;
   color: var(--color-texto-terciario);
   margin: 0 0 var(--espaciado-xs);
+}
+
+.admin-user-detail__content {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md) 0;
+}
+
+.admin-user-detail__footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaciado-sm);
+  padding-top: var(--espaciado-md);
+  border-top: 1px solid var(--color-borde);
 }
 
 

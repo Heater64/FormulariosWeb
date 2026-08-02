@@ -64,14 +64,6 @@
             <span class="perfil-miembro">${I('calendar')} Miembro desde ${fechaLarga(usuario.creado_en)}</span>
           </div>
 
-          <!-- ESTADÍSTICAS -->
-          <div class="perfil-stats" id="perfilStats" aria-label="Estadísticas de estudio">
-            <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${I('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha</p><p class="u-texto-2xl u-fw-700" id="statRacha">—</p></div></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos</p><p class="u-texto-2xl u-fw-700" id="statCaps">—</p></div>
-            <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General</p><p class="u-texto-2xl u-fw-700" id="statPct">—</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" id="statPctBarra" style="width:0%"></div></div></div>
-            <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Tarjetas por repasar</p><p class="u-texto-2xl u-fw-700" id="statTarjetas">—</p></div>
-          </div>
-
           <!-- SECCIONES -->
           <div class="o-pila o-pila--md">
 
@@ -256,40 +248,6 @@
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
-
-      // Cargar estadísticas de estudio (racha, capítulos, % y tarjetas pendientes)
-      const cargarStats = async () => {
-        const elRacha = raiz.querySelector('#statRacha');
-        const elCaps = raiz.querySelector('#statCaps');
-        const elPct = raiz.querySelector('#statPct');
-        const elPctBarra = raiz.querySelector('#statPctBarra');
-        const elTarjetas = raiz.querySelector('#statTarjetas');
-        if (!elCaps) return;
-        // Racha (localStorage, ya la calcula Estudio)
-        try {
-          const rachaGuardada = parseInt(localStorage.getItem('fb_racha') || '0', 10);
-          if (elRacha) elRacha.textContent = rachaGuardada > 0 ? rachaGuardada + ' días' : '0 días';
-        } catch (e) { if (elRacha) elRacha.textContent = '0 días'; }
-        // Capítulos leídos y % general
-        try {
-          const [librosRes, progresoRes] = await Promise.all([
-            window.supabaseClient.from('libros_biblicos').select('num_capitulos'),
-            window.supabaseClient.from('progreso_lectura').select('id').eq('usuario_id', usuario.id).eq('completado', true)
-          ]);
-          const totalCaps = (librosRes.data || []).reduce((s, l) => s + (l.num_capitulos || 0), 0);
-          const leidos = (progresoRes.data || []).length;
-          const pct = totalCaps ? Math.round((leidos / totalCaps) * 100) : 0;
-          if (elCaps) elCaps.textContent = leidos;
-          if (elPct) elPct.textContent = pct + '%';
-          if (elPctBarra) elPctBarra.style.width = pct + '%';
-        } catch (e) {}
-        // Tarjetas pendientes de repaso
-        try {
-          const pend = await window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => []);
-          if (elTarjetas) elTarjetas.textContent = (pend || []).length;
-        } catch (e) { if (elTarjetas) elTarjetas.textContent = '0'; }
-      };
-      cargarStats();
 
       if (usuario.foto_perfil) {
         const avatar = raiz.querySelector('#avatarPerfil');

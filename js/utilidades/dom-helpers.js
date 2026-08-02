@@ -176,7 +176,7 @@
           <div class="guia-popup anim-menu" role="dialog" aria-modal="true">
             <h3 class="guia-popup__titulo">${window.Iconos ? window.Iconos.render('info') : 'ℹ️'} ${window.helpers.escapeHtml(titulo)}</h3>
           <p class="guia-popup__texto">${window.helpers.escapeHtml(texto)}</p>
-          ${ejemplo ? `<p class="guia-popup__ejemplo">💡 ${window.helpers.escapeHtml(ejemplo)}</p>` : ''}
+          ${ejemplo ? `<p class="guia-popup__ejemplo">${window.Iconos?.render('lightbulb') || '💡'} ${window.helpers.escapeHtml(ejemplo)}</p>` : ''}
           <div class="guia-popup__accion">
             <button class="btn-primario" data-cerrar-guia style="justify-content:center">Entendido</button>
           </div>

@@ -106,6 +106,26 @@ const repeticionEspaciada = {
     if (rachaActual >= 3 && intervalo >= 7) return 'aprendido';
     if (intervalo <= 1) return 'nuevo';
     return 'repasando';
+  },
+
+  /* ─── Niveles del juego (Duolingo-like) ───
+     Nueva → Aprendiendo → Dominada → Perfecta */
+  nivelJuego(rachaActual, intervalo) {
+    if (rachaActual >= 5 && intervalo >= 21) return 'perfecta';
+    if (rachaActual >= 3 && intervalo >= 7) return 'dominada';
+    if (rachaActual >= 1 && intervalo >= 1) return 'aprendiendo';
+    return 'nueva';
+  },
+
+  NIVELES_JUEGO: [
+    { id: 'nueva', texto: 'Nueva', color: 'var(--color-azul-500)' },
+    { id: 'aprendiendo', texto: 'Aprendiendo', color: 'var(--color-amarillo-500)' },
+    { id: 'dominada', texto: 'Dominada', color: 'var(--color-naranja-500)' },
+    { id: 'perfecta', texto: 'Perfecta', color: 'var(--color-verde-500)' }
+  ],
+
+  infoNivel(id) {
+    return this.NIVELES_JUEGO.find(n => n.id === id) || this.NIVELES_JUEGO[0];
   }
 };
 

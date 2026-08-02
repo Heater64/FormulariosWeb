@@ -12,6 +12,18 @@ let aciertos = 0;
 let total = 0;
 const log = (ok, msg) => { total++; if (ok) aciertos++; console.log(`${ok ? 'PASS' : 'FAIL'}  ${msg}`); };
 const esperar = (ms) => new Promise(r => setTimeout(r, ms));
+// Espera (polling) a que aparezca al menos un elemento con el selector.
+// Reemplaza los sleeps fijos que se vuelven frágiles cuando el arranque
+// del panel tarda más (máquina cargada, red lenta).
+const esperarSelector = async (page, selector, timeoutMs = 15000) => {
+  const fin = Date.now() + timeoutMs;
+  while (Date.now() < fin) {
+    const n = await page.locator(selector).count().catch(() => 0);
+    if (n > 0) return true;
+    await esperar(200);
+  }
+  return false;
+};
 
 (async () => {
   const browser = await chromium.launch({ channel: 'chrome', headless: true });
@@ -54,27 +66,22 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
     await login(ADMIN_U, ADMIN_C);
     log(true, 'P1 Login admin1');
 
-    // ---- P2: Perfil — cabecera, badge de rol y fila de stats ----
+    // ---- P2: Perfil — cabecera, badge de rol (sin fila de stats) ----
     await page.goto(BASE + '/#!/perfil', { waitUntil: 'domcontentloaded' });
-    await esperar(1800);
+    await esperarSelector(page, '.perfil-rol-badge', 15000);
     const rolBadge = await page.locator('.perfil-rol-badge').count();
     const badgeTexto = (await page.locator('.perfil-rol-badge').first().innerText().catch(() => '')).toLowerCase();
     log(rolBadge > 0, 'P2 Badge de rol visible');
     log(badgeTexto.includes('administrador'), `P2 Badge de rol: "${badgeTexto.trim()}"`);
-    const statCards = await page.locator('#perfilStats .tarjeta-capitulo, #perfilStats .tarjeta-racha, #perfilStats .tarjeta-porcentaje').count();
-    const rachaCard = await page.locator('#perfilStats .tarjeta-racha').count();
-    const pctCard = await page.locator('#perfilStats .tarjeta-porcentaje').count();
-    log(statCards === 4, `P2 Fila de stats: ${statCards}/4 tarjetas`);
-    log(rachaCard === 1 && pctCard === 1, 'P2 Tarjetas ricas reutilizadas (racha llama + % con barra)');
-    const statRacha = (await page.locator('#statRacha').innerText().catch(() => ''));
-    const statCaps = (await page.locator('#statCaps').innerText().catch(() => ''));
-    log(statRacha !== '—' && statCaps !== '—', `P2 Stats cargadas: racha="${statRacha}" caps="${statCaps}"`);
+    // Las tarjetas de estadísticas (racha, capítulos, % y repaso) se eliminaron del perfil.
+    const statCards = await page.locator('#perfilStats, #statRacha, #statCaps, #statPct, #statTarjetas').count();
+    log(statCards === 0, `P2 Fila de stats eliminada del perfil (${statCards} restos)`);
     const btnAdmin = await page.locator('#btnAdmin').count();
     log(btnAdmin > 0, 'P2 Botón Panel de Administración visible');
 
     // ---- P3: Panel Admin standalone — dashboard con stats e iconos ----
     await page.goto(BASE + '/paginas/admin/panel-admin.html', { waitUntil: 'domcontentloaded' });
-    await esperar(2500);
+    await esperarSelector(page, '#adminContenido .tarjeta-estadistica', 20000);
     const statsAdmin = await page.locator('#adminContenido .tarjeta-estadistica').count();
     log(statsAdmin >= 4, `P3 Dashboard admin: ${statsAdmin} tarjetas de estadística`);
     const statsIcono = await page.locator('#adminContenido .tarjeta-estadistica__icono').count();
@@ -84,9 +91,9 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
 
     // ---- P4: Panel admin — pestaña exámenes con badges de estado ----
     await page.click('.admin-tab[data-tab="examenes"]');
-    await esperar(900);
+    await esperarSelector(page, '.admin-examen-card', 15000);
     const examenCards = await page.locator('.admin-examen-card').count();
-    const badgesExamen = await page.locator('.admin-examen-card .admin-examen-badge').count();
+    const badgesExamen = await page.locator('.admin-examen-card .admin-tabla-badge').count();
     log(examenCards > 0, `P4 Exámenes: ${examenCards} cards con icono`);
     log(badgesExamen === examenCards, `P4 Exámenes: cada card tiene su badge de estado (${badgesExamen}/${examenCards})`);
 
@@ -101,7 +108,10 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
     await login(OWNER_U, OWNER_C);
     log(true, 'P6 Login owner');
     await page.goto(BASE + '/paginas/admin/panel-owner.html', { waitUntil: 'domcontentloaded' });
-    await esperar(2500);
+    // Esperar a que el panel monte en vez de un sleep fijo (el arranque puede
+    // tardar >2.5s con la máquina cargada). El panel renderiza sus tarjetas
+    // de forma asíncrona tras las consultas a Supabase.
+    await esperarSelector(page, '#ownerContenido .tarjeta-estadistica', 20000);
     const statsOwner = await page.locator('#ownerContenido .tarjeta-estadistica').count();
     log(statsOwner >= 4, `P6 Dashboard owner: ${statsOwner} tarjetas de estadística con iconos`);
     const tabsOwner = await page.locator('.admin-tab').count();

@@ -16,7 +16,6 @@ class NotificationManager {
         try {
           const result = await Notification.requestPermission();
           this._permission = result;
-          console.log('[Notifications] Permiso:', result);
         } catch (e) {
           console.warn('[Notifications] Error al solicitar permiso:', e);
         }
@@ -89,12 +88,12 @@ class NotificationManager {
     toast.setAttribute('role', 'alert');
     
     toast.innerHTML = `
-      <div class="toast-notification__icon">🔔</div>
+      <div class="toast-notification__icon">${window.Iconos?.render('bell') || '🔔'}</div>
       <div class="toast-notification__content">
         <strong class="toast-notification__title">${title}</strong>
         ${body ? `<p class="toast-notification__body">${body}</p>` : ''}
       </div>
-      <button class="toast-notification__close" aria-label="Cerrar">✕</button>
+      <button class="toast-notification__close" aria-label="Cerrar">${window.Iconos?.render('x') || '✕'}</button>
     `;
     
     // Estilos
@@ -119,6 +118,7 @@ class NotificationManager {
     `;
     
     document.body.appendChild(toast);
+    if (window.Iconos?.actualizar) window.Iconos.actualizar();
     
     // Cerrar al hacer click en la X
     toast.querySelector('.toast-notification__close').onclick = (e) => {
@@ -165,7 +165,7 @@ class NotificationManager {
   }
   
   async notificarExamen(nombre, examenId) {
-    return this.show('📝 Nuevo examen disponible', {
+    return this.show('Nuevo examen disponible', {
       body: `"${nombre}" está disponible para realizar.`,
       tag: `examen-${examenId}`,
       data: { url: `/tomar/${examenId}` }
@@ -182,14 +182,14 @@ class NotificationManager {
   }
   
   async notificarLogro(nombre, descripcion) {
-    return this.show(`🏆 Logro desbloqueado: ${nombre}`, {
+    return this.show(`Logro desbloqueado: ${nombre}`, {
       body: descripcion,
       tag: `logro-${Date.now()}`
     });
   }
   
   async notificarActualizacion(version) {
-    return this.show('🔄 Nueva versión disponible', {
+    return this.show('Nueva versión disponible', {
       body: `Versión ${version} ya está disponible. Actualiza para disfrutar de las mejoras.`,
       tag: 'update',
       requireInteraction: true

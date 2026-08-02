@@ -10,6 +10,75 @@
       return map[rol] || rol;
     },
 
+    // Tiempo relativo en español ("Hace 2 minutos")
+    tiempoRelativo(iso) {
+      if (!iso) return '—';
+      const diff = Date.now() - new Date(iso).getTime();
+      if (diff < 0) return 'Ahora mismo';
+      const mins = Math.floor(diff / 60000);
+      if (mins < 1) return 'Ahora mismo';
+      if (mins < 60) return `Hace ${mins} min${mins !== 1 ? 's' : ''}`;
+      const hrs = Math.floor(mins / 60);
+      if (hrs < 24) return `Hace ${hrs}h`;
+      const dias = Math.floor(hrs / 24);
+      if (dias < 7) return `Hace ${dias} día${dias > 1 ? 's' : ''}`;
+      return window.helpers.formatearFecha(iso);
+    },
+
+    tiempoRelativoPreciso(iso) {
+      if (!iso) return '';
+      const d = new Date(iso);
+      return d.toLocaleDateString() + ' ' + d.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    },
+
+    // Icono de Lucide por tipo de acción de auditoría
+    iconoAuditoria(accion) {
+      const a = String(accion || '');
+      if (a.startsWith('usuario')) return 'user';
+      if (a.startsWith('grupo')) return 'layout';
+      if (a.startsWith('batch')) return 'check-square';
+      if (a.startsWith('config')) return 'settings';
+      if (a.startsWith('backup')) return 'database';
+      if (a.startsWith('examen')) return 'file-text';
+      return 'clipboard-list';
+    },
+
+    // Navegar a una ruta del SPA. En las páginas standalone (paginas/admin/*.html)
+    // el router no está registrado, así que se redirige al SPA con hash.
+    irSpa(ruta) {
+      if (window.location.pathname.includes('/paginas/admin/')) {
+        window.location.href = '../../index.html#!/' + ruta.replace(/^\//, '');
+        return;
+      }
+      window.router.navegar(ruta);
+    },
+
+    // Navegar entre paneles standalone (admin/owner). Detecta el contexto:
+    // en las páginas standalone los hermanos están en la misma carpeta,
+    // en el SPA se accede vía /paginas/admin/*.html.
+    irPanel(nombre) {
+      const enSpa = !window.location.pathname.includes('/paginas/admin/');
+      window.location.href = enSpa ? 'paginas/admin/panel-' + nombre + '.html' : 'panel-' + nombre + '.html';
+    },
+
+    // Tiempo activo de la sesión actual
+    tiempoActivo(inicioSesion) {
+      const mins = Math.floor((Date.now() - (inicioSesion || Date.now())) / 60000);
+      if (mins < 1) return 'Menos de 1 min';
+      if (mins < 60) return mins + ' min';
+      const h = Math.floor(mins / 60);
+      return h + 'h ' + (mins % 60) + 'm';
+    },
+
+    // Media global de notas de exámenes (null si no hay datos)
+    mediaGlobal(resumenExamenes) {
+      const resumen = resumenExamenes || {};
+      const valores = [];
+      Object.values(resumen).forEach(r => { if (r.media != null) valores.push(r.media); });
+      if (!valores.length) return null;
+      return valores.reduce((a, b) => a + b, 0) / valores.length;
+    },
+
     // Volver al perfil: en la página standalone no hay rutas registradas,
     // así que se usa el hook _volverAlSpa si existe, si no el router.
     volver(vista) {
@@ -26,22 +95,75 @@
       });
     },
 
+    // Cabecera moderna del panel: título + subtítulo + botón volver
+    cabeceraPanel(titulo, subtitulo, nombreVista) {
+      return `
+        <header class="admin-panel-cabecera">
+          <div>
+            <h1 class="admin-panel-cabecera__titulo">${I('command')} ${titulo}</h1>
+            <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
+          </div>
+          <button class="btn-secundario admin-panel-cabecera__volver" onclick="window.${nombreVista}._volver()">${I('arrow-left')} Volver</button>
+        </header>`;
+    },
+
     // Esqueleto común de los paneles: cabecera con título + "← Volver",
     // pestañas y contenedor de contenido.
-    renderizarPanel(vista, raiz, { titulo, icono, contenedorId, tabs, nombreVista }) {
+    renderizarPanel(vista, raiz, { titulo, subtitulo, contenedorId, tabs, nombreVista }) {
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <h2>${I(icono)} ${titulo}</h2>
-            <button class="btn-secundario" onclick="window.${nombreVista}._volver()">← Volver</button>
-          </div>
-          <div class="admin-tabs">${tabs.map(t => `
-            <button class="admin-tab${vista._tabActivo === t.id ? ' admin-tab--activo' : ''}" data-tab="${t.id}">${I(t.icono)} ${t.texto}</button>`
+        <div class="o-contenedor o-pila o-pila--lg admin-panel" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          ${this.cabeceraPanel(titulo, subtitulo || '', nombreVista)}
+          <div class="admin-tabs" role="tablist" aria-label="Secciones">${tabs.map(t => `
+            <button class="admin-tab${vista._tabActivo === t.id ? ' admin-tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${vista._tabActivo === t.id}">${I(t.icono)} ${t.texto}</button>`
           ).join('')}</div>
           <div id="${contenedorId}">${vista._renderTabContent(raiz)}</div>
         </div>`;
       window.adminComunes.bindTabs(vista, raiz);
       vista._bindTabContent(raiz);
+    },
+
+    // Badge de estado de examen
+    estadoBadge(estado) {
+      const map = {
+        'publicado': ['admin-tabla-badge--publicado', 'Publicado'],
+        'borrador': ['admin-tabla-badge--borrador', 'Borrador'],
+        'archivado': ['admin-tabla-badge--archivado', 'Archivado'],
+        'cerrado': ['admin-tabla-badge--archivado', 'Cerrado']
+      };
+      const [clase, texto] = map[estado] || ['admin-tabla-badge--borrador', estado || '—'];
+      return `<span class="admin-tabla-badge ${clase}">${E(texto)}</span>`;
+    },
+
+    // Badge de estado de usuario
+    estadoUsuario(activo) {
+      return activo === false
+        ? '<span class="admin-tabla-badge admin-tabla-badge--inactivo">Inactivo</span>'
+        : '<span class="admin-tabla-badge admin-tabla-badge--activo">Activo</span>';
+    },
+
+    // Modal genérico reutilizable (nuevo diseño)
+    abrirModal({ titulo, icono = 'info', contenido, ancho = '480px' }) {
+      const overlay = document.createElement('div');
+      overlay.className = 'modal-overlay';
+      overlay.innerHTML = `
+        <div class="modal" style="max-width:${ancho}">
+          <div class="o-pila o-pila--md">
+            <div class="o-flecha o-flecha--between">
+              <h3 class="modal__titulo" style="margin:0">${I(icono)} ${E(titulo)}</h3>
+              <button class="btn-icono" data-cerrar aria-label="Cerrar">${I('x')}</button>
+            </div>
+            <div class="modal-contenido">${contenido}</div>
+          </div>
+        </div>`;
+      document.body.appendChild(overlay);
+      window.Iconos?.actualizar();
+      const cerrar = () => overlay.remove();
+      overlay.querySelector('[data-cerrar]').onclick = cerrar;
+      overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
+      document.addEventListener('keydown', function onKey(e) {
+        if (e.key === 'Escape') { cerrar(); document.removeEventListener('keydown', onKey); }
+      });
+      return { overlay, cerrar };
     },
 
     // Enlaza botones de filtro que re-renderizan al pulsarse.
@@ -110,6 +232,77 @@
       a.download = nombre.endsWith('.csv') ? nombre : nombre + '.csv';
       a.click();
       URL.revokeObjectURL(url);
+    },
+
+    descargarJSON(nombre, objeto) {
+      const blob = new Blob([JSON.stringify(objeto, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = nombre.endsWith('.json') ? nombre : nombre + '.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    },
+
+    // Input oculto de archivo reutilizable (CSV/JSON). Se limpia solo:
+    // si el usuario cancela el diálogo, el input se retira con un timeout.
+    elegirArchivo(aceptar = '.csv,text/csv') {
+      return new Promise(resolve => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = aceptar;
+        input.style.display = 'none';
+        document.body.appendChild(input);
+        const limpiar = () => { input.remove(); window.removeEventListener('focus', limpiar, true); };
+        input.onchange = () => {
+          limpiar();
+          const file = input.files && input.files[0];
+          if (!file) return resolve(null);
+          const reader = new FileReader();
+          reader.onload = () => resolve({ nombre: file.name, texto: String(reader.result || '') });
+          reader.onerror = () => resolve(null);
+          reader.readAsText(file);
+        };
+        // Si el diálogo se cierra sin seleccionar (cancel), el input pierde el foco
+        // y no se dispara onchange: limpiar al recuperar el foco.
+        window.addEventListener('focus', limpiar, true);
+        input.click();
+      });
+    },
+
+    // Estado del sistema (indicadores)
+    sistemaFila(icono, label, valor, dotClase = 'admin-indicador--ok', preciso = '') {
+      return `
+        <div class="admin-sistema__fila" ${preciso ? `title="${E(preciso)}"` : ''}>
+          <span class="admin-sistema__label">${I(icono)} ${E(label)}</span>
+          <span class="admin-sistema__valor"><span class="admin-indicador ${dotClase}"></span>${E(valor)}</span>
+        </div>`;
+    },
+
+    // Sección funcional del Centro de Administración
+    seccion({ icono, iconoClase = '', titulo, desc = '', contador = '', contenido, anchoCompleto = false }) {
+      return `
+        <section class="admin-seccion${anchoCompleto ? ' admin-seccion--ancho-completo' : ''}">
+          <div class="admin-seccion__cabecera">
+            <div class="admin-seccion__icono ${iconoClase}">${I(icono)}</div>
+            <div class="admin-seccion__info">
+              <h2 class="admin-seccion__titulo">${E(titulo)}</h2>
+              ${desc ? `<p class="admin-seccion__desc">${E(desc)}</p>` : ''}
+            </div>
+            ${contador ? `<span class="admin-seccion__contador">${contador}</span>` : ''}
+          </div>
+          ${contenido}
+        </section>`;
+    },
+
+    // Estado vacío bien diseñado
+    vacio(icono, titulo, descripcion = '') {
+      return `
+        <div class="empty-state empty-state--compacto">
+          <div class="empty-state__icono">${I(icono)}</div>
+          <h3 class="empty-state__titulo">${E(titulo)}</h3>
+          ${descripcion ? `<p class="empty-state__descripcion">${E(descripcion)}</p>` : ''}
+        </div>`;
     }
   };
 })();

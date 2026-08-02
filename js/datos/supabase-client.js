@@ -7,7 +7,6 @@ let cliente = null;
 try {
   if (typeof supabase !== 'undefined' && supabase.createClient) {
     cliente = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-    console.log('✅ Supabase cliente listo');
   } else {
     console.warn('⚠️ SDK de Supabase no disponible');
   }

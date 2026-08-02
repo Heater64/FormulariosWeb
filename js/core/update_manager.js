@@ -13,7 +13,6 @@ class UpdateManager {
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.addEventListener('message', (event) => {
         if (event.data?.type === 'SW_UPDATE_AVAILABLE') {
-          console.log('[UpdateManager] Nueva versión detectada por SW:', event.data.version);
           this._pendingUpdate = event.data;
           this._showUpdateCard(event.data);
         }
@@ -62,14 +61,12 @@ class UpdateManager {
       
       // Comparar versiones (simple - en producción usar semver)
       if (data.version !== this._currentVersion) {
-        console.log('[UpdateManager] Nueva versión detectada:', data.version);
         this._pendingUpdate = data;
         this._showUpdateCard(data);
       }
       
-    } catch (e) {
+    } catch {
       // Fallar silenciosamente - modo offline
-      console.log('[UpdateManager] No se pudo verificar actualizaciones:', e.message);
     }
     
     this._isChecking = false;

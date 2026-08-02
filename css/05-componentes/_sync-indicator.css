@@ -39,6 +39,11 @@
   flex-shrink: 0;
 }
 
+.sync-indicator__icon svg { width: 16px; height: 16px; }
+.sync-indicator--ok .sync-indicator__icon { color: var(--color-exito); }
+.sync-indicator--pendiente .sync-indicator__icon { color: var(--color-aviso); }
+.sync-indicator--cargando .sync-indicator__icon { color: var(--color-acento); }
+
 .sync-indicator__text {
   overflow: hidden;
   text-overflow: ellipsis;
@@ -181,4 +186,55 @@
     border-radius: var(--radio-md);
     gap: 6px;
   }
+}
+
+/* ============================================================
+   TOAST DE NOTIFICACIONES (fallback de notificaciones nativas)
+   ============================================================ */
+
+.toast-notification__icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  color: var(--color-acento);
+}
+
+.toast-notification__icon svg { width: 18px; height: 18px; }
+
+.toast-notification__content {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  flex: 1;
+}
+
+.toast-notification__title { font-size: var(--texto-sm); font-weight: 600; }
+
+.toast-notification__body {
+  margin: 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  line-height: 1.4;
+}
+
+.toast-notification__close {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  padding: 4px;
+  border: none;
+  border-radius: var(--radio-sm);
+  background: transparent;
+  color: var(--color-texto-terciario);
+  cursor: pointer;
+}
+
+.toast-notification__close svg { width: 14px; height: 14px; }
+
+.toast-notification__close:hover {
+  color: var(--color-texto);
+  background: var(--color-fondo-alt);
 }

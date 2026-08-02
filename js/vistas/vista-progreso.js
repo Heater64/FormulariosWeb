@@ -108,7 +108,7 @@
                     `<div class="tarjeta-capitulo" style="cursor:pointer" data-notaid="${n.id}">
                       <div class="o-flecha o-flecha--between">
                         <span class="u-fw-600 u-fs-sm">${I('file-text')} ${window.helpers.escapeHtml(n.titulo || 'Nota')}</span>
-                        <span class="u-fs-xs u-color-texto-terciario">${window.helpers.escapeHtml(n.libro_nombre)} ${n.capitulo_numero || ''}</span>
+                        <span class="u-fs-xs u-color-texto-terciario">${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</span>
                       </div>
                       <p class="u-fs-xs u-color-texto-secundario u-mt-1 truncar-2">${n.contenido ? window.helpers.escapeHtml(n.contenido.replace(/<[^>]*>/g, '').slice(0, 100)) : ''}</p>
                     </div>`

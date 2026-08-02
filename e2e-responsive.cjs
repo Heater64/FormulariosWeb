@@ -113,24 +113,21 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
         await esperar(400);
       }
       await page.evaluate(() => { location.hash = '#!/perfil'; });
-      try { await page.waitForSelector('#perfilStats', { timeout: 8000 }); } catch {}
+      // El perfil actual (rediseñado) usa .perfil-cabecera y .perfil-seccion;
+      // la fila de stats (#perfilStats) ya no existe.
+      try { await page.waitForSelector('.perfil-cabecera', { timeout: 10000 }); } catch {}
       await esperar(600);
       const oP = await medirOverflow();
       log(oP.overflow <= 0, `Perfil sin overflow horizontal (desborde=${oP.overflow}px)${oP.culpables.length ? ' → ' + oP.culpables.join(', ') : ''}`);
-      const statsOver = await medirSolapamiento('.tarjeta-capitulo, .tarjeta-racha, .tarjeta-porcentaje', '#perfilStats');
-      log(statsOver.length === 0, `Perfil: stats sin solaparse (${statsOver.length} solapamientos)`);
-      const colsStats = await page.evaluate(() => {
-        const g = document.querySelector('#perfilStats');
-        return g ? getComputedStyle(g).gridTemplateColumns : 'n/a';
+      const secOver = await medirSolapamiento('.perfil-seccion', null);
+      log(secOver.length === 0, `Perfil: secciones sin solaparse (${secOver.length} solapamientos)`);
+      const secCaben = await page.evaluate(() => {
+        const secs = [...document.querySelectorAll('.perfil-seccion')];
+        return secs.every(s => s.getBoundingClientRect().width <= window.innerWidth);
       });
-      log(colsStats.includes(' '), `Perfil: stats en grid (${vp.tag === 'movil' ? '2 columnas' : 'auto-fit'}) → ${colsStats.split(' ').length} col(s)`);
-      const anchoStats = await page.evaluate(() => {
-        const g = document.querySelector('#perfilStats');
-        return g ? Math.round(g.getBoundingClientRect().width) : 0;
-      });
-      log(anchoStats <= vp.w, `Perfil: grid de stats cabe en pantalla (${anchoStats}px <= ${vp.w}px)`);
+      log(secCaben, `Perfil: secciones caben en pantalla (${vp.w}px)`);
       const btnVisibles = await page.evaluate(() => {
-        const btns = [...document.querySelectorAll('.perfil-btn-full, .perfil-acciones button')];
+        const btns = [...document.querySelectorAll('.perfil-btn-full, .perfil-boton-seccion, .perfil-btn-cerrar, .perfil-segmented__btn')];
         return btns.filter(b => { const r = b.getBoundingClientRect(); return r.width > 0 && r.right <= window.innerWidth; }).length;
       });
       log(btnVisibles > 0, `Perfil: ${btnVisibles} botones visibles sin deformar`);

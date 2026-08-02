@@ -278,6 +278,19 @@
    Las tarjetas se renderizan con clase .tarjeta-capitulo[data-examen]
    y stats en .examen-card-stats (definido via inline style en JS).
 */
+
+.examen-icono-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  flex-shrink: 0;
+  font-size: var(--texto-base);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+}
+
 @media (max-width: 480px) {
   .tarjeta-capitulo[data-examen] {
     padding: var(--espaciado-sm) !important;

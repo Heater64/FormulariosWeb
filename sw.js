@@ -48,6 +48,7 @@ const urlsToCache = [
   './css/05-componentes/_pregunta-examen.css',
   './css/05-componentes/_tarjeta-pregunta.css',
   './css/05-componentes/_tarjeta-memorizacion.css',
+  './css/05-componentes/_memorizacion-juego.css',
   './css/05-componentes/_info-ayuda.css',
   './css/05-componentes/_versiculo.css',
   './css/05-componentes/_btn-calidad.css',
@@ -63,12 +64,16 @@ const urlsToCache = [
   './css/05-componentes/_perfil.css',
   './css/05-componentes/_login.css',
   './css/05-componentes/_tarjeta-estadistica.css',
+  './css/05-componentes/_admin-panel.css',
   './css/05-componentes/_boton-enlace.css',
   './css/05-componentes/_calificaciones.css',
   './css/05-componentes/_corregir-examen.css',
   './css/05-componentes/_editor-preguntas.css',
   './css/05-componentes/_examen-tomar.css',
   './css/05-componentes/_explorar.css',
+  './css/05-componentes/_notas.css',
+  './css/05-componentes/_editor-tiptap.css',
+  './css/05-componentes/_editor-dibujo.css',
   './css/06-utilidades/_utilidades.css',
   './css/06-utilidades/_colores.css',
   './css/06-utilidades/_accesibilidad.css',
@@ -85,6 +90,7 @@ const urlsToCache = [
   './js/datos/progreso-repository.js',
   './js/datos/examenes-repository.js',
   './js/datos/memorizacion-repository.js',
+  './js/datos/sembrador-memorizacion.js',
   './js/datos/notas-repository.js',
   './js/datos/admin-repository.js',
   './js/datos/sync-queue.js',
@@ -94,6 +100,10 @@ const urlsToCache = [
   './js/dominio/logros.js',
   './js/dominio/maquina-estudio.js',
   './js/componentes/editor-huecos.js',
+  './js/componentes/editor-imagen.js',
+  './js/componentes/editor-dibujo.js',
+  './js/componentes/editor-tiptap.js',
+  './js/componentes/version-history.js',
   './js/vistas/vista-login.js',
   './js/vistas/vista-estudio.js',
   './js/vistas/vista-capitulos.js',
@@ -104,6 +114,7 @@ const urlsToCache = [
   './js/vistas/vista-examen-tomar.js',
   './js/vistas/vista-examen-corregir.js',
   './js/vistas/vista-calificaciones.js',
+  './js/dominio/ejercicios-memorizacion.js',
   './js/vistas/vista-memorizacion.js',
   './js/vistas/vista-notas.js',
   './js/vistas/vista-progreso.js',
@@ -136,14 +147,12 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => {
-        console.log('[SW] Cacheando recursos...');
         return cache.addAll(urlsToCache);
       })
       .then(() => {
         return caches.open('formsbiblicos-data').then((cache) => cache.addAll(dataUrlsToCache));
       })
       .then(() => {
-        console.log('[SW] Instalación completa, saltando espera...');
         return self.skipWaiting();
       })
       .catch((err) => {
@@ -165,7 +174,6 @@ self.addEventListener('activate', (event) => {
           cacheNames
             .filter((name) => name.startsWith('formsbiblicos-') && name !== CACHE_NAME)
             .map((name) => {
-              console.log('[SW] Eliminando caché antigua:', name);
               return caches.delete(name);
             })
         );
@@ -173,7 +181,6 @@ self.addEventListener('activate', (event) => {
       // Tomar control de todos los clientes
       self.clients.claim()
         .then(() => {
-          console.log('[SW] Activado y controlando clientes');
           // Notificar a todos los clientes que hay una nueva versión
           return self.clients.matchAll();
         })
@@ -208,7 +215,6 @@ self.addEventListener('activate', (event) => {
 
 self.addEventListener('message', (event) => {
   if (event.data?.type === 'SKIP_WAITING') {
-    console.log('[SW] Saltando espera por solicitud del cliente');
     self.skipWaiting();
   }
   
@@ -218,15 +224,12 @@ self.addEventListener('message', (event) => {
 
   // Precargar en segundo plano los recursos de la nueva versión (actualización silenciosa)
   if (event.data?.type === 'PRECACHE_UPDATE') {
-    console.log('[SW] Precargando recursos de actualización en segundo plano...');
     _precacheUpdate();
   }
 
   // Limpiar caché de API para forzar recarga fresca
   if (event.data?.type === 'CLEAR_API_CACHE') {
-    caches.delete('formsbiblicos-api').then(() => {
-      console.log('[SW] Caché de API limpiada');
-    });
+    caches.delete('formsbiblicos-api');
   }
 });
 
@@ -236,12 +239,10 @@ self.addEventListener('message', (event) => {
 
 self.addEventListener('sync', (event) => {
   if (event.tag === 'sync-operations') {
-    console.log('[SW] Sincronización en segundo plano iniciada');
     event.waitUntil(flushSyncQueue());
   }
 
   if (event.tag === 'sync-data') {
-    console.log('[SW] Sincronización de datos en segundo plano');
     event.waitUntil(
       Promise.all([
         _refreshDataCache(),
@@ -340,7 +341,6 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return caches.match(request).then((cached) => {
             if (cached) {
-              console.log('[SW] API desde caché:', url.pathname);
               return cached;
             }
             // Si no hay caché, devolver error 503
@@ -426,7 +426,6 @@ self.addEventListener('fetch', (event) => {
         .catch(() => {
           return caches.match(request).then((cached) => {
             if (cached) {
-              console.log('[SW] Página desde caché:', url.pathname);
               return cached;
             }
             return caches.match('./offline.html');

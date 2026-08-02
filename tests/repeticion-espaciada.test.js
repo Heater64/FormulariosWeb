@@ -128,6 +128,30 @@ describe('repeticionEspaciada.estadoAprendizaje()', () => {
   });
 });
 
+describe('repeticionEspaciada.nivelJuego()', () => {
+  test('nuevo → nueva', () => {
+    expect(sm2().nivelJuego(0, 0)).toBe('nueva');
+    expect(sm2().nivelJuego(0, 1)).toBe('nueva');
+  });
+  test('racha baja o intervalo corto → aprendiendo', () => {
+    expect(sm2().nivelJuego(1, 1)).toBe('aprendiendo');
+    expect(sm2().nivelJuego(2, 3)).toBe('aprendiendo');
+  });
+  test('racha >=3 e intervalo >=7 → dominada', () => {
+    expect(sm2().nivelJuego(3, 7)).toBe('dominada');
+    expect(sm2().nivelJuego(4, 14)).toBe('dominada');
+  });
+  test('racha >=5 e intervalo >=21 → perfecta', () => {
+    expect(sm2().nivelJuego(5, 21)).toBe('perfecta');
+    expect(sm2().nivelJuego(8, 60)).toBe('perfecta');
+  });
+  test('infoNivel devuelve texto y color', () => {
+    const info = sm2().infoNivel('dominada');
+    expect(info.texto).toBe('Dominada');
+    expect(info.color).toBeTruthy();
+  });
+});
+
 describe('repeticionEspaciada.programarRepasos()', () => {
   test('ordena tarjetas por fecha de próximo repaso', () => {
     const tarjetas = [

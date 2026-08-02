@@ -7,6 +7,7 @@ class Router {
     this._guardias = [];
     this._middlewares = [];
     this._cacheVistas = new Map();
+    this._ejecucionToken = 0;
 
     window.addEventListener('hashchange', () => this._ejecutar());
   }
@@ -70,6 +71,10 @@ class Router {
 
   async _ejecutar() {
     const ruta = this._rutaActual();
+    // Token anti-carrera: si otra navegación arranca mientras esta ejecución
+    // está esperando (guardias, middleware o montaje async de la vista), la
+    // ejecución obsoleta se descarta y nunca pisa la vista recién montada.
+    const token = ++this._ejecucionToken;
 
     for (const guardia of this._guardias) {
       try {
@@ -121,6 +126,11 @@ class Router {
         }
         if (window.memoria) window.memoria.liberar(this._vistaActual);
 
+        // Abortar si mientras tanto se inició otra navegación (carrera de
+        // monturas async: una vista lenta puede terminar DESPUÉS de que el
+        // usuario ya navegó a otra, pisándola).
+        if (token !== this._ejecucionToken || this._rutaActual() !== ruta) return;
+
         const raiz = document.getElementById('app-root');
         if (!raiz) return;
 
@@ -143,6 +153,13 @@ class Router {
               <p class="u-color-texto-secundario u-fs-sm">${e.message || 'Ocurrió un error inesperado.'}</p>
               <button class="btn-primario" onclick="location.reload()">Reintentar</button>
             </div>`;
+          }
+          // Una vista async puede terminar de escribir su HTML DESPUÉS de que
+          // el usuario ya navegó a otra (carrera de monturas). Si eso ocurre,
+          // re-ejecutar el router para que la vista actual vuelva a mostrarse.
+          if (token !== this._ejecucionToken || this._rutaActual() !== ruta) {
+            this._ejecutar();
+            return;
           }
         } else {
           raiz.innerHTML = `<div class="o-contenedor u-mt-4 u-texto-centrado o-pila">

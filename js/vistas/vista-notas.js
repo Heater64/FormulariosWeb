@@ -6,6 +6,58 @@
   const $ = (c, s) => c.querySelector(s);
   const $$ = (c, s) => c.querySelectorAll(s);
 
+  const COLORES = [
+    { id: 'blanco', nombre: 'Blanco', css: 'var(--color-fondo-tarjeta)' },
+    { id: 'crema', nombre: 'Crema', css: '#FFF8E1' },
+    { id: 'amarillo', nombre: 'Amarillo', css: '#FFF9C4' },
+    { id: 'verde', nombre: 'Verde', css: '#E8F5E9' },
+    { id: 'azul', nombre: 'Azul', css: '#E3F2FD' },
+    { id: 'rosa', nombre: 'Rosa', css: '#FCE4EC' },
+    { id: 'morado', nombre: 'Morado', css: '#F3E5F5' },
+    { id: 'gris', nombre: 'Gris', css: '#ECEFF1' },
+  ];
+
+  /* ── Utilidades ── */
+
+  function tiempoRelativo(iso) {
+    if (!iso) return '';
+    const fecha = new Date(iso);
+    const diff = Date.now() - fecha.getTime();
+    const min = Math.floor(diff / 60000);
+    if (min < 1) return 'Ahora mismo';
+    if (min < 60) return `Hace ${min} ${min === 1 ? 'minuto' : 'minutos'}`;
+    const horas = Math.floor(min / 60);
+    if (horas < 24) return `Hace ${horas} ${horas === 1 ? 'hora' : 'horas'}`;
+    const dias = Math.floor(horas / 24);
+    if (dias === 1) return 'Ayer';
+    if (dias < 7) return `Hace ${dias} días`;
+    return new Date(iso).toLocaleDateString('es-ES', { day: 'numeric', month: 'short' });
+  }
+
+  function extraerPreview(html) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const txt = div.textContent || '';
+    const lineas = txt.split('\n').map(l => l.trim()).filter(Boolean);
+    return lineas.slice(0, 2).join(' ').slice(0, 140);
+  }
+
+  function extraerMiniatura(html) {
+    if (!html) return null;
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    const img = div.querySelector('img');
+    return img ? (img.getAttribute('src') || null) : null;
+  }
+
+  function textoPlano(html) {
+    if (!html) return '';
+    const div = document.createElement('div');
+    div.innerHTML = html;
+    return (div.textContent || '').trim();
+  }
+
   window.vistaNotas = {
 
     _conectarGestoVolver(raiz, alVolver) {
@@ -20,509 +72,703 @@
     async montar(raiz) {
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
+      this._raiz = raiz;
+      this._usuario = usuario;
+      this._limpiarEditor();
+
       raiz.innerHTML = window.skeleton ? window.skeleton.notas() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
       try {
-        const [notas, libros] = await Promise.all([
-          window.notasRepository.listar(usuario.id, 'personal'),
-          window.supabaseClient.from('libros_biblicos').select('id, nombre').order('id'),
-        ]);
-        this._pintar(raiz, { notas, libros: libros.data || [], usuario });
+        const notas = await window.notasRepository.listarPersonales(usuario.id);
+        this._pintarHome(raiz, notas);
       } catch {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar notas</p></div>';
       }
-
     },
 
     desmontar() {
+      // No perder los últimos cambios si el usuario navega (back del navegador,
+      // cambio de hash o deep-link) mientras edita: el autosave con debounce de
+      // 900ms podría no haber llegado a guardar aún.
+      if (this._sucia && this._notaActual) {
+        this._guardarAhora(); // fire-and-forget: la vista ya se está yendo
+      }
+      this._limpiarEditor();
       if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
+      if (this._navOculta) {
+        const nav = document.getElementById('barra-navegacion');
+        if (nav) nav.style.display = '';
+        this._navOculta = false;
+      }
+      this._raiz = null;
     },
 
-    /* ── Vista principal: lista de libros ── */
-    _pintar(raiz, d) {
-      if (this._gestoDestruir) { this._gestoDestruir(); this._gestoDestruir = null; }
-      const { notas } = d;
+    _limpiarEditor() {
+      if (this._tiptapEditor) {
+        try { window.editorTiptap.destruir(this._tiptapEditor); } catch (e) {}
+        this._tiptapEditor = null;
+      }
+      if (this._autosaveTimer) { clearTimeout(this._autosaveTimer); this._autosaveTimer = null; }
+    },
 
-      if (notas.length === 0) {
-        raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-            <h2>${I('file-text')} Notas personales</h2>
-            <button class="btn-primario u-btn-full" id="btnNueva">${I('plus')} Nueva nota</button>
-            <div class="u-texto-centrado o-pila u-mt-4" style="align-items:center">
-              <p class="u-icono-vacio">${I('file-text')}</p>
-              <p class="u-color-texto-secundario">Aún no tienes notas personales.</p>
-              <p class="u-fs-xs u-color-texto-terciario">Escribe notas mientras estudias o crea una desde aquí.</p>
-            </div>
-          </div>`;
-        raiz.querySelector('#btnNueva').onclick = () => this._nuevaNota(raiz, d);
-        return;
+    /* ═══════════════════════ PANTALLA PRINCIPAL ═══════════════════════ */
+
+    async _pintarHome(raiz, notas) {
+      this._limpiarEditor();
+      this._notas = notas || [];
+      if (this._navOculta) {
+        const nav = document.getElementById('barra-navegacion');
+        if (nav) nav.style.display = '';
+        this._navOculta = false;
       }
 
-      const porLibro = {};
-      notas.forEach((n) => {
-        if (!porLibro[n.libro_nombre]) porLibro[n.libro_nombre] = [];
-        porLibro[n.libro_nombre].push(n);
-      });
-
-      const todasNotasFlat = notas;
+      const pinIcon = (n) => n.fijada ? `<span class="nota-item__pin" title="Nota fijada">${I('pin')}</span>` : '';
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <div class="o-flecha o-flecha--between o-flecha--wrap" style="gap:var(--espaciado-sm)">
-            <h2>${I('file-text')} Notas personales</h2>
-          </div><div class="notas-buscar u-buscar-wrap">
-              <span class="u-buscar-wrap__icono">${I('search')}</span>
-              <input type="text" id="buscarNotas" placeholder="Buscar en todas las notas..." class="u-buscar-wrap__input">
+        <div class="notas-home">
+          <header class="notas-cabecera">
+            <h1 class="notas-cabecera__titulo">Notas</h1>
+            <button class="btn-icono notas-cabecera__papelera" id="btnPapelera" aria-label="Papelera" title="Papelera">${I('trash-2')}</button>
+          </header>
+
+          <div class="notas-buscar">
+            <span class="notas-buscar__icono">${I('search')}</span>
+            <input type="text" id="buscarNotas" placeholder="Buscar notas…" autocomplete="off" aria-label="Buscar notas">
+            <button class="notas-buscar__limpiar" id="btnLimpiarBusqueda" aria-label="Limpiar búsqueda" style="display:none">×</button>
           </div>
-          <div id="resultadosBusqueda" class="o-pila" style="display:none"></div>
-          <button class="btn-primario u-btn-full" id="btnNueva">${I('plus')} Nueva nota</button>
-          <div class="o-pila" id="listaNotasLibros">
-            ${Object.entries(porLibro).map(([libro, items]) => `
-              <div class="tarjeta-capitulo" style="cursor:pointer" data-libro="${E(libro)}" title="Ver notas guardadas para ${E(libro)}">
-                <div class="o-flecha o-flecha--between">
-                  <span class="u-fw-600">${I('book-open')} ${E(libro)}</span>
-                  <span class="u-fs-xs u-color-texto-terciario" title="Número de notas en este libro">${items.length} nota${items.length === 1 ? '' : 's'}</span>
-                </div>
-              </div>`).join('')}
+
+          <div class="notas-lista" id="listaNotas">
+            ${this._renderizarLista(this._notas, '')}
+          </div>
+
+          <div class="notas-fab" id="btnNueva" role="button" tabindex="0" aria-label="Nueva nota" title="Nueva nota">${I('plus')}</div>
+        </div>`;
+
+      window.Iconos.actualizar();
+
+      raiz.querySelector('#btnPapelera').onclick = () => this._pintarPapelera(raiz);
+      raiz.querySelector('#btnNueva').onclick = () => this._nuevaNota(raiz);
+      raiz.querySelector('#btnNueva').addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); this._nuevaNota(raiz); }
+      });
+
+      const buscarInput = raiz.querySelector('#buscarNotas');
+      const limpiarBtn = raiz.querySelector('#btnLimpiarBusqueda');
+      buscarInput.addEventListener('input', () => {
+        const q = buscarInput.value.toLowerCase().trim();
+        limpiarBtn.style.display = q ? '' : 'none';
+        const cont = raiz.querySelector('#listaNotas');
+        cont.innerHTML = this._renderizarLista(this._notas, q);
+        this._engancharLista(raiz, cont);
+        if (q && cont.querySelectorAll('.nota-item').length === 0) {
+          cont.innerHTML = `<div class="notas-vacio">
+            <span class="notas-vacio__icono">${I('search')}</span>
+            <p>Sin resultados para «${E(q)}»</p>
+            <span class="notas-vacio__sub">Prueba con otras palabras.</span>
+          </div>`;
+          window.Iconos.actualizar();
+        }
+        window.Iconos.actualizar();
+      });
+      limpiarBtn.onclick = () => {
+        buscarInput.value = '';
+        limpiarBtn.style.display = 'none';
+        buscarInput.dispatchEvent(new Event('input'));
+        buscarInput.focus();
+      };
+
+      this._engancharLista(raiz, raiz.querySelector('#listaNotas'));
+      this._conectarGestoVolver(raiz, () => { if (this._papeleraActiva) this._pintarHome(raiz, this._notas); });
+    },
+
+    _renderizarLista(notas, q) {
+      const filtradas = this._filtrar(notas, q);
+      if (filtradas.length === 0 && !q) {
+        return `<div class="notas-vacio">
+          <span class="notas-vacio__icono">${I('file-text')}</span>
+          <p class="notas-vacio__titulo">Aún no tienes notas</p>
+          <span class="notas-vacio__sub">Pulsa + para crear tu primera nota.</span>
+        </div>`;
+      }
+      return filtradas.map(n => this._itemNota(n)).join('');
+    },
+
+    _filtrar(notas, q) {
+      if (!q) return notas;
+      return notas.filter(n => {
+        const enTitulo = (n.titulo || '').toLowerCase().includes(q);
+        const enContenido = (textoPlano(n.contenido) || '').toLowerCase().includes(q);
+        return enTitulo || enContenido;
+      });
+    },
+
+    _itemNota(n) {
+      const mini = extraerMiniatura(n.contenido);
+      const color = COLORES.find(c => c.id === n.color_fondo) || COLORES[0];
+      return `
+        <button class="nota-item" data-id="${n.id}" data-color="${E(n.color_fondo || 'blanco')}" style="--nota-color:${color.css}" aria-label="Abrir ${E(n.titulo || 'nota')}">
+          ${mini
+            ? `<span class="nota-item__miniatura"><img src="${mini}" alt="" loading="lazy"></span>`
+            : `<span class="nota-item__icono">${I('file-text')}</span>`}
+          <span class="nota-item__cuerpo">
+            <span class="nota-item__fila">
+              <span class="nota-item__titulo">${E(n.titulo || 'Sin título')}</span>
+              ${n.fijada ? `<span class="nota-item__pin" title="Nota fijada">${I('pin')}</span>` : ''}
+            </span>
+            ${n.contenido ? `<span class="nota-item__preview">${E(extraerPreview(n.contenido))}</span>` : ''}
+            <span class="nota-item__fecha">${tiempoRelativo(n.actualizado_en || n.creado_en)}</span>
+          </span>
+        </button>`;
+    },
+
+    _engancharLista(raiz, cont) {
+      $$(cont, '.nota-item').forEach((el) => {
+        el.onclick = () => {
+          const n = this._notas.find(x => x.id === el.dataset.id);
+          if (n) this._pintarEditor(raiz, n);
+        };
+      });
+    },
+
+    /* ═══════════════════════ PAPELERA ═══════════════════════ */
+
+    async _pintarPapelera(raiz) {
+      this._papeleraActiva = true;
+      this._limpiarEditor();
+      raiz.innerHTML = `
+        <div class="notas-home">
+          <header class="notas-cabecera">
+            <button class="btn-icono" id="btnVolverPapelera" aria-label="Volver a notas" title="Volver">${I('chevron-left')}</button>
+            <h1 class="notas-cabecera__titulo">Papelera</h1>
+            <span class="notas-cabecera__spacer"></span>
+          </header>
+          <div class="notas-lista" id="listaPapelera">
+            <div class="o-pila u-mt-3" style="align-items:center;gap:var(--espaciado-sm)"><span class="u-color-texto-terciario">Cargando…</span></div>
+          </div>
+        </div>`;
+      const volverHome = async () => {
+        this._papeleraActiva = false;
+        try { this._notas = await window.notasRepository.listarPersonales(this._usuario.id); } catch (e) {}
+        this._pintarHome(raiz, this._notas);
+      };
+      raiz.querySelector('#btnVolverPapelera').onclick = volverHome;
+      this._conectarGestoVolver(raiz, volverHome);
+
+      let papelera = [];
+      try {
+        papelera = await window.notasRepository.listarPapelera(this._usuario.id);
+      } catch (e) { papelera = []; }
+      const cont = raiz.querySelector('#listaPapelera');
+      if (papelera.length === 0) {
+        cont.innerHTML = `<div class="notas-vacio">
+          <span class="notas-vacio__icono">${I('trash-2')}</span>
+          <p class="notas-vacio__titulo">La papelera está vacía</p>
+          <span class="notas-vacio__sub">Las notas que elimines aparecerán aquí.</span>
+        </div>`;
+        window.Iconos.actualizar();
+        return;
+      }
+      cont.innerHTML = papelera.map(n => `
+        <div class="nota-item nota-item--papelera" data-id="${n.id}">
+          <span class="nota-item__icono">${I('file-text')}</span>
+          <span class="nota-item__cuerpo">
+            <span class="nota-item__fila">
+              <span class="nota-item__titulo">${E(n.titulo || 'Sin título')}</span>
+            </span>
+            <span class="nota-item__fecha">${tiempoRelativo(n.eliminada_en || n.actualizado_en)}</span>
+          </span>
+          <span class="nota-item__acciones">
+            <button class="btn-icono" data-restaurar="${n.id}" aria-label="Restaurar nota" title="Restaurar">${I('rotate-ccw')}</button>
+            <button class="btn-icono btn-icono--peligro" data-eliminar="${n.id}" aria-label="Eliminar definitivamente" title="Eliminar definitivamente">${I('trash-2')}</button>
+          </span>
+        </div>`).join('');
+      window.Iconos.actualizar();
+
+      $$(cont, '[data-restaurar]').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            await window.notasRepository.restaurarPersonal(btn.dataset.restaurar, this._usuario.id);
+            this._notas = await window.notasRepository.listarPersonales(this._usuario.id);
+            window.helpers.mostrarAlerta('Nota restaurada.', 'exito');
+            this._pintarPapelera(raiz);
+          } catch (e) { window.helpers.mostrarAlerta('Error al restaurar.', 'error'); }
+        };
+      });
+      $$(cont, '[data-eliminar]').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await window.helpers.confirmar('Esta nota se eliminará para siempre. Esta acción no se puede deshacer.', {
+            titulo: 'Eliminar definitivamente', textoConfirmar: 'Eliminar'
+          });
+          if (!ok) return;
+          try {
+            await window.notasRepository.eliminarDefinitivo(btn.dataset.eliminar, this._usuario.id);
+            window.helpers.mostrarAlerta('Nota eliminada.', 'exito');
+            this._pintarPapelera(raiz);
+          } catch (e) { window.helpers.mostrarAlerta('Error al eliminar.', 'error'); }
+        };
+      });
+    },
+
+    /* ═══════════════════════ EDITOR ═══════════════════════ */
+
+    _nuevaNota(raiz) {
+      this._pintarEditor(raiz, null);
+    },
+
+    async _pintarEditor(raiz, nota) {
+      this._limpiarEditor();
+      this._papeleraActiva = false;
+
+      // Ocultar la barra de navegación para una experiencia inmersiva
+      const nav = document.getElementById('barra-navegacion');
+      if (nav) { nav.style.display = 'none'; this._navOculta = true; }
+
+      const esNueva = !nota;
+      const notaTmp = esNueva
+        ? { id: null, titulo: '', contenido: '', color_fondo: 'blanco', fijada: false, creado_en: null }
+        : { ...nota };
+      this._notaActual = notaTmp;
+      this._esNueva = esNueva;
+      this._sucia = false;
+      this._guardando = false;
+
+      const color = COLORES.find(c => c.id === notaTmp.color_fondo) || COLORES[0];
+
+      raiz.innerHTML = `
+        <div class="notas-editor" data-color="${E(notaTmp.color_fondo)}" style="--nota-color:${color.css}">
+          <header class="notas-editor__cabecera">
+            <button class="btn-icono notas-editor__btn" id="btnVolver" aria-label="Volver a notas" title="Volver">${I('chevron-left')}</button>
+            <span class="notas-editor__estado" id="estadoGuardado" aria-live="polite"></span>
+            <span class="notas-editor__acciones">
+              <button class="btn-icono notas-editor__btn" id="btnUndo" aria-label="Deshacer" title="Deshacer" disabled>${I('undo-2')}</button>
+              <button class="btn-icono notas-editor__btn" id="btnRedo" aria-label="Rehacer" title="Rehacer" disabled>${I('redo-2')}</button>
+              <button class="btn-icono notas-editor__btn" id="btnMenu" aria-label="Más opciones" title="Más opciones">${I('more-vertical')}</button>
+            </span>
+          </header>
+
+          <div class="notas-editor__cuerpo" id="cuerpoEditor">
+            <input type="text" class="notas-editor__titulo" id="tituloNota" placeholder="Título" value="${E(notaTmp.titulo || '')}" autocomplete="off" aria-label="Título de la nota">
+            <p class="notas-editor__fecha" id="fechaNota">${notaTmp.actualizado_en ? this._fechaCompleta(notaTmp.actualizado_en) : 'Nueva nota'}</p>
+            <div class="tiptap-editor notas-editor__texto" id="editorContenido"></div>
+          </div>
+
+          <div class="notas-editor__barra" id="barraFormato" role="toolbar" aria-label="Formato de texto">
+            <button type="button" class="notas-editor__fmt" data-cmd="bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="strike" title="Tachado" aria-label="Tachado">${I('strikethrough')}</button>
+            <span class="notas-editor__sep"></span>
+            <button type="button" class="notas-editor__fmt" data-cmd="h1" title="Título 1" aria-label="Título 1">${I('heading-1')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="h2" title="Título 2" aria-label="Título 2">${I('heading-2')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="h3" title="Título 3" aria-label="Título 3">${I('heading-3')}</button>
+            <span class="notas-editor__sep"></span>
+            <button type="button" class="notas-editor__fmt" data-cmd="bulletList" title="Lista" aria-label="Lista de viñetas">${I('list')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="orderedList" title="Lista numerada" aria-label="Lista numerada">${I('list-ordered')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="taskList" title="Casillas" aria-label="Lista de tareas">${I('list-checks')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="blockquote" title="Cita" aria-label="Cita">${I('quote')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="hr" title="Separador" aria-label="Separador">${I('minus')}</button>
+            <span class="notas-editor__sep"></span>
+            <button type="button" class="notas-editor__fmt" data-cmd="image" title="Insertar imagen" aria-label="Insertar imagen">${I('image')}</button>
+            <button type="button" class="notas-editor__fmt" data-cmd="draw" title="Dibujar" aria-label="Dibujar a mano">${I('pen-tool')}</button>
           </div>
         </div>`;
 
       window.Iconos.actualizar();
-      raiz.querySelector('#btnNueva').onclick = () => this._nuevaNota(raiz, d);
-      $$(raiz, '[data-libro]').forEach((el) => {
-        el.onclick = () => this._listaCapitulos(raiz, el.dataset.libro, d);
-      });
+      const exec = (cmd, attr) => { if (this._tiptapEditor) this._tiptapEditor.chain().focus()[cmd](attr).run(); };
 
-      // Search handler
-      const buscarInput = raiz.querySelector('#buscarNotas');
-      const resultadosDiv = raiz.querySelector('#resultadosBusqueda');
-      const listaLibrosDiv = raiz.querySelector('#listaNotasLibros');
-      buscarInput.addEventListener('input', () => {
-        const q = buscarInput.value.toLowerCase().trim();
-        if (q.length < 2) {
-          resultadosDiv.style.display = 'none';
-          listaLibrosDiv.style.display = '';
-          return;
-        }
-        const resultados = todasNotasFlat.filter(n =>
-          (n.contenido && n.contenido.toLowerCase().includes(q)) ||
-          (n.titulo && n.titulo.toLowerCase().includes(q)) ||
-          (n.libro_nombre && n.libro_nombre.toLowerCase().includes(q))
-        );
-        if (resultados.length === 0) {
-          resultadosDiv.innerHTML = '<p class="u-color-texto-terciario u-fs-sm u-mt-2">Sin resultados</p>';
-        } else {
-          resultadosDiv.innerHTML = resultados.slice(0, 20).map(n => `
-            <div class="tarjeta-capitulo" style="cursor:pointer;padding:var(--espaciado-sm)" data-id="${n.id}">
-              <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs);flex-wrap:wrap">
-                <span class="u-fw-600 u-fs-sm">${I('file-text')} ${E(n.titulo || 'Nota')}</span>
-                <span class="u-fs-xs u-color-texto-terciario">${E(n.libro_nombre)} ${n.capitulo_numero || ''}</span>
-              </div>
-              <p class="u-fs-xs u-color-texto-secundario u-mt-1 truncar-2">${E((n.contenido || '').slice(0, 120))}${(n.contenido || '').length > 120 ? '...' : ''}</p>
-            </div>
-          `).join('');
-          resultadosDiv.querySelectorAll('[data-id]').forEach(el => {
-            el.onclick = () => {
-              const n = todasNotasFlat.find(x => x.id === el.dataset.id);
-              if (n) this._verNota(raiz, n, d);
-            };
-          });
-        }
-        resultadosDiv.style.display = '';
-        listaLibrosDiv.style.display = 'none';
-        window.Iconos?.actualizar?.();
-      });
-    },
-
-    /* ── Lista de capítulos ── */
-    _listaCapitulos(raiz, libro, d) {
-      const delLibro = d.notas.filter((n) => n.libro_nombre === libro);
-      const porCap = {};
-      delLibro.forEach((n) => {
-        const c = String(n.capitulo_numero);
-        if (!porCap[c]) porCap[c] = [];
-        porCap[c].push(n);
-      });
-      const orden = Object.keys(porCap).sort((a, b) => parseInt(a) - parseInt(b));
-
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
-          <h2>${I('book-open')} ${E(libro)}</h2>
-          <div class="o-pila">
-            ${orden.map((cap) => `
-              <div class="tarjeta-capitulo" style="cursor:pointer" data-cap="${cap}" title="Ver notas del capítulo ${cap}">
-                <div class="o-flecha o-flecha--between">
-                  <span class="u-fw-600">Capítulo ${cap}</span>
-                  <span class="u-fs-xs u-color-texto-terciario" title="Número de notas en este capítulo">${porCap[cap].length} nota${porCap[cap].length === 1 ? '' : 's'}</span>
-                </div>
-              </div>`).join('')}
-          </div>
-        </div>`;
-
-      raiz.querySelector('#btnV').onclick = () => this._pintar(raiz, d);
-      this._conectarGestoVolver(raiz, () => this._pintar(raiz, d));
-      $$(raiz, '[data-cap]').forEach((el) => {
-        el.onclick = () => this._listaNotasCap(raiz, libro, parseInt(el.dataset.cap, 10), d);
-      });
-    },
-
-    /* ── Lista de notas de un capítulo (puede haber varias) ── */
-    _listaNotasCap(raiz, libro, capitulo, d) {
-      const notasCap = d.notas
-        .filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo))
-        .sort((a, b) => {
-          // Fijadas primero; luego por fecha (más reciente arriba)
-          if (!!a.fijada !== !!b.fijada) return a.fijada ? -1 : 1;
-          return new Date(b.creado_en || 0) - new Date(a.creado_en || 0);
-        });
-
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
-          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
-            <button class="btn-primario u-fs-xs" id="btnNuevaAqui">${I('plus')} Otra nota</button>
-          </div>
-          <div class="o-pila" id="listaNotasCap">
-            ${notasCap.map((n, i) => this._tarjetaNota(n, i, libro, capitulo, d)).join('')}
-          </div>
-        </div>`;
-
-      raiz.querySelector('#btnV').onclick = () => this._listaCapitulos(raiz, libro, d);
-      this._conectarGestoVolver(raiz, () => this._listaCapitulos(raiz, libro, d));
-      raiz.querySelector('#btnNuevaAqui').onclick = () => this._nuevaNota(raiz, d, libro, capitulo);
-      this._engancharNotas(raiz, libro, capitulo, d);
-    },
-
-    _tarjetaNota(n, i, libro, capitulo, d) {
-      const titulo = n.titulo || `Nota ${i + 1}`;
-      return `
-        <div class="tarjeta-capitulo o-pila${n.fijada ? ' tarjeta-capitulo--fijada' : ''}" data-id="${n.id}" style="gap:var(--espaciado-sm);cursor:pointer" title="Leer esta nota">
-          <div class="o-flecha o-flecha--between">
-            <span class="u-fw-600" style="display:flex;align-items:center;gap:6px">${n.fijada ? `<span class="nota-pin-icono" title="Nota fijada">${I('pin')}</span>` : ''}${E(titulo)}</span>
-            <div class="o-flecha nota-acciones" onclick="event.stopPropagation()">
-              <button class="btn-icono" data-pin="${n.id}" data-fijada="${n.fijada ? '1' : '0'}" aria-label="${n.fijada ? 'Quitar fijación' : 'Fijar nota'}" title="${n.fijada ? 'Quitar fijación' : 'Fijar nota'}">${n.fijada ? I('pin-off') : I('pin')}</button>
-              <button class="btn-icono" data-edit="${n.id}" aria-label="Editar nota" title="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
-              <button class="btn-icono btn-icono--peligro" data-del="${n.id}" aria-label="Eliminar nota" title="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
-            </div>
-          </div>
-          <div class="nota-contenido u-nota-contenido">${n.contenido}</div>
-          <p class="u-fs-xs u-color-texto-terciario" title="Fecha de última edición">Última edición: ${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</p>
-        </div>`;
-    },
-
-    _engancharNotas(raiz, libro, capitulo, d) {
-      const cont = raiz.querySelector('#listaNotasCap');
-      if (!cont) return;
-      cont.querySelectorAll('[data-id]').forEach((el) => {
-        const id = el.dataset.id;
-        el.onclick = () => { const n = d.notas.find(x => x.id === id); if (n) this._verNota(raiz, n, d); };
-      });
-      cont.querySelectorAll('[data-edit]').forEach((b) => {
-        b.onclick = () => { const n = d.notas.find(x => x.id === b.dataset.edit); if (n) this._editarNota(raiz, n, d); };
-      });
-      cont.querySelectorAll('[data-pin]').forEach((b) => {
-        b.onclick = async () => {
-          const n = d.notas.find(x => x.id === b.dataset.pin);
-          if (!n) return;
-          const nueva = n.fijada ? false : true;
-          try {
-            await window.notasRepository.fijar(n.id, nueva);
-            n.fijada = nueva;
-            window.helpers.mostrarAlerta(nueva ? 'Nota fijada.' : 'Fijación quitada.', 'exito');
-            d.notas = await window.notasRepository.listar(d.usuario.id, 'personal');
-            this._listaNotasCap(raiz, libro, capitulo, d);
-          } catch (e) { window.helpers.mostrarAlerta(e.message || 'Error al fijar.', 'error'); }
+      // ── Barra de formato ──
+      $$(raiz, '.notas-editor__fmt').forEach(btn => {
+        btn.onclick = () => {
+          const cmd = btn.dataset.cmd;
+          if (cmd === 'image') { this._insertarImagen(); return; }
+          if (cmd === 'draw') { this._insertarDibujo(); return; }
+          if (cmd === 'h1') return exec('toggleHeading', { level: 1 });
+          if (cmd === 'h2') return exec('toggleHeading', { level: 2 });
+          if (cmd === 'h3') return exec('toggleHeading', { level: 3 });
+          if (cmd === 'hr') return exec('setHorizontalRule');
+          exec('toggle' + cmd.charAt(0).toUpperCase() + cmd.slice(1));
         };
       });
-      cont.querySelectorAll('[data-del]').forEach((b) => {
-        b.onclick = async () => {
-          const id = b.dataset.del;
-          const ok = await window.helpers.confirmar('¿Eliminar esta nota personal?', { titulo: 'Eliminar nota', textoConfirmar: 'Eliminar' });
-          if (!ok) return;
+
+      raiz.querySelector('#btnVolver').onclick = () => this._volverDeEditor(raiz);
+      this._conectarGestoVolver(raiz, () => this._volverDeEditor(raiz));
+      raiz.querySelector('#btnUndo').onclick = () => exec('undo');
+      raiz.querySelector('#btnRedo').onclick = () => exec('redo');
+      raiz.querySelector('#btnMenu').onclick = () => this._menuOpciones(raiz);
+
+      // Título → autosave
+      const tituloInput = raiz.querySelector('#tituloNota');
+      tituloInput.addEventListener('input', () => {
+        this._notaActual.titulo = tituloInput.value;
+        this._marcarSucia();
+        this._programarAutosave();
+      });
+
+      // ── Editor TipTap ──
+      const editorEl = raiz.querySelector('#editorContenido');
+      window.editorTiptap.crear(editorEl, notaTmp.contenido || '', {
+        ariaLabel: 'Editor de la nota',
+        placeholder: 'Escribe tu nota…',
+        onUpdate: (html) => {
+          this._notaActual.contenido = html;
+          this._marcarSucia();
+          this._programarAutosave();
+          this._actualizarEstadosFormato();
+        }
+      }).then(editor => {
+        this._tiptapEditor = editor;
+        this._actualizarEstadosFormato();
+        editor.on('selectionUpdate', () => this._actualizarEstadosFormato());
+        editor.on('transaction', () => this._actualizarUndoRedo());
+        this._actualizarUndoRedo();
+        tituloInput.focus();
+      });
+    },
+
+    _marcarSucia() {
+      if (!this._sucia) {
+        this._sucia = true;
+        const est = this._raiz && this._raiz.querySelector('#estadoGuardado');
+        if (est) est.textContent = 'Guardando…';
+      }
+    },
+
+    _programarAutosave() {
+      if (this._autosaveTimer) clearTimeout(this._autosaveTimer);
+      this._autosaveTimer = setTimeout(() => this._guardarAhora(), 900);
+    },
+
+    async _guardarAhora() {
+      if (this._guardando) return;
+      const nota = this._notaActual;
+      if (!nota) return;
+      // No crear notas vacías
+      const contenidoVacio = !(nota.contenido || '').trim() || nota.contenido === '<p></p>';
+      const tituloVacio = !(nota.titulo || '').trim();
+      if (this._esNueva && contenidoVacio && tituloVacio) {
+        const est = this._raiz && this._raiz.querySelector('#estadoGuardado');
+        if (est) est.textContent = '';
+        this._sucia = false;
+        return;
+      }
+      this._guardando = true;
+      const est = this._raiz && this._raiz.querySelector('#estadoGuardado');
+      if (est) est.textContent = 'Guardando…';
+      try {
+        const repo = window.notasRepository;
+        let notaGuardada;
+        if (this._esNueva) {
+          notaGuardada = await repo.crearPersonal(this._usuario.id, {
+            titulo: nota.titulo, contenido: nota.contenido, color_fondo: nota.color_fondo
+          });
+          this._esNueva = false;
+          this._notaActual.id = notaGuardada.id;
+          this._notaActual.creado_en = notaGuardada.creado_en;
+        } else {
+          await repo.actualizarPersonal(nota.id, {
+            titulo: nota.titulo, contenido: nota.contenido, color_fondo: nota.color_fondo
+          }, this._usuario.id);
+          this._notaActual.actualizado_en = new Date().toISOString();
+        }
+        this._sucia = false;
+        this._recargarListaSilenciosa();
+        if (est) {
+          est.textContent = 'Guardado';
+          setTimeout(() => { if (est && est.textContent === 'Guardado') est.textContent = ''; }, 1800);
+        }
+      } catch (e) {
+        if (est) est.textContent = 'Error al guardar';
+      } finally {
+        this._guardando = false;
+      }
+    },
+
+    async _recargarListaSilenciosa() {
+      try {
+        const notas = await window.notasRepository.listarPersonales(this._usuario.id);
+        this._notas = notas;
+      } catch (e) {}
+    },
+
+    _volverDeEditor(raiz) {
+      const salir = async () => {
+        // Guardar siempre si hay cambios (nota existente sucia o nota nueva con contenido)
+        if (this._sucia) await this._guardarAhora();
+        this._limpiarEditor();
+        try {
+          const notas = await window.notasRepository.listarPersonales(this._usuario.id);
+          this._notas = notas;
+        } catch (e) {}
+        if (this._raiz) this._pintarHome(raiz, this._notas);
+      };
+      salir();
+    },
+
+    _fechaCompleta(iso) {
+      return new Date(iso).toLocaleString('es-ES', {
+        day: 'numeric', month: 'long', year: 'numeric',
+        hour: '2-digit', minute: '2-digit'
+      });
+    },
+
+    _actualizarEstadosFormato() {
+      const ed = this._tiptapEditor;
+      if (!ed || !this._raiz) return;
+      const activo = (cmd) => {
+        if (!ed) return false;
+        if (cmd === 'bold') return ed.isActive('bold');
+        if (cmd === 'italic') return ed.isActive('italic');
+        if (cmd === 'underline') return ed.isActive('underline');
+        if (cmd === 'strike') return ed.isActive('strike');
+        if (cmd === 'h1') return ed.isActive('heading', { level: 1 });
+        if (cmd === 'h2') return ed.isActive('heading', { level: 2 });
+        if (cmd === 'h3') return ed.isActive('heading', { level: 3 });
+        if (cmd === 'bulletList') return ed.isActive('bulletList');
+        if (cmd === 'orderedList') return ed.isActive('orderedList');
+        if (cmd === 'taskList') return ed.isActive('taskList');
+        if (cmd === 'blockquote') return ed.isActive('blockquote');
+        return false;
+      };
+      $$(this._raiz, '.notas-editor__fmt').forEach(btn => {
+        btn.classList.toggle('notas-editor__fmt--activo', activo(btn.dataset.cmd));
+      });
+    },
+
+    _actualizarUndoRedo() {
+      const ed = this._tiptapEditor;
+      if (!ed || !this._raiz) return;
+      const undoBtn = this._raiz.querySelector('#btnUndo');
+      const redoBtn = this._raiz.querySelector('#btnRedo');
+      if (undoBtn) undoBtn.disabled = !ed.can().undo();
+      if (redoBtn) redoBtn.disabled = !ed.can().redo();
+    },
+
+    _insertarImagen() {
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = 'image/*';
+      input.onchange = () => {
+        const file = input.files && input.files[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = async () => {
+          const dataUrl = await this._comprimirImagen(reader.result, file.type);
+          if (this._tiptapEditor) {
+            this._tiptapEditor.chain().focus().setImage({ src: dataUrl }).run();
+          }
+        };
+        reader.readAsDataURL(file);
+      };
+      input.click();
+    },
+
+    // Comprime imágenes grandes a base64 más ligero (máx 1200px, JPEG 0.82).
+    // Espera al evento load: sin onload, img.width es 0 y drawImage dibuja en blanco.
+    _comprimirImagen(dataUrl, mime) {
+      return new Promise((resolve) => {
+        const img = new Image();
+        img.onload = () => {
+          const MAX = 1200;
+          const canvas = document.createElement('canvas');
+          let ratio = 1;
+          if (img.width > MAX) ratio = MAX / img.width;
+          canvas.width = Math.max(1, Math.round(img.width * ratio));
+          canvas.height = Math.max(1, Math.round(img.height * ratio));
+          const ctx = canvas.getContext('2d');
           try {
-            await window.notasRepository.eliminar(id);
-            window.helpers.mostrarAlerta('Nota eliminada.', 'exito');
-            d.notas = d.notas.filter((x) => x.id !== id);
-            const quedan = d.notas.filter((x) => x.libro_nombre === libro && String(x.capitulo_numero) === String(capitulo));
-            if (quedan.length === 0) this._listaCapitulos(raiz, libro, d);
-            else this._listaNotasCap(raiz, libro, capitulo, d);
-          } catch {
-            window.helpers.mostrarAlerta('Error al eliminar.', 'error');
+            ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
+            const esJpeg = (mime || '').includes('jpeg') || (mime || '').includes('jpg');
+            resolve(canvas.toDataURL(esJpeg ? 'image/jpeg' : 'image/png', 0.82));
+          } catch (e) {
+            resolve(dataUrl);
+          }
+        };
+        img.onerror = () => resolve(dataUrl);
+        img.src = dataUrl;
+      });
+    },
+
+    _insertarDibujo() {
+      if (!window.editorDibujo) { window.helpers.mostrarAlerta('El dibujo no está disponible.', 'advertencia'); return; }
+      window.editorDibujo.abrir({
+        onConfirm: (dataUrl) => {
+          if (this._tiptapEditor) {
+            this._tiptapEditor.chain().focus().setImage({ src: dataUrl }).run();
+          }
+        }
+      });
+    },
+
+    /* ═══════════════════════ MENÚ DE OPCIONES ═══════════════════════ */
+
+    async _menuOpciones(raiz) {
+      const nota = this._notaActual;
+      if (!nota) return;
+      const esNueva = this._esNueva;
+
+      const overlay = document.createElement('div');
+      overlay.className = 'notas-menu-overlay';
+      overlay.innerHTML = `
+        <div class="notas-menu" role="dialog" aria-modal="true" aria-label="Opciones de la nota">
+          <p class="notas-menu__titulo">Opciones</p>
+          <div class="notas-menu__colores" role="group" aria-label="Color de fondo">
+            <span class="notas-menu__etiqueta">Color</span>
+            <div class="notas-menu__paleta">
+              ${COLORES.map(c => `
+                <button type="button" class="notas-menu__color${c.id === nota.color_fondo ? ' notas-menu__color--activo' : ''}"
+                  data-color="${c.id}" style="--c:${c.css}" aria-label="${c.nombre}" title="${c.nombre}"></button>`).join('')}
+            </div>
+          </div>
+          <div class="notas-menu__opciones">
+            <button type="button" data-accion="fijar">${I('pin')} ${nota.fijada ? 'Quitar fijación' : 'Fijar nota'}</button>
+            <button type="button" data-accion="duplicar">${I('copy')} Duplicar</button>
+            <button type="button" data-accion="compartir">${I('share-2')} Compartir</button>
+            <button type="button" data-accion="pdf">${I('file-down')} Exportar PDF</button>
+            <button type="button" data-accion="txt">${I('file-text')} Exportar TXT</button>
+            <button type="button" data-accion="eliminar" class="notas-menu__peligro">${I('trash-2')} Eliminar nota</button>
+          </div>
+          <button type="button" class="notas-menu__cancelar" data-cerrar>Cancelar</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      window.Iconos.actualizar();
+
+      const cerrar = () => overlay.remove();
+
+      overlay.addEventListener('click', (e) => {
+        if (e.target === overlay) cerrar();
+      });
+      overlay.querySelector('[data-cerrar]').onclick = cerrar;
+
+      // Color de fondo
+      $$(overlay, '.notas-menu__color').forEach(btn => {
+        btn.onclick = async () => {
+          const nuevoColor = btn.dataset.color;
+          nota.color_fondo = nuevoColor;
+          const editorEl = raiz.querySelector('.notas-editor');
+          if (editorEl) {
+            editorEl.dataset.color = nuevoColor;
+            const c = COLORES.find(x => x.id === nuevoColor) || COLORES[0];
+            editorEl.style.setProperty('--nota-color', c.css);
+          }
+          $$(overlay, '.notas-menu__color').forEach(b => b.classList.toggle('notas-menu__color--activo', b.dataset.color === nuevoColor));
+          this._marcarSucia();
+          this._programarAutosave();
+          if (nota.id) {
+            await window.notasRepository.actualizarPersonal(nota.id, { color_fondo: nuevoColor }, this._usuario.id).catch(() => {});
           }
         };
       });
-    },
 
-    /* ── Ver nota individual ── */
-    _verNota(raiz, nota, d) {
-      const libro = nota.libro_nombre, capitulo = nota.capitulo_numero;
-      const notasCap = d.notas.filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo));
-      const idx = Math.max(0, notasCap.findIndex(n => n.id === nota.id));
-      const titulo = nota.titulo || `Nota ${idx + 1}`;
-
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
-          <h2>${I('book-open')} ${E(libro)} ${capitulo}</h2>
-          <div class="tarjeta-capitulo o-pila${nota.fijada ? ' tarjeta-capitulo--fijada' : ''}" style="gap:var(--espaciado-sm)">
-            <div class="o-flecha o-flecha--between">
-              <span class="u-fw-600" style="display:flex;align-items:center;gap:6px">${nota.fijada ? `<span class="nota-pin-icono" title="Nota fijada">${I('pin')}</span>` : ''}${E(titulo)}</span>
-              <div class="o-flecha nota-acciones">
-                <button class="btn-icono" id="btnPin" aria-label="${nota.fijada ? 'Quitar fijación' : 'Fijar nota'}">${nota.fijada ? I('pin-off') : I('pin')}</button>
-                <button class="btn-icono" id="btnEdit" aria-label="Editar nota">${I('pencil')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Editar</span></button>
-                <button class="btn-icono btn-icono--peligro" id="btnDel" aria-label="Eliminar nota">${I('trash-2')}<span class="u-fs-xs u-fw-600" style="margin-left:2px">Eliminar</span></button>
-              </div>
-            </div>
-            <div class="nota-contenido u-nota-contenido">${nota.contenido}</div>
-          </div>
-          <p class="u-fs-xs u-color-texto-terciario">Última edición: ${window.helpers.formatearFecha(nota.actualizado_en || nota.creado_en)}</p>
-        </div>`;
-
-      raiz.querySelector('#btnV').onclick = () => this._listaNotasCap(raiz, libro, capitulo, d);
-      this._conectarGestoVolver(raiz, () => this._listaNotasCap(raiz, libro, capitulo, d));
-      raiz.querySelector('#btnPin').onclick = async () => {
-        const nueva = nota.fijada ? false : true;
-        try {
-          await window.notasRepository.fijar(nota.id, nueva);
-          nota.fijada = nueva;
-          window.helpers.mostrarAlerta(nueva ? 'Nota fijada.' : 'Fijación quitada.', 'exito');
-          this._verNota(raiz, nota, d);
-        } catch (e) { window.helpers.mostrarAlerta(e.message || 'Error al fijar.', 'error'); }
+      overlay.querySelector('[data-accion="fijar"]').onclick = async () => {
+        cerrar();
+        if (esNueva && !nota.id) {
+          // Asegurar que exista antes de fijar
+          if (this._sucia) await this._guardarAhora();
+          if (!nota.id) { window.helpers.mostrarAlerta('Escribe algo primero para fijar.', 'advertencia'); return; }
+        }
+        const nueva = !nota.fijada;
+        await window.notasRepository.fijarPersonal(nota.id, nueva, this._usuario.id).catch(() => {});
+        nota.fijada = nueva;
+        window.helpers.mostrarAlerta(nueva ? 'Nota fijada.' : 'Fijación quitada.', 'exito');
       };
-      raiz.querySelector('#btnEdit').onclick = () => this._editarNota(raiz, nota, d);
-      raiz.querySelector('#btnDel').onclick = async () => {
-        const ok = await window.helpers.confirmar('¿Eliminar esta nota personal?', { titulo: 'Eliminar nota', textoConfirmar: 'Eliminar' });
+
+      overlay.querySelector('[data-accion="duplicar"]').onclick = async () => {
+        cerrar();
+        try {
+          if (this._sucia) await this._guardarAhora();
+          const fuente = this._notaActual;
+          await window.notasRepository.duplicarPersonal(this._usuario.id, fuente);
+          window.helpers.mostrarAlerta('Nota duplicada.', 'exito');
+          const notas = await window.notasRepository.listarPersonales(this._usuario.id);
+          this._notas = notas;
+        } catch (e) { window.helpers.mostrarAlerta('Error al duplicar.', 'error'); }
+      };
+
+      overlay.querySelector('[data-accion="compartir"]').onclick = async () => {
+        cerrar();
+        if (this._sucia) await this._guardarAhora();
+        const texto = (nota.titulo ? nota.titulo + '\n\n' : '') + textoPlano(nota.contenido);
+        if (navigator.share) {
+          try { await navigator.share({ title: nota.titulo || 'Nota', text: texto }); return; } catch (e) {}
+        }
+        try {
+          await navigator.clipboard.writeText(texto);
+          window.helpers.mostrarAlerta('Nota copiada al portapapeles.', 'exito');
+        } catch (e) { window.helpers.mostrarAlerta('No se pudo compartir.', 'error'); }
+      };
+
+      overlay.querySelector('[data-accion="pdf"]').onclick = async () => {
+        cerrar();
+        if (this._sucia) await this._guardarAhora();
+        this._exportarPDF(nota);
+      };
+
+      overlay.querySelector('[data-accion="txt"]').onclick = async () => {
+        cerrar();
+        if (this._sucia) await this._guardarAhora();
+        const titulo = (nota.titulo || 'nota').replace(/[^\w\dáéíóúñÑü -]/gi, '').trim() || 'nota';
+        window.helpers.descargarTexto(titulo, (nota.titulo ? nota.titulo + '\n\n' : '') + textoPlano(nota.contenido));
+      };
+
+      overlay.querySelector('[data-accion="eliminar"]').onclick = async () => {
+        cerrar();
+        const ok = await window.helpers.confirmar('La nota se moverá a la papelera. Podrás restaurarla desde allí.', {
+          titulo: 'Eliminar nota', textoConfirmar: 'Mover a papelera'
+        });
         if (!ok) return;
         try {
-          await window.notasRepository.eliminar(nota.id);
-          window.helpers.mostrarAlerta('Nota eliminada.', 'exito');
-          d.notas = d.notas.filter((n) => n.id !== nota.id);
-          const quedan = d.notas.filter((n) => n.libro_nombre === libro && String(n.capitulo_numero) === String(capitulo));
-          if (quedan.length === 0) this._listaCapitulos(raiz, libro, d);
-          else this._listaNotasCap(raiz, libro, capitulo, d);
-        } catch {
-          window.helpers.mostrarAlerta('Error al eliminar.', 'error');
-        }
+          if (esNueva && !nota.id) {
+            // Nota nunca guardada: simplemente descartar
+            this._limpiarEditor();
+            const notas = await window.notasRepository.listarPersonales(this._usuario.id);
+            if (this._raiz) this._pintarHome(this._raiz, notas);
+            window.helpers.mostrarAlerta('Nota descartada.', 'exito');
+            return;
+          }
+          if (this._sucia) { this._sucia = false; }
+          await window.notasRepository.moverAPapelera(nota.id, this._usuario.id);
+          window.helpers.mostrarAlerta('Nota movida a la papelera.', 'exito');
+          const notas = await window.notasRepository.listarPersonales(this._usuario.id);
+          this._notas = notas;
+          this._limpiarEditor();
+          if (this._raiz) this._pintarHome(this._raiz, notas);
+        } catch (e) { window.helpers.mostrarAlerta('Error al eliminar.', 'error'); }
       };
     },
 
-    /* ── Editar nota existente (por id) ── */
-    _editarNota(raiz, nota, d) {
-      const libro = nota.libro_nombre, capitulo = nota.capitulo_numero;
-      let _tiptapEditor = null;
-      let _autoSave = null;
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
-          <h2>${I('pencil')} Editar nota — ${E(libro)} ${capitulo}</h2>
-          <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;padding:var(--espaciado-xs) 0">
-            <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
-            <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
-            <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
-            <span class="u-separador-vertical"></span>
-            <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
-            <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
-            <span class="u-separador-vertical"></span>
-            <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
-            <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
-            <span class="u-separador-vertical"></span>
-            <button type="button" class="btn-icono" id="btnVersiones" title="Historial de versiones" aria-label="Historial de versiones" style="font-size:var(--texto-xs)">${I('clock')} Versiones</button>
-          </div>
-          <div id="fContenido" style="width:100%;min-height:200px;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)"></div>
-          <div class="o-flecha o-flecha--between u-mt-1">
-            <span class="u-fs-xs u-color-texto-terciario" id="versionStatus"></span>
-            <button class="btn-primario" id="btnGuardar" style="width:auto;justify-content:center">Guardar cambios</button>
-          </div>
-          <div id="versionesPanel" style="display:none" class="o-pila u-mt-2"></div>
-        </div>`;
-
-      raiz.querySelector('#btnV').onclick = async () => {
-        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
-        if (_autoSave) _autoSave.detener();
-        this._verNota(raiz, nota, d);
-      };
-      this._conectarGestoVolver(raiz, async () => {
-        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
-        if (_autoSave) _autoSave.detener();
-        this._verNota(raiz, nota, d);
-      });
-
-      // Initialize TipTap editor
-      const editorEl = raiz.querySelector('#fContenido');
-      window.editorTiptap.crear(editorEl, nota.contenido, {
-        ariaLabel: 'Editor de nota',
-        onUpdate: (html) => {
-          if (_autoSave) _autoSave.trigger();
-        }
-      }).then(editor => {
-        _tiptapEditor = editor;
-        window.Iconos.actualizar();
-
-        // Toolbar
-        const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
-        raiz.querySelector('#tip-bold').onclick = () => exec('toggleBold');
-        raiz.querySelector('#tip-italic').onclick = () => exec('toggleItalic');
-        raiz.querySelector('#tip-underline').onclick = () => exec('toggleUnderline');
-        raiz.querySelector('#tip-list').onclick = () => exec('toggleBulletList');
-        raiz.querySelector('#tip-heading').onclick = () => exec('toggleHeading', { level: 3 });
-        raiz.querySelector('#tip-undo').onclick = () => exec('undo');
-        raiz.querySelector('#tip-redo').onclick = () => exec('redo');
-
-        // Version history auto-save
-        _autoSave = window.versionHistory.iniciarAutoSave(
-          nota.id,
-          () => editor.getHTML(),
-          () => {
-            const status = raiz.querySelector('#versionStatus');
-            if (status) status.textContent = 'Versión guardada ' + new Date().toLocaleTimeString();
-          }
-        );
-        editor.on('update', () => { if (_autoSave) _autoSave.trigger(); });
-
-        // View versions
-        raiz.querySelector('#btnVersiones').onclick = async () => {
-          const panel = raiz.querySelector('#versionesPanel');
-          if (panel.style.display !== 'none') { panel.style.display = 'none'; return; }
-          const versiones = await window.versionHistory.listar(nota.id);
-          if (!versiones.length) {
-            panel.innerHTML = '<p class="u-fs-xs u-color-texto-terciario">Sin versiones anteriores.</p>';
-          } else {
-            panel.innerHTML = '<p class="u-fs-xs u-fw-600">Versiones anteriores:</p>' +
-              versiones.slice(0, 20).map(v => `
-                <div class="tarjeta-capitulo" style="padding:var(--espaciado-xs);cursor:pointer" data-version-id="${v.id}">
-                  <div class="o-flecha o-flecha--between u-fs-xs">
-                    <span>${new Date(v.creado).toLocaleString()}</span>
-                    <button class="btn-enlace u-fs-xs restaurar-version" data-vid="${v.id}">Restaurar</button>
-                  </div>
-                </div>
-              `).join('');
-            panel.querySelectorAll('.restaurar-version').forEach(btn => {
-              btn.onclick = async (e) => {
-                e.stopPropagation();
-                const v = await window.versionHistory.obtener(btn.dataset.vid);
-                if (v && v.contenido && _tiptapEditor) {
-                  _tiptapEditor.commands.setContent(v.contenido);
-                  window.helpers.mostrarAlerta('Versión restaurada.', 'exito');
-                  panel.style.display = 'none';
-                }
-              };
-            });
-          }
-          panel.style.display = '';
-        };
-      });
-
-      raiz.querySelector('#btnGuardar').onclick = async () => {
-        if (!_tiptapEditor) return;
-        const contenido = _tiptapEditor.getHTML().trim();
-        if (!contenido || contenido === '<p></p>') { window.helpers.mostrarAlerta('La nota no puede estar vacía.', 'advertencia'); return; }
-        try {
-          await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido, { id: nota.id, tipo: 'personal', titulo: nota.titulo });
-          nota.contenido = contenido;
-          nota.actualizado_en = new Date().toISOString();
-          if (_autoSave) await _autoSave.guardarAhora();
-          if (window.haptica) window.haptica.exito();
-          window.helpers.mostrarAlerta('Nota actualizada.', 'exito');
-          if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
-          if (_autoSave) _autoSave.detener();
-          this._verNota(raiz, nota, d);
-        } catch {
-          window.helpers.mostrarAlerta('Error al guardar.', 'error');
-        }
-      };
-    },
-
-    /* ── Nueva nota ── */
-    _nuevaNota(raiz, d, libroPre, capPre) {
-      const opts = (d.libros || []).map((l) => l.nombre);
-      let _tiptapEditor = null;
-      let _autoSave = null;
-
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <button class="btn-secundario u-self-start" id="btnV">← Volver</button>
-          <h2>${I('plus')} Nueva nota</h2>
-          <div class="o-pila" style="gap:var(--espaciado-sm)">
-            <label class="u-fs-sm u-fw-600">Libro</label>
-            <select id="fLibro" style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)">
-              ${opts.map((l) => `<option value="${E(l)}" ${libroPre === l ? 'selected' : ''}>${E(l)}</option>`).join('')}
-            </select>
-            <label class="u-fs-sm u-fw-600">Capítulo</label>
-            <input type="number" id="fCap" min="1" placeholder="Ej: 3" value="${capPre || ''}" style="width:100%">
-            <label class="u-fs-sm u-fw-600">Contenido de la nota *</label>
-            <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;padding:var(--espaciado-xs) 0">
-              <button type="button" class="btn-icono" id="tip-bold" title="Negrita" aria-label="Negrita">${I('bold')}</button>
-              <button type="button" class="btn-icono" id="tip-italic" title="Cursiva" aria-label="Cursiva">${I('italic')}</button>
-              <button type="button" class="btn-icono" id="tip-underline" title="Subrayado" aria-label="Subrayado">${I('underline')}</button>
-              <span class="u-separador-vertical"></span>
-              <button type="button" class="btn-icono" id="tip-list" title="Lista" aria-label="Lista">${I('list')}</button>
-              <button type="button" class="btn-icono" id="tip-heading" title="Título" aria-label="Título">${I('heading')}</button>
-              <span class="u-separador-vertical"></span>
-              <button type="button" class="btn-icono" id="tip-undo" title="Deshacer" aria-label="Deshacer">${I('undo')}</button>
-              <button type="button" class="btn-icono" id="tip-redo" title="Rehacer" aria-label="Rehacer">${I('redo')}</button>
-            </div>
-            <div id="fContenido" style="width:100%;min-height:200px;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto)"></div>
-          </div>
-          <div class="o-flecha o-flecha--between u-mt-1">
-            <span class="u-fs-xs u-color-texto-terciario" id="versionStatus"></span>
-            <button class="btn-primario" id="btnGuardar" style="width:auto;justify-content:center">Guardar</button>
-          </div>
-        </div>`;
-
-      const volver = () => {
-        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
-        if (_autoSave) _autoSave.detener();
-        if (libroPre && capPre) this._listaNotasCap(raiz, libroPre, capPre, d);
-        else this._pintar(raiz, d);
-      };
-      raiz.querySelector('#btnV').onclick = volver;
-      this._conectarGestoVolver(raiz, volver);
-
-      // Initialize TipTap
-      const editorEl = raiz.querySelector('#fContenido');
-      window.editorTiptap.crear(editorEl, '<p></p>', {
-        ariaLabel: 'Editor de nota',
-        onUpdate: () => { if (_autoSave) _autoSave.trigger(); }
-      }).then(editor => {
-        _tiptapEditor = editor;
-        window.Iconos.actualizar();
-        const exec = (cmd, attr) => { editor.chain().focus()[cmd](attr).run(); };
-        raiz.querySelector('#tip-bold').onclick = () => exec('toggleBold');
-        raiz.querySelector('#tip-italic').onclick = () => exec('toggleItalic');
-        raiz.querySelector('#tip-underline').onclick = () => exec('toggleUnderline');
-        raiz.querySelector('#tip-list').onclick = () => exec('toggleBulletList');
-        raiz.querySelector('#tip-heading').onclick = () => exec('toggleHeading', { level: 3 });
-        raiz.querySelector('#tip-undo').onclick = () => exec('undo');
-        raiz.querySelector('#tip-redo').onclick = () => exec('redo');
-      });
-
-      raiz.querySelector('#btnGuardar').onclick = async () => {
-        const libro = raiz.querySelector('#fLibro').value;
-        const cap = raiz.querySelector('#fCap').value.trim();
-        const contenido = _tiptapEditor ? _tiptapEditor.getHTML().trim() : '';
-
-        if (!libro) { window.helpers.mostrarAlerta('Selecciona un libro.', 'advertencia'); return; }
-        if (!cap) { window.helpers.mostrarAlerta('Escribe el capítulo.', 'advertencia'); return; }
-        if (!contenido || contenido === '<p></p>') { window.helpers.mostrarAlerta('Escribe el contenido de la nota.', 'advertencia'); return; }
-
-        const capitulo = parseInt(cap, 10);
-        const num = await window.notasRepository.contarPorCapitulo(d.usuario.id, libro, capitulo) + 1;
-
-        try {
-          await window.notasRepository.guardar(d.usuario.id, libro, capitulo, contenido, { tipo: 'personal', titulo: `Nota ${num}` });
-          if (window.haptica) window.haptica.exito();
-          window.helpers.mostrarAlerta('Nota guardada.', 'exito');
-        } catch {
-          window.helpers.mostrarAlerta('Error al guardar.', 'error');
-          return;
-        }
-
-        if (_tiptapEditor) { window.editorTiptap.destruir(_tiptapEditor); _tiptapEditor = null; }
-        if (_autoSave) _autoSave.detener();
-        d.notas = await window.notasRepository.listar(d.usuario.id, 'personal');
-        this._listaNotasCap(raiz, libro, capitulo, d);
-      };
+    /* ── Exportar PDF (ventana de impresión) ── */
+    _exportarPDF(nota) {
+      const win = window.open('', '_blank', 'width=800,height=900');
+      if (!win) { window.helpers.mostrarAlerta('Permite ventanas emergentes para exportar.', 'advertencia'); return; }
+      const color = COLORES.find(c => c.id === nota.color_fondo) || COLORES[0];
+      win.document.write(`<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<title>${E(nota.titulo || 'Nota')}</title>
+<style>
+  * { box-sizing: border-box; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; margin: 40px; color: #0F172A; }
+  h1 { font-size: 28px; margin: 0 0 8px; }
+  .fecha { color: #64748B; font-size: 13px; margin-bottom: 28px; }
+  .contenido { line-height: 1.75; font-size: 15px; }
+  .contenido h1 { font-size: 24px; } .contenido h2 { font-size: 20px; } .contenido h3 { font-size: 17px; }
+  .contenido ul, .contenido ol { padding-left: 24px; }
+  .contenido blockquote { border-left: 3px solid #3B82F6; margin: 12px 0; padding: 4px 16px; color: #334155; }
+  .contenido hr { border: none; border-top: 1px solid #CBD5E1; margin: 20px 0; }
+  .contenido img { max-width: 100%; border-radius: 8px; }
+  .contenido ul[data-type="taskList"] { list-style: none; padding-left: 4px; }
+  .contenido ul[data-type="taskList"] li { display: flex; gap: 8px; align-items: baseline; }
+  @media print { body { margin: 24px; } }
+</style>
+</head>
+<body>
+  <h1>${E(nota.titulo || 'Sin título')}</h1>
+  <div class="fecha">${nota.actualizado_en ? new Date(nota.actualizado_en).toLocaleString('es-ES') : ''}</div>
+  <div class="contenido">${nota.contenido || '<p></p>'}</div>
+  <script>window.onload = () => { setTimeout(() => window.print(), 300); }<\/script>
+</body>
+</html>`);
+      win.document.close();
     },
   };
 })();

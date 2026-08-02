@@ -2,7 +2,7 @@
   'use strict';
 
   // Indicador de sincronización inteligente.
-  // Muestra estado (🟢 Todo sincronizado / 🟠 Pendientes) y "Última sincronización"
+  // Muestra estado (Todo sincronizado / Pendientes) y "Última sincronización"
   // solo cuando hay algo que avisar, y desaparece solo tras unos segundos.
 
   const CLAVE_ULTIMA = 'fb_ultima_sync';
@@ -50,11 +50,12 @@
       hideTimer = setTimeout(() => ocultar(), duracion);
       return;
     }
-    const icono = estado === 'ok' ? '🟢' : (estado === 'pendiente' ? '🟠' : '🔄');
+    const icono = estado === 'ok' ? 'check-circle' : (estado === 'pendiente' ? 'alert-triangle' : 'refresh-cw');
     node.dataset.msg = texto;
     node.innerHTML = `
-      <span class="sync-indicator__icon" aria-hidden="true">${icono}</span>
+      <span class="sync-indicator__icon" aria-hidden="true">${window.Iconos?.render(icono) || ''}</span>
       <span class="sync-indicator__text">${texto}</span>`;
+    window.Iconos?.actualizar?.();
     node.classList.remove('u-oculto');
     node.classList.add('sync-indicator--visible');
 
@@ -88,7 +89,7 @@
       if (pend === 0) {
         setUltima(Date.now());
       } else {
-        mostrar({ texto: `🟠 Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
+        mostrar({ texto: `Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
       }
     });
 
@@ -96,7 +97,7 @@
       const pend = e.pendientes || 0;
       // Solo avisar si hay pendientes; si no hay, no mostrar nada (el estado "ok" ya se avisó en fin)
       if (pend > 0) {
-        mostrar({ texto: `🟠 Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
+        mostrar({ texto: `Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
       }
     });
 
