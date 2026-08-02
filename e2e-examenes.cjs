@@ -130,11 +130,13 @@ let exitCode = 0;
     log(!!examenId && badge > 0, 'P2 Tarjeta con badge Publicado', 'id=' + (examenId || 'N/A'));
 
     // ============ PASO 3: Cerrar sesión y login alumna ============
+    // La alumna debe pertenecer AL MISMO GRUPO que admin1 para ver el examen
+    // creado en el paso anterior (el examen se guarda con grupo_id del creador).
     await cerrarSesion();
-    await login('yadira', 'yadira');
+    await login('alumno', 'alumno123');
     await esperar(500);
     const loginAl = (await page.locator('#loginForm').count()) === 0;
-    log(loginAl, 'P3 Login yadira/yadira (alumna del grupo)');
+    log(loginAl, 'P3 Login alumno/alumno123 (alumno del grupo)');
 
     // ============ PASO 4: Tomar el examen ============
     await page.goto(BASE + '/#!/examenes', { waitUntil: 'domcontentloaded' });

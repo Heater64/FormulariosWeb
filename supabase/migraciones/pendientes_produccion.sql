@@ -8,12 +8,15 @@
 --   3. Opcional: vuelve a ejecutarlo — es 100% idempotente gracias a
 --      IF NOT EXISTS / CREATE TABLE IF NOT EXISTS / DROP POLICY IF EXISTS.
 --
--- QUÉ INCLUYE (verificado contra la BD de producción el 2026-08-01):
+-- QUÉ INCLUYE (verificado contra la BD de producción el 2026-08-02):
 --   • 016  Campos de seguimiento de memorización  → respaldo (ya aplicada, inofensiva)
---   • 018  Tabla `sugerencias` (perfil + panel owner) → NO aplicada (404)
---   • 019  Columnas `fijada` y `pendiente_sync` en notas_capitulo → APLICADA A MEDIAS
---   • 020  Tabla `configuracion` (clave-valor, panel owner) → NO aplicada (404)
---   • 021  Tablas/columnas de mazos de memorización → NO aplicada (404)
+--   • 018  Tabla `sugerencias` (perfil + panel owner) → aplicada
+--   • 019  Columnas `fijada` y `pendiente_sync` en notas_capitulo → aplicada
+--   • 020  Tabla `configuracion` (clave-valor, panel owner) → aplicada
+--   • 021  Tablas/columnas de mazos de memorización → aplicada
+--   • 022  Tabla `backups` (panel Owner, Sistema) → NUEVA
+--   • 023  Memorización tipo juego (mazos globales + progreso individual) → NUEVA
+--   • 024  Tabla `notas_personales` (bloc de notas) → NUEVA
 --
 -- NOTA: las columnas `estado`, `proxima_revision` y `efectividad` de
 -- tarjetas_memorizacion NO se incluyen porque la app no las usa (la derivación
@@ -127,6 +130,99 @@ GRANT ALL ON TABLE mazos_memorizacion TO anon;
 GRANT ALL ON TABLE mazos_memorizacion TO authenticated;
 
 -- ============================================================================
+-- MIGRACIÓN 022 — Panel de Administración: tabla backups
+-- Snapshots JSON de la base creados desde la pestaña Sistema del panel Owner.
+-- ============================================================================
+
+CREATE TABLE IF NOT EXISTS backups (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  creado_por UUID REFERENCES perfiles(id) ON DELETE SET NULL,
+  nombre TEXT NOT NULL,
+  tamano_bytes INTEGER DEFAULT 0,
+  snapshot JSONB DEFAULT '{}'::jsonb,
+  estado TEXT NOT NULL DEFAULT 'ok' CHECK (estado IN ('ok', 'fallido')),
+  notas TEXT DEFAULT '',
+  creado_en TIMESTAMPTZ DEFAULT now()
+);
+
+CREATE INDEX IF NOT EXISTS idx_backups_creado ON backups(creado_en DESC);
+
+ALTER TABLE backups ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "backups_anon_all" ON backups;
+CREATE POLICY "backups_anon_all" ON backups FOR ALL TO anon USING (true) WITH CHECK (true);
+
+GRANT ALL ON TABLE backups TO anon;
+GRANT ALL ON TABLE backups TO authenticated;
+
+-- ============================================================================
+-- MIGRACIÓN 023 — Memorización tipo juego (estilo Duolingo)
+-- Mazos/tarjetas GLOBALES + progreso individual (SM-2) + tipos de ejercicio.
+-- ============================================================================
+
+-- 1. MAZOS: contenido global
+ALTER TABLE mazos_memorizacion ALTER COLUMN usuario_id DROP NOT NULL;
+
+ALTER TABLE mazos_memorizacion ADD COLUMN IF NOT EXISTS icono TEXT DEFAULT 'layers';
+ALTER TABLE mazos_memorizacion ADD COLUMN IF NOT EXISTS orden INTEGER DEFAULT 0;
+ALTER TABLE mazos_memorizacion ADD COLUMN IF NOT EXISTS activo BOOLEAN DEFAULT TRUE;
+ALTER TABLE mazos_memorizacion ADD COLUMN IF NOT EXISTS es_global BOOLEAN DEFAULT FALSE;
+ALTER TABLE mazos_memorizacion ADD COLUMN IF NOT EXISTS creado_por UUID REFERENCES perfiles(id) ON DELETE SET NULL;
+
+-- 2. TARJETAS: contenido global + tipos de ejercicio
+ALTER TABLE tarjetas_memorizacion ALTER COLUMN usuario_id DROP NOT NULL;
+
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS explicacion TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS categoria TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS libro TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS capitulo TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS versiculo TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS opciones JSONB DEFAULT NULL;
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS orden INTEGER DEFAULT 0;
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS creado_por UUID REFERENCES perfiles(id) ON DELETE SET NULL;
+
+ALTER TABLE tarjetas_memorizacion DROP CONSTRAINT IF EXISTS tarjetas_memorizacion_tipo_check;
+ALTER TABLE tarjetas_memorizacion ADD CONSTRAINT tarjetas_memorizacion_tipo_check
+  CHECK (tipo IN (
+    'versiculo', 'libre', 'completar', 'ordenar', 'elegir_versiculo',
+    'verdadero_falso', 'relacionar', 'escrita', 'personaje', 'lugar',
+    'libro', 'cronologia', 'multirrespuesta'
+  ));
+
+CREATE INDEX IF NOT EXISTS idx_tarjetas_orden ON tarjetas_memorizacion(mazo_id, orden);
+
+-- 3. PROGRESO INDIVIDUAL (SM-2 + nivel por usuario)
+CREATE TABLE IF NOT EXISTS progreso_tarjetas_memorizacion (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  usuario_id UUID NOT NULL REFERENCES perfiles(id) ON DELETE CASCADE,
+  tarjeta_id UUID NOT NULL REFERENCES tarjetas_memorizacion(id) ON DELETE CASCADE,
+  repeticiones INTEGER DEFAULT 0,
+  factor_facilidad DECIMAL(4,2) DEFAULT 2.50,
+  intervalo INTEGER DEFAULT 0,
+  proximo_repaso TIMESTAMPTZ DEFAULT NOW(),
+  ultimo_repaso TIMESTAMPTZ,
+  racha_actual INTEGER DEFAULT 0,
+  mejor_racha INTEGER DEFAULT 0,
+  veces_olvidado INTEGER DEFAULT 0,
+  ultima_calificacion INTEGER,
+  nivel TEXT DEFAULT 'nueva' CHECK (nivel IN ('nueva', 'aprendiendo', 'dominada', 'perfecta')),
+  UNIQUE(usuario_id, tarjeta_id),
+  creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_progreso_tarjeta ON progreso_tarjetas_memorizacion(tarjeta_id);
+CREATE INDEX IF NOT EXISTS idx_progreso_usuario ON progreso_tarjetas_memorizacion(usuario_id);
+
+-- 4. REPASOS: registrar quién repasa
+ALTER TABLE repasos_memorizacion ADD COLUMN IF NOT EXISTS usuario_id UUID REFERENCES perfiles(id) ON DELETE CASCADE;
+CREATE INDEX IF NOT EXISTS idx_repasos_usuario ON repasos_memorizacion(usuario_id);
+
+ALTER TABLE progreso_tarjetas_memorizacion ENABLE ROW LEVEL SECURITY;
+DROP POLICY IF EXISTS "progreso_anon_all" ON progreso_tarjetas_memorizacion;
+CREATE POLICY "progreso_anon_all" ON progreso_tarjetas_memorizacion FOR ALL TO anon USING (true) WITH CHECK (true);
+GRANT ALL ON TABLE progreso_tarjetas_memorizacion TO anon;
+GRANT ALL ON TABLE progreso_tarjetas_memorizacion TO authenticated;
+
+-- ============================================================================
 -- MIGRACIÓN 024 — Notas personales (bloc de notas estilo Xiaomi/Apple Notes)
 -- Tabla independiente de libro/capítulo con papelera, color de fondo y fijación.
 -- La tabla legacy `notas_capitulo` se mantiene para las notas de sesión de estudio.
@@ -159,4 +255,7 @@ GRANT ALL ON TABLE notas_personales TO authenticated;
 -- ============================================================================
 -- SELECT 'sugerencias' AS tabla, count(*) FROM sugerencias
 -- UNION ALL SELECT 'configuracion', count(*) FROM configuracion
--- UNION ALL SELECT 'mazos_memorizacion', count(*) FROM mazos_memorizacion;
+-- UNION ALL SELECT 'mazos_memorizacion', count(*) FROM mazos_memorizacion
+-- UNION ALL SELECT 'backups', count(*) FROM backups
+-- UNION ALL SELECT 'progreso_tarjetas_memorizacion', count(*) FROM progreso_tarjetas_memorizacion
+-- UNION ALL SELECT 'notas_personales', count(*) FROM notas_personales;

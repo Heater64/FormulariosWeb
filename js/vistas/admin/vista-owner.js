@@ -624,7 +624,16 @@
         btn.onclick = () => window.adminComunes.irSpa(btn.dataset.accesoRuta);
       });
       r.querySelectorAll('[data-acceso-tab]').forEach(btn => {
-        btn.onclick = () => { this._tabActivo = btn.dataset.accesoTab; this._renderizar(raiz); };
+        btn.onclick = () => {
+          const tab = btn.dataset.accesoTab;
+          // Usuarios y Exámenes viven en el panel de administración, no en el Owner
+          if (tab === 'usuarios' || tab === 'examenes') {
+            window.adminComunes.irPanel('admin');
+            return;
+          }
+          this._tabActivo = tab;
+          this._renderizar(raiz);
+        };
       });
 
       r.querySelectorAll('[data-accion]').forEach(btn => {
