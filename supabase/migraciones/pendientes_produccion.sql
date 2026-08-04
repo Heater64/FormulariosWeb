@@ -250,6 +250,16 @@ ALTER TABLE notas_personales DISABLE ROW LEVEL SECURITY;
 GRANT ALL ON TABLE notas_personales TO anon;
 GRANT ALL ON TABLE notas_personales TO authenticated;
 
+
+-- ============================================================================
+-- MIGRACIÓN 025 — Orden manual de evaluaciones (vista Notas)
+-- ============================================================================
+
+ALTER TABLE evaluaciones ADD COLUMN IF NOT EXISTS orden INTEGER DEFAULT 0;
+
+CREATE INDEX IF NOT EXISTS idx_evaluaciones_orden ON evaluaciones(grupo_id, orden);
+
+-- ============================================================================
 -- ============================================================================
 -- VERIFICACIÓN OPCIONAL (descomenta para comprobar que todo quedó aplicado):
 -- ============================================================================

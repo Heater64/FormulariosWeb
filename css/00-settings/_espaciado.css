@@ -8,4 +8,6 @@
   --espaciado-xl: clamp(30px, 3.4vw, 36px);
   --espaciado-2xl: clamp(44px, 4.4vw, 52px);
   --espaciado-3xl: clamp(60px, 5.4vw, 72px);
+  --section-gap: clamp(16px, 2.2vw, 18px);
+  --section-gap-lg: clamp(22px, 2.8vw, 26px);
 }

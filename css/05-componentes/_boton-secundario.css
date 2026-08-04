@@ -2,8 +2,8 @@
   background: var(--color-fondo-alt);
   color: var(--color-texto);
   border: 1px solid var(--color-borde);
-  padding: var(--espaciado-sm) var(--espaciado-lg);
-  border-radius: var(--radio-md);
+  padding: var(--btn-padding-sm);
+  border-radius: var(--btn-radius);
   font-weight: 600;
   font-size: var(--texto-sm);
   min-height: var(--toque-minimo);

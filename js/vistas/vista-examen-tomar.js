@@ -1,10 +1,15 @@
 (function() {
   'use strict';
   const MARCADOR_RE = /\{\{HUECO_(\d+)\}\}/g;
+  // Para 'completar' el título no debe repetir la frase (que ya se muestra con
+  // los huecos interactivos debajo) ni exponer los marcadores {{HUECO_N}}.
+  function textoPreguntaVisible(p) {
+    if (p && p.tipo === 'completar') return 'Completa la frase:';
+    return window.helpers.escapeHtml(p ? p.texto : '');
+  }
   function renderizarTextoConHuecos(texto, huecos, respuestas, opciones) {
     if (!huecos || huecos.length === 0) return window.helpers.escapeHtml(texto);
-    const huecoMap = {};
-    huecos.forEach(h => { huecoMap[h.id] = h; });
+    const pid = (opciones && opciones.pid) ? ` data-pid="${opciones.pid}"` : '';
     const partes = texto.split(MARCADOR_RE);
     return partes.map((parte, i) => {
       if (i % 2 === 0) return window.helpers.escapeHtml(parte);
@@ -14,7 +19,7 @@
       const valor = (respuestas && respuestas[hIdx]) || '';
       const attrs = opciones && opciones.soloLectura ? 'readonly' : '';
       const claseExtra = opciones && opciones.clases ? ' ' + opciones.clases : '';
-      return `<span class="pregunta-examen__hueco-inline"><input type="text" class="pregunta-examen__hueco-input${claseExtra}" data-hidx="${hIdx}" value="${window.helpers.escapeHtml(valor)}" placeholder="…" ${attrs}></span>`;
+      return `<span class="pregunta-examen__hueco-inline"><input type="text" class="pregunta-examen__hueco-input${claseExtra}" data-hidx="${hIdx}"${pid} value="${window.helpers.escapeHtml(valor)}" placeholder="…" ${attrs}></span>`;
     }).join('');
   }
 
@@ -347,15 +352,16 @@
           this._guardarRespuesta(respuestas, intento);
           const respuestasFinales = respuestas;
           const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
-          // Corrección manual pendiente: texto_largo y respuesta_corta (coherente con vista corregir)
-          const esLibre = preguntas.some(p => p.tipo === 'texto_largo' || p.tipo === 'respuesta_corta');
+          // La corrección SIEMPRE la publica el profesor: al entregar, el intento
+          // queda 'completado' pero NO corregido, y la nota no se expone al alumno
+          // hasta que el profesor envía la corrección desde la vista de corregir.
           await window.examenesRepository.guardarIntento({
             id: intento.id, examen_id: examen.id, alumno_id: usuario.id,
             respuestas: JSON.stringify(respuestasFinales),
             puntuacion: resultado.porcentaje,
-            estado: esLibre ? 'completado' : 'calificado',
-            nota: esLibre ? null : resultado.nota,
-            corregido: !esLibre,
+            estado: 'completado',
+            nota: null,
+            corregido: false,
             fecha_completado: new Date().toISOString()
           });
           try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { console.warn('Auditoría no registrada:', e.message); }
@@ -378,13 +384,13 @@
 
     _renderPregunta(p, rActual, i) {
       return `<div class="pregunta-examen" data-pid="${p.id}">
-        <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${window.helpers.escapeHtml(p.texto)}</p>
+        <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
         <div class="pregunta-examen__opciones">${this._renderRespuesta(p, rActual, i)}</div>
       </div>`;
     },
 
     _renderPreguntaInner(p, rActual, i) {
-      return `<p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${window.helpers.escapeHtml(p.texto)}</p>
+      return `<p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
         <div class="pregunta-examen__opciones">${this._renderRespuesta(p, rActual, i)}</div>`;
     },
 
@@ -428,20 +434,24 @@
       }
       const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
       const correccionMap = (intento.correccion && typeof intento.correccion === 'string') ? JSON.parse(intento.correccion) : (intento.correccion || {});
-      const esLibre = preguntas.some(p => p.tipo === 'texto_largo' || p.tipo === 'respuesta_corta');
       const config = this._configDe(examen);
-      const visibilidad = config.resultados_visibles || 'al_terminar';
-      // El profesor siempre ve los resultados; el alumno según config
-      const puedeVerResultados = usuarioEsProfesor || visibilidad === 'al_terminar' || (visibilidad === 'al_publicar' && intento.corregido);
-      const correccionVisible = puedeVerResultados && (intento.corregido || !esLibre);
+      const visibilidad = config.resultados_visibles || 'al_publicar';
+      // El profesor siempre ve los resultados. El alumno SOLO cuando el profesor
+      // ha publicado la corrección (intento corregido por un profesor).
+      const publicadoPorProfesor = intento.corregido && !!intento.corregido_por;
+      const puedeVerResultados = usuarioEsProfesor || (publicadoPorProfesor && visibilidad !== 'nunca');
+      const correccionVisible = puedeVerResultados;
       const calculo = window.puntuacionExamen.calcularConCorreccion(preguntas, respuestas, correccionMap);
       if (window.haptica && correccionVisible && calculo.aciertos < preguntas.length) {
         window.haptica.fallo();
       }
-      const nota = intento.corregido && intento.nota != null
-        ? `<p class="u-fw-700" style="font-size:1.25rem;color:${intento.nota >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}/10</p>`
-        : `<p class="u-fw-600">Aciertos: ${calculo.aciertos}/${preguntas.length} (${calculo.porcentaje}%)</p>`;
-      const estadoTexto = intento.corregido ? 'Corregido' : (esLibre ? 'Pendiente de calificación' : 'Calificado automáticamente');
+      // La nota/aciertos solo se muestran si la corrección es visible (profesor la ha publicado)
+      const nota = correccionVisible
+        ? (intento.corregido && intento.nota != null
+          ? `<p class="u-fw-700" style="font-size:1.25rem;color:${intento.nota >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}/10</p>`
+          : `<p class="u-fw-600">Aciertos: ${calculo.aciertos}/${preguntas.length} (${calculo.porcentaje}%)</p>`)
+        : '';
+      const estadoTexto = intento.corregido ? 'Corregido' : 'Pendiente de corrección';
       raiz.innerHTML = `
         <div class="examen-page o-contenedor o-pila o-pila--lg anim-exito">
           <div class="o-flecha o-flecha--between">
@@ -487,7 +497,7 @@
         const pts = corr && corr.puntos != null ? corr.puntos : (esCorrecta ? window.puntuacionExamen.puntosPregunta(p) : 0);
         const ptsTotal = window.puntuacionExamen.puntosPregunta(p);
         return `<div class="pregunta-examen examen-resultado examen-resultado--${esCorrecta ? 'correcta' : 'incorrecta'}">
-          <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${window.helpers.escapeHtml(p.texto)}</p>
+          <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
           <div class="u-fs-sm u-mt-1">Tu respuesta: <strong>${respuestaUsuarioHtml}</strong> ${mostrarCheck}</div>
           ${!esCorrecta ? `<div class="u-fs-sm u-color-texto-secundario u-mt-1">Correcta: ${correctaHtml}</div>` : ''}
           ${p.explicacion ? `<div class="u-fs-xs u-color-texto-terciario u-mt-1" style="padding:var(--espaciado-xs);background:var(--color-fondo-alt);border-radius:var(--radio-sm)">${window.helpers.escapeHtml(p.explicacion)}</div>` : ''}
@@ -557,7 +567,7 @@
         `).join('');
       }
       if (pregunta.tipo === 'varias_opciones') {
-        const seleccionadas = rActual ? (() => { try { return JSON.parse(rActual); } catch(e) { return []; } })() : [];
+        const seleccionadas = rActual ? (() => { try { const arr = JSON.parse(rActual); return Array.isArray(arr) ? arr : []; } catch(e) { return []; } })() : [];
         return (pregunta.opciones || ['', '']).map((o, oi) => `
           <label class="examen-opcion${seleccionadas.includes(oi) ? ' examen-opcion--seleccionada' : ''}">
             <input type="checkbox" data-multi="${pregunta.id}" value="${oi}" ${seleccionadas.includes(oi) ? 'checked' : ''}>
@@ -582,12 +592,9 @@
       if (pregunta.tipo === 'completar') {
         if (pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
           const respArr = Array.isArray(rActual) ? rActual : [];
-          return renderizarTextoConHuecos(pregunta.texto, pregunta.huecos, respArr);
+          return renderizarTextoConHuecos(pregunta.texto, pregunta.huecos, respArr, { pid: pregunta.id });
         }
         return `<input type="text" data-pid="${pregunta.id}" value="${window.helpers.escapeHtml(rActual)}" placeholder="Completa la frase..." style="width:100%">`;
-      }
-      if (pregunta.tipo === 'solo_numero') {
-        return `<input type="number" data-pid="${pregunta.id}" value="${window.helpers.escapeHtml(rActual)}" placeholder="Escribe solo el número..." style="width:100%">`;
       }
       if (pregunta.tipo === 'relacionar') {
         const pares = pregunta.opciones || [];
@@ -662,7 +669,7 @@
         return JSON.stringify(Array.from(hiddens).sort((a, b) => parseInt(a.dataset.pos) - parseInt(b.dataset.pos)).map(h => parseInt(h.value)));
       }
       if (pregunta.tipo === 'completar' && pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
-        const inputs = cont.querySelectorAll('.pregunta-examen__hueco-input[data-hidx]');
+        const inputs = cont.querySelectorAll(`.pregunta-examen__hueco-input[data-hidx][data-pid="${pregunta.id}"]`);
         if (inputs.length === 0) return undefined;
         const arr = new Array(pregunta.huecos.length).fill('');
         inputs.forEach(inp => {

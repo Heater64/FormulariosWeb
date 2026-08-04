@@ -4,7 +4,7 @@
   gap: var(--espaciado-md);
   padding: var(--espaciado-md) var(--espaciado-lg);
   border: 2px dashed var(--color-acento);
-  border-radius: var(--radio-lg);
+  border-radius: var(--card-radius);
   background: var(--color-acento-soft);
   cursor: pointer;
   transition: border-color var(--transicion-rapida), background var(--transicion-rapida), transform var(--transicion-rapida);

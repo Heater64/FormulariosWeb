@@ -5,15 +5,15 @@
   padding: var(--espaciado-md);
   background: linear-gradient(135deg, var(--color-azul-50) 0%, var(--color-azul-100) 100%);
   border: 1px solid var(--color-azul-200);
-  border-radius: var(--radio-xl);
-  box-shadow: var(--sombra-sm);
-  transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
 }
 
 @media (hover: hover) {
   .tarjeta-porcentaje:hover {
-    transform: translateY(-3px);
-    box-shadow: var(--sombra-lg);
+    transform: var(--card-hover-lift);
+    box-shadow: var(--card-shadow-hover);
     border-color: var(--color-azul-300);
   }
 }
@@ -42,8 +42,8 @@
 /* Modo oscuro: gradiente único índigo/azul oscuro (hex ornamental) */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .tarjeta-porcentaje {
-    background: linear-gradient(135deg, #1E3A5F, #312E81);
-    border-color: #3730A3;
+    background: linear-gradient(135deg, var(--color-acento-soft), var(--color-fondo-alt));
+    border-color: var(--color-acento);
   }
   :root:not([data-theme="light"]) .tarjeta-porcentaje__barra {
     background: var(--color-acento);
@@ -51,8 +51,8 @@
 }
 
 :root[data-theme="dark"] .tarjeta-porcentaje {
-  background: linear-gradient(135deg, #1E3A5F, #312E81);
-  border-color: #3730A3;
+  background: linear-gradient(135deg, var(--color-acento-soft), var(--color-fondo-alt));
+    border-color: var(--color-acento);
 }
 
 :root[data-theme="dark"] .tarjeta-porcentaje__barra {

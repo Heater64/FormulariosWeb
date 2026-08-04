@@ -70,6 +70,24 @@
   --radio-xl: 30px;
   --radio-2xl: 40px;
   --radio-pill: 999px;
+  --radio-pill: 999px;
+  /* ── Design System: unified tokens ── */
+  --card-radius: var(--radio-xl);
+  --card-padding: var(--espaciado-lg);
+  --card-padding-sm: var(--espaciado-md);
+  --card-shadow: var(--sombra-sm);
+  --card-shadow-hover: var(--sombra-lg);
+  --card-border: 1px solid var(--color-borde);
+  --card-bg: var(--color-fondo-tarjeta);
+  --card-transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
+  --card-hover-lift: translateY(-3px);
+  --btn-radius: var(--radio-lg);
+  --btn-radius-sm: var(--radio-md);
+  --btn-padding: var(--espaciado-sm) var(--espaciado-xl);
+  --btn-padding-sm: var(--espaciado-xs) var(--espaciado-lg);
+  --focus-ring: 0 0 0 3px var(--color-acento-soft);
+  --section-gap: var(--espaciado-md);
+  --section-gap-lg: var(--espaciado-lg);
   --sombra-sm: 0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.06);
   --sombra-md: 0 6px 16px -4px rgba(15,23,42,0.10), 0 2px 6px -2px rgba(15,23,42,0.06);
   --sombra-lg: 0 18px 40px -8px rgba(15,23,42,0.16), 0 8px 16px -6px rgba(15,23,42,0.08);

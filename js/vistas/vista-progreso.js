@@ -18,9 +18,8 @@
         const stats = await Promise.all([
           window.adminRepository ? window.adminRepository.estadisticas(usuario.grupo_id).catch(() => null) : null,
           window.examenesRepository ? window.examenesRepository.misIntentos(usuario.id).catch(() => []) : [],
-          window.notasRepository ? window.notasRepository.listar(usuario.id, 'personal').catch(() => []) : [],
         ]);
-        const [adminStats, intentos, notas] = stats;
+        const [adminStats, intentos] = stats;
 
         const examenesRealizados = intentos.filter(i => i.estado === 'completado' || i.estado === 'calificado');
         const notasExamenes = examenesRealizados.filter(i => i.corregido && i.nota != null).map(i => i.nota);
@@ -65,21 +64,14 @@
                   <p class="tarjeta-estadistica__etiqueta">Exámenes hechos</p>
                 </div>
               </div>
-              <div class="tarjeta-estadistica">
-                <div class="tarjeta-estadistica__icono">${I('award')}</div>
-                <div class="tarjeta-estadistica__info">
-                  <p class="tarjeta-estadistica__valor" style="color:${promedioExamenes !== '—' && parseFloat(promedioExamenes) >= 7 ? 'var(--color-exito)' : 'var(--color-aviso)'}">${promedioExamenes}</p>
-                  <p class="tarjeta-estadistica__etiqueta">Promedio exámenes</p>
-                </div>
-              </div>
-              <div class="tarjeta-estadistica">
-                <div class="tarjeta-estadistica__icono">${I('file-text')}</div>
-                <div class="tarjeta-estadistica__info">
-                  <p class="tarjeta-estadistica__valor">${notas.length}</p>
-                  <p class="tarjeta-estadistica__etiqueta">Notas personales</p>
-                </div>
-              </div>
-            </div>
+               <div class="tarjeta-estadistica">
+                 <div class="tarjeta-estadistica__icono">${I('award')}</div>
+                 <div class="tarjeta-estadistica__info">
+                   <p class="tarjeta-estadistica__valor" style="color:${promedioExamenes !== '—' && parseFloat(promedioExamenes) >= 7 ? 'var(--color-exito)' : 'var(--color-aviso)'}">${promedioExamenes}</p>
+                   <p class="tarjeta-estadistica__etiqueta">Promedio exámenes</p>
+                 </div>
+               </div>
+             </div>
 
             <h3 class="u-mt-3">${I('clipboard-check')} Últimos exámenes</h3>
             <div id="ultimosExamenes" class="o-pila" style="gap:var(--espaciado-sm)">
@@ -99,27 +91,8 @@
                   }).join('')
               }
             </div>
-
-            <h3 class="u-mt-3">${I('file-text')} Últimas notas</h3>
-            <div id="ultimasNotas" class="o-pila" style="gap:var(--espaciado-sm)">
-              ${notas.length === 0
-                ? '<p class="u-color-texto-terciario u-fs-sm">Aún no has creado ninguna nota.</p>'
-                : notas.slice(-5).reverse().map(n =>
-                    `<div class="tarjeta-capitulo" style="cursor:pointer" data-notaid="${n.id}">
-                      <div class="o-flecha o-flecha--between">
-                        <span class="u-fw-600 u-fs-sm">${I('file-text')} ${window.helpers.escapeHtml(n.titulo || 'Nota')}</span>
-                        <span class="u-fs-xs u-color-texto-terciario">${window.helpers.formatearFecha(n.actualizado_en || n.creado_en)}</span>
-                      </div>
-                      <p class="u-fs-xs u-color-texto-secundario u-mt-1 truncar-2">${n.contenido ? window.helpers.escapeHtml(n.contenido.replace(/<[^>]*>/g, '').slice(0, 100)) : ''}</p>
-                    </div>`
-                  ).join('')
-              }
-            </div>
           </div>`;
 
-        raiz.querySelectorAll('[data-notaid]').forEach(el => {
-          el.onclick = () => router.navegar('/notas');
-        });
         window.Iconos.actualizar();
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar progreso: ${e.message}</p></div>`;

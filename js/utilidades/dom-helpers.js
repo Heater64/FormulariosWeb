@@ -169,13 +169,14 @@
         setTimeout(() => overlay.querySelector('[data-cancelar]')?.focus(), 50);
       });
     },
-    mostrarGuia(titulo, texto, ejemplo) {
+    mostrarGuia(titulo, texto, ejemplo, extra) {
       const overlay = document.createElement('div');
       overlay.className = 'guia-overlay';
         overlay.innerHTML = `
           <div class="guia-popup anim-menu" role="dialog" aria-modal="true">
             <h3 class="guia-popup__titulo">${window.Iconos ? window.Iconos.render('info') : 'ℹ️'} ${window.helpers.escapeHtml(titulo)}</h3>
           <p class="guia-popup__texto">${window.helpers.escapeHtml(texto)}</p>
+          ${extra ? `<div class="guia-popup__stats">${extra}</div>` : ''}
           ${ejemplo ? `<p class="guia-popup__ejemplo">${window.Iconos?.render('lightbulb') || '💡'} ${window.helpers.escapeHtml(ejemplo)}</p>` : ''}
           <div class="guia-popup__accion">
             <button class="btn-primario" data-cerrar-guia style="justify-content:center">Entendido</button>
@@ -195,7 +196,7 @@
         btn.addEventListener('click', (event) => {
           event.preventDefault();
           event.stopPropagation();
-          window.helpers.mostrarGuia(guia[0], guia[1], guia[2]);
+          window.helpers.mostrarGuia(guia[0], guia[1], guia[2], guia[3]);
         });
       });
     },

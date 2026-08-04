@@ -1,18 +1,18 @@
 .tarjeta-capitulo {
   display: block;
   padding: var(--espaciado-lg);
-  background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-xl);
-  box-shadow: var(--sombra-sm);
-  transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
 }
 
 @media (hover: hover) {
   .tarjeta-capitulo:hover {
-    box-shadow: var(--sombra-lg);
+    box-shadow: var(--card-shadow-hover);
     border-color: var(--color-acento-soft);
-    transform: translateY(-3px);
+    transform: var(--card-hover-lift);
   }
 }
 

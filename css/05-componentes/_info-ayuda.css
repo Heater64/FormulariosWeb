@@ -106,6 +106,43 @@
   margin-top: var(--espaciado-xs);
 }
 
+/* Resumen de estadísticas dentro de la guía */
+.guia-popup__stats {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(92px, 1fr));
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-xs);
+}
+
+.guia-popup__stat {
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm) var(--espaciado-xs);
+  text-align: center;
+  transition: border-color var(--transicion-rapida), transform var(--transicion-rapida);
+}
+
+.guia-popup__stat:hover {
+  border-color: var(--color-acento);
+  transform: translateY(-1px);
+}
+
+.guia-popup__stat-valor {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  color: var(--color-acento);
+  margin: 0;
+  line-height: 1.2;
+}
+
+.guia-popup__stat-etiqueta {
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  margin: var(--espaciado-xxs) 0 0;
+  line-height: 1.35;
+}
+
 @media (max-width: 480px) {
   .guia-popup {
     max-width: 100%;

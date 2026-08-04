@@ -1,0 +1,208 @@
+/* ==========================================================================
+   Estudio Guiado — cabecera, "Continuar leyendo" y listados por testamento
+   ========================================================================== */
+
+/* ── Cabecera de la sección ──────────────────────────────────────────── */
+.estudio-cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-lg);
+}
+
+.estudio-cabecera h2 {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin: 0;
+  font-size: var(--texto-xl);
+  line-height: var(--texto-altura-linea-titulo);
+}
+
+.estudio-cabecera h2 svg {
+  color: var(--color-acento);
+}
+
+.estudio-cabecera__derecha {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.estudio-usuario {
+  display: inline-block;
+  max-width: 180px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+}
+
+/* ── Tarjeta hero "Continuar leyendo" ────────────────────────────────── */
+.estudio-continuar {
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+  cursor: pointer;
+  margin-bottom: var(--espaciado-lg);
+  background:
+    linear-gradient(120deg, var(--color-acento-soft) 0%, transparent 55%),
+    var(--card-bg);
+  border-left-width: 4px;
+}
+
+.estudio-continuar::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(120% 150% at 100% 0%, var(--color-acento-soft) 0%, transparent 58%);
+  opacity: 0.45;
+  pointer-events: none;
+  transition: opacity var(--transicion-normal);
+}
+
+.estudio-continuar:hover::after {
+  opacity: 0.85;
+}
+
+.estudio-continuar__icono {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 46px;
+  height: 46px;
+  border-radius: var(--radio-lg);
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  box-shadow: var(--sombra-md);
+}
+
+.estudio-continuar__icono svg {
+  width: 22px;
+  height: 22px;
+}
+
+.estudio-continuar__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.estudio-continuar__etiqueta {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: var(--color-acento);
+}
+
+.estudio-continuar__titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--color-texto);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.estudio-continuar__capitulo {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+.estudio-continuar__flecha {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-secundario);
+  transition: transform var(--transicion-normal),
+              background var(--transicion-rapida),
+              color var(--transicion-rapida),
+              border-color var(--transicion-rapida);
+}
+
+.estudio-continuar:hover .estudio-continuar__flecha {
+  transform: translateX(3px);
+  background: var(--color-acento);
+  border-color: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+.estudio-continuar:active {
+  transform: scale(0.99);
+  transition-duration: var(--transicion-rapida);
+}
+
+/* ── Cabeceras colapsables Antiguo / Nuevo Testamento ────────────────── */
+.estudio-testamento {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  margin-bottom: var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition: border-color var(--transicion-rapida),
+              background var(--transicion-rapida);
+}
+
+.estudio-testamento:hover {
+  border-color: var(--color-acento-soft);
+  background: var(--color-acento-soft);
+}
+
+.estudio-testamento h3 {
+  margin: 0;
+  font-size: var(--texto-base);
+  font-weight: 700;
+}
+
+.estudio-testamento__icono {
+  display: inline-flex;
+  color: var(--color-texto-terciario);
+  transition: transform var(--transicion-normal),
+              color var(--transicion-rapida);
+}
+
+.estudio-testamento:hover .estudio-testamento__icono {
+  color: var(--color-acento);
+}
+
+.estudio-testamento[aria-expanded='false'] .estudio-testamento__icono {
+  transform: rotate(-90deg);
+}
+
+@media (max-width: 480px) {
+  .estudio-continuar {
+    gap: var(--espaciado-sm);
+  }
+  .estudio-continuar__icono {
+    width: 40px;
+    height: 40px;
+  }
+  .estudio-usuario {
+    max-width: 120px;
+  }
+}

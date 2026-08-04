@@ -134,6 +134,10 @@
           if (h) span.textContent = h.respuesta_correcta || '…';
         });
       };
+      // La selección se guarda al mostrar el botón: hacer clic en el botón
+      // colapsa la selección del documento, así que en el click no podemos
+      // volver a leer window.getSelection().
+      let seleccionGuardada = null;
       const _obtenerSeleccion = () => {
         const sel = window.getSelection();
         if (!sel || sel.isCollapsed || sel.rangeCount === 0) return null;
@@ -154,20 +158,20 @@
         btnFlotante.style.transform = 'translate(-50%, -100%)';
       };
       const _ocultarBoton = () => { btnFlotante.style.display = 'none'; };
-      escritorio.addEventListener('mouseup', () => {
+      const _capturarSeleccion = () => {
         setTimeout(() => {
-          const sel = _obtenerSeleccion();
-          if (sel) { _posicionarBoton(sel.rango); } else { _ocultarBoton(); }
+          seleccionGuardada = _obtenerSeleccion();
+          if (seleccionGuardada) { _posicionarBoton(seleccionGuardada.rango); } else { _ocultarBoton(); }
         }, 10);
-      });
-      document.addEventListener('selectionchange', () => {
-        const sel = window.getSelection();
-        if (!sel || sel.isCollapsed || !escritorio.contains(sel.anchorNode)) {
-          setTimeout(_ocultarBoton, 150);
-        }
-      });
-      btnFlotante.addEventListener('click', () => {
-        const sel = _obtenerSeleccion();
+      };
+      escritorio.addEventListener('mouseup', _capturarSeleccion);
+      // El clic en el botón colapsa la selección: evitamos que el mousedown
+      // del botón robe la selección y NO ocultamos el botón por selectionchange
+      // cuando el clic ocurre dentro del propio botón.
+      btnFlotante.addEventListener('mousedown', (e) => { e.preventDefault(); });
+      btnFlotante.addEventListener('click', (e) => {
+        e.preventDefault();
+        const sel = seleccionGuardada;
         if (!sel) return;
         const textoSeleccionado = sel.texto;
         const hid = siguienteId(estado.huecos);
@@ -185,6 +189,7 @@
         sel.rango.collapse(true);
         window.getSelection().removeAllRanges();
         window.getSelection().addRange(sel.rango);
+        seleccionGuardada = null;
         _ocultarBoton();
         _renderLista();
         _sincronizar();

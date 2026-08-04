@@ -1,184 +1,104 @@
-/* === Calificaciones: Distribución de notas === */
-.calif-distribucion {
+/* === Calificaciones: Pestañas por evaluación === */
+.calif-tabs {
   display: flex;
-  gap: 3px;
-  align-items: flex-end;
-  height: 64px;
-  padding: var(--espaciado-xxs) 0;
-}
-
-.calif-distribucion__barra {
-  flex: 1;
-  background: var(--color-fondo-alt);
-  border-radius: var(--radio-sm) var(--radio-sm) 0 0;
-  min-height: 4px;
-  transition: height var(--transicion-normal);
-  position: relative;
-}
-
-.calif-distribucion__barra--fill {
-  background: var(--color-acento);
-}
-
-.calif-distribucion__etiqueta {
-  font-size: var(--texto-xxs, 0.65rem);
-  text-align: center;
-  color: var(--color-texto-terciario);
-  line-height: 1;
-}
-
-/* === Calificaciones: Cards móvil === */
-.calif-cards {
-  display: none;
-}
-
-@media (max-width: 768px) {
-  .calif-cards {
-    display: flex;
-    flex-direction: column;
-    gap: var(--espaciado-sm);
-  }
-  .calif-tabla-desktop {
-    display: none !important;
-  }
-}
-
-/* === Mobile pequeño (< 480px): distribucion más fina, eval acciones apiladas === */
-@media (max-width: 480px) {
-  .calif-distribucion {
-    height: 56px;
-  }
-
-  .calif-distribucion__etiqueta {
-    font-size: var(--texto-xxs);
-  }
-
-  .calif-eval-acciones {
-    flex-direction: column;
-    align-items: stretch;
-    gap: var(--espaciado-xs);
-  }
-
-  .calif-eval-media {
-    text-align: center;
-  }
-
-  .calif-stats-grid {
-    flex-direction: column;
-  }
-
-  .calif-card__media {
-    font-size: var(--texto-lg);
-  }
-
-  .calif-card__examen-nombre {
-    max-width: 55%;
-  }
-}
-
-@media (max-width: 360px) {
-  .calif-distribucion {
-    height: 48px;
-    gap: 2px;
-  }
-
-  .calif-card {
-    padding: var(--espaciado-xs);
-  }
-
-  .calif-card__examen {
-    font-size: 10px;
-  }
-}
-
-.calif-card {
-  padding: var(--espaciado-sm);
+  gap: 0;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
-  background: var(--color-fondo);
-  transition: box-shadow var(--transicion-rapida);
+  overflow-x: auto;
+  overflow-y: hidden;
+  -webkit-overflow-scrolling: touch;
+  margin-bottom: var(--espaciado-md);
+  padding-bottom: 2px;
+
+  /* Firefox: barra fina, thumb sutil */
+  scrollbar-width: thin;
+  scrollbar-color: var(--color-borde) transparent;
 }
 
-.calif-card:hover {
-  box-shadow: var(--sombra-md);
+/* ── Scrollbar Chrome/Safari: thumb pill-shaped, sutil ── */
+.calif-tabs::-webkit-scrollbar {
+  height: 5px;
 }
-
-.calif-card__header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: var(--espaciado-xs);
+.calif-tabs::-webkit-scrollbar-track {
+  background: transparent;
+  margin: 0 8px;
 }
-
-.calif-card__nombre {
-  font-size: var(--texto-sm);
-}
-
-.calif-card__media {
-  font-size: var(--texto-xl);
-  font-weight: 800;
-}
-
-.calif-card__examenes {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.calif-card__examen {
-  display: flex;
-  justify-content: space-between;
-  font-size: var(--texto-xs);
-  padding: 3px 0;
-  border-bottom: 1px solid var(--color-borde);
-}
-
-.calif-card__examen:last-child {
-  border-bottom: none;
-}
-
-.calif-card__examen-nombre {
-  color: var(--color-texto-secundario);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  max-width: 60%;
-}
-
-.calif-card__examen-nota {
-  font-weight: 700;
-}
-
-.calif-card__footer {
-  margin-top: var(--espaciado-xs);
-  text-align: right;
-}
-
-.calif-card__progreso {
-  margin-top: var(--espaciado-xs);
-}
-
-/* === Calificaciones: Evaluación header actions === */
-.calif-eval-acciones {
-  display: flex;
-  align-items: center;
-  gap: var(--espaciado-xs);
-  flex-wrap: wrap;
-}
-
-.calif-eval-media {
-  font-size: var(--texto-sm);
-  font-weight: 700;
-  padding: var(--espaciado-xxs) var(--espaciado-sm);
+.calif-tabs::-webkit-scrollbar-thumb {
+  background: var(--color-borde);
   border-radius: var(--radio-pill);
-  background: var(--color-fondo-alt);
+  border: 1px solid transparent;
+  background-clip: content-box;
+  transition: background var(--transicion-rapida);
+}
+.calif-tabs::-webkit-scrollbar-thumb:hover {
+  background: var(--color-texto-terciario);
+}
+.calif-tabs::-webkit-scrollbar-thumb:active {
+  background: var(--color-texto-secundario);
 }
 
-/* === Calificaciones: Stats grid === */
-.calif-stats-grid {
-  display: flex;
-  gap: var(--espaciado-sm);
-  flex-wrap: wrap;
+/* ── Desktop: barra más generosa y con acento ── */
+@media (min-width: 768px) {
+  .calif-tabs {
+    padding-bottom: 6px;
+    scrollbar-color: var(--color-texto-terciario) transparent;
+  }
+  .calif-tabs::-webkit-scrollbar {
+    height: 6px;
+  }
+  .calif-tabs::-webkit-scrollbar-track {
+    margin: 0 10px;
+    border-radius: var(--radio-pill);
+  }
+  .calif-tabs::-webkit-scrollbar-track:hover {
+    background: var(--color-fondo-alt);
+  }
+  .calif-tabs::-webkit-scrollbar-thumb {
+    background: var(--color-acento-soft);
+    border: 2px solid transparent;
+  }
+  .calif-tabs::-webkit-scrollbar-thumb:hover {
+    background: var(--color-acento);
+    border: 1px solid transparent;
+    box-shadow: inset 0 0 0 1px var(--color-acento);
+  }
+  .calif-tabs::-webkit-scrollbar-thumb:active {
+    background: var(--color-acento-fuerte);
+    border: 1px solid transparent;
+  }
+}
+
+.calif-tab {
+  flex: 1 0 auto;
+  min-width: max-content;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border: none;
+  border-right: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  text-align: center;
+  white-space: nowrap;
+  transition: all var(--transicion-rapida);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.calif-tab:last-child {
+  border-right: none;
+}
+
+.calif-tab:hover {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto);
+}
+
+.calif-tab--activo {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  font-weight: 700;
 }
 
 /* === Calificaciones: Tabla desktop === */
@@ -207,15 +127,6 @@
 
 .calif-tabla-desktop tbody td {
   padding: var(--espaciado-xs) var(--espaciado-sm);
-}
-
-/* === Calificaciones: Nota badges === */
-.calif-nota--aprobada {
-  color: var(--color-exito);
-}
-
-.calif-nota--suspendida {
-  color: var(--color-error);
 }
 
 .calif-nota-celda {
@@ -249,4 +160,124 @@
 
 .calif-menu-item:active {
   background: var(--color-acento-soft);
+}
+
+/* ==========================================================================
+   Cuadrícula tipo Excel (vista Notas)
+   ========================================================================== */
+.calif-grid-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-tarjeta);
+}
+
+.calif-grid-wrap .calif-grid {
+  width: 100%;
+  min-width: 480px;
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+.calif-grid-wrap .calif-grid thead {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+}
+
+/* Primera columna: Alumno (fija con fondo) */
+.calif-grid-wrap .calif-grid td:first-child,
+.calif-grid-wrap .calif-grid th:first-child {
+  position: sticky;
+  left: 0;
+  background: var(--color-fondo-tarjeta);
+  z-index: 3;
+  border-right: 2px solid var(--color-borde);
+  text-align: left;
+}
+
+.calif-grid-wrap .calif-grid th,
+.calif-grid-wrap .calif-grid td {
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border-bottom: 1px solid var(--color-borde);
+  border-left: 1px solid var(--color-borde);
+  white-space: nowrap;
+}
+
+.calif-grid-wrap .calif-grid th {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  background: var(--color-fondo-alt);
+  font-weight: 600;
+  vertical-align: middle;
+}
+
+/* Cabecera de grupo (evaluación) */
+.calif-grid__grupo {
+  background: var(--color-acento-soft) !important;
+  color: var(--color-texto) !important;
+  border-bottom: 2px solid var(--color-acento);
+}
+
+.calif-grid__grupo-titulo {
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.calif-grid__grupo-media {
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--color-acento);
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-tarjeta);
+}
+
+.calif-grid__alumno {
+  font-weight: 700;
+}
+
+/* Columnas de nota: centradas */
+.calif-grid .calif-nota-celda {
+  text-align: center;
+}
+
+.calif-grid__media {
+  background: var(--color-fondo-alt);
+  font-weight: 700;
+}
+
+/* Rayas alternas estilo Excel */
+.calif-grid tbody tr:nth-child(even) td {
+  background-color: var(--color-fondo-alt);
+}
+
+.calif-grid tbody tr:nth-child(even) td:first-child {
+  background-color: var(--color-fondo-alt);
+}
+
+.calif-grid tbody tr:hover td {
+  background-color: var(--color-acento-soft);
+}
+
+.calif-grid tbody tr:hover td:first-child {
+  background-color: var(--color-acento-soft);
+}
+
+/* === Mobile: celdas más compactas en la cuadrícula === */
+@media (max-width: 480px) {
+  .calif-grid-wrap .calif-grid th,
+  .calif-grid-wrap .calif-grid td {
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+    font-size: var(--texto-xs);
+  }
+}
+
+/* Bloque por evaluación (vista "Todas"): tablas apiladas con separación */
+.calif-bloque {
+  margin-bottom: var(--espaciado-lg);
+}
+.calif-bloque:last-child {
+  margin-bottom: 0;
 }

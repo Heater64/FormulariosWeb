@@ -1,8 +1,8 @@
 .btn-primario {
   background: var(--color-acento);
   color: var(--color-texto-acento);
-  padding: var(--espaciado-sm) var(--espaciado-xl);
-  border-radius: var(--radio-lg);
+  padding: var(--btn-padding);
+  border-radius: var(--btn-radius);
   font-weight: 600;
   font-size: var(--texto-sm);
   letter-spacing: 0.01em;

@@ -7,13 +7,9 @@
     { valor: 'verdadero_falso', nombre: 'Verdadero / Falso', icono: 'help-circle' },
     { valor: 'respuesta_corta', nombre: 'Respuesta corta', icono: 'type' },
     { valor: 'texto_largo', nombre: 'Párrafo', icono: 'align-left' },
-    { valor: 'solo_numero', nombre: 'Número', icono: 'hash' },
-    { valor: 'fecha', nombre: 'Fecha', icono: 'calendar' },
-    { valor: 'hora', nombre: 'Hora', icono: 'clock' },
     { valor: 'completar', nombre: 'Completar huecos', icono: 'minus-square' },
     { valor: 'relacionar', nombre: 'Relacionar columnas', icono: 'link' },
-    { valor: 'ordenar', nombre: 'Ordenar', icono: 'arrow-up-down' },
-    { valor: 'subir_archivo', nombre: 'Subir archivo', icono: 'upload-cloud' }
+    { valor: 'ordenar', nombre: 'Ordenar', icono: 'arrow-up-down' }
   ];
 
   function preguntaVacia() {
@@ -39,11 +35,11 @@
 
   window.vistaExamenEditor = {
     _arrastreIdx: null,
-    _pestanaActiva: 'preguntas', // preguntas, informacion, configuracion, vista_previa, respuestas
+    _pestanaActiva: 'preguntas', // preguntas, informacion, configuracion, vista_previa
     _preguntaSeleccionadaIdx: 0,
     _modoVistaPrevia: 'ordenador', // ordenandor, tablet, movil
+    _previewRespuestas: {},
     _autoSaveInterval: null,
-    _bancoPreguntas: [],
 
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
@@ -59,11 +55,8 @@
       const q = new URLSearchParams(queryPart || '');
       const evaluacionParam = q.get('evaluacion');
       const pestanaQuery = q.get('pestana');
-      if (pestanaQuery) {
-        this._pestanaActiva = pestanaQuery;
-      } else {
-        this._pestanaActiva = 'preguntas';
-      }
+      const pestanasValidas = ['informacion', 'preguntas', 'configuracion', 'vista_previa'];
+      this._pestanaActiva = pestanaQuery && pestanasValidas.includes(pestanaQuery) ? pestanaQuery : 'preguntas';
       const editando = idParam && idParam !== 'nuevo';
 
       // Cargar o Inicializar examen
@@ -81,7 +74,7 @@
         materia: '',
         tema: '',
         profesor: usuario.nombre_completo || usuario.username || 'Profesor',
-        color: '#673ab7', // Color predeterminado de Google Forms
+        color: '#2563EB', // Color predeterminado (azul de la web)
         icono: '📘',
         portada: '',
         // Configuración por defecto (Google Forms Ampliado)
@@ -98,7 +91,7 @@
           aleatorizar_respuestas: false,
           excluir_primeras: 0,
           correccion: 'automatica', // automatica, manual, mixta
-          resultados_visibles: 'al_terminar', // al_terminar, al_publicar, nunca
+          resultados_visibles: 'al_publicar', // al_publicar, nunca (el alumno ve la corrección solo cuando el profesor la publica)
           mostrar_nota: true,
           mostrar_respuestas: true,
           mostrar_errores: true,
@@ -116,12 +109,20 @@
         const existente = await window.examenesRepository.obtener(idParam);
         if (existente) {
           examen = { ...examen, ...existente };
+          // Normalizar colores legacy (morados de versiones antiguas) al azul de la web
+          if (examen.color && !/^#(25|1D)[0-9A-Fa-f]{4}$/.test(examen.color) && ['#673ab7', '#3f51b5', '#9c27b0', '#7b1fa2', '#ab47bc'].includes(examen.color.toLowerCase())) {
+            examen.color = '#2563EB';
+          }
           if (typeof examen.preguntas === 'string') {
             try { examen.preguntas = JSON.parse(examen.preguntas); } catch (e) { examen.preguntas = []; }
           }
           if (typeof examen.config === 'string') {
             try { examen.config = JSON.parse(examen.config); } catch (e) { examen.config = examen.config || {}; }
           }
+          // Normalizar exámenes legacy: el 'modo practica' ya no existe → pasa a examen.
+          // La corrección ya no se muestra al terminar: siempre espera al profesor.
+          if (examen.config && examen.config.modo === 'practica') examen.config.modo = 'examen';
+          if (examen.config && examen.config.resultados_visibles === 'al_terminar') examen.config.resultados_visibles = 'al_publicar';
           if (!Array.isArray(examen.preguntas)) examen.preguntas = [];
           examen.preguntas.forEach(p => {
             if (p.tipo === 'completar' && !Array.isArray(p.huecos)) p.huecos = [];
@@ -153,28 +154,11 @@
       let evaluaciones = [];
       try { evaluaciones = await window.examenesRepository.listarEvaluaciones(usuario.grupo_id); } catch (e) {}
 
-      // Intentos para pestaña Respuestas
-      let intentos = [];
-      if (editando) {
-        try { intentos = await window.examenesRepository.obtenerIntentos(idParam); } catch (e) {}
-      }
-
       this._examen = examen;
       this._evaluaciones = evaluaciones;
-      this._intentos = intentos;
       this._editando = editando;
       this._draftKey = draftKey;
       this._editoresHueco = {};
-      this._alumnosGrupo = await window.examenesRepository.obtenerMiembrosGrupo(usuario.grupo_id, true);
-
-      // Cargar banco de preguntas simulado/local para que sea rápido
-      this._bancoPreguntas = [
-        { id: 'b1', texto: '¿Quién guio al pueblo de Israel fuera de Egipto?', tipo: 'multiple', opciones: ['Moisés', 'Aarón', 'Josué', 'Abraham'], respuesta_correcta: '0', obligatoria: true, puntos: 5 },
-        { id: 'b2', texto: '¿En qué ciudad nació Jesús?', tipo: 'multiple', opciones: ['Nazaret', 'Jerusalén', 'Belén', 'Egipto'], respuesta_correcta: '2', obligatoria: true, puntos: 5 },
-        { id: 'b3', texto: '¿Cuál fue el primer libro de la Biblia?', tipo: 'multiple', opciones: ['Éxodo', 'Génesis', 'Apocalipsis', 'Levítico'], respuesta_correcta: '1', obligatoria: true, puntos: 2 },
-        { id: 'b4', texto: 'El arca de Noé tenía tres pisos.', tipo: 'verdadero_falso', opciones: [], respuesta_correcta: 'true', obligatoria: true, puntos: 2 },
-        { id: 'b5', texto: '¿Cuántos días y noches llovió durante el diluvio?', tipo: 'solo_numero', opciones: [], respuesta_correcta: '40', obligatoria: true, puntos: 3 }
-      ];
 
       this._renderizarCompleto(raiz);
     },
@@ -184,8 +168,8 @@
         clearInterval(this._autoSaveInterval);
         this._autoSaveInterval = null;
       }
-      // Auto-save draft
-      if (this._examen) {
+      // Solo guardar borrador si NO se ha guardado ya con éxito
+      if (this._examen && !this._guardadoExitoso) {
         try {
           localStorage.setItem(this._draftKey, JSON.stringify(this._examen));
         } catch (e) {}
@@ -193,46 +177,40 @@
     },    _renderizarCompleto(raiz) {
       const examen = this._examen;
       raiz.innerHTML = `
-        <div class="editor-root" style="--color-acento: ${examen.color || '#673ab7'}">
-          <!-- CABECERA PRINCIPAL -->
+        <div class="editor-root" style="--color-acento: ${examen.color || '#2563EB'}">
+          <!-- CABECERA: título grande + botones -->
           <header class="editor-header-bar">
-            <div class="o-flecha u-gap-sm">
-              <button class="btn-secundario btn-icono" id="btnEditorVolver" title="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
-              <div style="line-height:1">
-                <span class="u-fs-xs u-color-texto-terciario">Editor Completo de Exámenes</span>
-                <h4 id="cabeceraTituloExamen" style="margin:0;font-weight:600;display:flex;align-items:center;gap:6px">${examen.icono || '📘'} ${window.helpers.escapeHtml(examen.titulo)}</h4>
+            <div class="editor-header-bar__inner">
+              <div class="editor-header-bar__titulo-wrap">
+                <button class="editor-header-bar__volver-btn" id="btnEditorVolver" title="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
+                <h2 class="editor-header-bar__titulo" id="cabeceraTituloExamen">${examen.icono || '📘'} ${window.helpers.escapeHtml(examen.titulo)}</h2>
               </div>
-            </div>
-            
-            <div class="o-flecha u-gap-xs">
-              <span class="editor-draft-indicator u-flex-center u-gap-2xs" id="saveIndicator" style="font-size:var(--texto-xs);color:var(--color-texto-terciario);display:flex;align-items:center;gap:4px">
-                ${window.Iconos.render('check')} Autoguardado activado
-              </span>
-              <button class="btn-secundario btn-icono" id="btnGuardarEditor" title="Guardar borrador">${window.Iconos.render('save')}</button>
-              <button class="btn-primario" id="btnPublicarEditor" style="font-size:var(--texto-sm)">Publicar Examen</button>
+              <div class="editor-header-bar__acciones">
+                <span id="saveIndicator" style="font-size:var(--texto-xs);color:var(--color-texto-terciario);margin-right:var(--espaciado-xs)">${window.Iconos.render('check')} Guardado</span>
+                <button class="btn-secundario" id="btnGuardarEditor">${window.Iconos.render('save')} Guardar</button>
+                <button class="btn-primario" id="btnPublicarEditor">Publicar</button>
+              </div>
             </div>
           </header>
 
-          <!-- TABS DE NAVEGACIÓN -->
+          <!-- TABS SEGMENTADOS -->
           <nav class="editor-tabs" role="tablist">
-            <button class="editor-tab-btn ${this._pestanaActiva === 'informacion' ? 'editor-tab-btn--active' : ''}" data-tab="informacion" role="tab">Información</button>
-            <button class="editor-tab-btn ${this._pestanaActiva === 'preguntas' ? 'editor-tab-btn--active' : ''}" data-tab="preguntas" role="tab">Preguntas <span id="tabCountPreguntas" class="u-color-texto-terciario">(${examen.preguntas.length})</span></button>
-            <button class="editor-tab-btn ${this._pestanaActiva === 'configuracion' ? 'editor-tab-btn--active' : ''}" data-tab="configuracion" role="tab">Configuración</button>
-            <button class="editor-tab-btn ${this._pestanaActiva === 'vista_previa' ? 'editor-tab-btn--active' : ''}" data-tab="vista_previa" role="tab">Vista previa</button>
-            <button class="editor-tab-btn ${this._pestanaActiva === 'respuestas' ? 'editor-tab-btn--active' : ''}" data-tab="respuestas" role="tab">Respuestas <span class="u-color-texto-terciario">(${this._intentos.length})</span></button>
+            <div class="editor-tabs__inner">
+              <button class="editor-tab-btn ${this._pestanaActiva === 'informacion' ? 'editor-tab-btn--active' : ''}" data-tab="informacion" role="tab">Información</button>
+              <button class="editor-tab-btn ${this._pestanaActiva === 'preguntas' ? 'editor-tab-btn--active' : ''}" data-tab="preguntas" role="tab">Preguntas <span id="tabCountPreguntas">(${examen.preguntas.length})</span></button>
+              <button class="editor-tab-btn ${this._pestanaActiva === 'configuracion' ? 'editor-tab-btn--active' : ''}" data-tab="configuracion" role="tab">Configuración</button>
+              <button class="editor-tab-btn ${this._pestanaActiva === 'vista_previa' ? 'editor-tab-btn--active' : ''}" data-tab="vista_previa" role="tab">Vista previa</button>
+            </div>
           </nav>
 
           <!-- ESPACIO DE TRABAJO -->
-          <main class="editor-workspace ${this._pestanaActiva === 'preguntas' ? 'editor-workspace--con-panel' : ''}" id="editorWorkspaceArea">
-            <!-- El contenido dinámico de la pestaña seleccionada se inyectará aquí -->
+          <main class="editor-workspace" id="editorWorkspaceArea">
           </main>
 
           <!-- BARRA FLOTANTE (Solo visible en pestaña Preguntas) -->
           <div class="floating-toolbar" id="formsFloatingToolbar" style="${this._pestanaActiva === 'preguntas' ? '' : 'display:none'}">
-            <button class="toolbar-btn" id="floatAddQuestion" title="Añadir pregunta">${window.Iconos.render('plus-circle')}</button>
-            <button class="toolbar-btn" id="floatImportQuestion" title="Banco de preguntas / Importar">${window.Iconos.render('database')}</button>
+            <button class="toolbar-btn toolbar-btn--principal" id="floatAddQuestion" title="Añadir pregunta">${window.Iconos.render('plus-circle')}</button>
             <button class="toolbar-btn" id="floatAddTitle" title="Añadir sección">${window.Iconos.render('layout')}</button>
-            <button class="toolbar-btn" id="floatAddMedia" title="Subir imagen/audio/video">${window.Iconos.render('image')}</button>
           </div>
         </div>
       `;
@@ -243,13 +221,13 @@
     },
 
     _conectarAccionesGenerales(raiz) {
-      raiz.querySelector('#btnEditorVolver').onclick = async () => {
-        const ok = await window.helpers.confirmar('¿Estás seguro de que quieres salir? Los cambios recientes se han guardado automáticamente.', { titulo: 'Salir del editor' });
-        if (ok) {
-          localStorage.removeItem(this._draftKey);
-          router.navegar('/examenes');
-        }
-      };
+      const btnVolver = raiz.querySelector('#btnEditorVolver');
+      if (btnVolver) {
+        btnVolver.onclick = async () => {
+          const ok = await window.helpers.confirmar('¿Estás seguro de que quieres salir? Los cambios recientes se guardan automáticamente.', { titulo: 'Salir del editor' });
+          if (ok) router.navegar('/examenes');
+        };
+      }
 
       raiz.querySelectorAll('.editor-tab-btn').forEach(btn => {
         btn.onclick = () => {
@@ -261,11 +239,10 @@
           const workspace = raiz.querySelector('#editorWorkspaceArea');
           const toolbar = raiz.querySelector('#formsFloatingToolbar');
           if (this._pestanaActiva === 'preguntas') {
-            workspace.classList.add('editor-workspace--con-panel');
             toolbar.style.display = '';
           } else {
-            workspace.classList.remove('editor-workspace--con-panel');
             toolbar.style.display = 'none';
+            workspace.classList.remove('editor-workspace--con-panel', 'editor-workspace--panel-flotante', 'editor-workspace--panel-abierto');
           }
 
           this._renderizarPestanaActiva(raiz);
@@ -290,10 +267,6 @@
         }, 100);
       };
 
-      raiz.querySelector('#floatImportQuestion').onclick = () => {
-        this._abrirBancoPreguntas(raiz);
-      };
-
       raiz.querySelector('#floatAddTitle').onclick = async () => {
         const text = await window.helpers.formulario({
           titulo: 'Crear nueva Sección',
@@ -316,9 +289,6 @@
         }
       };
 
-      raiz.querySelector('#floatAddMedia').onclick = () => {
-        window.helpers.mostrarAlerta('Sube o asocia recursos visuales y auditivos en el panel de configuración de cada tarjeta de pregunta.', 'info');
-      };
     },
 
     _actualizarCountPreguntas(raiz) {
@@ -353,9 +323,6 @@
         case 'vista_previa':
           this._renderizarPestanaVistaPrevia(workspace);
           break;
-        case 'respuestas':
-          this._renderizarPestanaRespuestas(workspace);
-          break;
       }
       window.Iconos.actualizar();
     },
@@ -370,21 +337,15 @@
         `<option value="${e.id}" ${e.id === examen.evaluacion_id ? 'selected' : ''}>${window.helpers.escapeHtml(e.titulo)}</option>`
       ).join('');
 
-      const colores = ['#673ab7', '#3f51b5', '#2196f3', '#009688', '#4caf50', '#ff9800', '#f44336', '#e91e63', '#795548', '#607d8b'];
-      const selectColores = colores.map(col => 
-        `<span class="color-dot ${examen.color === col ? 'color-dot--selected' : ''}" style="background:${col}" data-color="${col}"></span>`
-      ).join('');
-
-      const iconos = ['📘', '📝', '📖', '⛪', '💡', '🔥', '🎨', '⚙️', '🏆', '⭐'];
-      const selectIconos = iconos.map(ico => 
-        `<button class="btn-secundario btn-icono ${examen.icono === ico ? 'btn-primario' : ''}" style="font-size:var(--texto-lg)" data-icono="${ico}">${ico}</button>`
-      ).join('');
+      const estadoBadge = examen.estado === 'publicado' 
+        ? '<span style="background:var(--color-exito-soft);color:var(--color-exito);padding:2px 10px;border-radius:var(--radio-pill);font-size:var(--texto-xs)">Publicado</span>'
+        : examen.estado === 'archivado'
+        ? '<span style="background:var(--color-error-soft);color:var(--color-error);padding:2px 10px;border-radius:var(--radio-pill);font-size:var(--texto-xs)">Archivado</span>'
+        : '<span style="background:var(--color-fondo-alt);color:var(--color-texto-terciario);padding:2px 10px;border-radius:var(--radio-pill);font-size:var(--texto-xs)">Borrador</span>';
 
       contenedor.innerHTML = `
         <div class="forms-card">
-          <h3 style="border-bottom: 1px solid var(--color-borde); padding-bottom: var(--espaciado-xs)">Metadatos del Examen</h3>
-          
-          <div class="o-pila u-mt-1">
+          <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Título del examen</label>
             <input type="text" id="infoTitulo" value="${window.helpers.escapeHtml(examen.titulo)}" placeholder="Ej: Examen Unidad 5">
           </div>
@@ -392,80 +353,23 @@
           <div class="o-pila">
             <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Descripción o Instrucciones</label>
             <textarea id="infoDescripcion" rows="3" placeholder="Instrucciones para tus alumnos...">${window.helpers.escapeHtml(examen.descripcion || '')}</textarea>
-          </div>          <div class="o-grid u-grid-2col-adapt u-gap-md">
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Materia</label>
-              <input type="text" id="infoMateria" value="${window.helpers.escapeHtml(examen.materia || '')}" placeholder="Ej: Historia de la Iglesia">
-            </div>
-
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Tema</label>
-              <input type="text" id="infoTema" value="${window.helpers.escapeHtml(examen.tema || '')}" placeholder="Ej: Hechos 1-12">
-            </div>
-          </div>          <div class="o-grid u-grid-2col-adapt u-gap-md">
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Evaluación</label>
-              <select id="infoEvaluacion">
-                <option value="">— Ninguna —</option>
-                ${selectEvaluaciones}
-              </select>
-            </div>
-
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Profesor</label>
-              <input type="text" id="infoProfesor" value="${window.helpers.escapeHtml(examen.profesor || '')}" placeholder="Nombre del Profesor">
-            </div>
           </div>
 
           <div class="o-pila">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Estado del Examen</label>
-            <div class="o-flecha u-gap-md">
-              <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="borrador" ${examen.estado === 'borrador' ? 'checked' : ''}> Borrador</label>
-              <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="publicado" ${examen.estado === 'publicado' ? 'checked' : ''}> Publicado</label>
-              <label class="o-flecha" style="gap:4px;cursor:pointer"><input type="radio" name="infoEstado" value="archivado" ${examen.estado === 'archivado' ? 'checked' : ''}> Archivado</label>
-            </div>
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Evaluación</label>
+            <select id="infoEvaluacion">
+              <option value="">— Ninguna —</option>
+              ${selectEvaluaciones}
+            </select>
           </div>
 
           <div class="o-pila">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Tema de Color del Examen</label>
-            <div class="o-flecha u-gap-xs u-flex-wrap">
-              ${selectColores}
-            </div>
-          </div>
-
-          <div class="o-pila">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Icono Identificativo</label>
-            <div class="o-flecha u-gap-xs u-flex-wrap">
-              ${selectIconos}
-            </div>
-          </div>
-
-          <div class="o-pila">
-            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Imagen de Portada (URL opcional)</label>
-            <input type="text" id="infoPortada" value="${window.helpers.escapeHtml(examen.portada || '')}" placeholder="https://ejemplo.com/imagen.jpg">
+            <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Estado</label>
+            <div>${estadoBadge}</div>
+            <p class="u-fs-xs u-color-texto-terciario">El estado se cambia al guardar o publicar desde la cabecera.</p>
           </div>
         </div>
       `;
-
-      // Eventos locales
-      contenedor.querySelectorAll('.color-dot').forEach(dot => {
-        dot.onclick = () => {
-          contenedor.querySelectorAll('.color-dot').forEach(d => d.classList.remove('color-dot--selected'));
-          dot.classList.add('color-dot--selected');
-          examen.color = dot.dataset.color;
-          contenedor.closest('.editor-root').style.setProperty('--color-acento', examen.color);
-        };
-      });
-
-      contenedor.querySelectorAll('[data-icono]').forEach(btn => {
-        btn.onclick = () => {
-          contenedor.querySelectorAll('[data-icono]').forEach(b => b.classList.remove('btn-primario'));
-          btn.classList.add('btn-primario');
-          examen.icono = btn.dataset.icono;
-          const cabeceraTitulo = document.getElementById('cabeceraTituloExamen');
-          if (cabeceraTitulo) cabeceraTitulo.innerHTML = `${examen.icono} ${window.helpers.escapeHtml(examen.titulo)}`;
-        };
-      });
 
       contenedor.querySelector('#infoTitulo').addEventListener('input', (e) => {
         examen.titulo = e.target.value || 'Examen sin título';
@@ -479,17 +383,7 @@
       const tit = raiz.querySelector('#infoTitulo')?.value;
       if (tit) examen.titulo = tit;
       examen.descripcion = raiz.querySelector('#infoDescripcion')?.value || '';
-      examen.materia = raiz.querySelector('#infoMateria')?.value || '';
-      examen.tema = raiz.querySelector('#infoTema')?.value || '';
       examen.evaluacion_id = raiz.querySelector('#infoEvaluacion')?.value || null;
-      examen.profesor = raiz.querySelector('#infoProfesor')?.value || '';
-      examen.portada = raiz.querySelector('#infoPortada')?.value || '';
-      
-      const estadoRad = raiz.querySelector('input[name="infoEstado"]:checked');
-      if (estadoRad) {
-        examen.estado = estadoRad.value;
-        examen.publicado = examen.estado === 'publicado';
-      }
     },
 
     // ==========================================
@@ -499,34 +393,48 @@
       const workspace = raiz.querySelector('#editorWorkspaceArea');
       workspace.innerHTML = `
         <div class="preguntas-lista" id="preguntasContainerArea">
-          <!-- Lista de preguntas -->
-        </div>
-        <div class="config-sidebar" id="configPreguntaSidebar">
-          <!-- Panel de configuración dinámico de la pregunta seleccionada -->
+          <!-- Cabecera + tarjetas de preguntas (renderizadas juntas) -->
         </div>
       `;
 
       this._renderizarPreguntasTarjetas(raiz);
-      this._renderizarPanelLateralConfig(raiz);
     },
 
     _renderizarPreguntasTarjetas(raiz) {
       const cont = raiz.querySelector('#preguntasContainerArea');
       if (!cont) return;
       const preguntas = this._examen.preguntas;
+      const puntosTotales = preguntas.reduce((acc, p) => acc + (p.puntos || 0), 0);
+      const numPreguntas = preguntas.filter(p => p.tipo !== 'seccion').length;
+
+      const cabecera = `
+        <div class="preguntas-cabecera">
+          <div class="preguntas-cabecera__info">
+            <h3 class="preguntas-cabecera__titulo">Preguntas <span class="preguntas-cabecera__contador">${preguntas.length}</span></h3>
+            <span class="u-fs-xs u-color-texto-terciario">${numPreguntas} preguntas · ${puntosTotales} puntos</span>
+          </div>
+          <div class="preguntas-cabecera__acciones">
+            <button class="btn-secundario u-fs-sm" id="btnNuevaPregunta" title="Añadir pregunta">${window.Iconos.render('plus')} Pregunta</button>
+            <button class="btn-secundario u-fs-sm" id="btnNuevaSeccion" title="Añadir sección">${window.Iconos.render('layout')} Sección</button>
+
+          </div>
+        </div>
+      `;
 
       if (preguntas.length === 0) {
-        cont.innerHTML = `
+        cont.innerHTML = cabecera + `
           <div class="forms-card u-texto-centrado" style="padding:var(--espaciado-lg)">
             <p style="font-size:3rem">${window.Iconos.render('help-circle')}</p>
             <h4>No hay preguntas aún</h4>
-            <p class="u-color-texto-secundario">Utiliza el botón flotante (+) para crear tu primera pregunta.</p>
+            <p class="u-color-texto-secundario">Utiliza «Añadir pregunta» o el botón flotante (+) para crear tu primera pregunta.</p>
           </div>
         `;
+        this._conectarCabeceraPreguntas(raiz);
+        window.Iconos.actualizar();
         return;
       }
 
-      cont.innerHTML = preguntas.map((p, i) => {
+      cont.innerHTML = cabecera + preguntas.map((p, i) => {
         const esSeleccionada = this._preguntaSeleccionadaIdx === i;
         
         if (p.tipo === 'seccion') {
@@ -578,12 +486,12 @@
             
             <div class="o-flecha o-flecha--between u-mt-1" style="border-top:1px dashed var(--color-borde);padding-top:var(--espaciado-xs);align-items:center">
               <span class="u-fs-xs u-color-texto-terciario">Puntos: <b>${p.puntos || 1} pt</b> | Obligatoria: <b>${p.obligatoria ? 'Sí' : 'No'}</b></span>
-              <button class="btn-secundario btn-icono u-fs-xs btn-config-p" data-idx="${i}" title="Configuración de la pregunta">${window.Iconos.render('settings')}</button>
             </div>
           </div>
         `;
       }).join('');
 
+      this._conectarCabeceraPreguntas(raiz);
       this._conectarEventosPreguntas(raiz);
       window.Iconos.actualizar();
     },
@@ -601,7 +509,10 @@
         html += `<button class="btn-secundario u-fs-xs btn-add-opt u-self-start" data-idx="${i}">+ Añadir opción</button>`;
       } else if (p.tipo === 'varias_opciones') {
         let seleccionadas = [];
-        try { seleccionadas = JSON.parse(p.respuesta_correcta || '[]'); } catch (e) { seleccionadas = []; }
+        try {
+          const parseadas = JSON.parse(p.respuesta_correcta || '[]');
+          seleccionadas = Array.isArray(parseadas) ? parseadas : [];
+        } catch (e) { seleccionadas = []; }
         html += (p.opciones || []).map((o, oi) => `
           <div class="o-flecha u-gap-xs u-mb-xxs">
             <input type="checkbox" ${seleccionadas.includes(oi) ? 'checked' : ''} data-correcta-check-idx="${oi}" data-idx="${i}">
@@ -621,12 +532,6 @@
         html += `<input type="text" class="u-w-full" data-correcta-texto="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Respuesta correcta (variantes separadas por |)">`;
       } else if (p.tipo === 'texto_largo') {
         html += `<textarea class="u-w-full u-input-desactivado" rows="2" placeholder="Respuesta de párrafo (se corregirá manualmente o con palabras clave)" disabled></textarea>`;
-      } else if (p.tipo === 'solo_numero') {
-        html += `<input type="text" class="u-w-full" data-correcta-numero="${i}" value="${window.helpers.escapeHtml(p.respuesta_correcta || '')}" placeholder="Ej: 42">`;
-      } else if (p.tipo === 'fecha') {
-        html += `<input type="date" class="u-w-full u-input-desactivado" disabled>`;
-      } else if (p.tipo === 'hora') {
-        html += `<input type="time" class="u-w-full u-input-desactivado" disabled>`;
       } else if (p.tipo === 'completar') {
         html += `<div id="editorHuecos_${i}"></div>`;
       } else if (p.tipo === 'relacionar') {
@@ -661,12 +566,51 @@
           </div>
         `).join('');
         html += `<button class="btn-secundario u-fs-xs btn-add-opt" data-idx="${i}">+ Añadir elemento</button>`;
-      } else if (p.tipo === 'subir_archivo') {
-        html += `<div style="border:2px dashed var(--color-borde);border-radius:var(--radio-sm);padding:var(--espaciado-md);text-align:center;color:var(--color-texto-terciario)">
-          ${window.Iconos.render('upload-cloud')} Alumno entregará PDF o Imagen
-        </div>`;
       }
       return html;
+    },
+
+    _conectarCabeceraPreguntas(raiz) {
+      const btnNueva = raiz.querySelector('#btnNuevaPregunta');
+      if (btnNueva) {
+        btnNueva.onclick = () => {
+          const nueva = preguntaVacia();
+          this._examen.preguntas.push(nueva);
+          this._preguntaSeleccionadaIdx = this._examen.preguntas.length - 1;
+          this._renderizarPreguntasTarjetas(raiz);
+          this._actualizarCountPreguntas(raiz);
+          setTimeout(() => {
+            const cards = raiz.querySelectorAll('.forms-card--pregunta');
+            if (cards.length) cards[cards.length - 1].scrollIntoView({ behavior: 'smooth' });
+          }, 100);
+        };
+      }
+
+      const btnSeccion = raiz.querySelector('#btnNuevaSeccion');
+      if (btnSeccion) {
+        btnSeccion.onclick = async () => {
+          const text = await window.helpers.formulario({
+            titulo: 'Crear nueva Sección',
+            mensaje: 'Las secciones te permiten dividir el examen en diferentes partes.',
+            campos: [
+              { nombre: 'titulo', etiqueta: 'Nombre de la sección', valor: 'Sección 2', requerido: true, placeholder: 'Parte 2: Comprensión Lectora' },
+              { nombre: 'descripcion', etiqueta: 'Descripción o instrucciones', valor: '', placeholder: 'Lee detenidamente y responde...' }
+            ]
+          });
+          if (text) {
+            const nuevaSeccion = preguntaVacia();
+            nuevaSeccion.tipo = 'seccion';
+            nuevaSeccion.texto = text.titulo;
+            nuevaSeccion.explicacion = text.descripcion;
+            nuevaSeccion.opciones = [];
+            nuevaSeccion.respuesta_correcta = '';
+            this._examen.preguntas.push(nuevaSeccion);
+            this._renderizarPreguntasTarjetas(raiz);
+            this._actualizarCountPreguntas(raiz);
+          }
+        };
+      }
+
     },
 
     _conectarEventosPreguntas(raiz) {
@@ -682,7 +626,6 @@
             this._sincronizarPreguntasEnPantalla(raiz);
             this._preguntaSeleccionadaIdx = idx;
             this._renderizarPreguntasTarjetas(raiz);
-            this._renderizarPanelLateralConfig(raiz);
           }
         };
       });
@@ -696,7 +639,8 @@
           p.tipo = nuevoTipo;
           if (nuevoTipo === 'multiple' || nuevoTipo === 'opcion_unica' || nuevoTipo === 'varias_opciones') {
             p.opciones = p.opciones.length >= 2 ? p.opciones : ['Opción A', 'Opción B', 'Opción C'];
-            p.respuesta_correcta = '0';
+            // 'varias_opciones' guarda un array JSON de índices marcados; el resto, un índice único
+            p.respuesta_correcta = nuevoTipo === 'varias_opciones' ? '[]' : '0';
           } else if (nuevoTipo === 'verdadero_falso') {
             p.opciones = [];
             p.respuesta_correcta = 'true';
@@ -744,7 +688,6 @@
             this._examen.preguntas.splice(idx, 1);
             this._preguntaSeleccionadaIdx = Math.max(0, idx - 1);
             this._renderizarPreguntasTarjetas(raiz);
-            this._renderizarPanelLateralConfig(raiz);
             this._actualizarCountPreguntas(raiz);
           }
         };
@@ -809,7 +752,6 @@
           const idx = parseInt(btn.dataset.idx);
           this._examen.preguntas[idx].imagen = '';
           this._renderizarPreguntasTarjetas(raiz);
-          this._renderizarPanelLateralConfig(raiz);
         };
       });
 
@@ -859,26 +801,15 @@
         };
       });
 
-      // Configuración abre Sidebar directamente
-      cont.querySelectorAll('.btn-config-p').forEach(btn => {
-        btn.onclick = () => {
-          const idx = parseInt(btn.dataset.idx);
-          this._preguntaSeleccionadaIdx = idx;
-          this._renderizarPreguntasTarjetas(raiz);
-          this._renderizarPanelLateralConfig(raiz);
-          // Scroll suave al panel lateral
-          const panel = raiz.querySelector('#configPreguntaSidebar');
-          if (panel) panel.scrollIntoView({ behavior: 'smooth' });
-        };
-      });
-
       // Montar editor de completar huecos
       this._examen.preguntas.forEach((p, i) => {
         if (p.tipo === 'completar') {
           const contHuecos = raiz.querySelector(`#editorHuecos_${i}`);
           if (contHuecos) {
             window.editorHuecos.montar(contHuecos, {
-              texto: p.texto || '',
+              // El texto por defecto 'Nueva pregunta' no tiene sentido en un
+              // editor de huecos: se empieza con el enunciado vacío.
+              texto: p.texto && p.texto !== 'Nueva pregunta' ? p.texto : '',
               huecos: p.huecos || [],
               onChange: (datos) => {
                 p.texto = datos.texto;
@@ -887,94 +818,6 @@
             });
           }
         }
-      });
-    },
-
-    _renderizarPanelLateralConfig(raiz) {
-      const panel = raiz.querySelector('#configPreguntaSidebar');
-      if (!panel) return;
-      
-      const idx = this._preguntaSeleccionadaIdx;
-      const p = this._examen.preguntas[idx];
-      
-      if (!p || p.tipo === 'seccion') {
-        panel.innerHTML = `
-          <h4 class="u-m-0">${window.Iconos.render('settings')} Propiedades</h4>
-          <p class="u-fs-sm u-color-texto-secundario">Selecciona una pregunta para editar sus ajustes específicos de puntuación, validación y retroalimentación.</p>
-        `;
-        return;
-      }
-
-      panel.innerHTML = `
-        <h4 class="u-m-0 sidebar-titulo">Ajustes Pregunta ${idx + 1}</h4>
-
-        <div class="o-pila">
-          <label class="o-flecha u-gap-xs u-cursor-pointer sidebar-toggle">
-            <span class="u-fs-sm u-fw-600">Respuesta obligatoria</span>
-            <input type="checkbox" id="sideObligatoria" ${p.obligatoria ? 'checked' : ''}>
-          </label>
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Puntuación (Puntos)</label>
-          <input type="number" id="sidePuntos" value="${p.puntos || 1}" min="1" max="100">
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Imagen de la pregunta (URL)</label>
-          <input type="text" id="sideImagen" value="${window.helpers.escapeHtml(p.imagen || '')}" placeholder="https://ejemplo.com/pregunta.jpg">
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Explicación o pista de la respuesta</label>
-          <textarea id="sideExplicacion" rows="2" placeholder="Se mostrará en la corrección o al ver la solución...">${window.helpers.escapeHtml(p.explicacion || '')}</textarea>
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Retroalimentación Correcta</label>
-          <input type="text" id="sideRetroCorrecta" value="${window.helpers.escapeHtml(p.retroalimentacion_correcta || '¡Excelente trabajo!')}">
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Retroalimentación Incorrecta</label>
-          <input type="text" id="sideRetroIncorrecta" value="${window.helpers.escapeHtml(p.retroalimentacion_incorrecta || 'Respuesta incorrecta.')}">
-        </div>
-
-        <div class="o-pila">
-          <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Temporizador Individual (Segundos)</label>
-          <input type="number" id="sideTemporizador" value="${p.temporizador || 0}" min="0" placeholder="0 = Sin límite de tiempo">
-        </div>
-
-        <div class="o-pila u-mt-1">
-          <label class="o-flecha u-gap-xs u-cursor-pointer sidebar-toggle">
-            <span class="u-fs-sm u-fw-600">Mostrar solución</span>
-            <input type="checkbox" id="sideMostrarSolucion" ${p.mostrar_solucion !== false ? 'checked' : ''}>
-          </label>
-        </div>
-      `;
-
-      // Eventos locales sidebar
-      const sideSincronizar = () => {
-        p.obligatoria = panel.querySelector('#sideObligatoria').checked;
-        p.puntos = parseInt(panel.querySelector('#sidePuntos').value) || 1;
-        p.imagen = panel.querySelector('#sideImagen').value;
-        p.explicacion = panel.querySelector('#sideExplicacion').value;
-        p.retroalimentacion_correcta = panel.querySelector('#sideRetroCorrecta').value;
-        p.retroalimentacion_incorrecta = panel.querySelector('#sideRetroIncorrecta').value;
-        p.temporizador = parseInt(panel.querySelector('#sideTemporizador').value) || 0;
-        p.mostrar_solucion = panel.querySelector('#sideMostrarSolucion').checked;
-      };
-
-      panel.querySelectorAll('input, textarea').forEach(el => {
-        el.onchange = () => {
-          sideSincronizar();
-          // Renderizar parcialmente la tarjeta para reflejar puntos, obligatoria e imagen sin perder foco
-          const cardPoints = raiz.querySelector(`.forms-card[data-preg-idx="${idx}"] .btn-config-p`);
-          if (cardPoints) {
-            this._sincronizarPreguntasEnPantalla(raiz);
-            this._renderizarPreguntasTarjetas(raiz);
-          }
-        };
       });
     },
 
@@ -997,12 +840,9 @@
           return;
         }
 
-        // Respuestas cortas o numéricas
+        // Respuestas cortas
         const cortasInput = card.querySelector(`[data-correcta-texto="${i}"]`);
         if (cortasInput) p.respuesta_correcta = cortasInput.value;
-
-        const numInput = card.querySelector(`[data-correcta-numero="${i}"]`);
-        if (numInput) p.respuesta_correcta = numInput.value;
 
         // Sincronizar Opciones de texto para opción múltiple, varias opciones y ordenar
         card.querySelectorAll(`input[data-opcion-val]`).forEach(optEl => {
@@ -1021,9 +861,10 @@
           p.respuesta_correcta = elegidaRadio.dataset.correctaIdx;
         }
 
-        // Sincronizar respuestas correctas múltiples (checkboxes)
-        const elegidasChecks = card.querySelectorAll(`input[data-correcta-check-idx]:checked`);
-        if (elegidasChecks.length) {
+        // Sincronizar respuestas correctas múltiples (checkboxes):
+        // siempre se escribe el array (aunque esté vacío) para no dejar un '0' inválido
+        if (p.tipo === 'varias_opciones') {
+          const elegidasChecks = card.querySelectorAll(`input[data-correcta-check-idx]:checked`);
           const list = Array.from(elegidasChecks).map(c => parseInt(c.dataset.correctaCheckIdx));
           p.respuesta_correcta = JSON.stringify(list);
         }
@@ -1054,194 +895,119 @@
       });
     },
 
-    // BANCO DE PREGUNTAS
-    _abrirBancoPreguntas(raiz) {
-      const modal = document.createElement('div');
-      modal.className = 'modal-overlay';
-      modal.innerHTML = `
-        <div class="modal banco-modal" role="dialog" aria-modal="true">
-          <div class="o-flecha o-flecha--between u-mb-1">
-            <h4>${window.Iconos.render('database')} Banco de Preguntas</h4>
-            <button class="btn-secundario btn-icono modal-cerrar-banco" style="border:none">✕</button>
-          </div>
-          <p class="u-fs-xs u-color-texto-secundario">Selecciona una pregunta prediseñada para insertarla en tu examen de manera inmediata.</p>
-          
-          <input type="text" id="buscarPreguntaBanco" placeholder="Buscar pregunta..." style="width:100%;margin-bottom:var(--espaciado-sm)">
-          
-          <div class="o-pila" id="bancoPreguntasLista" style="gap:var(--espaciado-xs);max-height:300px;overflow-y:auto">
-            <!-- Preguntas del banco -->
-          </div>
-        </div>
-      `;
-      document.body.appendChild(modal);
-      window.Iconos.actualizar();
-
-      const modalLista = modal.querySelector('#bancoPreguntasLista');
-      const inputBusqueda = modal.querySelector('#buscarPreguntaBanco');
-
-      const renderListaBanco = () => {
-        const query = inputBusqueda.value.toLowerCase().trim();
-        const filtradas = this._bancoPreguntas.filter(bp => bp.texto.toLowerCase().includes(query));
-        
-        modalLista.innerHTML = filtradas.map(bp => `
-          <div class="banco-pregunta-card" data-banco-id="${bp.id}">
-            <div>
-              <span class="u-fw-600 u-fs-sm">${window.helpers.escapeHtml(bp.texto)}</span>
-              <br><span class="u-fs-xs u-color-texto-terciario">Tipo: ${bp.tipo} | Puntos: ${bp.puntos}</span>
-            </div>
-            <button class="btn-primario u-fs-xs btn-insertar-b" data-id="${bp.id}">Insertar</button>
-          </div>
-        `).join('');
-
-        modalLista.querySelectorAll('.btn-insertar-b').forEach(btn => {
-          btn.onclick = () => {
-            const pBanco = this._bancoPreguntas.find(b => b.id === btn.dataset.id);
-            if (pBanco) {
-              const nueva = {
-                ...preguntaVacia(),
-                texto: pBanco.texto,
-                tipo: pBanco.tipo,
-                opciones: [...pBanco.opciones],
-                respuesta_correcta: pBanco.respuesta_correcta,
-                puntos: pBanco.puntos,
-                obligatoria: pBanco.obligatoria
-              };
-              this._examen.preguntas.push(nueva);
-              this._preguntaSeleccionadaIdx = this._examen.preguntas.length - 1;
-              this._renderizarPestanaPreguntas(raiz);
-              this._actualizarCountPreguntas(raiz);
-              modal.remove();
-              window.helpers.mostrarAlerta('Pregunta añadida desde el banco.', 'exito');
-            }
-          };
-        });
-      };
-
-      inputBusqueda.oninput = renderListaBanco;
-      modal.querySelector('.modal-cerrar-banco').onclick = () => modal.remove();
-      renderListaBanco();
-    },
-
     // ==========================================
     // PESTAÑA 3: CONFIGURACIÓN AVANZADA
     // ==========================================
     _renderizarPestanaConfiguracion(contenedor) {
       const config = this._examen.config || {};
-      
+
+      const modoCard = (valor, titulo, desc, icono) => {
+        const sel = config.modo === valor ? ' modo-selector__opcion--sel' : '';
+        const checked = config.modo === valor ? 'checked' : '';
+        return `
+          <label class="modo-selector__opcion${sel}" data-modo="${valor}">
+            <input type="radio" name="confModo" value="${valor}" ${checked} class="modo-selector__radio">
+            <span class="modo-selector__icono">${icono}</span>
+            <span class="modo-selector__texto"><b>${titulo}</b><small>${desc}</small></span>
+            <span class="modo-selector__check">${window.Iconos.render('check')}</span>
+          </label>`;
+      };
+
       contenedor.innerHTML = `
-        <div class="forms-card">
-          <h3 style="border-bottom: 1px solid var(--color-borde); padding-bottom: var(--espaciado-xs)">Configuración de Evaluación</h3>
-          
-          <!-- GENERAL -->
-          <fieldset style="border:none;margin:0;padding:0;display:flex;flex-direction:column;gap:var(--espaciado-sm)">
-            <legend class="u-fw-600 u-color-texto-secundario u-fs-sm">Modo de Funcionamiento</legend>
-            <div class="o-grid" style="grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap:var(--espaciado-sm)">
-              <label class="o-pila" style="border:1px solid var(--color-borde);padding:var(--espaciado-xs);border-radius:var(--radio-sm);cursor:pointer">
-                <span class="o-flecha" style="gap:4px"><input type="radio" name="confModo" value="examen" ${config.modo === 'examen' ? 'checked' : ''}> <b>Modo Examen</b></span>
-                <span class="u-fs-xs u-color-texto-terciario">Calificaciones formales, intentos limitados y temporizador estricto.</span>
-              </label>
-              <label class="o-pila" style="border:1px solid var(--color-borde);padding:var(--espaciado-xs);border-radius:var(--radio-sm);cursor:pointer">
-                <span class="o-flecha" style="gap:4px"><input type="radio" name="confModo" value="practica" ${config.modo === 'practica' ? 'checked' : ''}> <b>Modo Práctica</b></span>
-                <span class="u-fs-xs u-color-texto-terciario">Formativo. Los alumnos pueden ver las explicaciones en tiempo real.</span>
-              </label>
-              <label class="o-pila" style="border:1px solid var(--color-borde);padding:var(--espaciado-xs);border-radius:var(--radio-sm);cursor:pointer">
-                <span class="o-flecha" style="gap:4px"><input type="radio" name="confModo" value="encuesta" ${config.modo === 'encuesta' ? 'checked' : ''}> <b>Modo Encuesta</b></span>
-                <span class="u-fs-xs u-color-texto-terciario">Recopilación de opiniones o datos sin respuestas correctas asignadas.</span>
-              </label>
-            </div>
-          </fieldset>
+        <div class="forms-card config-eval">
+          <h3 class="config-eval__titulo">${window.Iconos.render('settings')} Configuración de la evaluación</h3>
 
-          <!-- DISPONIBILIDAD -->
-          <div class="o-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--espaciado-md); border-top: 1px solid var(--color-borde); padding-top: var(--espaciado-md)">
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Fecha y Hora de Inicio</label>
-              <input type="datetime-local" id="confFechaInicio" value="${config.fecha_inicio || ''}">
+          <section class="config-seccion">
+            <h4 class="config-seccion__titulo">Modo de funcionamiento</h4>
+            <div class="modo-selector">
+              ${modoCard('examen', 'Modo Examen', 'Calificaciones formales, intentos limitados y temporizador estricto.', '🎯')}
+              ${modoCard('encuesta', 'Modo Encuesta', 'Recopila opiniones o datos sin respuestas correctas asignadas.', '📊')}
             </div>
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Fecha y Hora de Límite</label>
-              <input type="datetime-local" id="confFechaFin" value="${config.fecha_fin || ''}">
-            </div>
-          </div>
+          </section>
 
-          <!-- INTENTOS -->
-          <div class="o-grid" style="grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: var(--espaciado-md)">
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Intentos Permitidos</label>
-              <select id="confIntentos">
-                <option value="1" ${config.intentos === '1' ? 'selected' : ''}>1 Intento único</option>
-                <option value="2" ${config.intentos === '2' ? 'selected' : ''}>2 Intentos</option>
-                <option value="3" ${config.intentos === '3' ? 'selected' : ''}>3 Intentos</option>
-                <option value="ilimitados" ${config.intentos === 'ilimitados' ? 'selected' : ''}>Ilimitados (∞)</option>
-              </select>
+          <section class="config-seccion">
+            <h4 class="config-seccion__titulo">Disponibilidad</h4>
+            <div class="config-fila">
+              <div class="o-pila">
+                <label class="config-label">Fecha y hora de inicio</label>
+                <input type="datetime-local" id="confFechaInicio" value="${config.fecha_inicio || ''}">
+              </div>
+              <div class="o-pila">
+                <label class="config-label">Fecha y hora de límite</label>
+                <input type="datetime-local" id="confFechaFin" value="${config.fecha_fin || ''}">
+              </div>
             </div>
+            <p class="config-ayuda">Deja ambos vacíos para que esté disponible siempre.</p>
+          </section>
 
-            <!-- TEMPORIZADOR GLOBAL -->
-            <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">Temporizador General del Examen</label>
-              <select id="confTemporizadorGlobal">
-                <option value="sin_limite" ${config.temporizador_global === 'sin_limite' ? 'selected' : ''}>Sin límite de tiempo</option>
-                <option value="15" ${config.temporizador_global === '15' ? 'selected' : ''}>15 minutos</option>
-                <option value="30" ${config.temporizador_global === '30' ? 'selected' : ''}>30 minutos</option>
-                <option value="45" ${config.temporizador_global === '45' ? 'selected' : ''}>45 minutos</option>
-                <option value="60" ${config.temporizador_global === '60' ? 'selected' : ''}>60 minutos</option>
-                <option value="personalizado" ${config.temporizador_global === 'personalizado' ? 'selected' : ''}>Personalizado...</option>
-              </select>
-              <input type="number" id="confTemporizadorMinutos" value="${config.temporizador_personalizado || 0}" min="1" placeholder="Minutos" style="margin-top:4px; ${config.temporizador_global === 'personalizado' ? '' : 'display:none'}">
+          <section class="config-seccion">
+            <h4 class="config-seccion__titulo">Intentos y tiempo</h4>
+            <div class="config-fila">
+              <div class="o-pila">
+                <label class="config-label">Intentos permitidos</label>
+                <select id="confIntentos">
+                  <option value="1" ${config.intentos === '1' ? 'selected' : ''}>1 intento único</option>
+                  <option value="2" ${config.intentos === '2' ? 'selected' : ''}>2 intentos</option>
+                  <option value="3" ${config.intentos === '3' ? 'selected' : ''}>3 intentos</option>
+                  <option value="ilimitados" ${config.intentos === 'ilimitados' ? 'selected' : ''}>Ilimitados</option>
+                </select>
+              </div>
+              <div class="o-pila">
+                <label class="config-label">Temporizador general</label>
+                <select id="confTemporizadorGlobal">
+                  <option value="sin_limite" ${config.temporizador_global === 'sin_limite' ? 'selected' : ''}>Sin límite de tiempo</option>
+                  <option value="15" ${config.temporizador_global === '15' ? 'selected' : ''}>15 minutos</option>
+                  <option value="30" ${config.temporizador_global === '30' ? 'selected' : ''}>30 minutos</option>
+                  <option value="45" ${config.temporizador_global === '45' ? 'selected' : ''}>45 minutos</option>
+                  <option value="60" ${config.temporizador_global === '60' ? 'selected' : ''}>60 minutos</option>
+                  <option value="personalizado" ${config.temporizador_global === 'personalizado' ? 'selected' : ''}>Personalizado...</option>
+                </select>
+                <input type="number" id="confTemporizadorMinutos" value="${config.temporizador_personalizado || 0}" min="1" placeholder="Minutos" class="config-temporizador-custom ${config.temporizador_global === 'personalizado' ? '' : 'is-oculto'}">
+              </div>
             </div>
-          </div>
+          </section>
 
-          <!-- NAVEGACIÓN Y ALEATORIEDAD -->
-          <div style="border-top:1px solid var(--color-borde);padding-top:var(--espaciado-md)">
-            <h4 style="margin:0 0 var(--espaciado-xs) 0">Navegación y Estructura</h4>
-            <div class="o-pila" style="gap:var(--espaciado-xs)">
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confAleatorizarPreguntas" ${config.aleatorizar_preguntas ? 'checked' : ''}> Aleatorizar orden de preguntas</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confAleatorizarRespuestas" ${config.aleatorizar_respuestas ? 'checked' : ''}> Aleatorizar orden de opciones de respuesta</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confPermitirVolver" ${config.permitir_volver !== false ? 'checked' : ''}> Permitir a los alumnos regresar a preguntas anteriores</label>
+          <section class="config-seccion">
+            <h4 class="config-seccion__titulo">Navegación</h4>
+            <div class="config-checks">
+              <label class="config-check"><input type="checkbox" id="confAleatorizarPreguntas" ${config.aleatorizar_preguntas ? 'checked' : ''}><span>Aleatorizar orden de preguntas</span></label>
+              <label class="config-check"><input type="checkbox" id="confAleatorizarRespuestas" ${config.aleatorizar_respuestas ? 'checked' : ''}><span>Aleatorizar orden de opciones de respuesta</span></label>
+              <label class="config-check"><input type="checkbox" id="confPermitirVolver" ${config.permitir_volver !== false ? 'checked' : ''}><span>Permitir regresar a preguntas anteriores</span></label>
             </div>
-          </div>
+          </section>
 
-          <!-- VISUALIZACIÓN DE RESULTADOS -->
-          <div style="border-top:1px solid var(--color-borde);padding-top:var(--espaciado-md)">
-            <h4 style="margin:0 0 var(--espaciado-xs) 0">Visualización de Resultados para Alumnos</h4>
+          <section class="config-seccion">
+            <h4 class="config-seccion__titulo">Resultados para el alumno</h4>
             <div class="o-pila">
-              <label class="u-fs-sm u-fw-600 u-color-texto-secundario">¿Cuándo se muestran las respuestas y nota?</label>
-              <select id="confResultadosVisibles" style="max-width:320px">
-                <option value="al_terminar" ${config.resultados_visibles === 'al_terminar' ? 'selected' : ''}>Inmediatamente al terminar</option>
+              <label class="config-label">¿Cuándo se muestran las respuestas y la nota?</label>
+              <select id="confResultadosVisibles" class="config-select-ancho">
                 <option value="al_publicar" ${config.resultados_visibles === 'al_publicar' ? 'selected' : ''}>Cuando el profesor publique las notas</option>
                 <option value="nunca" ${config.resultados_visibles === 'nunca' ? 'selected' : ''}>Nunca mostrar respuestas</option>
               </select>
             </div>
-            
-            <div class="o-pila u-mt-1" style="gap:var(--espaciado-xxs)">
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confMostrarNota" ${config.mostrar_nota !== false ? 'checked' : ''}> Mostrar nota numérica de inmediato</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confMostrarRespuestas" ${config.mostrar_respuestas !== false ? 'checked' : ''}> Mostrar respuestas correctas</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confMostrarErrores" ${config.mostrar_errores !== false ? 'checked' : ''}> Mostrar preguntas falladas</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confMostrarExplicacion" ${config.mostrar_explicacion !== false ? 'checked' : ''}> Mostrar explicaciones pedagógicas de cada pregunta</label>
+            <div class="config-checks u-mt-1">
+              <label class="config-check"><input type="checkbox" id="confMostrarNota" ${config.mostrar_nota !== false ? 'checked' : ''}><span>Mostrar nota numérica de inmediato</span></label>
+              <label class="config-check"><input type="checkbox" id="confMostrarRespuestas" ${config.mostrar_respuestas !== false ? 'checked' : ''}><span>Mostrar respuestas correctas</span></label>
+              <label class="config-check"><input type="checkbox" id="confMostrarErrores" ${config.mostrar_errores !== false ? 'checked' : ''}><span>Mostrar preguntas falladas</span></label>
+              <label class="config-check"><input type="checkbox" id="confMostrarExplicacion" ${config.mostrar_explicacion !== false ? 'checked' : ''}><span>Mostrar explicaciones pedagógicas</span></label>
             </div>
-          </div>
-
-          <!-- SEGURIDAD Y CONTROL -->
-          <div style="border-top:1px solid var(--color-borde);padding-top:var(--espaciado-md)">
-            <h4 style="margin:0 0 var(--espaciado-xs) 0">Seguridad contra Copia o Fraude</h4>
-            <div class="o-pila" style="gap:var(--espaciado-xs)">
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confSeguridadPantallaCompleta" ${config.seguridad_pantalla_completa ? 'checked' : ''}> Forzar pantalla completa al iniciar</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confSeguridadBloquearCopiar" ${config.seguridad_bloquear_copiar ? 'checked' : ''}> Bloquear copiar textos del examen</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confSeguridadBloquearPegar" ${config.seguridad_bloquear_pegar ? 'checked' : ''}> Bloquear pegar contenidos externos</label>
-              <label class="o-flecha" style="gap:6px;cursor:pointer"><input type="checkbox" id="confSeguridadCambioPestana" ${config.seguridad_cambio_pestana ? 'checked' : ''}> Detectar cambio de pestaña o pérdida de foco</label>
-            </div>
-          </div>
+          </section>
         </div>
       `;
 
-      // Evento selector de temporizador global
+      // Selector de temporizador personalizado
       contenedor.querySelector('#confTemporizadorGlobal').onchange = (e) => {
         const inp = contenedor.querySelector('#confTemporizadorMinutos');
-        if (e.target.value === 'personalizado') {
-          inp.style.display = '';
-        } else {
-          inp.style.display = 'none';
-        }
+        if (inp) inp.classList.toggle('is-oculto', e.target.value !== 'personalizado');
       };
+
+      // Resaltar la tarjeta de modo seleccionada
+      contenedor.querySelectorAll('.modo-selector__opcion input').forEach(rad => {
+        rad.onchange = () => {
+          contenedor.querySelectorAll('.modo-selector__opcion').forEach(l =>
+            l.classList.toggle('modo-selector__opcion--sel', l.querySelector('input').checked));
+        };
+      });
     },
 
     _sincronizarConfiguracion(raiz) {
@@ -1260,344 +1026,232 @@
       config.aleatorizar_respuestas = raiz.querySelector('#confAleatorizarRespuestas').checked;
       config.permitir_volver = raiz.querySelector('#confPermitirVolver').checked;
       
-      config.resultados_visibles = raiz.querySelector('#confResultadosVisibles').value || 'al_terminar';
+      config.resultados_visibles = raiz.querySelector('#confResultadosVisibles').value || 'al_publicar';
       config.mostrar_nota = raiz.querySelector('#confMostrarNota').checked;
       config.mostrar_respuestas = raiz.querySelector('#confMostrarRespuestas').checked;
       config.mostrar_errores = raiz.querySelector('#confMostrarErrores').checked;
       config.mostrar_explicacion = raiz.querySelector('#confMostrarExplicacion').checked;
-      
-      config.seguridad_pantalla_completa = raiz.querySelector('#confSeguridadPantallaCompleta').checked;
-      config.seguridad_bloquear_copiar = raiz.querySelector('#confSeguridadBloquearCopiar').checked;
-      config.seguridad_bloquear_pegar = raiz.querySelector('#confSeguridadBloquearPegar').checked;
-      config.seguridad_cambio_pestana = raiz.querySelector('#confSeguridadCambioPestana').checked;
     },
 
     // ==========================================
     // PESTAÑA 4: VISTA PREVIA INTERACTIVA
     // ==========================================
-    _renderizarPestanaVistaPrevia(contenedor) {
+    _renderizarPestanaVistaPrevia(contenedor, conservar) {
+      if (!conservar) this._previewRespuestas = {};
+      const examen = this._examen;
+      const preguntas = examen.preguntas || [];
+      const numPreguntas = preguntas.filter(p => p.tipo !== 'seccion').length;
+      const puntosTotales = preguntas.reduce((acc, p) => acc + (p.puntos || 0), 0);
+
       contenedor.innerHTML = `
-        <div class="o-flecha o-flecha--between u-mb-1" style="width:100%; align-items:center">
+        <div class="preview-barra">
           <span class="u-fs-sm u-color-texto-secundario">Simula la experiencia interactiva que tendrán tus alumnos:</span>
           <div class="o-flecha" style="gap:4px">
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'ordenador' ? 'btn-primario' : ''}" data-device="ordenador" title="Vista Ordenador">${window.Iconos.render('monitor')}</button>
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'tablet' ? 'btn-primario' : ''}" data-device="tablet" title="Vista Tablet">${window.Iconos.render('tablet')}</button>
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'movil' ? 'btn-primario' : ''}" data-device="movil" title="Vista Móvil">${window.Iconos.render('phone')}</button>
+            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'ordenador' ? 'btn-device--activo' : ''}" data-device="ordenador" title="Vista ordenador">${window.Iconos.render('monitor')}</button>
+            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'tablet' ? 'btn-device--activo' : ''}" data-device="tablet" title="Vista tablet">${window.Iconos.render('tablet')}</button>
+            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'movil' ? 'btn-device--activo' : ''}" data-device="movil" title="Vista móvil">${window.Iconos.render('phone')}</button>
           </div>
         </div>
 
         <div class="preview-container">
           <div class="preview-device preview-device--${this._modoVistaPrevia}" id="previewDeviceBody">
             <div class="preview-screen">
-              <!-- Renderizado interactivo del examen real -->
-              <div class="forms-card" style="border-top-color: ${this._examen.color}">
-                <h2>${window.helpers.escapeHtml(this._examen.titulo)}</h2>
-                <p class="u-color-texto-secundario">${window.helpers.escapeHtml(this._examen.descripcion || 'Sin descripción.')}</p>
-                <span class="u-fs-xs u-color-texto-terciario">Profesor: ${window.helpers.escapeHtml(this._examen.profesor)} | Materia: ${window.helpers.escapeHtml(this._examen.materia || 'General')}</span>
+              <div class="forms-card preview-portada" style="border-top-color: ${examen.color || '#2563EB'}">
+                <h2 style="margin:0">${window.helpers.escapeHtml(examen.titulo)}</h2>
+                <p class="u-color-texto-secundario u-fs-sm" style="margin:4px 0">${window.helpers.escapeHtml(examen.descripcion || 'Sin descripción.')}</p>
+                <span class="u-fs-xs u-color-texto-terciario">${numPreguntas} preguntas · ${puntosTotales} puntos</span>
               </div>
 
-              <div class="o-pila u-mt-2" style="gap:var(--espaciado-md)" id="previewInteractiveQuestions">
-                <!-- Preguntas cargadas interactivas -->
-              </div>
+              <div class="o-pila u-mt-2" style="gap:var(--espaciado-md)" id="previewInteractiveQuestions"></div>
 
-              <button class="btn-primario u-mt-2" style="width:100%" id="previewSimulateSubmit">Enviar Respuestas</button>
+              <button class="btn-primario u-mt-2" style="width:100%" id="previewSimulateSubmit">Enviar respuestas</button>
             </div>
           </div>
         </div>
       `;
 
-      // Eventos de dispositivo
+      // Eventos de dispositivo (conservan las respuestas marcadas)
       contenedor.querySelectorAll('.btn-device').forEach(btn => {
         btn.onclick = () => {
           this._modoVistaPrevia = btn.dataset.device;
-          this._renderizarPestanaVistaPrevia(contenedor);
+          this._renderizarPestanaVistaPrevia(contenedor, true);
         };
       });
 
-      // Render preguntas interactivas
+      // Render de preguntas con numeración correcta (las secciones no cuentan)
       const areaPreguntas = contenedor.querySelector('#previewInteractiveQuestions');
-      const preguntas = this._examen.preguntas;
-
+      let numPregunta = 0;
       areaPreguntas.innerHTML = preguntas.map((p, index) => {
         if (p.tipo === 'seccion') {
           return `
-            <div class="u-seccion-bloque">
-              <h4>${window.helpers.escapeHtml(p.texto)}</h4>
-              <p class="u-fs-xs" style="opacity:0.8">${window.helpers.escapeHtml(p.explicacion || '')}</p>
+            <div class="u-seccion-bloque preview-seccion">
+              <h4 style="margin:0">${window.helpers.escapeHtml(p.texto)}</h4>
+              ${p.explicacion ? `<p class="u-fs-xs" style="margin:4px 0 0;opacity:0.85">${window.helpers.escapeHtml(p.explicacion)}</p>` : ''}
             </div>
           `;
         }
-
-        let oHtml = '';
-        if (p.tipo === 'multiple' || p.tipo === 'opcion_unica') {
-          oHtml = (p.opciones || []).map((o, oi) => `
-            <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer">
-              <input type="radio" name="p_prev_${index}" value="${oi}">
-              <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
-            </label>
-          `).join('');
-        } else if (p.tipo === 'varias_opciones') {
-          oHtml = (p.opciones || []).map((o, oi) => `
-            <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer">
-              <input type="checkbox" name="p_prev_${index}" value="${oi}">
-              <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
-            </label>
-          `).join('');
-        } else if (p.tipo === 'verdadero_falso') {
-          oHtml = `
-            <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer"><input type="radio" name="p_prev_${index}" value="true"> <span class="u-fs-sm">Verdadero</span></label>
-            <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer"><input type="radio" name="p_prev_${index}" value="false"> <span class="u-fs-sm">Falso</span></label>
-          `;
-        } else if (p.tipo === 'respuesta_corta' || p.tipo === 'solo_numero') {
-          oHtml = `<input type="text" name="p_prev_${index}" placeholder="Escribe tu respuesta aquí..." style="width:100%">`;
-        } else if (p.tipo === 'texto_largo') {
-          oHtml = `<textarea name="p_prev_${index}" rows="2" placeholder="Redacta tu respuesta aquí..." style="width:100%"></textarea>`;
-        } else if (p.tipo === 'completar') {
-          // Renderizado paralelo al de vista-examen-tomar.js (renderer del alumno)
-          // para que el profesor vea exactamente lo que verá el alumno.
-          const huecos = Array.isArray(p.huecos) ? p.huecos : [];
-          const texto = p.texto || '';
-          if (!huecos.length) {
-            // Estado vacío: usuario cambió tipo pero aún no creó huecos.
-            // Wrapper plano (sin .pregunta-examen) para no heredar estilos de pregunta renderizada.
-            oHtml += `<div class="preview-hueco-vacio" data-pid="${p.id}">
-              <p class="u-fs-sm u-color-texto-terciario"><em>Edita esta pregunta en la pestaña <b>Preguntas</b> y selecciona palabras para convertirlas en huecos.</em></p>
-            </div>`;
-          } else {
-            const MARCADOR = /\{\{HUECO_(\d+)\}\}/g;
-            const partes = texto.split(MARCADOR);
-            oHtml += `<div class="pregunta-examen" data-pid="${p.id}">`;
-            partes.forEach((parte, pi) => {
-              if (pi % 2 === 0) {
-                oHtml += `<span>${window.helpers.escapeHtml(parte)}</span>`;
-                return;
-              }
-              const hIdx = huecos.findIndex(h => h.id === parseInt(parte));
-              if (hIdx === -1) {
-                // Hueco referenciado en texto pero ausente en el array (huérfano)
-                oHtml += `<span class="u-color-texto-terciario">[hueco ${parte} sin definir]</span>`;
-                return;
-              }
-              oHtml += `<span class="pregunta-examen__hueco-inline"><input type="text" class="pregunta-examen__hueco-input" data-pid="${p.id}" data-hidx="${hIdx}" placeholder="Hueco ${hIdx + 1}" readonly></span>`;
-            });
-            oHtml += `</div>`;
-          }
-        } else if (p.tipo === 'relacionar') {
-          const mitad = Math.ceil(p.opciones.length / 2);
-          const izq = p.opciones.slice(0, mitad);
-          const der = p.opciones.slice(mitad);
-          oHtml += izq.map((z, zi) => `
-            <div class="o-flecha o-flecha--between u-mb-1">
-              <span class="u-fs-sm">${window.helpers.escapeHtml(z)}</span>
-              <select style="width:140px;font-size:var(--texto-xs)">
-                <option value="">— Relacionar —</option>
-                ${der.map((d, di) => `<option value="${di}">${window.helpers.escapeHtml(d)}</option>`).join('')}
-              </select>
-            </div>
-          `).join('');
-        } else if (p.tipo === 'ordenar') {
-          oHtml = (p.opciones || []).map((o, oi) => `
-            <div class="o-flecha" style="gap:var(--espaciado-xs);background:var(--color-fondo-alt);padding:6px;border-radius:var(--radio-sm);margin-bottom:2px">
-              <span>☰</span>
-              <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
-            </div>
-          `).join('');
-        } else if (p.tipo === 'subir_archivo') {
-          oHtml = `<input type="file" style="font-size:var(--texto-xs)">`;
-        }
-
+        numPregunta += 1;
+        const pid = p.id || ('prev_' + index);
+        const resp = this._previewRespuestas[pid];
         return `
-          <div class="forms-card forms-card--pregunta" style="border-left-color: ${p.obligatoria ? 'var(--color-acento)' : 'transparent'}">
-            <span class="u-fw-600 u-fs-sm">${index + 1}. ${window.helpers.escapeHtml(p.texto)} ${p.obligatoria ? '<span style="color:var(--color-error)">*</span>' : ''}</span>
-            <span class="u-fs-xs u-color-texto-terciario" style="margin-top:-6px">(${p.puntos || 1} pt)</span>
+          <div class="forms-card forms-card--pregunta" data-pid="${pid}" style="border-left-color: ${p.obligatoria ? 'var(--color-acento)' : 'transparent'}">
+            <span class="u-fw-600 u-fs-sm">${numPregunta}. ${p.tipo === 'completar' ? 'Completa la frase:' : window.helpers.escapeHtml(p.texto)} ${p.obligatoria ? '<span style="color:var(--color-error)">*</span>' : ''}</span>
+            <span class="u-fs-xs u-color-texto-terciario" style="margin-top:-6px">${p.puntos || 1} pt</span>
             ${p.imagen ? `<img src="${p.imagen}" style="max-height:120px;border-radius:var(--radio-sm);align-self:flex-start">` : ''}
             <div class="o-pila u-mt-1" style="gap:4px">
-              ${oHtml}
+              ${this._renderOpcionesPreview(p, pid, resp)}
             </div>
           </div>
         `;
       }).join('');
 
-      // Simular Envío
-      contenedor.querySelector('#previewSimulateSubmit').onclick = () => {
-        window.helpers.mostrarAlerta('¡Examen de Vista Previa completado con éxito! Se ha verificado que todos los tipos de respuesta interactúan correctamente.', 'exito');
-      };
-    },
-
-    // ==========================================
-    // PESTAÑA 5: RESPUESTAS Y CORRECCIÓN (SPLIT-SCREEN)
-    // ==========================================
-    _renderizarPestanaRespuestas(contenedor) {
-      const intentos = this._intentos || [];
-      const examen = this._examen;
-
-      if (intentos.length === 0) {
-        contenedor.innerHTML = `
-          <div class="forms-card u-texto-centrado" style="padding:var(--espaciado-lg)">
-            <p style="font-size:3.5rem;color:var(--color-texto-terciario)">📊</p>
-            <h3>No se han recibido respuestas aún</h3>
-            <p class="u-color-texto-secundario">Comparte este examen con tus alumnos y aquí aparecerán sus calificaciones y estadísticas completas.</p>
-          </div>
-        `;
-        return;
-      }
-
-      // Métricas Básicas
-      const calificados = intentos.filter(i => i.corregido && i.nota != null);
-      const notas = calificados.map(i => parseFloat(i.nota || 0));
-      const promedio = notas.length ? (notas.reduce((s, n) => s + n, 0) / notas.length).toFixed(1) : 'N/A';
-      const maxima = notas.length ? Math.max(...notas).toFixed(1) : 'N/A';
-      
-      const pendientes = intentos.filter(i => i.estado === 'completado' && !i.corregido).length;
-      const noEntregados = this._alumnosGrupo.length - intentos.length;
-
-      contenedor.innerHTML = `
-        <div class="respuestas-tablas">
-          <!-- METRICAS -->
-          <div class="respuestas-metrica-grid">
-            <div class="respuestas-metrica-card" style="border-top: 4px solid var(--color-acento)">
-              <span class="u-fs-xs u-color-texto-terciario u-fw-600">RESPUESTAS</span>
-              <h2 style="margin:4px 0 0 0;font-weight:700">${intentos.length}</h2>
-            </div>
-            <div class="respuestas-metrica-card" style="border-top: 4px solid var(--color-exito)">
-              <span class="u-fs-xs u-color-texto-terciario u-fw-600">NOTA MEDIA</span>
-              <h2 style="margin:4px 0 0 0;font-weight:700;color:var(--color-exito)">${promedio}</h2>
-            </div>
-            <div class="respuestas-metrica-card" style="border-top: 4px solid var(--color-aviso)">
-              <span class="u-fs-xs u-color-texto-terciario u-fw-600">PENDIENTES CORREGIR</span>
-              <h2 style="margin:4px 0 0 0;font-weight:700;color:var(--color-aviso)">${pendientes}</h2>
-            </div>
-            <div class="respuestas-metrica-card" style="border-top: 4px solid var(--color-error)">
-              <span class="u-fs-xs u-color-texto-terciario u-fw-600">NO ENTREGADOS</span>
-              <h2 style="margin:4px 0 0 0;font-weight:700;color:var(--color-error)">${Math.max(0, noEntregados)}</h2>
-            </div>
-          </div>
-
-          <!-- SPLIT SCREEN: ALUMNOS E INFORMES -->
-          <div class="respuestas-split">
-            <!-- Columna Izquierda: Alumnos -->
-            <div class="forms-card">
-              <h4>Listado de Entregas</h4>
-              <div class="o-pila" style="gap:var(--espaciado-xs);max-height:400px;overflow-y:auto">
-                ${intentos.map((int, intIdx) => {
-                  const nombre = int.perfiles?.nombre_completo || int.perfiles?.username || 'Alumno';
-                  const fecha = window.helpers.formatearFecha(int.fecha_inicio);
-                  const notaStr = int.corregido ? `<span class="u-fw-700 u-color-exito" style="font-size:var(--texto-md)">${int.nota}</span>` : `<span class="u-fs-xs u-color-aviso" style="background:var(--color-aviso-soft);padding:2px 6px;border-radius:var(--radio-sm)">Pendiente</span>`;
-                  
-                  return `
-                    <div class="o-flecha o-flecha--between btn-alumno-entrega-select" data-int-idx="${intIdx}" style="padding:var(--espaciado-xs);border:1px solid var(--color-borde);border-radius:var(--radio-sm);cursor:pointer;background:var(--color-fondo-tarjeta);transition:all 150ms">
-                      <div>
-                        <span class="u-fw-600 u-fs-sm">${window.helpers.escapeHtml(nombre)}</span>
-                        <br><span class="u-fs-xs u-color-texto-terciario">${fecha}</span>
-                      </div>
-                      ${notaStr}
-                    </div>
-                  `;
-                }).join('')}
-              </div>
-            </div>
-
-            <!-- Columna Derecha: Panel de Corrección Dinámica (Split Screen) -->
-            <div class="forms-card" id="splitScreenCorreccion" style="border-top-color: var(--color-exito)">
-              <h4>Panel de Corrección Individual</h4>
-              <div id="splitScreenContent" class="o-pila u-mt-1">
-                <p class="u-fs-sm u-color-texto-secundario">Selecciona un alumno de la lista de la izquierda para abrir el corrector inteligente rápido de examen.</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      `;
-
-      // Eventos listado alumnos
-      contenedor.querySelectorAll('.btn-alumno-entrega-select').forEach(btn => {
-        btn.onclick = () => {
-          contenedor.querySelectorAll('.btn-alumno-entrega-select').forEach(b => b.style.borderColor = 'var(--color-borde)');
-          btn.style.borderColor = 'var(--color-acento)';
-          const intIdx = parseInt(btn.dataset.intIdx);
-          this._abrirCorrectorIndividual(contenedor, intentos[intIdx]);
-        };
+      // Recordar respuestas al interactuar
+      areaPreguntas.addEventListener('change', (e) => {
+        const card = e.target.closest('.forms-card--pregunta[data-pid]');
+        if (card) this._guardarPreviewRespuestas(card);
       });
-    },
 
-    _abrirCorrectorIndividual(contenedor, intento) {
-      const panel = contenedor.querySelector('#splitScreenContent');
-      if (!panel) return;
-
-      const nombre = intento.perfiles?.nombre_completo || intento.perfiles?.username || 'Alumno';
-      let respuestas = {};
-      try {
-        respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas) : (intento.respuestas || {});
-      } catch (e) {
-        respuestas = {};
-      }
-
-      const preguntas = this._examen.preguntas;
-
-      panel.innerHTML = `
-        <div class="o-flecha o-flecha--between" style="border-bottom:1px solid var(--color-borde);padding-bottom:var(--espaciado-xs)">
-          <div>
-            <span class="u-fw-700 u-texto-md" style="color:var(--color-acento)">${window.helpers.escapeHtml(nombre)}</span>
-            <br><span class="u-fs-xs u-color-texto-terciario">Intento completado</span>
-          </div>
-          <div class="o-pila" style="align-items:flex-end">
-            <span class="u-fs-xs u-color-texto-terciario">Nota actual:</span>
-            <input type="number" id="corrNotaFinal" value="${intento.nota || 0}" min="0" max="10" step="0.5" style="width:70px;padding:4px;font-size:var(--texto-md);font-weight:700;text-align:center">
-          </div>
-        </div>
-
-        <div class="o-pila u-mt-1" style="gap:var(--espaciado-sm);max-height:320px;overflow-y:auto;padding-right:4px">
-          ${preguntas.map((p, idx) => {
-            if (p.tipo === 'seccion') return '';
-            
-            const respAlumno = respuestas[p.id] !== undefined ? respuestas[p.id] : 'Sin respuesta';
-            let esCorrecta = false;
-            
-            // Verificación simple para la vista del profesor
-            if (p.tipo === 'multiple' || p.tipo === 'opcion_unica') {
-              esCorrecta = String(p.respuesta_correcta) === String(respAlumno);
-            } else if (p.tipo === 'verdadero_falso') {
-              esCorrecta = String(p.respuesta_correcta) === String(respAlumno);
-            } else if (p.tipo === 'respuesta_corta' || p.tipo === 'solo_numero') {
-              esCorrecta = String(p.respuesta_correcta).toLowerCase() === String(respAlumno).toLowerCase();
-            }
-
-            return `
-              <div style="border-left:3px solid ${esCorrecta ? 'var(--color-exito)' : 'var(--color-error)'};padding-left:var(--espaciado-xs);background:var(--color-fondo-alt);border-radius:var(--radio-sm);padding:4px 8px">
-                <span class="u-fw-600 u-fs-xs">${idx + 1}. ${window.helpers.escapeHtml(p.texto)}</span>
-                <br><span class="u-fs-xs u-color-texto-secundario">Respuesta Alumno: <b>${window.helpers.escapeHtml(String(respAlumno))}</b></span>
-                <br><span class="u-fs-xs u-color-texto-terciario">Respuesta Correcta: <b>${window.helpers.escapeHtml(String(p.respuesta_correcta || 'N/A'))}</b></span>
-              </div>
-            `;
-          }).join('')}
-        </div>
-
-        <div class="o-pila u-mt-1">
-          <label class="u-fs-xs u-color-texto-secundario u-fw-600">Observaciones o retroalimentación</label>
-          <textarea id="corrObservaciones" rows="2" placeholder="Buen trabajo...">${window.helpers.escapeHtml(intento.observaciones || '')}</textarea>
-        </div>
-
-        <button class="btn-primario u-mt-1" id="btnGuardarCorreccionRapida" style="width:100%">Guardar Corrección</button>
-      `;
-
-      panel.querySelector('#btnGuardarCorreccionRapida').onclick = async () => {
-        const nuevaNota = parseFloat(panel.querySelector('#corrNotaFinal').value) || 0;
-        const obs = panel.querySelector('#corrObservaciones').value;
-
-        try {
-          const usuario = store.obtener('usuario');
-          await window.examenesRepository.calificar(intento.id, nuevaNota, obs, usuario.id);
-          window.helpers.mostrarAlerta('Corrección rápida guardada con éxito.', 'exito');
-          
-          // Recargar intentos para respuestas
-          this._intentos = await window.examenesRepository.obtenerIntentos(this._examen.id);
-          this._renderizarPestanaRespuestas(contenedor);
-        } catch (e) {
-          window.helpers.mostrarAlerta('Error al guardar calificación: ' + e.message, 'error');
+      // Simular envío con validación de preguntas obligatorias
+      contenedor.querySelector('#previewSimulateSubmit').onclick = () => {
+        const pendientes = [];
+        areaPreguntas.querySelectorAll('.forms-card--pregunta').forEach(card => {
+          const pid = card.dataset.pid;
+          const p = preguntas.find(q => (q.id || 'prev_' + preguntas.indexOf(q)) === pid);
+          if (!p) return;
+          const respondido = this._cardPreviewRespondida(card);
+          card.classList.toggle('preview-card--pendiente', p.obligatoria && !respondido);
+          if (p.obligatoria && !respondido) pendientes.push(p.texto);
+        });
+        if (pendientes.length) {
+          window.helpers.mostrarAlerta(`Faltan por responder ${pendientes.length} pregunta(s) obligatoria(s).`, 'advertencia');
+          const primera = areaPreguntas.querySelector('.preview-card--pendiente');
+          if (primera) primera.scrollIntoView({ behavior: 'smooth', block: 'center' });
+          return;
         }
+        window.helpers.mostrarAlerta('¡Vista previa completada! Todas las preguntas responden correctamente.', 'exito');
       };
     },
 
-    // ==========================================
+    _guardarPreviewRespuestas(card) {
+      const pid = card.dataset.pid;
+      if (!pid) return;
+      const datos = {};
+      card.querySelectorAll('input[type="radio"]:checked').forEach(r => { datos[r.name] = r.value; });
+      card.querySelectorAll('input[type="checkbox"]:checked').forEach(c => {
+        (datos[c.name] = datos[c.name] || []).push(c.value);
+      });
+      card.querySelectorAll('input[type="text"], input[type="number"], textarea').forEach(t => {
+        if (!t.value) return;
+        if (t.dataset.hidx !== undefined) {
+          datos['hueco_' + t.dataset.hidx] = t.value;
+        } else {
+          datos[t.name || 'texto'] = t.value;
+        }
+      });
+      card.querySelectorAll('select').forEach(s => {
+        if (s.value) datos[s.name] = s.value;
+      });
+      this._previewRespuestas[pid] = datos;
+    },
+
+    _renderOpcionesPreview(p, pid, resp) {
+      let oHtml = '';
+      if (p.tipo === 'multiple' || p.tipo === 'opcion_unica') {
+        const sel = resp && resp['p_prev_' + pid];
+        oHtml = (p.opciones || []).map((o, oi) => `
+          <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer">
+            <input type="radio" name="p_prev_${pid}" value="${oi}" ${sel === String(oi) ? 'checked' : ''}>
+            <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
+          </label>
+        `).join('');
+      } else if (p.tipo === 'varias_opciones') {
+        const sel = (resp && resp['p_prev_' + pid]) || [];
+        oHtml = (p.opciones || []).map((o, oi) => `
+          <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer">
+            <input type="checkbox" name="p_prev_${pid}" value="${oi}" ${sel.includes(String(oi)) ? 'checked' : ''}>
+            <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
+          </label>
+        `).join('');
+      } else if (p.tipo === 'verdadero_falso') {
+        const sel = resp && resp['p_prev_' + pid];
+        oHtml = `
+          <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer"><input type="radio" name="p_prev_${pid}" value="true" ${sel === 'true' ? 'checked' : ''}> <span class="u-fs-sm">Verdadero</span></label>
+          <label class="o-flecha" style="gap:var(--espaciado-xs);padding:var(--espaciado-xxs) 0;cursor:pointer"><input type="radio" name="p_prev_${pid}" value="false" ${sel === 'false' ? 'checked' : ''}> <span class="u-fs-sm">Falso</span></label>
+        `;
+      } else if (p.tipo === 'respuesta_corta') {
+        const val = (resp && resp['p_prev_' + pid]) || '';
+        oHtml = `<input type="text" name="p_prev_${pid}" value="${window.helpers.escapeHtml(val)}" placeholder="Escribe tu respuesta aquí..." style="width:100%">`;
+      } else if (p.tipo === 'texto_largo') {
+        const val = (resp && resp['p_prev_' + pid]) || '';
+        oHtml = `<textarea name="p_prev_${pid}" rows="2" placeholder="Redacta tu respuesta aquí..." style="width:100%">${window.helpers.escapeHtml(val)}</textarea>`;
+      } else if (p.tipo === 'completar') {
+        // Renderizado paralelo al de vista-examen-tomar.js para que el profesor vea lo mismo que el alumno.
+        const huecos = Array.isArray(p.huecos) ? p.huecos : [];
+        const texto = p.texto || '';
+        if (!huecos.length) {
+          oHtml += `<div class="preview-hueco-vacio" data-pid="${pid}">
+            <p class="u-fs-sm u-color-texto-terciario"><em>Edita esta pregunta en la pestaña <b>Preguntas</b> y selecciona palabras para convertirlas en huecos.</em></p>
+          </div>`;
+        } else {
+          const MARCADOR = /\{\{HUECO_(\d+)\}\}/g;
+          const partes = texto.split(MARCADOR);
+          oHtml += `<div class="pregunta-examen" data-pid="${pid}">`;
+          partes.forEach((parte, pi) => {
+            if (pi % 2 === 0) {
+              oHtml += `<span>${window.helpers.escapeHtml(parte)}</span>`;
+              return;
+            }
+            const hIdx = huecos.findIndex(h => h.id === parseInt(parte));
+            if (hIdx === -1) {
+              oHtml += `<span class="u-color-texto-terciario">[hueco ${parte} sin definir]</span>`;
+              return;
+            }
+            const val = (resp && resp['hueco_' + hIdx]) || '';
+            oHtml += `<span class="pregunta-examen__hueco-inline"><input type="text" class="pregunta-examen__hueco-input" data-hidx="${hIdx}" value="${window.helpers.escapeHtml(val)}" placeholder="…"></span>`;
+          });
+          oHtml += `</div>`;
+        }
+      } else if (p.tipo === 'relacionar') {
+        const mitad = Math.ceil(p.opciones.length / 2);
+        const izq = p.opciones.slice(0, mitad);
+        const der = p.opciones.slice(mitad);
+        oHtml += izq.map((z, zi) => {
+          const nombre = `p_prev_${pid}_${zi}`;
+          const val = (resp && resp[nombre]) || '';
+          return `
+            <div class="o-flecha o-flecha--between u-mb-1">
+              <span class="u-fs-sm">${window.helpers.escapeHtml(z)}</span>
+              <select name="${nombre}" style="width:140px;font-size:var(--texto-xs)">
+                <option value="">— Relacionar —</option>
+                ${der.map((d, di) => `<option value="${di}" ${val === String(di) ? 'selected' : ''}>${window.helpers.escapeHtml(d)}</option>`).join('')}
+              </select>
+            </div>
+          `;
+        }).join('');
+      } else if (p.tipo === 'ordenar') {
+        oHtml = (p.opciones || []).map((o, oi) => `
+          <div class="o-flecha" style="gap:var(--espaciado-xs);background:var(--color-fondo-alt);padding:6px;border-radius:var(--radio-sm);margin-bottom:2px">
+            <span>☰</span>
+            <span class="u-fs-sm">${window.helpers.escapeHtml(o)}</span>
+          </div>
+        `).join('');
+      } else if (p.tipo === 'completar') {
+        oHtml = `<input type="file" name="p_prev_${pid}" style="font-size:var(--texto-xs)">`;
+      }
+      return oHtml;
+    },
+
+    _cardPreviewRespondida(card) {
+      if (card.querySelector('input[type="radio"]:checked, input[type="checkbox"]:checked')) return true;
+      const textos = card.querySelectorAll('input[type="text"], input[type="number"], textarea');
+      for (const t of textos) if (t.value.trim()) return true;
+      const selects = card.querySelectorAll('select');
+      for (const s of selects) if (s.value && s.value !== '') return true;
+      const files = card.querySelectorAll('input[type="file"]');
+      for (const f of files) if (f.files && f.files.length) return true;
+      return false;
+    },
+
     // PERSISTENCIA Y GUARDADO
     // ==========================================
     _iniciarAutoGuardado(raiz) {
@@ -1611,11 +1265,11 @@
             
             const indicator = raiz.querySelector('#saveIndicator');
             if (indicator) {
-              indicator.innerHTML = `${window.Iconos.render('check')} Cambios guardados automáticamente`;
+              indicator.innerHTML = `${window.Iconos.render('check')} Guardado`;
               indicator.style.color = 'var(--color-exito)';
               setTimeout(() => {
                 if (indicator) {
-                  indicator.innerHTML = `${window.Iconos.render('check')} Autoguardado activado`;
+                  indicator.innerHTML = `${window.Iconos.render('check')} Guardado`;
                   indicator.style.color = 'var(--color-texto-terciario)';
                 }
               }, 2000);
@@ -1654,7 +1308,7 @@
           materia: examen.materia ? examen.materia.trim() : '',
           tema: examen.tema ? examen.tema.trim() : '',
           profesor: examen.profesor ? examen.profesor.trim() : '',
-          color: examen.color || '#673ab7',
+          color: examen.color || '#2563EB',
           icono: examen.icono || '📘',
           portada: examen.portada || '',
           preguntas: JSON.stringify(examen.preguntas),
@@ -1676,6 +1330,7 @@
           examen.creado_por, examen.grupo_id
         );
 
+        this._guardadoExitoso = true;
         localStorage.removeItem(this._draftKey);
         if (this._autoSaveInterval) clearInterval(this._autoSaveInterval);
         

@@ -3,26 +3,36 @@
   flex-direction: column;
   gap: var(--espaciado-xs);
   padding: var(--espaciado-md);
-  background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  box-shadow: var(--sombra-sm);
-  transition: all var(--transicion-normal);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
   cursor: pointer;
+  position: relative;
 }
 
-.tarjeta-libro:hover {
-  box-shadow: var(--sombra-md);
+@media (hover: hover) {
+  .tarjeta-libro:hover {
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--color-acento-soft);
+    transform: var(--card-hover-lift);
+  }
 }
 
 .tarjeta-libro:active {
   transform: scale(0.98);
+  transition-duration: var(--transicion-rapida);
 }
 
 .tarjeta-libro__nombre {
   font-weight: 700;
   font-size: var(--texto-base);
   color: var(--color-texto);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
 }
 
 .tarjeta-libro__progreso {
@@ -31,21 +41,29 @@
 }
 
 .tarjeta-libro__barra {
-  height: 4px;
+  height: 5px;
   background: var(--color-gris-200);
-  border-radius: 2px;
+  border-radius: var(--radio-pill);
   overflow: hidden;
 }
 
 .tarjeta-libro__barra--lleno {
   height: 100%;
-  background: var(--color-exito);
-  border-radius: 2px;
-  transition: width var(--transicion-normal);
+  background: linear-gradient(90deg, var(--color-exito), #34D399);
+  border-radius: var(--radio-pill);
+  transition: width var(--transicion-normal) var(--easing-apple);
 }
 
 .tarjeta-libro--completado {
   border-color: var(--color-exito);
+  background: linear-gradient(180deg, var(--color-exito-soft) 0%, var(--card-bg) 65%);
+}
+
+.tarjeta-libro--completado .tarjeta-libro__nombre::after {
+  content: '✓';
+  color: var(--color-exito);
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
 @media (max-width: 480px) {

@@ -19,7 +19,7 @@
   border-radius: var(--radio-xl);
   box-shadow: var(--sombra-lg);
   padding: var(--espaciado-xl);
-  animation: slideUp var(--transicion-rapida);
+  animation: slideUp var(--transicion-normal);
 }
 
 .modal__titulo {
@@ -52,7 +52,7 @@
   border-radius: var(--radio-xl);
   box-shadow: var(--sombra-lg);
   padding: var(--espaciado-lg);
-  animation: slideUp var(--transicion-rapida);
+  animation: slideUp var(--transicion-normal);
 }
 
 .modal-formulario__campos {
@@ -93,7 +93,7 @@
   border-radius: var(--radio-xl);
   box-shadow: var(--sombra-lg);
   padding: var(--espaciado-xl);
-  animation: slideUp var(--transicion-rapida);
+  animation: slideUp var(--transicion-normal);
 }
 
 .modal-confirm__titulo {

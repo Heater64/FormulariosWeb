@@ -39,9 +39,30 @@
       const { error } = await sb().from('evaluaciones').delete().eq('id', id);
       if (error) throw error;
     },
+    async guardarOrdenEvaluaciones(grupoId, idsEnOrden) {
+      if (!sb()) throw new Error('Sin conexión');
+      for (let i = 0; i < idsEnOrden.length; i++) {
+        const { error } = await sb().from('evaluaciones').update({ orden: i }).eq('id', idsEnOrden[i]).eq('grupo_id', grupoId);
+        if (error) throw error;
+      }
+    },
     async listarEvaluaciones(grupoId) {
       if (!sb()) return [];
-      const { data: evs } = await sb().from('evaluaciones').select('*').eq('grupo_id', grupoId).order('creado_en', { ascending: true });
+      // Intento 1: orden manual (migración 025). Si la columna `orden` no
+      // existe aún, degrada al orden por fecha de creación.
+      let evs = null;
+      try {
+        const { data, error } = await sb().from('evaluaciones').select('*').eq('grupo_id', grupoId)
+          .order('orden', { ascending: true })
+          .order('creado_en', { ascending: true });
+        if (!error) evs = data;
+      } catch (e) { /* sin columna orden → fallback */ }
+      if (evs === null) {
+        try {
+          const { data } = await sb().from('evaluaciones').select('*').eq('grupo_id', grupoId).order('creado_en', { ascending: true });
+          evs = data;
+        } catch (e2) { evs = []; }
+      }
       const evaluaciones = evs || [];
       if (evaluaciones.length) {
         const ids = evaluaciones.map(e => e.id);

@@ -2,7 +2,7 @@
 // sw.js - Service Worker para FormsBiblicos
 // ============================================================
 
-const CACHE_VERSION = 'v1.0.1';
+const CACHE_VERSION = 'v1.0.2';
 const CACHE_NAME = `formsbiblicos-${CACHE_VERSION}`;
 
 // Recursos a cachear en la instalación
@@ -38,10 +38,9 @@ const urlsToCache = [
   './css/05-componentes/_boton-secundario.css',
   './css/05-componentes/_barra-navegacion-inferior.css',
   './css/05-componentes/_tarjeta-capitulo.css',
-  './css/05-componentes/_tarjeta-racha.css',
-  './css/05-componentes/_tarjeta-porcentaje.css',
   './css/05-componentes/_celebracion.css',
   './css/05-componentes/_tarjeta-libro.css',
+  './css/05-componentes/_estudio.css',
   './css/05-componentes/_barra-progreso.css',
   './css/05-componentes/_barra-accion.css',
   './css/05-componentes/_modal.css',
@@ -71,7 +70,6 @@ const urlsToCache = [
   './css/05-componentes/_editor-preguntas.css',
   './css/05-componentes/_examen-tomar.css',
   './css/05-componentes/_explorar.css',
-  './css/05-componentes/_notas.css',
   './css/05-componentes/_editor-tiptap.css',
   './css/05-componentes/_editor-dibujo.css',
   './css/06-utilidades/_utilidades.css',
@@ -116,7 +114,6 @@ const urlsToCache = [
   './js/vistas/vista-calificaciones.js',
   './js/dominio/ejercicios-memorizacion.js',
   './js/vistas/vista-memorizacion.js',
-  './js/vistas/vista-notas.js',
   './js/vistas/vista-progreso.js',
   './js/vistas/vista-explorar.js',
   './js/vistas/vista-perfil.js',

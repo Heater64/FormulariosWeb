@@ -207,7 +207,7 @@
         materia: ex.materia || '',
         tema: ex.tema || '',
         profesor: ex.profesor || '',
-        color: ex.color || '#673ab7',
+        color: ex.color || '#2563EB',
         icono: ex.icono || '📘',
         portada: ex.portada || '',
         config: ex.config || {}

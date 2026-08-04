@@ -17,9 +17,9 @@
   transform: translateX(-100%);
   background: linear-gradient(
     90deg,
-    rgba(255, 255, 255, 0) 0%,
-    rgba(255, 255, 255, 0.55) 50%,
-    rgba(255, 255, 255, 0) 100%
+    transparent 0%,
+    var(--color-shimmer) 50%,
+    transparent 100%
   );
   animation: skel-shimmer 1.4s infinite;
 }
@@ -33,20 +33,6 @@
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   padding: var(--espaciado-md);
-}
-
-@media (prefers-color-scheme: dark) {
-  .skel {
-    background: #2a2d33;
-  }
-  .skel::after {
-    background: linear-gradient(
-      90deg,
-      rgba(255, 255, 255, 0) 0%,
-      rgba(255, 255, 255, 0.08) 50%,
-      rgba(255, 255, 255, 0) 100%
-    );
-  }
 }
 
 @media (prefers-reduced-motion: reduce) {

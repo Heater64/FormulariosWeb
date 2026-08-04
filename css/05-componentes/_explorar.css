@@ -325,7 +325,7 @@
 
 .explorar__ref--cumplimiento:hover {
   background: var(--color-exito, #10b981);
-  color: #fff;
+  color: var(--color-texto-acento);
 }
 
 /* ===== Head body (flex 1 dentro del header) ===== */
@@ -873,7 +873,7 @@
 }
 
 .curiosidades-hero .explorar__ref:hover {
-  background: #fff;
+  background: var(--color-texto-acento, #fff);
 }
 
 .curiosidades-hero .explorar__card-refs {

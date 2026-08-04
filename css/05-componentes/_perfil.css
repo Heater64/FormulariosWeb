@@ -1,30 +1,49 @@
-/* ===== PERFIL - Modular Sections ===== */
+/* ===== PERFIL - Hero (avatar + nombre fuera de tarjeta) ===== */
 
-.perfil-cabecera {
+.perfil-hero {
   display: flex;
   flex-direction: column;
   align-items: center;
   text-align: center;
-  padding: var(--espaciado-xl) var(--espaciado-md);
-  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xl) var(--espaciado-md) var(--espaciado-lg);
+  gap: var(--espaciado-md);
   position: relative;
-  overflow: hidden;
-  background: linear-gradient(180deg, var(--color-acento-soft) 0%, transparent 100%);
-  border-radius: var(--radio-xl);
-  border: 1px solid var(--color-borde);
-  margin-bottom: var(--espaciado-md);
+  margin-bottom: var(--espaciado-sm);
 }
 
-.perfil-cabecera::after {
+.perfil-hero::after {
   content: '';
   position: absolute;
-  right: -60px;
   top: -60px;
-  width: 180px;
-  height: 180px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 220px;
+  height: 220px;
   border-radius: 50%;
   background: radial-gradient(circle, var(--color-acento-soft) 0%, transparent 70%);
   pointer-events: none;
+  z-index: 0;
+  animation: perfilGlow 5s ease-in-out infinite alternate;
+}
+
+@keyframes perfilGlow {
+  0% { opacity: 0.5; transform: translateX(-50%) scale(0.95); }
+  100% { opacity: 1; transform: translateX(-50%) scale(1.08); }
+}
+
+.perfil-hero__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  position: relative;
+  z-index: 1;
+}
+
+.perfil-avatar--lg {
+  width: 100px;
+  height: 100px;
+  font-size: 2.8rem;
 }
 
 .perfil-avatar {
@@ -39,14 +58,41 @@
   font-weight: 700;
   color: var(--color-acento);
   cursor: pointer;
-  overflow: hidden;
+  overflow: visible;
   position: relative;
-  transition: transform var(--transicion-rapida);
-  border: 3px solid var(--color-borde);
+  z-index: 1;
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  border: 3px solid var(--color-fondo);
+  box-shadow: 0 0 0 3px var(--color-acento-soft), var(--sombra-md);
 }
 
-.perfil-avatar:hover {
+.perfil-avatar:hover,
+.perfil-avatar:has(input:focus-visible) {
   transform: scale(1.05);
+  box-shadow: 0 0 0 4px var(--color-acento), var(--sombra-lg);
+}
+
+/* Insignia de cámara (pista de que se puede subir foto) */
+.perfil-avatar__camara {
+  position: absolute;
+  right: -2px;
+  bottom: -2px;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid var(--color-fondo);
+  box-shadow: var(--sombra-sm);
+  pointer-events: none;
+}
+
+.perfil-avatar__camara svg {
+  width: 14px;
+  height: 14px;
 }
 
 .perfil-avatar img {
@@ -70,6 +116,7 @@
   justify-content: center;
 }
 
+.perfil-nombre-fila h2,
 .perfil-nombre-fila h3 {
   margin: 0;
   font-size: var(--texto-xl);
@@ -101,37 +148,44 @@
   gap: 5px;
   padding: 3px 12px;
   border-radius: var(--radio-pill);
-  background: var(--color-acento);
-  color: var(--color-texto-acento);
   font-size: var(--texto-xxs);
   font-weight: 700;
   letter-spacing: 0.02em;
   text-transform: uppercase;
+  /* Fallback neutro para roles desconocidos */
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
 }
 
-.perfil-rol-badge--owner {
-  background: var(--color-aviso);
-}
+.perfil-rol-badge--owner   { background: var(--color-aviso-soft);   color: var(--color-aviso); }
+.perfil-rol-badge--admin   { background: var(--color-acento-soft);  color: var(--color-acento); }
+.perfil-rol-badge--editor  { background: var(--color-exito-soft);   color: var(--color-exito); }
+.perfil-rol-badge--usuario { background: var(--color-fondo-alt);    color: var(--color-texto-secundario); }
 
-.perfil-rol-badge--admin {
-  background: var(--color-acento);
-}
-
-.perfil-rol-badge--editor {
-  background: var(--color-exito);
-}
-
-.perfil-rol-badge--usuario {
-  background: var(--color-texto-terciario);
+/* Dentro de una sección-tarjeta, el formulario de sugerencias no necesita su propio fondo/sombra */
+.perfil-seccion .sug-form {
+  background: transparent;
+  box-shadow: none;
 }
 
 .perfil-email {
   font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
-  display: flex;
+  display: inline-flex;
   align-items: center;
-  gap: var(--espaciado-xxs);
+  gap: 6px;
   justify-content: center;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.perfil-email svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-texto-terciario);
+  flex-shrink: 0;
 }
 
 .perfil-miembro {
@@ -151,18 +205,19 @@
   font-size: var(--texto-xs);
 }
 
-/* ===== Secciones Modulares ===== */
+/* ===== Secciones planas (sin tarjetas anidadas) ===== */
 
 .perfil-seccion {
-  background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  padding: var(--espaciado-md);
-  transition: border-color var(--transicion-rapida);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--card-padding);
+  margin-bottom: var(--espaciado-md);
 }
 
-.perfil-seccion:hover {
-  border-color: var(--color-acento-soft);
+.perfil-seccion:last-child {
+  margin-bottom: 0;
 }
 
 .perfil-seccion__cabecera {
@@ -170,13 +225,11 @@
   align-items: center;
   gap: var(--espaciado-sm);
   margin-bottom: var(--espaciado-md);
-  padding-bottom: var(--espaciado-sm);
-  border-bottom: 1px solid var(--color-borde);
 }
 
 .perfil-seccion__icono {
-  width: 36px;
-  height: 36px;
+  width: 34px;
+  height: 34px;
   border-radius: var(--radio-md);
   background: var(--color-acento-soft);
   display: flex;
@@ -186,16 +239,22 @@
   flex-shrink: 0;
 }
 
+.perfil-seccion__icono svg {
+  width: 16px;
+  height: 16px;
+}
+
 .perfil-seccion__titulo {
   font-size: var(--texto-base);
   font-weight: 700;
   margin: 0;
+  color: var(--color-texto);
 }
 
 .perfil-seccion__desc {
   font-size: var(--texto-xs);
   color: var(--color-texto-terciario);
-  margin: 0;
+  margin: 2px 0 0;
 }
 
 /* ===== Fila de perfil (para items de cuenta) ===== */
@@ -300,6 +359,7 @@
   background: var(--color-acento);
   color: var(--color-texto-acento);
   font-weight: 700;
+  box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
 /* ===== Botón de sección (Admin/Owner) ===== */
@@ -312,7 +372,7 @@
   padding: var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
+  border-radius: var(--card-radius);
   cursor: pointer;
   font: inherit;
   font-size: var(--texto-sm);
@@ -325,6 +385,13 @@
 .perfil-boton-seccion:hover {
   border-color: var(--color-acento);
   background: var(--color-acento-soft);
+  box-shadow: var(--sombra-md);
+  transform: translateY(-1px);
+}
+
+.perfil-boton-seccion:hover .perfil-boton-seccion__flecha {
+  transform: translateX(3px);
+  color: var(--color-acento);
 }
 
 .perfil-boton-seccion__icono {
@@ -359,6 +426,8 @@
 .perfil-boton-seccion__flecha {
   color: var(--color-texto-terciario);
   flex-shrink: 0;
+  display: inline-flex;
+  transition: transform var(--transicion-rapida), color var(--transicion-rapida);
 }
 
 /* ===== Botón Secundario Rojo (Cerrar sesión) ===== */
@@ -386,21 +455,18 @@
   border-color: var(--color-error);
 }
 
-/* ===== Tarjeta Info (FormsBiblicos) ===== */
+/* ===== Tarjeta Info (FormsBiblicos) - ahora plana ===== */
 
 .perfil-info-card {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: var(--espaciado-md);
-  background: var(--color-fondo-alt);
-  border-radius: var(--radio-lg);
-  border: 1px solid var(--color-borde);
 }
 
 .perfil-info-card__texto {
   display: flex;
   flex-direction: column;
+  gap: 2px;
 }
 
 .perfil-info-card__nombre {
@@ -819,7 +885,7 @@
 .admin-tabla-wrapper {
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
+  border-radius: var(--card-radius);
   overflow-x: auto;
   -webkit-overflow-scrolling: touch;
 }
@@ -1123,14 +1189,21 @@
 /* ===== Responsive ===== */
 
 @media (max-width: 480px) {
+  .perfil-seccion {
+    padding: var(--espaciado-md);
+  }
   .perfil-avatar {
     width: 72px;
     height: 72px;
     font-size: 2rem;
   }
-
-  .perfil-seccion {
-    padding: var(--espaciado-sm);
+  .perfil-avatar__camara {
+    width: 26px;
+    height: 26px;
+  }
+  .perfil-avatar__camara svg {
+    width: 12px;
+    height: 12px;
   }
 
   .perfil-boton-seccion {
@@ -1164,10 +1237,10 @@
     justify-content: center;
   }
 
-  /* Tarjeta info: botón pasa debajo del texto */
+  /* Info: botón pasa debajo del texto */
   .perfil-info-card {
     flex-direction: column;
-    align-items: stretch;
+    align-items: flex-start;
     gap: var(--espaciado-sm);
   }
   .perfil-info-card .btn-secundario {
@@ -1190,8 +1263,8 @@
     font-size: 1.6rem;
   }
   .perfil-seccion__icono {
-    width: 32px;
-    height: 32px;
+    width: 24px;
+    height: 24px;
   }
   .perfil-nombre-fila h3 {
     font-size: var(--texto-lg);

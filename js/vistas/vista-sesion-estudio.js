@@ -59,7 +59,7 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila u-app-shell--comfort">
           ${this._cabecera(libro.nombre, `Capítulo ${capituloNum} de ${numCaps}`)}
-          <div class="u-texto-centrado o-pila u-self-start" style="align-items:center;margin-top:var(--espaciado-3xl)">
+          <div class="u-texto-centrado o-pila" style="align-items:center;margin-top:var(--espaciado-3xl)">
             <div class="u-icono-circular u-icono-circular--lg">${window.Iconos.render('book-open')}</div>
             <h2 class="u-mt-3">${libro.nombre} ${capituloNum}</h2>
             <p class="u-color-texto-secundario u-fs-sm u-max-ancho-320">Vamos a leer este capítulo y luego responder algunas preguntas para repasar lo aprendido.</p>
@@ -78,7 +78,7 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila u-app-shell--comfort">
           ${this._cabecera(libro.nombre, `Capítulo ${capituloNum}`)}
-          <div class="u-texto-centrado o-pila u-self-start" style="align-items:center;margin-top:var(--espaciado-2xl)">
+          <div class="u-texto-centrado o-pila" style="align-items:center;margin-top:var(--espaciado-2xl)">
             <div class="u-icono-circular u-icono-circular--lg">${I('book-open')}</div>
             <h2 class="u-mt-3">Lee en tu Biblia</h2>
             <p class="u-color-texto-secundario u-fs-base u-max-ancho-340" style="line-height:var(--altura-linea-cuerpo)">Toma tu <strong>Biblia física</strong> y lee <strong>${libro.nombre} ${capituloNum}</strong>. Cuando termines de leerlo, pulsa el botón de abajo.</p>

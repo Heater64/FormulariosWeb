@@ -7,14 +7,12 @@
       const sb = window.supabaseClient;
       if (!sb || !usuario) return;
       try {
-        const [librosResult, progresoResult, pendientesMemoriaResult] = await Promise.all([
+        const [librosResult, progresoResult] = await Promise.all([
           sb.from('libros_biblicos').select('*').order('id'),
-          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
-          window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => [])
+          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true)
         ]);
         const libros = librosResult.data;
         const completados = progresoResult.data || [];
-        const pendientesMemoria = pendientesMemoriaResult.length;
         const leidosPorLibro = {};
         completados.forEach(p => {
           const lid = p.capitulos?.libro_id;
@@ -27,6 +25,11 @@
         const racha = window.progresoLectura.calcularRacha(completados);
         try { localStorage.setItem('fb_racha', String(racha)); } catch (e) {}
         const pctGeneral = totalCapitulosBiblia ? Math.round((completados.length / totalCapitulosBiblia) * 100) : 0;
+        const statsResumen = `
+          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${completados.length}</p><p class="guia-popup__stat-etiqueta">Capítulos leídos</p></div>
+          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${librosCompletados}/${(libros || []).length}</p><p class="guia-popup__stat-etiqueta">Libros completados</p></div>
+          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${pctGeneral}%</p><p class="guia-popup__stat-etiqueta">Progreso general</p></div>
+        `;
         const ultimo = completados.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura))[0];
         let ultimoLibro = null, ultimoCap = null;
         if (ultimo?.capitulos) {
@@ -48,32 +51,44 @@
         }
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-            ${pendientesMemoria > 0 ? `<div class="banner-repaso" onclick="router.navegar('/memorizacion')" role="button" tabindex="0">${window.Iconos.render('brain')} <span>Tienes ${pendientesMemoria} versículo${pendientesMemoria === 1 ? '' : 's'} para repasar hoy</span> <span class="banner-repaso__flecha">→</span></div>` : ''}
-            <div class="o-flecha o-flecha--between"><h2>${window.Iconos.render('book-open')} Estudio Guiado</h2><div class="o-flecha" style="gap:var(--espaciado-xs)"><button class="info-ayuda" data-guia="estudio" aria-label="Guía de Estudio">i</button><span class="u-fs-sm u-color-texto-terciario">${usuario.nombre_completo}</span></div></div>
-              <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas">
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Capítulos leídos <button class="info-ayuda" data-guia="estudio-caps" aria-label="Info capítulos">i</button></p><p class="u-texto-2xl u-fw-700">${completados.length}</p></div>
-              <div class="tarjeta-capitulo"><p class="u-fs-xs u-color-texto-terciario">Libros <button class="info-ayuda" data-guia="estudio-libros" aria-label="Info libros">i</button></p><p class="u-texto-2xl u-fw-700">${librosCompletados}/${(libros||[]).length}</p></div>
-              <div class="tarjeta-racha"><div class="tarjeta-racha__llama">${window.Iconos.render('flame')}</div><div class="tarjeta-racha__info"><p class="u-fs-xs u-color-texto-terciario">Racha <button class="info-ayuda" data-guia="estudio-racha" aria-label="Info racha">i</button></p><p class="u-texto-2xl u-fw-700">${racha} días</p></div></div>
-              <div class="tarjeta-porcentaje"><div class="tarjeta-porcentaje__info"><p class="u-fs-xs u-color-texto-terciario">% General <button class="info-ayuda" data-guia="estudio-pct" aria-label="Info porcentaje">i</button></p><p class="u-texto-2xl u-fw-700">${pctGeneral}%</p></div><div class="tarjeta-porcentaje__barra"><div class="tarjeta-porcentaje__lleno" style="width:${pctGeneral}%"></div></div></div>
+            <div class="estudio-cabecera">
+              <h2>${window.Iconos.render('book-open')} Estudio Guiado</h2>
+              <div class="estudio-cabecera__derecha">
+                <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button>
+                <span class="estudio-usuario">${usuario.nombre_completo}</span>
+              </div>
             </div>
-            ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso" style="cursor:pointer" id="continuarLectura"><div class="o-flecha o-flecha--between"><div><span class="u-fs-sm u-color-texto-secundario">Continuar leyendo</span><p class="u-fw-600">${siguienteLibro.nombre} ${siguienteCap}</p></div><span>→</span></div></div>` : ''}
+            ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
+              <div class="estudio-continuar__icono">${window.Iconos.render('book-open')}</div>
+              <div class="estudio-continuar__info">
+                <span class="estudio-continuar__etiqueta">Continuar leyendo</span>
+                <p class="estudio-continuar__titulo">${siguienteLibro.nombre} ${siguienteCap}</p>
+                <span class="estudio-continuar__capitulo">Capítulo ${siguienteCap} de ${siguienteLibro.num_capitulos}</span>
+              </div>
+              <span class="estudio-continuar__flecha">${window.Iconos.render('chevron-right')}</span>
+            </div>` : ''}
             <div class="o-pila">
-              <div class="o-flecha o-flecha--between" style="cursor:pointer" id="toggleAT">
+              <div class="estudio-testamento" id="toggleAT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaAT">
                 <h3>Antiguo Testamento</h3>
-                <span id="iconAT" style="transition:transform var(--transicion-normal)">${window.Iconos.render('chevron-down')}</span>
+                <span class="estudio-testamento__icono" id="iconAT">${window.Iconos.render('chevron-down')}</span>
               </div>
               <div id="listaAT" class="o-grid-tarjetas"></div>
             </div>
             <div class="o-pila">
-              <div class="o-flecha o-flecha--between" style="cursor:pointer" id="toggleNT">
+              <div class="estudio-testamento" id="toggleNT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaNT">
                 <h3>Nuevo Testamento</h3>
-                <span id="iconNT" style="transition:transform var(--transicion-normal)">${window.Iconos.render('chevron-down')}</span>
+                <span class="estudio-testamento__icono" id="iconNT">${window.Iconos.render('chevron-down')}</span>
               </div>
               <div id="listaNT" class="o-grid-tarjetas"></div>
             </div>
           </div>`;
         if (siguienteLibro) {
-          raiz.querySelector('#continuarLectura').onclick = () => router.navegar(`/estudio/sesion/${siguienteLibro.id}/${siguienteCap}`);
+          const irLectura = () => router.navegar(`/estudio/sesion/${siguienteLibro.id}/${siguienteCap}`);
+          const elContinuar = raiz.querySelector('#continuarLectura');
+          elContinuar.onclick = irLectura;
+          elContinuar.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); irLectura(); }
+          });
         }
         const renderLibro = (l) => {
           const leidos = completados.filter(p => p.capitulos?.libro_id === l.id).length;
@@ -98,26 +113,25 @@
         const ntStorage = localStorage.getItem('fb_collapse_nt') !== 'false';
         const listaAT = raiz.querySelector('#listaAT');
         const listaNT = raiz.querySelector('#listaNT');
-        if (!atStorage) { listaAT.style.display = 'none'; raiz.querySelector('#iconAT').style.transform = 'rotate(-90deg)'; }
-        if (!ntStorage) { listaNT.style.display = 'none'; raiz.querySelector('#iconNT').style.transform = 'rotate(-90deg)'; }
-        raiz.querySelector('#toggleAT').onclick = () => {
-          const vis = listaAT.style.display !== 'none';
-          listaAT.style.display = vis ? 'none' : '';
-          raiz.querySelector('#iconAT').style.transform = vis ? 'rotate(-90deg)' : '';
-          localStorage.setItem('fb_collapse_at', String(!vis));
+        if (!atStorage) { listaAT.style.display = 'none'; raiz.querySelector('#toggleAT').setAttribute('aria-expanded', 'false'); }
+        if (!ntStorage) { listaNT.style.display = 'none'; raiz.querySelector('#toggleNT').setAttribute('aria-expanded', 'false'); }
+        const alternarTestamento = (btn, lista, key) => {
+          const colapsado = lista.style.display === 'none';
+          lista.style.display = colapsado ? '' : 'none';
+          btn.setAttribute('aria-expanded', String(colapsado));
+          localStorage.setItem(key, String(colapsado));
         };
-        raiz.querySelector('#toggleNT').onclick = () => {
-          const vis = listaNT.style.display !== 'none';
-          listaNT.style.display = vis ? 'none' : '';
-          raiz.querySelector('#iconNT').style.transform = vis ? 'rotate(-90deg)' : '';
-          localStorage.setItem('fb_collapse_nt', String(!vis));
+        const toggleAT = raiz.querySelector('#toggleAT');
+        const toggleNT = raiz.querySelector('#toggleNT');
+        toggleAT.onclick = () => alternarTestamento(toggleAT, listaAT, 'fb_collapse_at');
+        toggleNT.onclick = () => alternarTestamento(toggleNT, listaNT, 'fb_collapse_nt');
+        const tecladoTestamento = (btn, lista, key) => (e) => {
+          if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); alternarTestamento(btn, lista, key); }
         };
+        toggleAT.addEventListener('keydown', tecladoTestamento(toggleAT, listaAT, 'fb_collapse_at'));
+        toggleNT.addEventListener('keydown', tecladoTestamento(toggleNT, listaNT, 'fb_collapse_nt'));
         const guias = {
-          'estudio': ['Estudio Guiado', 'Aquí navegas por todos los libros de la Biblia. Cada libro contiene capítulos; al seleccionar uno accedes al plan de lectura con preguntas de comprensión. El progreso se guarda automáticamente.', 'Ej: Selecciona "Génesis" → "Capítulo 1" para comenzar a leer y responder preguntas.'],
-          'estudio-caps': ['Capítulos leídos', 'Muestra el total de capítulos que has completado. Un capítulo se marca como leído cuando terminas la sesión de estudio (lees el texto y respondes las preguntas).', 'Cuantos más capítulos completes, mayor será tu porcentaje general de la Biblia.'],
-          'estudio-libros': ['Libros completados', 'Indica cuántos libros de la Biblia has terminado por completo (todos sus capítulos leídos) frente al total de libros disponibles.', 'Ej: 5/66 significa que has completado 5 libros de los 66 que tiene la Biblia.'],
-          'estudio-racha': ['Racha de lectura', 'Días consecutivos en los que has estudiado al menos un capítulo. Si dejas pasar un día sin estudiar, la racha se reinicia a cero.', '¡Mantén la racha encendida estudiando al menos un capítulo cada día! 🔥'],
-          'estudio-pct': ['Porcentaje general', 'Porcentaje total de la Biblia que has leído. Se calcula dividiendo los capítulos completados entre el total de capítulos de toda la Biblia.', 'Ej: 25% significa que has leído una cuarta parte de la Biblia.']
+          'estudio': ['Estudio Guiado', 'Aquí navegas por todos los libros de la Biblia. Cada libro contiene capítulos; al seleccionar uno accedes al plan de lectura con preguntas de comprensión. El progreso se guarda automáticamente.', 'Ej: Selecciona "Génesis" → "Capítulo 1" para comenzar a leer y responder preguntas.', statsResumen]
         };
         window.helpers.registrarGuias(raiz, guias);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }

@@ -194,7 +194,6 @@
         { icono: 'file-text', texto: 'Exámenes', ruta: null, tab: 'examenes' },
         { icono: 'clipboard-check', texto: 'Calificaciones', ruta: '/calificaciones' },
         { icono: 'brain', texto: 'Memoria', ruta: '/memorizacion' },
-        { icono: 'file-text', texto: 'Notas', ruta: '/notas' },
         { icono: 'settings', texto: 'Configuración', ruta: null, tab: 'config' },
         { icono: 'shield', texto: 'Permisos', ruta: null, tab: 'sistema' }
       ];

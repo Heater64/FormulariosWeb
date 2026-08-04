@@ -48,20 +48,21 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
 
-          <!-- CABECERA -->
-          <div class="perfil-cabecera">
-            <div class="perfil-avatar" id="avatarPerfil" title="Cambiar foto de perfil">
+          <!-- CABECERA — Avatar y nombre fuera de tarjeta, diseño limpio -->
+          <div class="perfil-hero">
+            <div class="perfil-avatar perfil-avatar--lg" id="avatarPerfil" title="Cambiar foto de perfil">
               <span id="avatarLetra">${usuario.nombre_completo.charAt(0).toUpperCase()}</span>
+              <span class="perfil-avatar__camara" aria-hidden="true">${I('camera')}</span>
               <input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil">
             </div>
-            <div class="perfil-nombre-fila">
-              <h3 id="nombrePerfil">${window.helpers.escapeHtml(usuario.nombre_completo)}</h3>
-              <button class="perfil-btn-editar" id="btnEditarNombre" title="Editar nombre">${I('edit-3')}</button>
+            <div class="perfil-hero__info">
+              <div class="perfil-nombre-fila">
+                <h2 id="nombrePerfil">${window.helpers.escapeHtml(usuario.nombre_completo)}</h2>
+                <button class="perfil-btn-editar" id="btnEditarNombre" title="Editar nombre">${I('edit-3')}</button>
+              </div>
+              <span class="perfil-rol-badge perfil-rol-badge--${rol}">${rolBonito(usuario.rol)}</span>
+              ${usuario.email ? `<span class="perfil-email">${I('mail')} ${window.helpers.escapeHtml(usuario.email)}</span>` : ''}
             </div>
-            <span class="perfil-rol-badge perfil-rol-badge--${(usuario.rol || 'usuario').toLowerCase()}">${I(usuario.rol === 'owner' ? 'crown' : usuario.rol === 'admin' ? 'shield' : usuario.rol === 'editor' ? 'book-open' : 'user')} ${rolBonito(usuario.rol)}</span>
-            <span class="perfil-meta">@${window.helpers.escapeHtml(usuario.username)}</span>
-            ${usuario.email ? `<span class="perfil-email">${I('mail')} ${window.helpers.escapeHtml(usuario.email)}</span>` : ''}
-            <span class="perfil-miembro">${I('calendar')} Miembro desde ${fechaLarga(usuario.creado_en)}</span>
           </div>
 
           <!-- SECCIONES -->
@@ -134,24 +135,7 @@
               <button class="btn-secundario u-mt-2 perfil-btn-full" id="btnResetPrefs">Restablecer preferencias</button>
             </div>
 
-            <!-- INFORMACIÓN -->
-            <div class="perfil-seccion">
-              <div class="perfil-seccion__cabecera">
-                <div class="perfil-seccion__icono">${I('info')}</div>
-                <div>
-                  <h4 class="perfil-seccion__titulo">Información</h4>
-                  <p class="perfil-seccion__desc">Acerca de la aplicación</p>
-                </div>
-              </div>
-              <div class="perfil-info-card">
-                <div class="perfil-info-card__texto">
-                  <p class="perfil-info-card__nombre">FormsBiblicos</p>
-                  <p class="perfil-info-card__version">Versión 1.0.0</p>
-                  <p class="perfil-info-card__sync" id="perfilUltimaSync"></p>
-                </div>
-                <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
-              </div>
-            </div>
+
 
             <!-- SUGERENCIAS -->
             <div class="perfil-seccion">
@@ -225,6 +209,25 @@
               <button class="perfil-btn-cerrar" id="btnLogout">${I('log-out')} Cerrar sesión</button>
             </div>
 
+            <!-- INFORMACIÓN DE LA APP (al final) -->
+            <div class="perfil-seccion">
+              <div class="perfil-seccion__cabecera">
+                <div class="perfil-seccion__icono">${I('info')}</div>
+                <div>
+                  <h4 class="perfil-seccion__titulo">Información de la app</h4>
+                  <p class="perfil-seccion__desc">Acerca de FormsBiblicos</p>
+                </div>
+              </div>
+              <div class="perfil-info-card">
+                <div class="perfil-info-card__texto">
+                  <p class="perfil-info-card__nombre">FormsBiblicos</p>
+                  <p class="perfil-info-card__version">Versión 1.0.0</p>
+                  <p class="perfil-info-card__sync" id="perfilUltimaSync"></p>
+                </div>
+                <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
+              </div>
+            </div>
+
             <!-- ZONA DE PELIGRO -->
             <details class="zona-peligro">
               <summary class="zona-peligro__cabecera" style="cursor:pointer;list-style:none">
@@ -251,7 +254,7 @@
 
       if (usuario.foto_perfil) {
         const avatar = raiz.querySelector('#avatarPerfil');
-        if (avatar) avatar.innerHTML = `<img src="${usuario.foto_perfil}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        if (avatar) avatar.innerHTML = `<img src="${usuario.foto_perfil}" alt="Foto de perfil"><span class="perfil-avatar__camara" aria-hidden="true">${I('camera')}</span><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
       }
 
       const togglePref = async (clave, valor) => {
@@ -465,7 +468,7 @@
         store.actualizar('usuario', { ...usuario });
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
         const avatar = raiz.querySelector('#avatarPerfil');
-        if (avatar) avatar.innerHTML = `<img src="${base64}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        if (avatar) avatar.innerHTML = `<img src="${base64}" alt="Foto de perfil"><span class="perfil-avatar__camara" aria-hidden="true">${I('camera')}</span><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
         const nuevoInput = raiz.querySelector('#inputFotoPerfil');
         if (nuevoInput) nuevoInput.onchange = onFotoChange;
         try { window.supabaseClient.from('perfiles').update({ foto_perfil: base64 }).eq('id', usuario.id); } catch (err) {}

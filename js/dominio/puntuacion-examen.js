@@ -52,11 +52,6 @@ const puntuacionExamen = {
     if (tipo === 'texto_largo') {
       return this._normalizarRespuesta(respuestaUsuario) === this._normalizarRespuesta(respuestaCorrecta);
     }
-    if (tipo === 'solo_numero') {
-      const n = parseFloat(respuestaUsuario);
-      const r = parseFloat(respuestaCorrecta);
-      return !isNaN(n) && !isNaN(r) && n === r;
-    }
     if (tipo === 'completar') {
       const opciones = respuestaCorrecta.split('|').map(s => s.trim().toLowerCase());
       return opciones.includes(this._normalizarRespuesta(respuestaUsuario));

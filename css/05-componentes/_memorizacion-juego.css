@@ -167,7 +167,7 @@
   border: none;
   border-radius: 16px;
   background: var(--mazo-color, var(--color-acento));
-  color: #fff;
+  color: var(--color-texto-acento, #fff);
   font-size: var(--texto-base);
   font-weight: 800;
   cursor: pointer;
@@ -285,7 +285,7 @@
   border: none;
   border-radius: 18px;
   background: var(--mazo-color, var(--color-acento));
-  color: #fff;
+  color: var(--color-texto-acento, #fff);
   font-size: var(--texto-lg);
   font-weight: 800;
   cursor: pointer;
@@ -469,9 +469,9 @@
 
 .mem-juego-opcion__letra svg { width: 16px; height: 16px; }
 
-.mem-juego-opcion--sel .mem-juego-opcion__letra { background: var(--color-acento); color: #fff; }
-.mem-juego-opcion--ok .mem-juego-opcion__letra { background: var(--color-exito); color: #fff; }
-.mem-juego-opcion--ko .mem-juego-opcion__letra { background: var(--color-error); color: #fff; }
+.mem-juego-opcion--sel .mem-juego-opcion__letra { background: var(--color-acento); color: var(--color-texto-acento); }
+.mem-juego-opcion--ok .mem-juego-opcion__letra { background: var(--color-exito); color: var(--color-texto-acento); }
+.mem-juego-opcion--ko .mem-juego-opcion__letra { background: var(--color-error); color: var(--color-texto-acento); }
 
 /* Completar palabras */
 .mem-juego-completar {
@@ -547,7 +547,7 @@
   padding: 8px 14px;
   border-radius: 12px;
   background: var(--color-acento);
-  color: #fff;
+  color: var(--color-texto-acento);
   font-size: var(--texto-base);
   font-weight: 700;
   cursor: pointer;
@@ -660,7 +660,7 @@
   border: none;
   border-radius: 16px;
   background: var(--color-exito);
-  color: #fff;
+  color: var(--color-texto-acento);
   font-size: var(--texto-lg);
   font-weight: 800;
   cursor: pointer;

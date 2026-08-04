@@ -330,17 +330,22 @@
       nav.style.display = '';
       nav.setAttribute('role', 'tablist');
       const items = [
-        { ruta: '/estudio', icono: 'book-open', texto: 'Estudio' },
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
         { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
-        { ruta: '/notas', icono: 'file-text', texto: 'Notas' },
+        { ruta: '/estudio', icono: 'book-open', texto: 'Estudio', centro: true },
         { ruta: '/explorar', icono: 'compass', texto: 'Explorar' },
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();
       const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/'));
+
+      // Persistir sección activa en localStorage — fuente única de verdad
+      const itemActivo = items.find(i => esActivo(i.ruta));
+      if (itemActivo) {
+        try { localStorage.setItem("fb_nav_activo", itemActivo.ruta); } catch (e) {}
+      }
       nav.innerHTML = items.map(i => `
-        <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
+        <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
           <span>${window.Iconos.render(i.icono)}</span>
           <span>${i.texto}</span>
         </a>
@@ -374,7 +379,6 @@
       router.registrar('/corregir/:id', window.vistaExamenCorregir);
       router.registrar('/calificaciones', window.vistaCalificaciones);
       router.registrar('/memorizacion', window.vistaMemorizacion);
-      router.registrar('/notas', window.vistaNotas);
       router.registrar('/progreso', window.vistaProgreso);
       router.registrar('/explorar', window.vistaExplorar);
       router.registrar('/perfil', window.vistaPerfil);

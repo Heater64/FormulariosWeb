@@ -39,9 +39,7 @@
   border-radius: var(--radio-lg);
   -webkit-tap-highlight-color: transparent;
   text-decoration: none;
-  transition: color var(--transicion-rapida) var(--easing-apple),
-              background var(--transicion-rapida) var(--easing-apple),
-              transform var(--transicion-rapida) var(--easing-apple);
+  transition: color var(--transicion-rapida) var(--easing-apple);
 }
 
 .barra-nav-inferior__item svg {
@@ -52,31 +50,23 @@
               opacity var(--transicion-rapida) var(--easing-apple);
 }
 
-/* --- Estado ACTIVO: indicador pill con glow + scale de icono --- */
+/* --- Estado ACTIVO: solo icono en color acento --- */
 .barra-nav-inferior__item--activo {
   color: var(--color-acento);
-  font-weight: 700;
-  background: var(--color-acento-soft);
-  position: relative;
-}
-
-.barra-nav-inferior__item--activo::after {
-  content: '';
-  position: absolute;
-  /* Subimos el indicador para que no choque con safe-area-inset-bottom */
-  bottom: max(4px, calc(env(safe-area-inset-bottom) * 0.5));
-  left: 50%;
-  transform: translateX(-50%);
-  width: 22px;
-  height: 3px;
-  border-radius: var(--radio-pill);
-  background: var(--color-acento);
-  /* Glow contenido (max 4px de blur) para no sangrar fuera del área controlada por la app */
-  box-shadow: 0 0 4px var(--color-acento);
 }
 
 .barra-nav-inferior__item--activo svg {
-  transform: translateY(-1px) scale(1.08);
+  transform: scale(1.08);
+}
+
+/* --- Item destacado (Estudio): centrado y un poco más grande --- */
+.barra-nav-inferior__item--centro {
+  flex: 1.18 1 0;
+}
+
+.barra-nav-inferior__item--centro svg {
+  width: 26px;
+  height: 26px;
 }
 
 /* --- Tap feedback (escala sutil para confirmar toque) --- */
@@ -88,11 +78,6 @@
 @media (hover: hover) {
   .barra-nav-inferior__item:hover {
     color: var(--color-texto-secundario);
-    background: var(--color-fondo-alt);
-  }
-  .barra-nav-inferior__item--activo:hover {
-    color: var(--color-acento);
-    background: var(--color-acento-soft);
   }
 }
 
@@ -112,10 +97,9 @@
     width: 22px;
     height: 22px;
   }
-  .barra-nav-inferior__item--activo::after {
-    width: 18px;
-    height: 2px;
-    bottom: max(3px, calc(env(safe-area-inset-bottom) * 0.5));
+  .barra-nav-inferior__item--centro svg {
+    width: 24px;
+    height: 24px;
   }
 }
 
@@ -137,8 +121,7 @@
 @media (prefers-reduced-motion: reduce) {
   .barra-nav-inferior__item,
   .barra-nav-inferior__item svg,
-  .barra-nav-inferior__item--activo svg,
-  .barra-nav-inferior__item--activo::after {
+  .barra-nav-inferior__item--activo svg {
     animation: none !important;
     transition: none !important;
   }
