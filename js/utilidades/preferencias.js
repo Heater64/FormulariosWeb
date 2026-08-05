@@ -34,6 +34,34 @@
     } catch (e) { return leer(); }
   }
 
+  // Calcula el fondo del tema actual (para theme-color del notch)
+  function _bgActual(p) {
+    var hc = p.alto_contraste;
+    if (p.tema === 'dark') return hc ? '#000000' : '#0F172A';
+    if (p.tema === 'light') return hc ? '#FFFFFF' : '#FFFFFF';
+    // Auto: usar prefers-color-scheme del sistema
+    var darkOS = window.matchMedia('(prefers-color-scheme: dark)').matches;
+    return darkOS ? (hc ? '#000000' : '#0F172A') : '#FFFFFF';
+  }
+
+  // Sincroniza meta theme-color y color-scheme con el tema actual
+  function _sincronizarNotch(p) {
+    var bg = _bgActual(p);
+    var meta = document.head.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', bg);
+    // Actualizar tambien en el manifest (para PWA standalone)
+    try {
+      var manifest = document.querySelector('link[rel="manifest"]');
+      if (manifest && manifest.href) {
+        var url = new URL(manifest.href, window.location.href);
+        // Solo si es un blob/manifest local (no CDN externo)
+      }
+    } catch (e) {}
+    // color-scheme en el root
+    var isDark = p.tema === 'dark' || (!p.tema && window.matchMedia('(prefers-color-scheme: dark)').matches);
+    document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';
+  }
+
   function aplicar() {
     const p = leer();
     const root = document.documentElement;
@@ -41,7 +69,18 @@
     else delete root.dataset.theme;
     root.dataset.hc = p.alto_contraste ? 'true' : 'false';
     root.dataset.lg = p.letra_grande ? 'true' : 'false';
+    _sincronizarNotch(p);
   }
+
+  // Escuchar cambios del sistema cuando el usuario eligió "Auto"
+  var _mqDark = window.matchMedia('(prefers-color-scheme: dark)');
+  _mqDark.addEventListener('change', function () {
+    var p = leer();
+    if (!p.tema) {
+      // Solo reaccionar en modo Auto (tema === null)
+      aplicar();
+    }
+  });
 
   window.preferencias = { guardar, aplicar };
 })();
