@@ -365,6 +365,24 @@
             fecha_completado: new Date().toISOString()
           });
           try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { console.warn('Auditoría no registrada:', e.message); }
+          // Notificar al profesor que el alumno ha entregado
+          try {
+            if (examen.creado_por && window.notifications) {
+              const alumnoNombre = usuario.nombre_completo || usuario.username;
+              window.notifications.notificarExamenEntregado(alumnoNombre, examen.titulo, examen.id, usuario.id);
+            }
+            // Insertar en notificaciones BD para que el profesor lo vea aunque no esté online
+            if (examen.creado_por && window.supabaseClient) {
+              const alumnoNombre = usuario.nombre_completo || usuario.username;
+              await window.supabaseClient.from('notificaciones').insert({
+                usuario_id: examen.creado_por,
+                tipo: 'examen_entregado',
+                titulo: 'Examen entregado',
+                cuerpo: `${alumnoNombre} ha entregado "${examen.titulo}".`,
+                datos: { examen_id: examen.id, alumno_id: usuario.id, alumno_nombre: alumnoNombre }
+              }).catch(() => {});
+            }
+          } catch (e2) { /* no critico */ }
           if (window.haptica) window.haptica.logro();
           window.helpers.mostrarAlerta('Examen entregado correctamente.', 'exito');
           router.navegar('/examenes');

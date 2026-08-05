@@ -103,9 +103,31 @@
     },
     async publicar(id) {
       if (!sb()) throw new Error('Sin conexión');
-      const { data: ex } = await sb().from('examenes_personalizados').select('grupo_id').eq('id', id).single();
-      await sb().from('examenes_personalizados').update({ publicado: true, estado: 'publicado' }).eq('id', id);
-      if (ex && ex.grupo_id) await this.asignarAGrupo(id, ex.grupo_id);
+      const { data: ex } = await sb().from('examenes_personalizados').select('grupo_id, titulo, publicado').eq('id', id).single();
+      if (ex && !ex.publicado) {
+        await sb().from('examenes_personalizados').update({ publicado: true, estado: 'publicado' }).eq('id', id);
+        if (ex.grupo_id) {
+          await this.asignarAGrupo(id, ex.grupo_id);
+          await this._notificarExamenPublicado(id, ex);
+        }
+      }
+    },
+
+    async _notificarExamenPublicado(examenId, examen) {
+      if (!sb() || !examen.grupo_id) return;
+      try {
+        const { data: miembros } = await sb().from('perfiles').select('id').eq('grupo_id', examen.grupo_id).eq('rol', 'usuario');
+        if (!miembros || !miembros.length) return;
+        const titulo = examen.titulo || 'Examen';
+        const notifs = miembros.map(m => ({
+          usuario_id: m.id,
+          tipo: 'examen_publicado',
+          titulo: 'Nuevo examen disponible',
+          cuerpo: `"${titulo}" esta disponible para realizar.`,
+          datos: { examen_id: examenId, examen_titulo: titulo }
+        }));
+        await sb().from('notificaciones').insert(notifs).catch(() => {});
+      } catch (e) { /* no critico */ }
     },
     async obtenerMiembrosGrupo(grupoId, soloAlumnos = true) {
       if (!sb() || !grupoId) return [];

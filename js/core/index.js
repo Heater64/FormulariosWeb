@@ -376,6 +376,43 @@
           }
         }
       } catch (e) {}
+
+      // Verificar otros tipos de notificaciones (examen_publicado, examen_entregado, mazo_nuevo)
+      this._verificarOtrasNotificaciones(usuario);
+    },
+
+    async _verificarOtrasNotificaciones(usuario) {
+      if (!window.supabaseClient) return;
+      try {
+        const { data } = await window.supabaseClient.from('notificaciones')
+          .select('*')
+          .eq('usuario_id', usuario.id)
+          .eq('leida', false)
+          .in('tipo', ['examen_publicado', 'examen_entregado', 'mazo_nuevo'])
+          .order('creado_en', { ascending: false })
+          .limit(5);
+        if (!data || !data.length) return;
+        for (const n of data) {
+          if (!this._desafioNotifsVistas.has(n.id)) {
+            this._desafioNotifsVistas.add(n.id);
+            const d = n.datos || {};
+            if (n.tipo === 'examen_publicado' && window.notifications) {
+              window.notifications.notificarExamen(d.examen_titulo || n.cuerpo, d.examen_id);
+            } else if (n.tipo === 'examen_entregado' && window.notifications) {
+              window.notifications.notificarExamenEntregado(
+                d.alumno_nombre || 'Un alumno',
+                d.examen_titulo || '',
+                d.examen_id,
+                d.alumno_id
+              );
+            } else if (n.tipo === 'mazo_nuevo' && window.notifications) {
+              window.notifications.notificarMazoNuevo(d.mazo_nombre || 'Memorización', d.mazo_id);
+            }
+            // Marcar como leída
+            await window.supabaseClient.from('notificaciones').update({ leida: true }).eq('id', n.id).catch(() => {});
+          }
+        }
+      } catch (e) { /* no crítico */ }
     },
 
     _mostrarBannerDesafio(notif, usuario) {

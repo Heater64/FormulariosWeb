@@ -262,6 +262,26 @@ class NotificationManager {
       data: { url: '/estudio' }
     });
   }
+
+  async notificarMazoNuevo(nombre, mazoId) {
+    if (!this._habilitada('notif_desafios', ['notif_logros'])) return;
+    this._vibrarSiSonido();
+    return this.show('Nuevo mazo disponible', {
+      body: `«${nombre}» ha sido añadido. ¡Practica y reta a tus amigos!`,
+      tag: `mazo-${mazoId}`,
+      data: { url: '/memorizacion' }
+    });
+  }
+
+  async notificarExamenEntregado(alumno, examen, examenId, alumnoId) {
+    if (!this._habilitada('notif_examenes')) return;
+    this._vibrarSiSonido();
+    return this.show('Examen entregado', {
+      body: `${alumno} ha entregado "${examen}". Está listo para corregir.`,
+      tag: `entrega-${examenId}-${alumnoId}`,
+      data: { url: `/corregir/${examenId}` }
+    });
+  }
 }
 
 // ============================================================
