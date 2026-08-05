@@ -151,8 +151,8 @@
 
     async salirDeGrupo(grupoId, usuarioId) {
       if (!sb() || !grupoId || !usuarioId) return;
-      await sb().from('miembros_grupo').delete()
-        .eq('grupo_id', grupoId).eq('usuario_id', usuarioId).catch(() => {});
+      try { await sb().from('miembros_grupo').delete()
+        .eq('grupo_id', grupoId).eq('usuario_id', usuarioId); } catch (e) {}
     },
 
     // Miembros de un grupo concreto. Combina dos fuentes para que el

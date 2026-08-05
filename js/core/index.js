@@ -345,20 +345,29 @@
     _iniciarPollInvitaciones() {
       this._desafioNotifsVistas = new Set();
       this._desafioBannerVisible = false;
-      setInterval(() => this._verificarInvitacionesDesafio(), 12000);
-      setTimeout(() => this._verificarInvitacionesDesafio(), 4000);
+      // Verificar cada 6s (más rápido) y arranque inicial a los 2s
+      setInterval(() => this._verificarInvitacionesDesafio(), 6000);
+      setTimeout(() => this._verificarInvitacionesDesafio(), 2000);
     },
 
     async _verificarInvitacionesDesafio() {
       const usuario = store.obtener('usuario');
       if (!usuario || !window.desafiosRepository) return;
-      // No molestar mientras se está en un desafío o en la pantalla de grupos
+      // No mostrar banner si ya está viendo el mismo desafío
       const ruta = router._rutaActual();
-      if (ruta && (ruta.startsWith('/desafio/') || ruta === '/grupos')) return;
-      if (this._desafioBannerVisible) return;
+      if (this._desafioBannerVisible) {
+        if (!document.getElementById('desafio-banner')) this._desafioBannerVisible = false;
+        else return;
+      }
       try {
         const pendientes = await window.desafiosRepository.notificacionesPendientes(usuario.id);
-        const nuevo = (pendientes || []).find(n => n && n.datos && n.datos.desafio_id && !this._desafioNotifsVistas.has(n.id));
+        const nuevo = (pendientes || []).find(n => {
+          if (!n || !n.datos || !n.datos.desafio_id) return false;
+          if (this._desafioNotifsVistas.has(n.id)) return false;
+          // No mostrar banner si ya estás viendo ese mismo desafío
+          if (ruta && ruta === '/desafio/' + n.datos.desafio_id) return false;
+          return true;
+        });
         if (nuevo) {
           this._desafioNotifsVistas.add(nuevo.id);
           this._mostrarBannerDesafio(nuevo, usuario);
@@ -388,7 +397,7 @@
           .select('*')
           .eq('usuario_id', usuario.id)
           .eq('leida', false)
-          .in('tipo', ['examen_publicado', 'examen_entregado', 'mazo_nuevo'])
+          .in('tipo', ['examen_publicado', 'examen_entregado', 'mazo_nuevo', 'anuncio'])
           .order('creado_en', { ascending: false })
           .limit(5);
         if (!data || !data.length) return;
@@ -407,9 +416,11 @@
               );
             } else if (n.tipo === 'mazo_nuevo' && window.notifications) {
               window.notifications.notificarMazoNuevo(d.mazo_nombre || 'Memorización', d.mazo_id);
+            } else if (n.tipo === 'anuncio' && window.notifications) {
+              window.notifications.notificarAnuncio(d.anuncio_titulo || n.titulo || 'Anuncio', d.anuncio_cuerpo || n.cuerpo || '');
             }
             // Marcar como leída
-            await window.supabaseClient.from('notificaciones').update({ leida: true }).eq('id', n.id).catch(() => {});
+            try { await window.supabaseClient.from('notificaciones').update({ leida: true }).eq('id', n.id); } catch (e) {}
           }
         }
       } catch (e) { /* no crítico */ }
@@ -441,7 +452,7 @@
       const cerrar = () => {
         b.remove();
         this._desafioBannerVisible = false;
-        window.desafiosRepository.marcarNotificacionLeida(notif.id).catch(() => {});
+        try { window.desafiosRepository.marcarNotificacionLeida(notif.id); } catch (e) {}
       };
 
       b.querySelector('[data-banner-accion="cerrar"]').onclick = cerrar;
@@ -458,7 +469,13 @@
           if (!r.empezado) window.helpers.mostrarAlerta('Has aceptado. Esperando a los demás...', 'exito');
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
       };
-      setTimeout(() => { if (b && b.parentNode) { b.remove(); this._desafioBannerVisible = false; } }, 30000);
+      setTimeout(() => {
+        if (b && b.parentNode) {
+          b.remove();
+          this._desafioBannerVisible = false;
+          try { window.desafiosRepository.marcarNotificacionLeida(notif.id); } catch (e) {}
+        }
+      }, 30000);
     },
 
     _renderizarBarraNavegacion() {

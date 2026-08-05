@@ -126,7 +126,7 @@
           cuerpo: `"${titulo}" esta disponible para realizar.`,
           datos: { examen_id: examenId, examen_titulo: titulo }
         }));
-        await sb().from('notificaciones').insert(notifs).catch(() => {});
+        try { await sb().from('notificaciones').insert(notifs); } catch (ex) {}
       } catch (e) { /* no critico */ }
     },
     async obtenerMiembrosGrupo(grupoId, soloAlumnos = true) {

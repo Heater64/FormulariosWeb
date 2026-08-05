@@ -443,9 +443,8 @@
               });
               window.helpers.mostrarAlerta(`Desafío enviado a ${participantes.length} participante${participantes.length !== 1 ? 's' : ''}.`, 'exito');
               resolve(desafio);
-              if (participantes.length === 1) {
-                // Si solo hay un rival y ya aceptó (no aplica aquí), ir al desafío
-              }
+              // Redirigir al creador a la pantalla de espera del desafío
+              router.navegar('/desafio/' + desafio.id);
             } catch (e) {
               btn.disabled = false;
               window.helpers.mostrarAlerta('Error: ' + e.message, 'error');

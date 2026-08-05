@@ -2,8 +2,8 @@
   'use strict';
   const E = (h) => window.helpers.escapeHtml(h);
   const I = (n) => window.Iconos.render(n);
-  const $ = (c, s) => c.querySelector(s);
-  const $$ = (c, s) => c.querySelectorAll(s);
+  const $ = (c, s) => (s === undefined ? document.querySelector(c) : c.querySelector(s));
+  const $$ = (c, s) => (s === undefined ? document.querySelectorAll(c) : c.querySelectorAll(s));
   const J = () => window.ejerciciosMemorizacion;
 
   const TIPOS_NOMBRE = {
@@ -221,14 +221,14 @@
       this._enJuego = true;
       this._detenerLoops();
       window.desafiosRepository.marcarEnJuego(desafio.id, this._usuario.id).catch(() => {});
-      const inicio = new Date(desafio.iniciado_en).getTime() + 5000;
+      const inicioReal = new Date(desafio.iniciado_en).getTime();
       this._estado = {
         desafio,
         ejercicios: desafio.sesion || [],
         idx: 0,
         correctas: 0,
         incorrectas: 0,
-        inicioMs: inicio,
+        inicioMs: inicioReal,
         tiempoLimiteMs: (desafio.tiempo_limite_seg || 120) * 1000
       };
       this._pintarJuego();
@@ -239,7 +239,7 @@
       this._raiz.innerHTML = `
         <div class="o-contenedor mem-juego-sesion desafio-juego">
           <div class="mem-juego-sesion__barra desafio-juego__barra">
-            <span class="desafio-timer" id="desafioTimer">${tiempoBonito(e.tiempoLimiteMs)}</span>
+            <span class="desafio-timer" id="desafioTimer">${tiempoBonito(Math.max(0, e.tiempoLimiteMs - (Date.now() - e.inicioMs)))}</span>
             <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" id="fill" style="width:${e.ejercicios.length ? Math.round((1 / e.ejercicios.length) * 100) : 0}%"></div></div>
             <span class="desafio-progreso" id="desafioProgreso">1/${e.ejercicios.length}</span>
           </div>

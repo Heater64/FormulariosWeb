@@ -282,6 +282,16 @@ class NotificationManager {
       data: { url: `/corregir/${examenId}` }
     });
   }
+
+  async notificarAnuncio(titulo, cuerpo) {
+    // Los anuncios del owner siempre se muestran, sin preferencia
+    this._vibrarSiSonido();
+    return this.show(titulo, {
+      body: cuerpo,
+      tag: `anuncio-${Date.now()}`,
+      requireInteraction: true
+    });
+  }
 }
 
 // ============================================================

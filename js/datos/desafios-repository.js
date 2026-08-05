@@ -41,7 +41,9 @@
       if (error) throw error;
 
       // Participantes: el creador entra directamente (aceptado)
-      const ids = new Set(participantes.map(p => p.id));
+      // Usamos p.usuario_id porque los participantes pueden venir de
+      // desafio_participantes (donde .id es el row ID, no el user ID)
+      const ids = new Set(participantes.map(p => p.usuario_id || p.id));
       ids.add(creador.id);
       const filas = [...ids].map((uid, i) => ({
         desafio_id: desafio.id,
@@ -61,7 +63,27 @@
           cuerpo: `Mazo: ${mazo.nombre}`,
           datos: { desafio_id: desafio.id, mazo_id: mazo.id, mazo_nombre: mazo.nombre }
         }));
-      if (notifs.length) await sb().from('notificaciones').insert(notifs).catch(() => {});
+      if (notifs.length) {
+        try {
+          const { error: notifErr } = await sb().from('notificaciones').insert(notifs);
+          if (notifErr) console.warn('[Desafíos] Error insertando notificaciones:', notifErr.message);
+          else {
+            // Forzar notificación nativa inmediata para los invitados
+            // (el poller tarda hasta 6s, esto es instantáneo si hay permiso)
+            notifs.forEach(n => {
+              if (window.notifications) {
+                window.notifications.notificarDesafio(
+                  creador.nombre_completo || creador.username || 'Alguien',
+                  mazo.nombre,
+                  desafio.id
+                );
+              }
+            });
+          }
+        } catch (e) {
+          console.warn('[Desafíos] No se pudo insertar notificaciones (¿tabla inexistente?):', e.message);
+        }
+      }
       return desafio;
     },
 
@@ -79,7 +101,7 @@
         for (const d of lista) {
           if (d.estado === 'invitacion' && d.expira_en && new Date(d.expira_en).getTime() < Date.now()) {
             d.estado = 'expirado';
-            await sb().from('desafios').update({ estado: 'expirado' }).eq('id', d.id).catch(() => {});
+            try { await sb().from('desafios').update({ estado: 'expirado' }).eq('id', d.id); } catch (e) {}
           }
         }
         return lista.filter(d => d.estado === 'invitacion');
@@ -103,7 +125,7 @@
 
     async marcarNotificacionLeida(notifId) {
       if (!sb() || !notifId) return;
-      await sb().from('notificaciones').update({ leida: true }).eq('id', notifId).catch(() => {});
+      try { await sb().from('notificaciones').update({ leida: true }).eq('id', notifId); } catch (e) {}
     },
 
     /**
@@ -126,7 +148,7 @@
       // Invitación expirada
       if (desafio.estado === 'invitacion' && desafio.expira_en && new Date(desafio.expira_en).getTime() < Date.now()) {
         desafio.estado = 'expirado';
-        await sb().from('desafios').update({ estado: 'expirado' }).eq('id', desafioId).catch(() => {});
+        try { await sb().from('desafios').update({ estado: 'expirado' }).eq('id', desafioId); } catch (e) {}
       }
 
       const participantes = (pRes.data || []).map(p => ({ ...p, perfil: p.perfiles || null }));
@@ -139,8 +161,8 @@
         );
         for (const v of vagos) {
           v.estado = 'abandonado';
-          await sb().from('desafio_participantes').update({ estado: 'abandonado' })
-            .eq('desafio_id', desafioId).eq('usuario_id', v.usuario_id).catch(() => {});
+          try { await sb().from('desafio_participantes').update({ estado: 'abandonado' })
+            .eq('desafio_id', desafioId).eq('usuario_id', v.usuario_id); } catch (e) {}
         }
         await this._verificarFinalizado(desafio, participantes);
       }
@@ -164,14 +186,16 @@
       if (!aceptar) {
         // Alguien rechazó → se cancela y se avisa al creador
         const { data: d } = await sb().from('desafios').select('creador_id, mazo_nombre').eq('id', desafioId).single();
-        await sb().from('desafios').update({ estado: 'cancelado' }).eq('id', desafioId).catch(() => {});
+        try { await sb().from('desafios').update({ estado: 'cancelado' }).eq('id', desafioId); } catch (e) {}
         if (d && d.creador_id) {
-          await sb().from('notificaciones').insert({
-            usuario_id: d.creador_id, tipo: 'info',
-            titulo: 'Desafío rechazado',
-            cuerpo: `Un participante rechazó el desafío de ${d.mazo_nombre || 'memorización'}.`,
-            datos: { desafio_id: desafioId }
-          }).catch(() => {});
+          try {
+            await sb().from('notificaciones').insert({
+              usuario_id: d.creador_id, tipo: 'info',
+              titulo: 'Desafío rechazado',
+              cuerpo: `Un participante rechazó el desafío de ${d.mazo_nombre || 'memorización'}.`,
+              datos: { desafio_id: desafioId }
+            });
+          } catch (e) {}
         }
         return { empezado: false };
       }
@@ -188,8 +212,8 @@
 
     async marcarEnJuego(desafioId, usuarioId) {
       if (!sb()) return;
-      await sb().from('desafio_participantes').update({ estado: 'en_juego' })
-        .eq('desafio_id', desafioId).eq('usuario_id', usuarioId).catch(() => {});
+      try { await sb().from('desafio_participantes').update({ estado: 'en_juego' })
+        .eq('desafio_id', desafioId).eq('usuario_id', usuarioId); } catch (e) {}
     },
 
     // Termina el turno del jugador y, si todos terminaron, cierra el desafío.
@@ -221,9 +245,11 @@
       const fin = (participantes || []).every(p =>
         ['terminado', 'abandonado', 'rechazado'].includes(p.estado));
       if (fin && (participantes || []).some(p => p.estado === 'terminado')) {
-        await sb().from('desafios').update({
-          estado: 'finalizado', finalizado_en: new Date().toISOString()
-        }).eq('id', desafio.id).catch(() => {});
+        try {
+          await sb().from('desafios').update({
+            estado: 'finalizado', finalizado_en: new Date().toISOString()
+          }).eq('id', desafio.id);
+        } catch (e) {}
       }
     }
   };

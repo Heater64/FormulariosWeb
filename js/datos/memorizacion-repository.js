@@ -129,7 +129,7 @@
         cuerpo: `${creador} ha añadido el mazo «${mazo.nombre}».`,
         datos: { mazo_id: mazo.id, mazo_nombre: mazo.nombre }
       }));
-      await sb().from('notificaciones').insert(notifs).catch(() => {});
+      try { await sb().from('notificaciones').insert(notifs); } catch (e2) {}
     } catch (e) { /* no crítico */ }
   }
 
@@ -137,16 +137,20 @@
     if (!sb()) return [];
     // Intento 1: consulta con es_global (migración 023 aplicada)
     try {
-      const { data, error } = await sb()
-        .from('mazos_memorizacion')
-        .select('*')
-        .or(`es_global.eq.true,usuario_id.eq.${usuarioId}`)
+      let q = sb().from('mazos_memorizacion').select('*');
+      if (usuarioId) {
+        q = q.or(`es_global.eq.true,usuario_id.eq.${usuarioId}`);
+      } else {
+        q = q.eq('es_global', true);
+      }
+      const { data, error } = await q
         .order('orden', { ascending: true })
         .order('creado_en', { ascending: true });
       if (!error) return (data || []).filter(m => m.activo !== false);
     } catch (e) { /* cae al fallback */ }
     // Fallback: BD sin migración 023 → solo mazos personales
     try {
+      if (!usuarioId) return [];
       const { data, error } = await sb()
         .from('mazos_memorizacion')
         .select('*')

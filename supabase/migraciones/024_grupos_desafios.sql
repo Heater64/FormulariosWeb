@@ -35,7 +35,7 @@ ALTER TABLE perfiles ADD COLUMN IF NOT EXISTS biografia TEXT DEFAULT '';
 CREATE TABLE IF NOT EXISTS notificaciones (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   usuario_id UUID REFERENCES perfiles(id) ON DELETE CASCADE,
-  tipo TEXT NOT NULL DEFAULT 'info' CHECK (tipo IN ('desafio', 'grupo', 'info')),
+  tipo TEXT NOT NULL DEFAULT 'info'  CHECK (tipo IN ('desafio', 'grupo', 'info', 'examen_publicado', 'examen_entregado', 'mazo_nuevo')),
   titulo TEXT NOT NULL DEFAULT '',
   cuerpo TEXT DEFAULT '',
   datos JSONB DEFAULT NULL,
@@ -69,9 +69,8 @@ BEGIN
   LOOP
     EXECUTE format('ALTER TABLE notificaciones DROP CONSTRAINT %I', c);
   END LOOP;
-END $$;
-
-ALTER TABLE notificaciones ADD CONSTRAINT notificaciones_tipo_check CHECK (tipo IN ('desafio', 'grupo', 'info'));
+END $$;ALTER TABLE notificaciones ADD CONSTRAINT notificaciones_tipo_check 
+  CHECK (tipo IN ('desafio', 'grupo', 'info', 'examen_publicado', 'examen_entregado', 'mazo_nuevo', 'anuncio'));
 
 CREATE INDEX IF NOT EXISTS idx_notificaciones_usuario ON notificaciones(usuario_id, creado_en DESC);
 CREATE INDEX IF NOT EXISTS idx_notificaciones_no_leidas ON notificaciones(usuario_id) WHERE leida = FALSE;

@@ -374,13 +374,15 @@
             // Insertar en notificaciones BD para que el profesor lo vea aunque no esté online
             if (examen.creado_por && window.supabaseClient) {
               const alumnoNombre = usuario.nombre_completo || usuario.username;
-              await window.supabaseClient.from('notificaciones').insert({
-                usuario_id: examen.creado_por,
-                tipo: 'examen_entregado',
-                titulo: 'Examen entregado',
-                cuerpo: `${alumnoNombre} ha entregado "${examen.titulo}".`,
-                datos: { examen_id: examen.id, alumno_id: usuario.id, alumno_nombre: alumnoNombre }
-              }).catch(() => {});
+              try {
+                await window.supabaseClient.from('notificaciones').insert({
+                  usuario_id: examen.creado_por,
+                  tipo: 'examen_entregado',
+                  titulo: 'Examen entregado',
+                  cuerpo: `${alumnoNombre} ha entregado "${examen.titulo}".`,
+                  datos: { examen_id: examen.id, alumno_id: usuario.id, alumno_nombre: alumnoNombre }
+                });
+              } catch (e3) {}
             }
           } catch (e2) { /* no critico */ }
           if (window.haptica) window.haptica.logro();

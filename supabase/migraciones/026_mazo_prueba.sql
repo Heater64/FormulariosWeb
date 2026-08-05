@@ -4,7 +4,24 @@
 -- Crea un mazo global con tarjetas variadas para probar la
 -- función de "Retar" (desafíos entre usuarios).
 -- Idempotente: no inserta si ya existe un mazo con ese nombre.
+-- 
+-- REQUISITO: haber ejecutado pendientes_produccion.sql primero
+-- (necesita las columnas de la migración 023: es_global, icono,
+--  orden, pregunta, respuesta, explicacion, libro, etc.).
 -- ============================================================
+
+-- Asegurar columnas necesarias (por si acaso)
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS pregunta TEXT DEFAULT '';
+ALTER TABLE tarjetas_memorizacion ADD COLUMN IF NOT EXISTS respuesta TEXT DEFAULT '';
+
+-- Ampliar el CHECK de tipo para aceptar los tipos de juego
+ALTER TABLE tarjetas_memorizacion DROP CONSTRAINT IF EXISTS tarjetas_memorizacion_tipo_check;
+ALTER TABLE tarjetas_memorizacion ADD CONSTRAINT tarjetas_memorizacion_tipo_check
+  CHECK (tipo IN (
+    'versiculo', 'libre', 'completar', 'ordenar', 'elegir_versiculo',
+    'verdadero_falso', 'relacionar', 'escrita', 'personaje', 'lugar',
+    'libro', 'cronologia', 'multirrespuesta', 'multiple'
+  ));
 
 DO $$
 DECLARE

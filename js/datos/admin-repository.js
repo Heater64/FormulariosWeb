@@ -5,7 +5,7 @@
     // Actualiza ultimo_acceso del usuario actual (heartbeat)
     async actualizarUltimoAcceso(usuarioId) {
       if (!sb() || !usuarioId) return;
-      await sb().from('perfiles').update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuarioId).catch(() => {});
+      try { await sb().from('perfiles').update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuarioId); } catch (e) {}
     },
     async listarUsuarios() {
       if (!sb()) return [];
@@ -291,13 +291,13 @@
       // Restaurar grupos (upsert)
       for (const g of grupos) {
         if (!g || !g.id) continue;
-        await sb().from('grupos').upsert({
+        try { await sb().from('grupos').upsert({
           id: g.id,
           nombre: g.nombre || 'Grupo',
           descripcion: g.descripcion || '',
           admin_id: g.admin_id || null,
           creado_en: g.creado_en || new Date().toISOString()
-        }).catch(() => {});
+        }); } catch (e) {}
       }
       // Restaurar perfiles (upsert; solo password si viene incluida)
       for (const p of perfiles) {
@@ -315,12 +315,12 @@
         if (p.foto_perfil) ups.foto_perfil = p.foto_perfil;
         if (p.preferencias) ups.preferencias = p.preferencias;
         if (p.ultimo_acceso) ups.ultimo_acceso = p.ultimo_acceso;
-        await sb().from('perfiles').upsert(ups).catch(() => {});
+        try { await sb().from('perfiles').upsert(ups); } catch (e) {}
       }
       // Restaurar exámenes (upsert)
       for (const ex of examenes) {
         if (!ex || !ex.id) continue;
-        await sb().from('examenes_personalizados').upsert(ex).catch(() => {});
+        try { await sb().from('examenes_personalizados').upsert(ex); } catch (e) {}
       }
       await this.registrarAuditoria('backup:restaurar', `Copia "${b.nombre}" restaurada (${perfiles.length} perfiles, ${grupos.length} grupos, ${examenes.length} exámenes)`, actorId);
       return { perfiles: perfiles.length, grupos: grupos.length, examenes: examenes.length };
@@ -415,6 +415,32 @@
       const n = (data || []).length;
       await this.registrarAuditoria('config:limpiar', `Intentos pendientes antiguos eliminados (${n})`, actorId);
       return n;
+    },
+
+    // Envía una notificación de anuncio a todos los usuarios de la plataforma.
+    // Inserta una fila en notificaciones para CADA usuario y además notifica
+    // al propietario con un resumen.
+    async enviarAnuncioGlobal({ titulo, cuerpo }, actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const tituloNotif = titulo.trim() || 'Anuncio';
+      const cuerpoNotif = cuerpo.trim() || '';
+      // Obtener todos los usuarios activos
+      const { data: perfiles, error: errPerfiles } = await sb().from('perfiles').select('id, nombre_completo, username').neq('id', actorId);
+      if (errPerfiles) throw new Error('No se pudieron listar los usuarios.');
+      if (!perfiles || !perfiles.length) throw new Error('No hay usuarios a los que notificar.');
+      const notifs = perfiles.map(p => ({
+        usuario_id: p.id,
+        destinatario: p.nombre_completo || p.username || '',
+        tipo: 'anuncio',
+        titulo: tituloNotif,
+        cuerpo: cuerpoNotif,
+        datos: { anuncio_titulo: tituloNotif, anuncio_cuerpo: cuerpoNotif },
+        leida: false
+      }));
+      const { error } = await sb().from('notificaciones').insert(notifs);
+      if (error) throw new Error('Error al enviar notificaciones: ' + error.message);
+      await this.registrarAuditoria('notificaciones:anuncio', `Anuncio enviado a ${perfiles.length} usuarios: "${tituloNotif}"`, actorId);
+      return { enviados: perfiles.length };
     }
   };
 })();

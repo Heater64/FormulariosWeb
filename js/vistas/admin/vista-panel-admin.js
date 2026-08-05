@@ -22,6 +22,7 @@
     { id: 'auditoria', icono: 'clipboard-list', texto: 'Auditoría' },
     { id: 'admins', icono: 'shield', texto: 'Administradores' },
     { id: 'marca', icono: 'palette', texto: 'Marca' },
+    { id: 'notificaciones', icono: 'bell', texto: 'Notificaciones' },
     { id: 'sistema', icono: 'database', texto: 'Sistema' }
   ];
 
@@ -212,6 +213,7 @@
           case 'auditoria': return this._renderAuditoria();
           case 'admins': return this._renderAdmins(usuarios, usuario);
           case 'marca': return this._renderMarca();
+          case 'notificaciones': return this._renderNotificaciones();
           case 'sistema': return this._renderSistema();
           default: return '';
         }
@@ -936,6 +938,39 @@
     },
 
     // ==================================================================
+    // NOTIFICACIONES (Owner) — enviar anuncios push a todos los usuarios
+    // ==================================================================
+    _renderNotificaciones() {
+      return `
+        <div class="o-pila">
+          <h3 style="margin:0">${I('bell')} Notificaciones personalizadas</h3>
+          <p class="u-fs-xs u-color-texto-terciario u-mt-1">Envía un anuncio a todos los usuarios de la plataforma. Recibirán una notificación nativa en sus dispositivos.</p>
+          <div class="admin-seccion">
+            <div class="admin-form o-pila" style="gap:var(--espaciado-sm)">
+              <div>
+                <label class="u-fs-xs u-fw-600" for="anuncioTitulo">${I('edit-3')} Título del anuncio</label>
+                <input type="text" id="anuncioTitulo" class="admin-input-full" placeholder="Ej: ¡Nuevo contenido disponible!" style="width:100%;padding:var(--espaciado-sm) var(--espaciado-md);margin-top:4px;border:1px solid var(--color-borde);border-radius:var(--radio-md)">
+              </div>
+              <div>
+                <label class="u-fs-xs u-fw-600" for="anuncioCuerpo">${I('message-square')} Mensaje</label>
+                <textarea id="anuncioCuerpo" class="admin-input-full" placeholder="Escribe el mensaje que verán todos los usuarios..." rows="4" style="width:100%;padding:var(--espaciado-sm) var(--espaciado-md);margin-top:4px;border:1px solid var(--color-borde);border-radius:var(--radio-md);resize:vertical"></textarea>
+              </div>
+              <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap;align-items:center">
+                <button class="btn-primario" id="btnEnviarAnuncio" style="justify-content:center">${I('send')} Enviar a todos los usuarios</button>
+                <span class="u-fs-xxs u-color-texto-terciario" id="anuncioEstado"></span>
+              </div>
+            </div>
+          </div>
+          <div class="admin-setting-row u-mt-2">
+            <div>
+              <div class="admin-setting-row__label">${I('info')} ¿Cómo funciona?</div>
+              <div class="admin-setting-row__desc">El anuncio se inserta en la tabla de notificaciones de cada usuario. Cuando abran la app (o estén en cualquier sección), el poller lo detecta y dispara una notificación nativa con sonido y vibración. El anuncio aparece aunque el usuario tenga las notificaciones silenciadas.</div>
+            </div>
+          </div>
+        </div>`;
+    },
+
+    // ==================================================================
     // SISTEMA (Owner) — backups, mantenimiento y limpieza
     // ==================================================================
     _renderSistema() {
@@ -1049,6 +1084,7 @@
       this._bindSugerencias(raiz);
       this._bindAuditoria(raiz);
       this._bindMarca(raiz);
+      this._bindNotificaciones(raiz);
       this._bindSistema(raiz);
     },
 
@@ -2089,6 +2125,49 @@
             this._renderizar(raiz);
           } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
         };
+      });
+    },
+
+    // ---- NOTIFICACIONES (Owner) ----
+    _bindNotificaciones(raiz) {
+      const r = raiz.querySelector('#adminContenido');
+      if (!r) return;
+      const { usuario } = this._datos;
+
+      r.querySelector('#btnEnviarAnuncio')?.addEventListener('click', async () => {
+        const btn = r.querySelector('#btnEnviarAnuncio');
+        const estado = r.querySelector('#anuncioEstado');
+        const titulo = r.querySelector('#anuncioTitulo')?.value?.trim() || '';
+        const cuerpo = r.querySelector('#anuncioCuerpo')?.value?.trim() || '';
+
+        if (!titulo && !cuerpo) {
+          window.helpers.mostrarAlerta('Escribe al menos un título o un mensaje.', 'error');
+          return;
+        }
+
+        const ok = await window.helpers.confirmar(
+          `¿Enviar el anuncio a todos los usuarios?\n\n"${titulo || 'Sin título'}"\n\nRecibirán una notificación nativa en sus dispositivos.`,
+          { titulo: 'Enviar anuncio', textoConfirmar: 'Enviar' }
+        );
+        if (!ok) return;
+
+        btn.disabled = true;
+        if (estado) estado.textContent = 'Enviando...';
+        try {
+          const resultado = await window.adminRepository.enviarAnuncioGlobal({ titulo, cuerpo }, usuario.id);
+          if (estado) estado.textContent = `Enviado a ${resultado.enviados} usuarios.`;
+          window.helpers.mostrarAlerta(`Anuncio enviado a ${resultado.enviados} usuarios.`, 'exito');
+          // Limpiar campos
+          const inpTitulo = r.querySelector('#anuncioTitulo');
+          const inpCuerpo = r.querySelector('#anuncioCuerpo');
+          if (inpTitulo) inpTitulo.value = '';
+          if (inpCuerpo) inpCuerpo.value = '';
+        } catch (e) {
+          window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
+          if (estado) estado.textContent = 'Error al enviar.';
+        } finally {
+          btn.disabled = false;
+        }
       });
     }
   };
