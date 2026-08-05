@@ -3,7 +3,7 @@
   const I = (n) => window.Iconos.render(n);
   const E = (h) => window.helpers.escapeHtml(h);
 
-  // Utilidades compartidas por vista-panel-admin.js y vista-owner.js
+  // Utilidades compartidas por las vistas del Centro de Administración
   window.adminComunes = {
     rolBonito(rol) {
       const map = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor', usuario: 'Alumno' };
@@ -53,14 +53,6 @@
       window.router.navegar(ruta);
     },
 
-    // Navegar entre paneles standalone (admin/owner). Detecta el contexto:
-    // en las páginas standalone los hermanos están en la misma carpeta,
-    // en el SPA se accede vía /paginas/admin/*.html.
-    irPanel(nombre) {
-      const enSpa = !window.location.pathname.includes('/paginas/admin/');
-      window.location.href = enSpa ? 'paginas/admin/panel-' + nombre + '.html' : 'panel-' + nombre + '.html';
-    },
-
     // Tiempo activo de la sesión actual
     tiempoActivo(inicioSesion) {
       const mins = Math.floor((Date.now() - (inicioSesion || Date.now())) / 60000);
@@ -95,31 +87,21 @@
       });
     },
 
-    // Cabecera moderna del panel: título + subtítulo + botón volver
-    cabeceraPanel(titulo, subtitulo, nombreVista) {
+    // Cabecera moderna del panel: marca (logo + nombre) + título + botón volver
+    cabeceraPanel(titulo, subtitulo, nombreVista, marca) {
+      const tieneMarca = marca && (marca.nombre || marca.logo);
+      const tituloFinal = (tieneMarca && marca.nombre) ? marca.nombre : titulo;
       return `
         <header class="admin-panel-cabecera">
-          <div>
-            <h1 class="admin-panel-cabecera__titulo">${I('command')} ${titulo}</h1>
-            <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
+          <div class="admin-panel-cabecera__brand">
+            ${marca && marca.logo ? `<img class="admin-panel-cabecera__logo" src="${marca.logo}" alt="Logotipo del centro">` : `<span class="admin-panel-cabecera__logo-fallback">${I('command')}</span>`}
+            <div>
+              <h1 class="admin-panel-cabecera__titulo">${E(tituloFinal)}</h1>
+              <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
+            </div>
           </div>
           <button class="btn-secundario admin-panel-cabecera__volver" onclick="window.${nombreVista}._volver()">${I('arrow-left')} Volver</button>
         </header>`;
-    },
-
-    // Esqueleto común de los paneles: cabecera con título + "← Volver",
-    // pestañas y contenedor de contenido.
-    renderizarPanel(vista, raiz, { titulo, subtitulo, contenedorId, tabs, nombreVista }) {
-      raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg admin-panel" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          ${this.cabeceraPanel(titulo, subtitulo || '', nombreVista)}
-          <div class="admin-tabs" role="tablist" aria-label="Secciones">${tabs.map(t => `
-            <button class="admin-tab${vista._tabActivo === t.id ? ' admin-tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${vista._tabActivo === t.id}">${I(t.icono)} ${t.texto}</button>`
-          ).join('')}</div>
-          <div id="${contenedorId}">${vista._renderTabContent(raiz)}</div>
-        </div>`;
-      window.adminComunes.bindTabs(vista, raiz);
-      vista._bindTabContent(raiz);
     },
 
     // Badge de estado de examen
@@ -178,16 +160,32 @@
     async abrirModalGrupo(grupo, opciones = {}) {
       const { examenes = [], mostrarExamenes = false, onEditarUsuario = null } = opciones;
       try {
-        const { data: miembros } = await window.supabaseClient.from('perfiles').select('id, nombre_completo, username, rol').eq('grupo_id', grupo.id).order('nombre_completo');
+        const { data: miembros } = await window.supabaseClient.from('perfiles').select('id, nombre_completo, username, rol, foto_perfil').eq('grupo_id', grupo.id).order('nombre_completo');
         const admins = (miembros || []).filter(m => m.rol === 'admin');
         const editores = (miembros || []).filter(m => m.rol === 'editor');
         const alumnos = (miembros || []).filter(m => m.rol === 'usuario');
-        const filaMiembro = (m) => onEditarUsuario
-          ? `<div class="tarjeta-capitulo u-fs-sm o-flecha o-flecha--between" style="gap:var(--espaciado-xs)">
-              <span>${E(m.nombre_completo || m.username)}</span>
-              <button class="btn-secundario u-fs-xs btn-editar-usuario" data-id="${m.id}">${I('edit-3')}</button>
-            </div>`
-          : `<div class="tarjeta-capitulo u-fs-sm">${E(m.nombre_completo || m.username)}</div>`;
+        const avatarMiembro = (m) => {
+          const inicial = (m.nombre_completo || m.username || '?').charAt(0).toUpperCase();
+          if (m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" class="admin-miembro__foto">`;
+          return `<span class="admin-miembro__inicial">${inicial}</span>`;
+        };
+        const filaMiembro = (m) => {
+          const nombre = E(m.nombre_completo || m.username);
+          const username = E(m.username || '');
+          const contenido = `
+            <div class="admin-miembro">
+              <div class="admin-miembro__avatar">${avatarMiembro(m)}</div>
+              <div class="admin-miembro__info">
+                <span class="admin-miembro__nombre">${nombre}</span>
+                ${username && username !== m.nombre_completo ? `<span class="admin-miembro__username">@${username}</span>` : ''}
+              </div>`;
+          if (onEditarUsuario) {
+            return contenido + `
+              <button class="btn-secundario u-fs-xs btn-editar-usuario" data-id="${m.id}">${I('edit-3')} Editar</button>
+            </div>`;
+          }
+          return contenido + `</div>`;
+        };
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         overlay.innerHTML = `

@@ -32,17 +32,29 @@
 }
 
 .estudio-usuario {
-  display: inline-block;
-  max-width: 180px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+  background: var(--color-acento-soft);
+  border: 2px solid var(--color-fondo);
+  box-shadow: 0 0 0 1px var(--color-borde);
+  flex-shrink: 0;
+}
+
+.estudio-usuario__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.estudio-usuario__inicial {
   font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
-  background: var(--color-fondo-alt);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-pill);
-  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  font-weight: 700;
+  color: var(--color-acento);
 }
 
 /* ── Tarjeta hero "Continuar leyendo" ────────────────────────────────── */
@@ -202,7 +214,5 @@
     width: 40px;
     height: 40px;
   }
-  .estudio-usuario {
-    max-width: 120px;
-  }
+
 }

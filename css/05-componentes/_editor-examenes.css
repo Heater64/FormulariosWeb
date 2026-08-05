@@ -470,8 +470,26 @@
     font-size: clamp(0.65rem, 2.8vw, var(--texto-xs));
   }
 
+  /* Cabecera del editor: en móvil el título va en su propia fila y las
+     acciones pasan a una segunda fila para que el título no se recorte. */
+  .editor-header-bar {
+    flex-wrap: wrap;
+    padding: var(--espaciado-sm) var(--espaciado-md);
+  }
+
+  .editor-header-bar__inner {
+    flex-wrap: wrap;
+    row-gap: var(--espaciado-xs);
+  }
+
   .editor-header-bar__titulo {
     font-size: clamp(1rem, 3.5vw, var(--texto-lg));
+  }
+
+  .editor-header-bar__acciones {
+    flex: 1 1 100%;
+    justify-content: flex-end;
+    flex-wrap: wrap;
   }
 
   .editor-header-bar__acciones .btn-secundario,

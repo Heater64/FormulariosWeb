@@ -161,15 +161,18 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
       log(exSolape.length === 0, `Admin: cards de examen sin solaparse (${exSolape.length})`);
       await page.screenshot({ path: `e2e-responsive-admin-${vp.tag}.png`, fullPage: true });
 
-      // ---- Panel Owner ----
+      // ---- Panel unificado (owner: switch de nivel + nivel Owner) ----
       await login(OWNER_U, OWNER_C);
-      await page.goto(BASE + '/paginas/admin/panel-owner.html', { waitUntil: 'domcontentloaded' });
-      try { await page.waitForSelector('#ownerContenido', { timeout: 8000 }); } catch {}
+      await page.goto(BASE + '/paginas/admin/panel-admin.html', { waitUntil: 'domcontentloaded' });
+      try { await page.waitForSelector('#adminContenido', { timeout: 8000 }); } catch {}
       await esperar(800);
       const oO = await medirOverflow();
-      log(oO.overflow <= 0, `Panel owner sin overflow horizontal (desborde=${oO.overflow}px)${oO.culpables.length ? ' → ' + oO.culpables.join(', ') : ''}`);
+      log(oO.overflow <= 0, `Panel unificado sin overflow horizontal (desborde=${oO.overflow}px)${oO.culpables.length ? ' → ' + oO.culpables.join(', ') : ''}`);
+      // Cambiar al nivel Owner (Administración general)
+      await page.evaluate(() => document.querySelector('.admin-nivel__btn[data-nivel="owner"]')?.click());
+      await esperar(900);
       const tabsO = await page.evaluate(() => document.querySelectorAll('.admin-tab').length);
-      log(tabsO >= 6, `Owner: ${tabsO} pestañas`);
+      log(tabsO >= 4, `Owner: ${tabsO} pestañas (nivel Owner)`);
       const resumenO = await page.evaluate(() => {
         const r = document.querySelector('.owner-sug-resumen');
         return r ? Math.round(r.getBoundingClientRect().width) <= window.innerWidth : true;

@@ -150,12 +150,41 @@ class NotificationManager {
     }, 300);
   }
   
+  // Método público para actualizar el permiso desde la UI (pestaña de perfil)
+  setPermiso(permiso) {
+    this._permission = permiso;
+  }
+
+  // ============================================================
+  // Preferencias del usuario: comprueba si un tipo de aviso está activado.
+  // Por defecto todo está activado (undefined/falta de preferencia = true).
+  // clavesAntiguas: claves de versiones previas que también desactivan el aviso.
+  // ============================================================
+  _habilitada(clave, clavesAntiguas = []) {
+    try {
+      const u = window.store && window.store.obtener ? window.store.obtener('usuario') : null;
+      const p = (u && u.preferencias) || {};
+      if (p[clave] === false) return false;
+      for (const antigua of clavesAntiguas) {
+        if (p[antigua] === false) return false;
+      }
+      return true;
+    } catch (e) { return true; }
+  }
+
+  // Vibra si los sonidos están activados (por defecto sí)
+  _vibrarSiSonido() {
+    if (!this._habilitada('notif_sonidos')) return;
+    try { if (navigator.vibrate) navigator.vibrate(40); } catch (e) {}
+  }
+
   // ============================================================
   // Notificaciones específicas
   // ============================================================
-  
   async notificarRepasos(cantidad) {
+    if (!this._habilitada('notif_recordatorios', ['notif_repasos'])) return;
     if (cantidad > 0) {
+      this._vibrarSiSonido();
       return this.show('Hoy tienes', {
         body: `${cantidad} versículo${cantidad === 1 ? '' : 's'} pendiente${cantidad === 1 ? '' : 's'}.`,
         tag: 'repaso',
@@ -165,6 +194,8 @@ class NotificationManager {
   }
   
   async notificarExamen(nombre, examenId) {
+    if (!this._habilitada('notif_examenes')) return;
+    this._vibrarSiSonido();
     return this.show('Nuevo examen disponible', {
       body: `"${nombre}" está disponible para realizar.`,
       tag: `examen-${examenId}`,
@@ -173,6 +204,8 @@ class NotificationManager {
   }
   
   async notificarCalificacion(examen, nota) {
+    if (!this._habilitada('notif_calificaciones')) return;
+    this._vibrarSiSonido();
     const texto = nota != null ? `"${examen}" — Nota: ${nota}/10` : `"${examen}" ya está calificado.`;
     return this.show('El profesor corrigió tu examen', {
       body: texto,
@@ -182,6 +215,8 @@ class NotificationManager {
   }
   
   async notificarLogro(nombre, descripcion) {
+    if (!this._habilitada('notif_desafios', ['notif_logros'])) return;
+    this._vibrarSiSonido();
     return this.show(`Logro desbloqueado: ${nombre}`, {
       body: descripcion,
       tag: `logro-${Date.now()}`
@@ -189,6 +224,8 @@ class NotificationManager {
   }
   
   async notificarActualizacion(version) {
+    if (!this._habilitada('notif_actualizaciones')) return;
+    this._vibrarSiSonido();
     return this.show('Nueva versión disponible', {
       body: `Versión ${version} ya está disponible. Actualiza para disfrutar de las mejoras.`,
       tag: 'update',

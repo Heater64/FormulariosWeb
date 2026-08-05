@@ -11,6 +11,9 @@
       
       // Recuperar sesión
       this._recuperarSesion();
+
+      // Aplicar la marca configurada por el propietario (nombre del centro)
+      this._aplicarMarca();
       
       // Inicializar rutas
       this._inicializarRutas();
@@ -29,6 +32,9 @@
       
       // Verificar sesión
       this._verificarSesion();
+
+      // Poller de invitaciones a desafíos (banner global donde sea que estés)
+      this._iniciarPollInvitaciones();
 
       // ============================================================
       // Eventos de autenticación
@@ -277,6 +283,8 @@
     async _notificarRepasos() {
       const usuario = store.obtener('usuario');
       if (!usuario) return;
+      // Respetar la preferencia de recordatorios de estudio (por defecto activada)
+      if ((usuario.preferencias || {}).notif_recordatorios === false) return;
       const hoy = new Date().toISOString().slice(0, 10);
       if (localStorage.getItem('fb_toast_repaso') === hoy) return;
       try {
@@ -318,6 +326,77 @@
       setTimeout(() => { if (t) t.remove(); }, 9000);
     },
 
+    /* ═══ Invitaciones a desafíos: banner global ═══ */
+    _iniciarPollInvitaciones() {
+      this._desafioNotifsVistas = new Set();
+      this._desafioBannerVisible = false;
+      setInterval(() => this._verificarInvitacionesDesafio(), 12000);
+      setTimeout(() => this._verificarInvitacionesDesafio(), 4000);
+    },
+
+    async _verificarInvitacionesDesafio() {
+      const usuario = store.obtener('usuario');
+      if (!usuario || !window.desafiosRepository) return;
+      // No molestar mientras se está en un desafío o en la pantalla de grupos
+      const ruta = router._rutaActual();
+      if (ruta && (ruta.startsWith('/desafio/') || ruta === '/grupos')) return;
+      if (this._desafioBannerVisible) return;
+      try {
+        const pendientes = await window.desafiosRepository.notificacionesPendientes(usuario.id);
+        const nuevo = (pendientes || []).find(n => n && n.datos && n.datos.desafio_id && !this._desafioNotifsVistas.has(n.id));
+        if (nuevo) {
+          this._desafioNotifsVistas.add(nuevo.id);
+          this._mostrarBannerDesafio(nuevo, usuario);
+        }
+      } catch (e) {}
+    },
+
+    _mostrarBannerDesafio(notif, usuario) {
+      if (document.getElementById('desafio-banner')) return;
+      const esc = (t) => window.helpers.escapeHtml(t);
+      this._desafioBannerVisible = true;
+      const datos = notif.datos || {};
+      const b = document.createElement('div');
+      b.id = 'desafio-banner';
+      b.className = 'desafio-banner';
+      b.innerHTML = `
+        <span class="desafio-banner__icono">${window.Iconos.render('sword')}</span>
+        <div class="desafio-banner__cuerpo">
+          <p class="desafio-banner__titulo">${esc(notif.titulo || 'Desafío recibido')}</p>
+          <p class="desafio-banner__texto">${esc(notif.cuerpo || '')}</p>
+        </div>
+        <div class="desafio-banner__acciones">
+          <button class="btn-primario" data-banner-accion="aceptar">${window.Iconos.render('check')} Aceptar</button>
+          <button class="btn-secundario" data-banner-accion="rechazar">${window.Iconos.render('x')} Rechazar</button>
+        </div>
+        <button class="desafio-banner__cerrar" data-banner-accion="cerrar" aria-label="Cerrar">×</button>
+      `;
+      document.body.appendChild(b);
+      window.Iconos.actualizar();
+
+      const cerrar = () => {
+        b.remove();
+        this._desafioBannerVisible = false;
+        window.desafiosRepository.marcarNotificacionLeida(notif.id).catch(() => {});
+      };
+
+      b.querySelector('[data-banner-accion="cerrar"]').onclick = cerrar;
+      b.querySelector('[data-banner-accion="rechazar"]').onclick = async () => {
+        try { await window.desafiosRepository.responderInvitacion(datos.desafio_id, usuario.id, false); } catch (e) {}
+        cerrar();
+        window.helpers.mostrarAlerta('Has rechazado el desafío.', 'info');
+      };
+      b.querySelector('[data-banner-accion="aceptar"]').onclick = async () => {
+        try {
+          const r = await window.desafiosRepository.responderInvitacion(datos.desafio_id, usuario.id, true);
+          cerrar();
+          router.navegar('/desafio/' + datos.desafio_id);
+          if (!r.empezado) window.helpers.mostrarAlerta('Has aceptado. Esperando a los demás...', 'exito');
+        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+      };
+      setTimeout(() => { if (b && b.parentNode) { b.remove(); this._desafioBannerVisible = false; } }, 30000);
+    },
+
     _renderizarBarraNavegacion() {
       const nav = document.getElementById('barra-navegacion');
       if (!nav) return;
@@ -337,7 +416,7 @@
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
       const rutaActual = router._rutaActual();
-      const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/'));
+      const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/')) || (r === '/perfil' && (rutaActual === '/grupos' || rutaActual.startsWith('/perfil/config/') || rutaActual.startsWith('/perfil/acerca/')));
 
       // Persistir sección activa en localStorage — fuente única de verdad
       const itemActivo = items.find(i => esActivo(i.ruta));
@@ -357,6 +436,27 @@
           router.navegar(el.getAttribute('href').replace('#!', '')); 
         });
       });
+    },
+
+    // ============================================================
+    // Marca del centro: nombre/logo configurados por el propietario
+    // ============================================================
+    async _aplicarMarca() {
+      // Usar la caché local para arrancar rápido y refrescar en segundo plano
+      try {
+        const cache = localStorage.getItem('fb_marca');
+        if (cache) {
+          const c = JSON.parse(cache);
+          if (c.marca_nombre) document.title = c.marca_nombre;
+        }
+      } catch (e) {}
+      try {
+        if (!window.adminRepository) return;
+        const c = await window.adminRepository.listarConfiguracion();
+        if (!c) return;
+        if (c.marca_nombre) document.title = c.marca_nombre;
+        try { localStorage.setItem('fb_marca', JSON.stringify({ marca_nombre: c.marca_nombre || '', marca_logo: c.marca_logo || '' })); } catch (e) {}
+      } catch (e) { /* sin conexión o sin permisos: mantener el título por defecto */ }
     },
 
     _inicializarRutas() {
@@ -382,8 +482,14 @@
       router.registrar('/progreso', window.vistaProgreso);
       router.registrar('/explorar', window.vistaExplorar);
       router.registrar('/perfil', window.vistaPerfil);
+      router.registrar('/perfil/config/:seccion', window.vistaPerfil);
+      router.registrar('/perfil/acerca/:seccion', window.vistaPerfil);
+      router.registrar('/perfil/config', { montar: () => router.navegar('/perfil') });
+      router.registrar('/perfil/acerca', { montar: () => router.navegar('/perfil') });
+      router.registrar('/grupos', window.vistaGrupos);
+      router.registrar('/grupos/:id', window.vistaGrupos);
+      router.registrar('/desafio/:id', window.vistaDesafio);
       router.registrar('/admin', window.vistaPanelAdmin);
-      router.registrar('/owner', window.vistaOwner);
     }
   };
 

@@ -3,33 +3,33 @@
 
   const I = (n) => { try { return window.Iconos.render(n); } catch(e) { return ''; } };
 
+  function _esc(s) {
+    return String(s == null ? '' : s)
+      .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+  }
+
   const TABS = [
+    { id: 'general', icono: 'compass', texto: 'General' },
     { id: 'reyes', icono: 'crown', texto: 'Reyes' },
-    { id: 'genealogia', icono: 'git-branch', texto: 'Genealogía' },
-    { id: 'curiosidades', icono: 'lightbulb', texto: 'Curiosidades' },
     { id: 'personajes', icono: 'users', texto: 'Personajes' },
-    { id: 'lugares', icono: 'map-pin', texto: 'Lugares' },
-    { id: 'objetos', icono: 'gem', texto: 'Objetos' },
-    { id: 'cronologia', icono: 'clock', texto: 'Cronología' },
-    { id: 'milagros', icono: 'sparkles', texto: 'Milagros' },
-    { id: 'parabolas', icono: 'book-open', texto: 'Parábolas' },
-    { id: 'profecias', icono: 'target', texto: 'Profecías' }
+    { id: 'mas', icono: 'grid', texto: 'Más' }
+  ];
+
+  const CATS_MAS = [
+    { id: 'genealogia', icono: 'git-branch', texto: 'Genealogía', desc: 'Desde Adán hasta Jesús' },
+    { id: 'lugares', icono: 'map-pin', texto: 'Lugares', desc: 'Geografía bíblica' },
+    { id: 'objetos', icono: 'gem', texto: 'Objetos', desc: 'Artefactos sagrados' },
+    { id: 'cronologia', icono: 'clock', texto: 'Cronología', desc: 'Línea del tiempo' },
+    { id: 'milagros', icono: 'sparkles', texto: 'Milagros', desc: 'Obras sobrenaturales' },
+    { id: 'parabolas', icono: 'book-open', texto: 'Parábolas', desc: 'Enseñanzas de Jesús' },
+    { id: 'profecias', icono: 'target', texto: 'Profecías', desc: 'Anuncios y cumplimientos' },
+    { id: 'curiosidades', icono: 'lightbulb', texto: 'Curiosidades', desc: 'Datos sorprendentes' }
   ];
 
   let _datos = {};
-  let _pestana = 'reyes';
+  let _pestana = 'general';
   let _busqueda = '';
-  let _curiosidadesIndex = 0;
-  let _curiosidadesTimer = null;
-
-  function _esc(s) {
-    return String(s == null ? '' : s)
-      .replace(/&/g, '&amp;')
-      .replace(/</g, '&lt;')
-      .replace(/>/g, '&gt;')
-      .replace(/"/g, '&quot;')
-      .replace(/'/g, '&#39;');
-  }
 
   async function _cargarDatos() {
     const cache = window._explorarCache;
@@ -41,13 +41,10 @@
     window._explorarCache = _datos;
   }
 
-  // Búsqueda multi-campo (array de campos o todo el objeto)
   function _coincide(item, campos) {
     if (!_busqueda) return true;
     const q = _busqueda.toLowerCase();
-    if (campos) {
-      return campos.some(c => item[c] != null && String(item[c]).toLowerCase().includes(q));
-    }
+    if (campos) return campos.some(c => item[c] != null && String(item[c]).toLowerCase().includes(q));
     return JSON.stringify(item).toLowerCase().includes(q);
   }
 
@@ -60,55 +57,90 @@
     return `<div class="explorar__vacio"><span class="explorar__vacio-icono">${I('search')}</span><p>${_esc(msg)}</p></div>`;
   }
 
-  // Chips de referencias con delegación de eventos (sin onclick inline frágil)
-  function _refChips(refs, icono, extraClase) {
+  /* Chips de referencias */
+  function _refChips(refs) {
     const lista = Array.isArray(refs) ? refs : (refs ? [refs] : []);
-    return lista.slice(0, 4).map(r => `
-      <button type="button" class="explorar__ref${extraClase ? ' ' + extraClase : ''}" data-ref="${_esc(r)}">${I(icono || 'book-open')} ${_esc(r)}</button>
-    `).join('');
+    return lista.length ? `<div class="explorar__refs"><span class="explorar__refs-label">${I('book-open')} Referencias</span><div class="explorar__refs-chips">${lista.map(r => `<span class="explorar__ref-chip">${_esc(r)}</span>`).join('')}</div></div>` : '';
   }
 
-  function _mostrarRef(ref) {
-    const clean = String(ref || '').replace(/\s+/g, ' ').trim();
-    if (clean) window.helpers.mostrarAlerta(`${I('book-open')} ${_esc(clean)}`, 'info', 4000);
+  /* ===== GENERAL ===== */
+  function _renderGeneral() {
+    return `
+      <div class="explorar-general">
+        <div class="explorar-general__hero">
+          <span class="explorar-general__icono">${I('compass')}</span>
+          <div>
+            <h3 class="explorar-general__titulo">Explorar la Biblia</h3>
+            <p class="explorar-general__desc">Un recurso de consulta para profundizar en el conocimiento de las Escrituras. Aquí encontrarás información detallada sobre reyes, personajes, lugares, objetos, cronología y mucho más.</p>
+          </div>
+        </div>
+        <div class="explorar-general__fuente">
+          <span class="explorar-general__fuente-icono">${I('book-open')}</span>
+          <div>
+            <h4 class="explorar-general__fuente-titulo">Fuente de información</h4>
+            <p class="explorar-general__fuente-texto">Toda la información presentada en esta sección está basada en la <strong>Biblia Reina Valera 1960</strong> (RV60), complementada con estudios históricos, arqueológicos y teológicos de fuentes reconocidas.</p>
+          </div>
+        </div>
+        <div class="explorar-general__tabs-info">
+          <div class="explorar-general__tab-info">
+            <span class="explorar-general__tab-icono">${I('crown')}</span>
+            <div>
+              <h4>Reyes</h4>
+              <p>Perfiles detallados de los reyes de Israel y Judá con calificación, eventos clave y referencias bíblicas.</p>
+            </div>
+          </div>
+          <div class="explorar-general__tab-info">
+            <span class="explorar-general__tab-icono">${I('users')}</span>
+            <div>
+              <h4>Personajes</h4>
+              <p>Personajes bíblicos diversos: profetas, jueces, apóstoles y más, con datos biográficos y referencias.</p>
+            </div>
+          </div>
+          <div class="explorar-general__tab-info">
+            <span class="explorar-general__tab-icono">${I('grid')}</span>
+            <div>
+              <h4>Más</h4>
+              <p>Explora genealogía, lugares, objetos, cronología, milagros, parábolas, profecías y curiosidades.</p>
+            </div>
+          </div>
+        </div>
+      </div>`;
   }
 
-  // ===== Reyes =====
-
-  function _reyEstrellas(cal) {
-    const n = Math.max(1, Math.min(5, Number(cal) || 0));
-    let s = `<span class="explorar__rey-estrellas" aria-label="Calificación ${n} de 5">`;
-    for (let i = 1; i <= 5; i++) {
-      s += `<span class="explorar__rey-estrella${i <= n ? ' explorar__rey-estrella--activa' : ''}">${I('star')}</span>`;
-    }
-    return s + '</span>';
-  }
-
+  /* ===== REYES (expandable cards) ===== */
   function _reyBadge(etiqueta, cal) {
     const n = Number(cal) || 0;
     const tipo = n >= 4 ? 'fiel' : (n <= 2 ? 'infiel' : 'mixto');
     return `<span class="explorar__rey-badge explorar__rey-badge--${tipo}">${_esc(etiqueta || '')}</span>`;
   }
 
+  function _reyEstrellas(cal) {
+    const n = Math.max(1, Math.min(5, Number(cal) || 0));
+    let s = '';
+    for (let i = 1; i <= 5; i++) {
+      s += `<span class="explorar__rey-estrella${i <= n ? ' explorar__rey-estrella--activa' : ''}">${i <= n ? '★' : '☆'}</span>`;
+    }
+    return s;
+  }
+
   function _renderReyes() {
     let grupos = _datos.reyes || [];
-    if (_busqueda) {
-      const q = _busqueda.toLowerCase();
-      grupos = grupos
-        .map(g => ({
-          ...g,
-          reyes: (g.reyes || []).filter(r => _coincide(r, ['nombre', 'reinado', 'etiqueta', 'detalle']) || String(g.periodo || '').toLowerCase().includes(q))
-        }))
-        .filter(g => (g.reyes || []).length > 0);
+    const q = _busqueda.toLowerCase().trim();
+    if (q) {
+      grupos = grupos.map(g => ({
+        ...g,
+        reyes: (g.reyes || []).filter(r => _coincide(r, ['nombre', 'reinado', 'etiqueta', 'detalle']) || String(g.periodo || '').toLowerCase().includes(q))
+      })).filter(g => (g.reyes || []).length > 0);
     }
     const total = grupos.reduce((n, g) => n + (g.reyes || []).length, 0);
     if (!total) return _vacio('No se encontraron reyes.');
+
     return grupos.map(grupo => `
       <div class="explorar__seccion">
         <h4 class="explorar__seccion-titulo">${I('flag')} ${_esc(grupo.periodo)}<span class="explorar__seccion-count">${(grupo.reyes || []).length}</span></h4>
         <div class="explorar__grid">
           ${(grupo.reyes || []).map(r => `
-            <div class="explorar__card">
+            <div class="explorar__card explorar__card--expandible" data-expandible role="button" tabindex="0" aria-expanded="false">
               <div class="explorar__card-header">
                 <div class="explorar__card-icon">${I('crown')}</div>
                 <div class="explorar__card-head-body">
@@ -117,14 +149,25 @@
                 </div>
                 ${_reyBadge(r.etiqueta, r.calificacion)}
               </div>
-              ${_reyEstrellas(r.calificacion)}
-              <div class="explorar__card-detalle">${_esc(r.detalle)}</div>
-              ${r.eventos && r.eventos.length ? `
-                <div class="explorar__eventos">
-                  ${r.eventos.slice(0, 3).map(e => `<span class="explorar__evento">${_esc(e)}</span>`).join('')}
-                  ${r.eventos.length > 3 ? `<span class="explorar__tag">+${r.eventos.length - 3} más</span>` : ''}
-                </div>` : ''}
-              <div class="explorar__card-refs">${_refChips(r.refs)}</div>
+              <div class="explorar__card-estrellas">${_reyEstrellas(r.calificacion)}</div>
+              <p class="explorar__card-desc">${_esc(r.detalle)}</p>
+              <div class="explorar__card-expand">
+                ${r.eventos && r.eventos.length ? `
+                  <div class="explorar__eventos">
+                    <span class="explorar__eventos-label">${I('list')} Eventos clave</span>
+                    ${r.eventos.map(e => `<span class="explorar__evento">${_esc(e)}</span>`).join('')}
+                  </div>` : ''}
+                ${r.personajes && r.personajes.length ? `
+                  <div class="explorar__personajes-rel">
+                    <span class="explorar__personajes-label">${I('users')} Personajes relacionados</span>
+                    <span class="explorar__personajes-lista">${r.personajes.map(p => _esc(p)).join(', ')}</span>
+                  </div>` : ''}
+                ${_refChips(r.refs)}
+              </div>
+              <div class="explorar__card-toggle">
+                <span class="explorar__card-toggle-text">Ver más</span>
+                <span class="explorar__card-toggle-icon">${I('chevron-down')}</span>
+              </div>
             </div>
           `).join('')}
         </div>
@@ -132,13 +175,69 @@
     `).join('');
   }
 
-  // ===== Genealogía =====
+  /* ===== PERSONAJES (expandable cards, same pattern) ===== */
+  function _renderPersonajes() {
+    const data = _filtrar(_datos.personajes || [], ['nombre', 'epoca', 'detalle']);
+    if (!data.length) return _vacio('No se encontraron personajes.');
 
+    return `
+      <div class="explorar__grid">
+        ${data.map(p => `
+          <div class="explorar__card explorar__card--expandible" data-expandible role="button" tabindex="0" aria-expanded="false">
+            <div class="explorar__card-header">
+              <div class="explorar__card-icon">${I('user')}</div>
+              <div class="explorar__card-head-body">
+                <div class="explorar__card-titulo">${_esc(p.nombre)}</div>
+                <div class="explorar__card-sub">${_esc(p.epoca || '')}</div>
+              </div>
+            </div>
+            <p class="explorar__card-desc">${_esc(p.detalle)}</p>
+            <div class="explorar__card-expand">
+              <div class="explorar__card-datos">
+                ${p.nacimiento ? `<span class="explorar__card-dato">${I('map-pin')} <strong>Nacimiento:</strong> ${_esc(p.nacimiento)}</span>` : ''}
+                ${p.muerte && !/desconocido/i.test(p.muerte) ? `<span class="explorar__card-dato">${I('flag')} <strong>Muerte:</strong> ${_esc(p.muerte)}</span>` : ''}
+                ${p.padre && !/desconocido/i.test(p.padre) ? `<span class="explorar__card-dato">${I('users')} <strong>Padre:</strong> ${_esc(p.padre)}</span>` : ''}
+                ${p.hijos && p.hijos.length ? `<span class="explorar__card-dato">${I('heart')} <strong>Hijos:</strong> ${_esc(p.hijos.slice(0, 3).join(', '))}${p.hijos.length > 3 ? '…' : ''}</span>` : ''}
+              </div>
+              ${p.eventos && p.eventos.length ? `
+                <div class="explorar__eventos">
+                  <span class="explorar__eventos-label">${I('list')} Eventos clave</span>
+                  ${p.eventos.slice(0, 5).map(e => `<span class="explorar__evento">${_esc(e)}</span>`).join('')}
+                  ${p.eventos.length > 5 ? `<span class="explorar__evento">+${p.eventos.length - 5} más</span>` : ''}
+                </div>` : ''}
+              ${_refChips(p.libros)}
+            </div>
+            <div class="explorar__card-toggle">
+              <span class="explorar__card-toggle-text">Ver más</span>
+              <span class="explorar__card-toggle-icon">${I('chevron-down')}</span>
+            </div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  /* ===== MÁS (category grid) ===== */
+  function _renderMas() {
+    return `
+      <p class="explorar-mas__intro">Selecciona un tema para explorar más contenido bíblico:</p>
+      <div class="explorar__cat-grid">
+        ${CATS_MAS.map(c => `
+          <div class="explorar__cat-card" data-mas="${c.id}" role="button" tabindex="0">
+            <div class="explorar__cat-icono">${I(c.icono)}</div>
+            <div class="explorar__cat-nombre">${_esc(c.texto)}</div>
+            <div class="explorar__cat-desc">${_esc(c.desc)}</div>
+          </div>
+        `).join('')}
+      </div>`;
+  }
+
+  /* ===== Renderers for Más sub-tabs ===== */
   function _renderGenealogia() {
     const data = _filtrar(_datos.genealogia || [], ['nombre', 'detalle', 'ref']);
     if (!data.length) return _vacio('No se encontraron personas.');
     return `
-      <p class="u-fs-xs u-color-texto-secundario u-mb-2">Desde Adán hasta Jesús — 60 generaciones según Mateo 1 y Lucas 3.</p>
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
+      <p class="explorar-mas__intro">Desde Adán hasta Jesús — 60 generaciones según Mateo 1 y Lucas 3.</p>
       <div class="explorar__timeline">
         ${data.map(p => `
           <div class="explorar__timeline-item">
@@ -146,119 +245,17 @@
             <div class="explorar__timeline-periodo">${p.nivel === 0 ? 'Origen' : 'Generación ' + p.nivel}</div>
             <div class="explorar__timeline-nombre${p.destacado ? ' explorar__timeline-nombre--destacado' : ''}">${p.destacado ? I('star') + ' ' : ''}${_esc(p.nombre)}</div>
             ${p.detalle ? `<div class="explorar__timeline-detalle">${_esc(p.detalle)}</div>` : ''}
-            <div class="explorar__card-refs">${_refChips(p.ref)}</div>
+            ${_refChips(p.ref)}
           </div>
         `).join('')}
       </div>`;
   }
 
-  // ===== Curiosidades =====
-
-  function _curiosidadesDestacados(data) {
-    const destacados = [];
-    data.forEach(cat => (cat.items || []).forEach(item => {
-      if (item.destacado) destacados.push({ ...item, categoria: cat });
-    }));
-    if (destacados.length) return destacados;
-    return data.filter(cat => cat.items && cat.items.length).map(cat => ({ ...cat.items[0], categoria: cat }));
-  }
-
-  function _curiosidadesHeroHTML(data) {
-    const destacados = _curiosidadesDestacados(data);
-    if (!destacados.length) return '';
-    const actual = destacados[_curiosidadesIndex % destacados.length];
-    const cat = actual.categoria || {};
-    const dots = destacados.length > 1 ? `
-      <div class="curiosidades-hero__dots" aria-hidden="true">
-        ${destacados.map((_, i) => `<span class="curiosidades-hero__dot${i === (_curiosidadesIndex % destacados.length) ? ' curiosidades-hero__dot--activo' : ''}"></span>`).join('')}
-      </div>` : '';
-    return `
-      <div class="curiosidades-hero" id="curiosidadesHero" aria-live="polite">
-        <div class="curiosidades-hero__emoji">${_esc(cat.emoji || '✨')}</div>
-        <div class="curiosidades-hero__body">
-          <span class="curiosidades-hero__badge">${I('sparkles')} ¿Sabías que…?</span>
-          <h3 class="curiosidades-hero__titulo">${_esc(actual.titulo)}</h3>
-          <p class="curiosidades-hero__texto">${_esc(actual.texto)}</p>
-          ${actual.ref ? `<div class="explorar__card-refs">${_refChips(actual.ref)}</div>` : ''}
-        </div>
-        ${dots}
-      </div>`;
-  }
-
-  function _renderCuriosidades() {
-    const data = _datos.curiosidades || [];
-    if (!data.length) return _vacio('No hay datos curiosos.');
-    const chips = data.map((cat, i) => {
-      const count = _filtrar(cat.items || [], ['titulo', 'texto', 'ref']).length;
-      if (!count) return '';
-      return `<button class="curiosidades-chip" data-target="curiosidad-cat-${i}"><span class="curiosidades-chip__emoji">${_esc(cat.emoji || '✨')}</span>${_esc(cat.categoria)}<span class="curiosidades-chip__count">${count}</span></button>`;
-    }).join('');
-    const secciones = data.map((cat, i) => {
-      const items = _filtrar(cat.items || [], ['titulo', 'texto', 'ref']);
-      if (!items.length) return '';
-      return `
-        <section class="explorar__seccion curiosidades-seccion" id="curiosidad-cat-${i}">
-          <h4 class="explorar__seccion-titulo">
-            <span class="curiosidades-seccion__emoji">${_esc(cat.emoji || '✨')}</span>
-            ${_esc(cat.categoria)}
-            <span class="curiosidades-seccion__count">${items.length}</span>
-          </h4>
-          <div class="explorar__grid">
-            ${items.map(item => `
-              <article class="explorar__card curiosidades-item" data-emoji="${_esc(cat.emoji || '✨')}">
-                <div class="curiosidades-item__emoji">${_esc(cat.emoji || '✨')}</div>
-                <h5 class="explorar__card-titulo">${_esc(item.titulo)}</h5>
-                <p class="explorar__card-detalle">${_esc(item.texto)}</p>
-                ${item.ref ? `<div class="explorar__card-refs">${_refChips(item.ref)}</div>` : ''}
-              </article>
-            `).join('')}
-          </div>
-        </section>`;
-    }).join('');
-    return `${_curiosidadesHeroHTML(data)}${chips ? `<div class="curiosidades-chips">${chips}</div>` : ''}${secciones}`;
-  }
-
-  // ===== Personajes =====
-
-  function _renderPersonajes() {
-    const data = _filtrar(_datos.personajes || [], ['nombre', 'epoca', 'detalle', 'nacimiento']);
-    if (!data.length) return _vacio('No se encontraron personajes.');
-    return `
-      <div class="explorar__grid">
-        ${data.map(p => {
-          const datos = [];
-          if (p.nacimiento) datos.push(`<span class="explorar__dato">${I('map-pin')} Nac.: ${_esc(p.nacimiento)}</span>`);
-          if (p.muerte && !/desconocido/i.test(p.muerte)) datos.push(`<span class="explorar__dato">${I('flag')} Murió: ${_esc(p.muerte)}</span>`);
-          if (p.padre && !/desconocido/i.test(p.padre)) datos.push(`<span class="explorar__dato">${I('users')} Hijo de ${_esc(p.padre)}</span>`);
-          if (p.hijos && p.hijos.length) datos.push(`<span class="explorar__dato">${I('heart')} Hijos: ${_esc(p.hijos.slice(0, 3).join(', '))}${p.hijos.length > 3 ? '…' : ''}</span>`);
-          return `
-            <div class="explorar__card">
-              <div class="explorar__card-header">
-                <div class="explorar__card-icon explorar__card-icon--grande">${I('user')}</div>
-                <div class="explorar__card-head-body">
-                  <div class="explorar__card-titulo">${_esc(p.nombre)}</div>
-                  <div class="explorar__card-sub">${_esc(p.epoca || '')}</div>
-                </div>
-              </div>
-              ${datos.length ? `<div class="explorar__datos">${datos.join('')}</div>` : ''}
-              <div class="explorar__card-detalle">${_esc(p.detalle)}</div>
-              ${p.eventos && p.eventos.length ? `
-                <div class="explorar__eventos">
-                  ${p.eventos.slice(0, 3).map(e => `<span class="explorar__evento">${_esc(e)}</span>`).join('')}
-                  ${p.eventos.length > 3 ? `<span class="explorar__tag">+${p.eventos.length - 3} más</span>` : ''}
-                </div>` : ''}
-              <div class="explorar__card-refs">${_refChips(p.libros)}</div>
-            </div>`;
-        }).join('')}
-      </div>`;
-  }
-
-  // ===== Lugares =====
-
-  function _renderLugares() {
+  function _renderLugaresMas() {
     const data = _filtrar(_datos.lugares || [], ['nombre', 'region', 'detalle']);
     if (!data.length) return _vacio('No se encontraron lugares.');
     return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
         ${data.map(l => `
           <div class="explorar__card">
@@ -269,28 +266,23 @@
                 <div class="explorar__card-sub">${_esc(l.region || '')}</div>
               </div>
             </div>
-            <div class="explorar__card-detalle">${_esc(l.detalle)}</div>
+            <p class="explorar__card-desc">${_esc(l.detalle)}</p>
             ${l.eventos && l.eventos.length ? `
               <div class="explorar__eventos">
                 ${l.eventos.slice(0, 3).map(e => `<span class="explorar__evento">${_esc(e)}</span>`).join('')}
                 ${l.eventos.length > 3 ? `<span class="explorar__tag">+${l.eventos.length - 3} más</span>` : ''}
               </div>` : ''}
-            ${l.personajes && l.personajes.length ? `
-              <div class="explorar__datos">
-                ${l.personajes.slice(0, 4).map(p => `<span class="explorar__dato">${I('user')} ${_esc(p)}</span>`).join('')}
-              </div>` : ''}
-            <div class="explorar__card-refs">${_refChips(l.refs)}</div>
+            ${_refChips(l.refs)}
           </div>
         `).join('')}
       </div>`;
   }
 
-  // ===== Objetos =====
-
-  function _renderObjetos() {
+  function _renderObjetosMas() {
     const data = _filtrar(_datos.objetos || [], ['nombre', 'epoca', 'detalle']);
     if (!data.length) return _vacio('No se encontraron objetos.');
     return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
         ${data.map(o => `
           <div class="explorar__card">
@@ -301,24 +293,18 @@
                 <div class="explorar__card-sub">${_esc(o.epoca || '')}</div>
               </div>
             </div>
-            ${o.descripcion ? `<p class="explorar__card-detalle">${_esc(o.descripcion)}</p>` : ''}
-            ${o.detalle ? `<p class="explorar__card-detalle explorar__card-detalle--suave">${_esc(o.detalle)}</p>` : ''}
-            ${o.personajes && o.personajes.length ? `
-              <div class="explorar__datos">
-                ${o.personajes.slice(0, 4).map(p => `<span class="explorar__dato">${I('user')} ${_esc(p)}</span>`).join('')}
-              </div>` : ''}
-            <div class="explorar__card-refs">${_refChips(o.refs)}</div>
+            ${o.descripcion ? `<p class="explorar__card-desc">${_esc(o.descripcion)}</p>` : ''}
+            ${_refChips(o.refs)}
           </div>
         `).join('')}
       </div>`;
   }
 
-  // ===== Cronología =====
-
-  function _renderCronologia() {
+  function _renderCronologiaMas() {
     const data = _filtrar(_datos.cronologia || [], ['evento', 'periodo', 'detalle']);
     if (!data.length) return _vacio('No se encontraron eventos.');
     return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__timeline">
         ${data.map(e => `
           <div class="explorar__timeline-item">
@@ -326,15 +312,13 @@
             <div class="explorar__timeline-periodo">${_esc(e.periodo)}</div>
             <div class="explorar__timeline-nombre">${_esc(e.evento)}</div>
             <div class="explorar__timeline-detalle">${_esc(e.detalle)}</div>
-            <div class="explorar__card-refs">${_refChips(e.refs)}</div>
+            ${_refChips(e.refs)}
           </div>
         `).join('')}
       </div>`;
   }
 
-  // ===== Milagros =====
-
-  function _renderMilagros() {
+  function _renderMilagrosMas() {
     const data = _datos.milagros || {};
     const sections = [];
     if (data.antiguo_testamento) {
@@ -346,34 +330,35 @@
       if (items.length) sections.push({ titulo: 'Nuevo Testamento', items });
     }
     if (!sections.length) return _vacio('No se encontraron milagros.');
-    return sections.map(s => `
-      <div class="explorar__seccion">
-        <h4 class="explorar__seccion-titulo">${I('sparkles')} ${_esc(s.titulo)}<span class="explorar__seccion-count">${s.items.length}</span></h4>
-        <div class="explorar__grid">
-          ${s.items.map(m => `
-            <div class="explorar__card">
-              <div class="explorar__card-header">
-                <div class="explorar__card-icon">${I('sparkles')}</div>
-                <div class="explorar__card-head-body">
-                  <div class="explorar__card-titulo">${_esc(m.nombre)}</div>
-                  ${m.personajes && m.personajes.length ? `<div class="explorar__card-sub">${_esc(m.personajes.join(', '))}</div>` : ''}
+    return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
+      ${sections.map(s => `
+        <div class="explorar__seccion">
+          <h4 class="explorar__seccion-titulo">${I('sparkles')} ${_esc(s.titulo)}<span class="explorar__seccion-count">${s.items.length}</span></h4>
+          <div class="explorar__grid">
+            ${s.items.map(m => `
+              <div class="explorar__card">
+                <div class="explorar__card-header">
+                  <div class="explorar__card-icon">${I('sparkles')}</div>
+                  <div class="explorar__card-head-body">
+                    <div class="explorar__card-titulo">${_esc(m.nombre)}</div>
+                    ${m.personajes && m.personajes.length ? `<div class="explorar__card-sub">${_esc(m.personajes.join(', '))}</div>` : ''}
+                  </div>
                 </div>
+                <p class="explorar__card-desc">${_esc(m.detalle)}</p>
+                ${_refChips(m.ref)}
               </div>
-              <div class="explorar__card-detalle">${_esc(m.detalle)}</div>
-              <div class="explorar__card-refs">${_refChips(m.ref)}</div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('')}`;
   }
 
-  // ===== Parábolas =====
-
-  function _renderParabolas() {
+  function _renderParabolasMas() {
     const data = _filtrar(_datos.parabolas || [], ['nombre', 'tema', 'detalle', 'leccion']);
     if (!data.length) return _vacio('No se encontraron parábolas.');
     return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
         ${data.map(p => `
           <div class="explorar__card">
@@ -384,21 +369,19 @@
                 <div class="explorar__card-sub">${_esc(p.tema)}</div>
               </div>
             </div>
-            <div class="explorar__card-detalle">${_esc(p.detalle)}</div>
+            <p class="explorar__card-desc">${_esc(p.detalle)}</p>
             ${p.leccion ? `
               <div class="explorar__detail-card">
-                <p class="u-fs-xs u-fw-600" style="color:var(--color-acento)">${I('info')} Lección:</p>
-                <p class="u-fs-xs u-color-texto-secundario">${_esc(p.leccion)}</p>
+                <p class="explorar__detail-card-label">${I('info')} Lección:</p>
+                <p class="explorar__detail-card-text">${_esc(p.leccion)}</p>
               </div>` : ''}
-            <div class="explorar__card-refs">${_refChips(p.ref)}</div>
+            ${_refChips(p.ref)}
           </div>
         `).join('')}
       </div>`;
   }
 
-  // ===== Profecías =====
-
-  function _renderProfecias() {
+  function _renderProfeciasMas() {
     const data = _datos.profecias || {};
     const sections = [];
     if (data.mesianicas) {
@@ -414,94 +397,145 @@
       if (items.length) sections.push({ titulo: 'Futuras', items });
     }
     if (!sections.length) return _vacio('No se encontraron profecías.');
-    return sections.map(s => `
-      <div class="explorar__seccion">
-        <h4 class="explorar__seccion-titulo">${I('target')} ${_esc(s.titulo)}<span class="explorar__seccion-count">${s.items.length}</span></h4>
-        <div class="explorar__grid">
-          ${s.items.map(p => `
-            <div class="explorar__card">
-              <div class="explorar__card-header">
-                <div class="explorar__card-icon">${I('target')}</div>
-                <div class="explorar__card-head-body">
-                  <div class="explorar__card-titulo">${_esc(p.nombre)}</div>
+    return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
+      ${sections.map(s => `
+        <div class="explorar__seccion">
+          <h4 class="explorar__seccion-titulo">${I('target')} ${_esc(s.titulo)}<span class="explorar__seccion-count">${s.items.length}</span></h4>
+          <div class="explorar__grid">
+            ${s.items.map(p => `
+              <div class="explorar__card">
+                <div class="explorar__card-header">
+                  <div class="explorar__card-icon">${I('target')}</div>
+                  <div class="explorar__card-head-body">
+                    <div class="explorar__card-titulo">${_esc(p.nombre)}</div>
+                  </div>
                 </div>
+                <p class="explorar__card-desc">${_esc(p.detalle)}</p>
+                ${_refChips(p.profecia || p.cumplimiento)}
               </div>
-              <div class="explorar__card-detalle">${_esc(p.detalle)}</div>
-              <div class="explorar__card-refs">
-                ${_refChips(p.profecia, 'book-open')}
-                ${p.cumplimiento && String(p.cumplimiento).toLowerCase() !== 'pendiente' ? _refChips(p.cumplimiento, 'check-circle', 'explorar__ref--cumplimiento') : ''}
-              </div>
-            </div>
-          `).join('')}
+            `).join('')}
+          </div>
         </div>
-      </div>
-    `).join('');
+      `).join('')}`;
   }
 
-  const RENDERERS = {
-    reyes: _renderReyes,
+  function _renderCuriosidadesMas() {
+    const data = _datos.curiosidades || [];
+    if (!data.length) return _vacio('No hay datos curiosos.');
+    return `
+      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
+      ${data.map((cat, i) => {
+        const items = _filtrar(cat.items || [], ['titulo', 'texto', 'ref']);
+        if (!items.length) return '';
+        return `
+          <section class="explorar__seccion" id="curiosidad-mas-${i}">
+            <h4 class="explorar__seccion-titulo">
+              <span class="curiosidades-seccion__emoji">${_esc(cat.emoji || '✨')}</span>
+              ${_esc(cat.categoria)}
+              <span class="explorar__seccion-count">${items.length}</span>
+            </h4>
+            <div class="explorar__grid">
+              ${items.map(item => `
+                <div class="explorar__card">
+                  <div class="explorar__card-header">
+                    <span class="curiosidades-item__emoji">${_esc(cat.emoji || '✨')}</span>
+                    <div class="explorar__card-head-body">
+                      <div class="explorar__card-titulo">${_esc(item.titulo)}</div>
+                    </div>
+                  </div>
+                  <p class="explorar__card-desc">${_esc(item.texto)}</p>
+                  ${_refChips(item.ref)}
+                </div>
+              `).join('')}
+            </div>
+          </section>`;
+      }).join('')}`;
+  }
+
+  const MAS_RENDERERS = {
     genealogia: _renderGenealogia,
-    curiosidades: _renderCuriosidades,
-    personajes: _renderPersonajes,
-    lugares: _renderLugares,
-    objetos: _renderObjetos,
-    cronologia: _renderCronologia,
-    milagros: _renderMilagros,
-    parabolas: _renderParabolas,
-    profecias: _renderProfecias
+    lugares: _renderLugaresMas,
+    objetos: _renderObjetosMas,
+    cronologia: _renderCronologiaMas,
+    milagros: _renderMilagrosMas,
+    parabolas: _renderParabolasMas,
+    profecias: _renderProfeciasMas,
+    curiosidades: _renderCuriosidadesMas
   };
 
-  function _skeletonHTML() {
-    return `
-      <div class="explorar__skeleton" aria-hidden="true">
-        ${Array.from({ length: 4 }).map(() => '<div class="explorar__skeleton-card"></div>').join('')}
-      </div>`;
-  }
+  const RENDERERS = {
+    general: _renderGeneral,
+    reyes: _renderReyes,
+    personajes: _renderPersonajes,
+    mas: _renderMas
+  };
 
   function _renderContenido(raiz) {
     const cont = raiz.querySelector('#explorarContent');
     if (!cont) return;
-    if (_curiosidadesTimer) { clearInterval(_curiosidadesTimer); _curiosidadesTimer = null; }
-    const renderer = RENDERERS[_pestana];
+    const renderer = RENDERERS[_pestana] || MAS_RENDERERS[_pestana];
     cont.innerHTML = renderer ? renderer() : '';
     window.Iconos.actualizar();
 
-    if (_busqueda) {
+    // Barra de resultados
+    if (_busqueda && _pestana !== 'general' && _pestana !== 'mas') {
       const n = cont.querySelectorAll('.explorar__card, .explorar__timeline-item').length;
-      const bar = document.createElement('div');
-      bar.className = 'explorar__resultados';
-      bar.innerHTML = `${I('search')} <strong>${n}</strong> resultado${n === 1 ? '' : 's'} para «${_esc(_busqueda)}»`;
-      cont.prepend(bar);
-      window.Iconos.actualizar();
-    }
-
-    if (_pestana === 'curiosidades') {
-      const data = _datos.curiosidades || [];
-      if (!data.length) return;
-
-      cont.querySelectorAll('.curiosidades-chip').forEach(chip => {
-        chip.addEventListener('click', () => {
-          const target = cont.querySelector('#' + chip.dataset.target);
-          if (target) target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-        });
-      });
-
-      if (_curiosidadesDestacados(data).length > 1 && cont.querySelector('#curiosidadesHero')) {
-        _curiosidadesTimer = setInterval(() => {
-          if (!document.body.contains(cont)) {
-            clearInterval(_curiosidadesTimer);
-            _curiosidadesTimer = null;
-            return;
-          }
-          _curiosidadesIndex += 1;
-          const hero = cont.querySelector('#curiosidadesHero');
-          if (hero) {
-            hero.outerHTML = _curiosidadesHeroHTML(data);
-            window.Iconos.actualizar();
-          }
-        }, 7000);
+      if (n > 0) {
+        const bar = document.createElement('div');
+        bar.className = 'explorar__resultados';
+        bar.innerHTML = `${I('search')} <strong>${n}</strong> resultado${n === 1 ? '' : 's'} para «${_esc(_busqueda)}»`;
+        cont.prepend(bar);
+        window.Iconos.actualizar();
       }
     }
+
+    // Bind expandable cards
+    cont.querySelectorAll('[data-expandible]').forEach(card => {
+      const toggle = card.querySelector('.explorar__card-toggle');
+      const clickHandler = () => {
+        const expandido = card.getAttribute('aria-expanded') === 'true';
+        card.setAttribute('aria-expanded', String(!expandido));
+        const toggleText = toggle?.querySelector('.explorar__card-toggle-text');
+        if (toggleText) toggleText.textContent = expandido ? 'Ver más' : 'Ver menos';
+      };
+      if (toggle) toggle.addEventListener('click', (e) => { e.stopPropagation(); clickHandler(); });
+      card.addEventListener('click', clickHandler);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); clickHandler(); }
+      });
+    });
+
+    // Bind "Más" category cards
+    cont.querySelectorAll('[data-mas]').forEach(card => {
+      const handler = () => {
+        const id = card.dataset.mas;
+        if (!id || !MAS_RENDERERS[id]) return;
+        _pestana = id;
+        _renderContenido(raiz);
+        // Update tab bar
+        const tabs = raiz.querySelectorAll('.explorar__tab');
+        tabs.forEach(t => t.classList.remove('explorar__tab--activo'));
+        const masTab = raiz.querySelector('[data-tab="mas"]');
+        if (masTab) masTab.classList.add('explorar__tab--activo');
+      };
+      card.addEventListener('click', handler);
+      card.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); handler(); }
+      });
+    });
+
+    // Bind volver buttons in Más sub-views
+    cont.querySelectorAll('[data-volver="mas"]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        _pestana = 'mas';
+        _renderContenido(raiz);
+      });
+    });
+  }
+
+  function _skeletonHTML() {
+    return `<div class="explorar__skeleton" aria-hidden="true">${Array.from({ length: 4 }).map(() => '<div class="explorar__skeleton-card"></div>').join('')}</div>`;
   }
 
   window.vistaExplorar = {
@@ -520,23 +554,23 @@
 
     _renderizar(raiz, esSkeleton) {
       const pestanaActual = TABS.find(t => t.id === _pestana) || TABS[0];
+      const mostrarBusqueda = _pestana !== 'general';
       raiz.innerHTML = `
         <div class="o-contenedor explorar">
           <div class="explorar__titulo">
             <h2>${I('compass')} Explorar</h2>
           </div>
+          ${mostrarBusqueda ? `
           <div class="explorar__search">
             <span class="explorar__search-icon">${I('search')}</span>
             <input type="search" id="explorarSearch" placeholder="Buscar en ${_esc(pestanaActual.texto)}..." value="${_esc(_busqueda)}" aria-label="Buscar en ${_esc(pestanaActual.texto)}">
-          </div>
-          <div class="explorar__tabs-wrapper" id="explorarTabsWrapper">
-            <div class="explorar__tabs" id="explorarTabs" role="tablist" aria-label="Categorías de exploración">
-              ${TABS.map(t => `
-                <button class="explorar__tab${t.id === _pestana ? ' explorar__tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${t.id === _pestana}">
-                  ${I(t.icono)} ${_esc(t.texto)}
-                </button>
-              `).join('')}
-            </div>
+          </div>` : ''}
+          <div class="explorar__tabs-bar" id="explorarTabsBar" role="tablist" aria-label="Categorías">
+            ${TABS.map(t => `
+              <button class="explorar__tab${t.id === _pestana ? ' explorar__tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${t.id === _pestana}">
+                ${I(t.icono)} ${_esc(t.texto)}
+              </button>
+            `).join('')}
           </div>
           <div id="explorarContent" class="explorar__contenido">${esSkeleton ? _skeletonHTML() : ''}</div>
         </div>`;
@@ -552,8 +586,6 @@
         });
       });
 
-      this._initTabsScroll(raiz);
-
       const searchInput = raiz.querySelector('#explorarSearch');
       if (searchInput) {
         searchInput.addEventListener('input', (e) => {
@@ -562,42 +594,8 @@
         });
       }
 
-      const content = raiz.querySelector('#explorarContent');
-      if (content) {
-        content.addEventListener('click', (e) => {
-          const chip = e.target.closest('.explorar__ref[data-ref]');
-          if (chip) _mostrarRef(chip.dataset.ref);
-        });
-      }
-
       if (!esSkeleton) _renderContenido(raiz);
       window.Iconos.actualizar();
-    },
-
-    _initTabsScroll(raiz) {
-      const wrapper = raiz.querySelector('#explorarTabsWrapper');
-      const tabs = raiz.querySelector('#explorarTabs');
-      if (!wrapper || !tabs) return;
-
-      const actualizarFlechas = () => {
-        const l = tabs.scrollLeft;
-        const max = tabs.scrollWidth - tabs.clientWidth;
-        wrapper.classList.toggle('explorar__tabs-wrapper--fade-left', l > 4);
-        wrapper.classList.toggle('explorar__tabs-wrapper--fade-right', l < max - 4);
-      };
-
-      tabs.addEventListener('scroll', actualizarFlechas, { passive: true });
-      window.addEventListener('resize', actualizarFlechas);
-
-      actualizarFlechas();
-
-      const activo = tabs.querySelector('.explorar__tab--activo');
-      if (activo) {
-        setTimeout(() => {
-          activo.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
-          actualizarFlechas();
-        }, 50);
-      }
     }
   };
 })();

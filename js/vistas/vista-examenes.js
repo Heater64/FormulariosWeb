@@ -167,6 +167,8 @@
 
     _notificarExamenesNuevos(examenes, esProfesor) {
       if (esProfesor) return;
+      const usuario = store.obtener('usuario');
+      if ((usuario && usuario.preferencias && usuario.preferencias.notif_examenes === false)) return;
       try {
         const vistos = new Set(JSON.parse(localStorage.getItem('fb_examenes_vistos') || '[]'));
         const nuevos = examenes.filter(ex => ex.publicado && !vistos.has(ex.id));

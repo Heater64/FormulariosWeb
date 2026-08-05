@@ -1,43 +1,9 @@
 /* ===== PERFIL - Hero (avatar + nombre fuera de tarjeta) ===== */
 
-.perfil-hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--espaciado-xl) var(--espaciado-md) var(--espaciado-lg);
-  gap: var(--espaciado-md);
-  position: relative;
-  margin-bottom: var(--espaciado-sm);
-}
-
-.perfil-hero::after {
-  content: '';
-  position: absolute;
-  top: -60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 220px;
-  height: 220px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--color-acento-soft) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-  animation: perfilGlow 5s ease-in-out infinite alternate;
-}
-
+/* Animación del halo del hero (usado por .perfil-hero::before) */
 @keyframes perfilGlow {
   0% { opacity: 0.5; transform: translateX(-50%) scale(0.95); }
   100% { opacity: 1; transform: translateX(-50%) scale(1.08); }
-}
-
-.perfil-hero__info {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  position: relative;
-  z-index: 1;
 }
 
 .perfil-avatar--lg {
@@ -70,29 +36,6 @@
 .perfil-avatar:has(input:focus-visible) {
   transform: scale(1.05);
   box-shadow: 0 0 0 4px var(--color-acento), var(--sombra-lg);
-}
-
-/* Insignia de cámara (pista de que se puede subir foto) */
-.perfil-avatar__camara {
-  position: absolute;
-  right: -2px;
-  bottom: -2px;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  background: var(--color-acento);
-  color: var(--color-texto-acento);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  border: 3px solid var(--color-fondo);
-  box-shadow: var(--sombra-sm);
-  pointer-events: none;
-}
-
-.perfil-avatar__camara svg {
-  width: 14px;
-  height: 14px;
 }
 
 .perfil-avatar img {
@@ -137,11 +80,6 @@
   background: var(--color-acento-soft);
 }
 
-.perfil-meta {
-  font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
-}
-
 .perfil-rol-badge {
   display: inline-flex;
   align-items: center;
@@ -157,51 +95,37 @@
   color: var(--color-texto-secundario);
 }
 
-.perfil-rol-badge--owner   { background: var(--color-aviso-soft);   color: var(--color-aviso); }
+.perfil-rol-badge--owner   { background: var(--color-naranja-soft); color: var(--color-naranja); border: 1px solid rgba(249, 115, 22, 0.35); }
 .perfil-rol-badge--admin   { background: var(--color-acento-soft);  color: var(--color-acento); }
 .perfil-rol-badge--editor  { background: var(--color-exito-soft);   color: var(--color-exito); }
 .perfil-rol-badge--usuario { background: var(--color-fondo-alt);    color: var(--color-texto-secundario); }
 
-/* Dentro de una sección-tarjeta, el formulario de sugerencias no necesita su propio fondo/sombra */
+/* Dentro de una sección-tarjeta, el formulario de sugerencias no necesita
+   su propio fondo/sombra NI su contorno: la tarjeta exterior ya lo delimita.
+   (Quedan solo los bordes internos del textarea y del select.) */
 .perfil-seccion .sug-form {
   background: transparent;
   box-shadow: none;
+  border: none;
+  padding: 0;
 }
 
-.perfil-email {
-  font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  justify-content: center;
-  max-width: 100%;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* Al quitar el contorno del formulario, el focus del textarea/select
+   sigue marcándose con su propio borde; sin relleno extra queda limpio. */
+.perfil-seccion .sug-form:focus-within {
+  box-shadow: none;
 }
 
-.perfil-email svg {
-  width: 13px;
-  height: 13px;
-  color: var(--color-texto-terciario);
-  flex-shrink: 0;
-}
-
-.perfil-miembro {
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
-  display: flex;
-  align-items: center;
-  gap: var(--espaciado-xxs);
-  justify-content: center;
-}
-
-/* ===== Botón a lo ancho (limpiar estilos inline) ===== */
+/* ===== Botón a lo ancho (limpiar estilos inline) =====
+   display inline-flex es imprescindible: si el elemento es un <a>
+   (p. ej. "Ver todos" de Grupos) sin display, hereda inline y el
+   width/justify-content no aplican, cortando el contenido. */
 
 .perfil-btn-full {
-  width: 100%;
+  display: inline-flex;
+  align-items: center;
   justify-content: center;
+  width: 100%;
   font-size: var(--texto-xs);
 }
 
@@ -1101,6 +1025,16 @@
   background: var(--color-fondo-alt);
 }
 
+/* Fila de sugerencia en el panel Owner (gestión) */
+.admin-tabla-sug-fila td {
+  transition: background var(--transicion-rapida);
+}
+
+.admin-tabla-sug-fila:hover td,
+.admin-tabla-sug-fila.admin-tabla-fila--expandida td {
+  background: var(--color-acento-soft);
+}
+
 .admin-tabla-detalle > td {
   background: var(--color-fondo-alt);
   border-bottom: 1px solid var(--color-borde);
@@ -1186,6 +1120,239 @@
   cursor: pointer;
 }
 
+/* ===== HERO (avatar, username, rol, acciones) ===== */
+
+/* Hero estático: la foto se mantiene siempre grande, sin contraerse
+   en una barra al hacer scroll. */
+.perfil-hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  padding: var(--espaciado-xl) var(--espaciado-md) var(--espaciado-lg);
+  gap: var(--espaciado-md);
+  margin-bottom: var(--espaciado-sm);
+  position: relative;
+}
+
+.perfil-hero::before {
+  content: '';
+  position: absolute;
+  top: -60px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 240px;
+  height: 240px;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--color-acento-soft) 0%, transparent 70%);
+  pointer-events: none;
+  z-index: 0;
+  animation: perfilGlow 5s ease-in-out infinite alternate;
+}
+
+
+.perfil-hero__info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  position: relative;
+  z-index: 1;
+  width: 100%;
+  max-width: 360px;
+}
+
+/* Avatar azul clarito simple */
+.perfil-avatar--hero {
+  background: #DBEAFE;
+  color: #3B82F6;
+  border: 3px solid var(--color-fondo);
+  box-shadow: 0 0 0 3px #BFDBFE, var(--sombra-md);
+  transition: box-shadow var(--transicion-rapida);
+}
+
+.perfil-avatar--hero:hover {
+  box-shadow: 0 0 0 4px #93C5FD, var(--sombra-lg);
+}
+
+.perfil-username {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+  letter-spacing: 0.01em;
+}
+
+/* Botones de acción del hero (efecto cristal) */
+.perfil-hero__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-md);
+  width: 100%;
+  max-width: 360px;
+}
+
+.perfil-hero__btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: var(--toque-minimo);
+  width: 100%;
+  padding: var(--espaciado-xs) var(--espaciado-lg);
+  border-radius: var(--radio-pill);
+  background: var(--color-vidrio);
+  border: 1px solid var(--color-vidrio-borde);
+  backdrop-filter: var(--desenfoque-vidrio);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), background var(--transicion-rapida), border-color var(--transicion-rapida), color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.perfil-hero__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.perfil-hero__btn:hover {
+  transform: translateY(-1px);
+  background: var(--color-acento);
+  border-color: var(--color-acento);
+  color: var(--color-texto-acento);
+  box-shadow: var(--sombra-md);
+}
+
+.perfil-hero__btn:active {
+  transform: translateY(0) scale(0.98);
+}
+
+/* ===== Filas de navegación dentro de tarjetas (estilo Ajustes) ===== */
+
+.perfil-fila-nav {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  text-decoration: none;
+  color: var(--color-texto);
+  transition: background var(--transicion-rapida);
+  min-height: 52px;
+}
+
+.perfil-fila-nav:hover {
+  background: var(--color-fondo-alt);
+}
+
+.perfil-fila-nav__icono {
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.perfil-fila-nav__icono svg {
+  width: 16px;
+  height: 16px;
+}
+
+.perfil-fila-nav__texto {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.perfil-fila-nav__label {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfil-fila-nav__desc {
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.perfil-fila-nav__flecha {
+  color: var(--color-texto-terciario);
+  flex-shrink: 0;
+  display: inline-flex;
+  transition: transform var(--transicion-rapida);
+}
+
+.perfil-fila-nav:hover .perfil-fila-nav__flecha {
+  transform: translateX(2px);
+}
+
+/* ===== Cabecera de sub-página ===== */
+
+.perfil-subcabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-md);
+}
+
+.perfil-subcabecera__volver {
+  flex-shrink: 0;
+}
+
+.perfil-subcabecera__texto {
+  flex: 1;
+  min-width: 0;
+}
+
+.perfil-subcabecera__titulo {
+  margin: 0;
+  font-size: var(--texto-2xl);
+  line-height: 1.2;
+}
+
+.perfil-subcabecera__sub {
+  margin: 2px 0 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+/* ===== Texto legal (términos, privacidad, licencias) ===== */
+
+.perfil-texto-legal h5 {
+  margin: var(--espaciado-sm) 0 var(--espaciado-xxs);
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.perfil-texto-legal h5:first-child {
+  margin-top: 0;
+}
+
+.perfil-texto-legal p {
+  margin: 0 0 var(--espaciado-sm);
+  font-size: var(--texto-sm);
+  line-height: 1.7;
+  color: var(--color-texto-secundario);
+}
+
+.perfil-texto-legal a {
+  color: var(--color-acento);
+}
+
 /* ===== Responsive ===== */
 
 @media (max-width: 480px) {
@@ -1196,14 +1363,6 @@
     width: 72px;
     height: 72px;
     font-size: 2rem;
-  }
-  .perfil-avatar__camara {
-    width: 26px;
-    height: 26px;
-  }
-  .perfil-avatar__camara svg {
-    width: 12px;
-    height: 12px;
   }
 
   .perfil-boton-seccion {

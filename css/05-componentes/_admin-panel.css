@@ -91,14 +91,6 @@
   gap: var(--espaciado-lg);
 }
 
-@media (min-width: 900px) {
-  .admin-centro {
-    grid-template-columns: minmax(0, 1.35fr) minmax(0, 1fr);
-    align-items: start;
-  }
-  .admin-centro .admin-seccion--ancho-completo { grid-column: 1 / -1; }
-}
-
 /* ==========================================================================
    SECCIÓN (bloque funcional)
    ========================================================================== */
@@ -109,6 +101,7 @@
   padding: var(--espaciado-lg);
   box-shadow: var(--sombra-sm);
   transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  min-width: 0;
 }
 
 @media (hover: hover) {
@@ -579,6 +572,7 @@
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
   gap: var(--espaciado-sm);
+  min-width: 0;
 }
 
 .admin-usuario-card {
@@ -1274,4 +1268,874 @@
   .admin-examen-card__stats { grid-template-columns: repeat(3, 1fr); }
 
   .admin-filtros select { flex: 1 1 auto; }
+}
+
+/* ========================================================================
+   PANEL UNIFICADO: switch de nivel (Owner / Admin)
+   ======================================================================== */
+
+.admin-nivel {
+  display: flex;
+  gap: var(--espaciado-xs);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  padding: 4px;
+  margin-bottom: var(--espaciado-md);
+  flex-wrap: wrap;
+}
+
+.admin-nivel__btn {
+  flex: 1 1 auto;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border: none;
+  border-radius: var(--radio-md);
+  background: transparent;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+}
+
+.admin-nivel__btn svg {
+  width: 16px;
+  height: 16px;
+}
+
+.admin-nivel__btn:hover {
+  color: var(--color-texto);
+  background: var(--color-fondo);
+}
+
+.admin-nivel__btn--activo {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  box-shadow: var(--sombra-sm);
+}
+
+.admin-nivel__btn--activo:hover {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+.admin-nivel__rol {
+  font-size: var(--texto-xxs);
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  padding: 2px 8px;
+  border-radius: var(--radio-pill);
+  background: rgba(255, 255, 255, 0.18);
+}
+
+/* Cabecera del panel con marca (logo + nombre del centro) */
+.admin-panel-cabecera__brand {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  min-width: 0;
+}
+
+.admin-panel-cabecera__logo {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-md);
+  object-fit: cover;
+  border: 1px solid var(--color-borde);
+  flex-shrink: 0;
+}
+
+.admin-panel-cabecera__logo-fallback {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.admin-panel-cabecera__logo-fallback svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* ========================================================================
+   DASHBOARD: Vista General del Centro (stats + gráfico de alumnos)
+   ======================================================================== */
+
+.admin-vista-general {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-lg);
+  min-width: 0;
+}
+
+.admin-vista-general__stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--espaciado-sm);
+  min-width: 0;
+}
+
+.admin-vista-general__stats .tarjeta-estadistica {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--card-radius);
+  padding: var(--espaciado-md);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.admin-vista-general__stats .tarjeta-estadistica:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-md);
+}
+
+.admin-vista-general__stats .tarjeta-estadistica__valor {
+  font-size: var(--texto-2xl);
+  font-weight: 800;
+  margin: 0;
+  line-height: 1.1;
+}
+
+.admin-vista-general__stats .tarjeta-estadistica__etiqueta {
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  margin: 2px 0 0;
+}
+
+.admin-stat--ok    { background: var(--color-exito-soft) !important; color: var(--color-exito); }
+.admin-stat--error { background: var(--color-error-soft) !important; color: var(--color-error); }
+.admin-stat--aviso { background: var(--color-aviso-soft) !important; color: var(--color-aviso); }
+
+/* Donut Activos vs Bloqueados (CSS puro) */
+.admin-vista-general__chart {
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border-radius: var(--card-radius);
+  flex-wrap: wrap;
+}
+
+.admin-donut {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-donut__centro {
+  width: 86px;
+  height: 86px;
+  border-radius: 50%;
+  background: var(--color-fondo-tarjeta);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  box-shadow: inset 0 0 0 1px var(--color-borde);
+}
+
+.admin-donut__valor {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  line-height: 1;
+}
+
+.admin-donut__etiqueta {
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  margin-top: 2px;
+}
+
+.admin-donut-leyenda {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  width: 100%;
+}
+
+.admin-donut-leyenda__titulo {
+  margin: 0 0 2px;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.admin-donut-leyenda__item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.admin-dot {
+  width: 9px;
+  height: 9px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.admin-dot--ok     { background: var(--color-exito); }
+.admin-dot--error  { background: var(--color-error); }
+.admin-dot--neutro { background: var(--color-aviso); }
+
+/* ========================================================================
+   DASHBOARD: Tareas Pendientes (fusión de alertas + gestión pendiente)
+   ======================================================================== */
+
+.admin-todo-al-dia {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md);
+  background: var(--color-exito-soft);
+  border: 1px solid color-mix(in srgb, var(--color-exito) 35%, transparent);
+  border-radius: var(--radio-md);
+}
+
+.admin-todo-al-dia__icono {
+  color: var(--color-exito);
+  display: flex;
+}
+
+.admin-todo-al-dia__icono svg {
+  width: 22px;
+  height: 22px;
+}
+
+.admin-todo-al-dia__titulo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--color-exito);
+}
+
+.admin-todo-al-dia__meta {
+  margin: 2px 0 0;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.admin-pendiente__icono--aviso { background: var(--color-aviso-soft); color: var(--color-aviso); }
+.admin-pendiente__icono--info  { background: var(--color-acento-soft); color: var(--color-acento); }
+
+/* ========================================================================
+   DASHBOARD: Acceso a Herramientas (4 tarjetas grandes)
+   ======================================================================== */
+
+.admin-herramientas {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaciado-md);
+  min-width: 0;
+}
+
+.admin-herramienta {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--espaciado-md);
+  cursor: pointer;
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  overflow: hidden;
+}
+
+.admin-herramienta:hover,
+.admin-herramienta:focus-visible {
+  transform: translateY(-3px);
+  box-shadow: var(--sombra-lg);
+  border-color: var(--color-acento);
+  outline: none;
+}
+
+.admin-herramienta__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+}
+
+.admin-herramienta__icono {
+  width: 44px;
+  height: 44px;
+  border-radius: var(--radio-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #FFFFFF;
+  flex-shrink: 0;
+}
+
+.admin-herramienta__icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.admin-herramienta--azul    .admin-herramienta__icono { background: linear-gradient(145deg, #3B82F6, #1D4ED8); }
+.admin-herramienta--verde   .admin-herramienta__icono { background: linear-gradient(145deg, #10B981, #047857); }
+.admin-herramienta--violeta .admin-herramienta__icono { background: linear-gradient(145deg, #8B5CF6, #6D28D9); }
+.admin-herramienta--naranja .admin-herramienta__icono { background: linear-gradient(145deg, #F59E0B, #D97706); }
+
+.admin-herramienta__info {
+  flex: 1;
+  min-width: 0;
+}
+
+.admin-herramienta__titulo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+}
+
+.admin-herramienta__sub {
+  margin: 2px 0 0;
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+}
+
+.admin-herramienta__flecha {
+  color: var(--color-texto-terciario);
+  transition: transform var(--transicion-rapida);
+}
+
+.admin-herramienta:hover .admin-herramienta__flecha {
+  transform: translateX(3px);
+  color: var(--color-acento);
+}
+
+.admin-herramienta__mini {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  border-top: 1px solid var(--color-fondo-alt);
+  padding-top: var(--espaciado-xs);
+}
+
+.admin-herramienta__mini-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 6px var(--espaciado-xs);
+  border: none;
+  background: transparent;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-xxs);
+  font-weight: 500;
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: all var(--transicion-rapida);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-herramienta__mini-btn svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-acento);
+  flex-shrink: 0;
+}
+
+.admin-herramienta__mini-btn:hover {
+  background: var(--color-acento-soft);
+  color: var(--color-texto);
+}
+
+/* ========================================================================
+   DASHBOARD: Estado del Sistema compacto (una fila con puntos verdes)
+   ======================================================================== */
+
+.admin-sistema-fila {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-sm) var(--espaciado-lg);
+  align-items: center;
+  padding: var(--espaciado-xs) 0;
+}
+
+.admin-sistema-fila__item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  font-weight: 600;
+}
+
+.admin-sistema-fila__item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-acento);
+}
+
+.admin-sistema-fila__item .admin-indicador {
+  width: 8px;
+  height: 8px;
+}
+
+/* ========================================================================
+   LISTAS: cabecera sticky + filtros pill
+   ======================================================================== */
+
+.admin-lista {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+}
+
+.admin-lista-cabecera {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+  padding: var(--espaciado-sm) 0;
+  background: var(--color-fondo);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.admin-lista-cabecera__titulo {
+  margin: 0;
+  font-size: var(--texto-lg);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.admin-lista-cabecera__titulo svg {
+  width: 18px;
+  height: 18px;
+  color: var(--color-acento);
+}
+
+.admin-lista-cabecera__contador {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 500;
+}
+
+.admin-lista-cabecera__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+/* Barra de filtros compacta: búsqueda alargada + selects pill */
+.admin-filtros-pill {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.admin-filtros-pill .admin-buscar {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+
+.admin-filtro-pill {
+  appearance: none;
+  -webkit-appearance: none;
+  padding: 8px 30px 8px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-tarjeta) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 12px center;
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  cursor: pointer;
+  transition: border-color var(--transicion-rapida), background var(--transicion-rapida);
+}
+
+.admin-filtro-pill:hover {
+  border-color: var(--color-acento);
+}
+
+.admin-filtro-pill:focus {
+  outline: none;
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+/* ========================================================================
+   FICHAS UNIFICADAS (usuarios, admins)
+   ======================================================================== */
+
+.admin-ficha {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  padding: var(--espaciado-md);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.admin-ficha:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-md);
+  border-color: var(--color-borde);
+}
+
+.admin-ficha--inactiva {
+  opacity: 0.65;
+}
+
+.admin-ficha__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  min-width: 0;
+}
+
+.admin-ficha__avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  font-size: var(--texto-base);
+  flex-shrink: 0;
+  overflow: hidden;
+  cursor: pointer;
+  border: 2px solid var(--color-fondo);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+.admin-ficha__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-ficha__info {
+  flex: 1;
+  min-width: 0;
+  cursor: pointer;
+}
+
+.admin-ficha__nombre {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-ficha__username {
+  margin: 2px 0 0;
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-ficha__fila {
+  display: flex;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+  padding: var(--espaciado-xs) 0;
+  border-top: 1px solid var(--color-fondo-alt);
+  border-bottom: 1px solid var(--color-fondo-alt);
+}
+
+.admin-ficha__fila-item {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-secundario);
+}
+
+.admin-ficha__fila-item svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-texto-terciario);
+}
+
+.admin-ficha__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.admin-ficha__acciones .btn-primario,
+.admin-ficha__acciones .btn-secundario {
+  padding: 6px 14px;
+}
+
+.admin-ficha__acciones .btn-icono--peligro {
+  margin-left: auto;
+}
+
+/* Menú "⋯" de la ficha */
+.admin-ficha__menu {
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-ficha__menu-pop {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 6px);
+  z-index: 30;
+  min-width: 190px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  box-shadow: var(--sombra-lg);
+  padding: 4px;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  animation: fadeIn var(--transicion-rapida);
+}
+
+.admin-ficha__menu-pop[hidden] {
+  display: none;
+}
+
+.admin-ficha__menu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  padding: 8px 10px;
+  border: none;
+  background: transparent;
+  color: var(--color-texto);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 500;
+  border-radius: var(--radio-sm);
+  cursor: pointer;
+  text-align: left;
+  transition: background var(--transicion-rapida);
+}
+
+.admin-ficha__menu-item svg {
+  width: 14px;
+  height: 14px;
+  color: var(--color-texto-secundario);
+}
+
+.admin-ficha__menu-item:hover {
+  background: var(--color-acento-soft);
+}
+
+/* ========================================================================
+   EXÁMENES: métrica en una fila
+   ======================================================================== */
+
+.admin-examen-card__metrica {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+  flex-wrap: wrap;
+  padding: var(--espaciado-xs) 0;
+  border-top: 1px solid var(--color-fondo-alt);
+  border-bottom: 1px solid var(--color-fondo-alt);
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-secundario);
+}
+
+.admin-examen-card__metrica span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.admin-examen-card__metrica svg {
+  width: 13px;
+  height: 13px;
+  color: var(--color-acento);
+}
+
+.admin-examen-card__pendientes {
+  color: var(--color-aviso);
+  font-weight: 700;
+}
+
+.admin-examen-card__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.admin-examen-card__acciones .btn-primario {
+  padding: 6px 14px;
+}
+
+/* ========================================================================
+   MARCA (owner)
+   ======================================================================== */
+
+.admin-marca__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+}
+
+.admin-marca__logo img {
+  width: 64px;
+  height: 64px;
+  border-radius: var(--radio-md);
+  object-fit: cover;
+  border: 1px solid var(--color-borde);
+}
+
+.admin-marca__logo img[hidden] {
+  display: none;
+}
+
+/* ========================================================================
+   MIEMBROS DEL GRUPO (modal)
+   ======================================================================== */
+
+.admin-miembro {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.admin-miembro:hover {
+  background: var(--color-fondo-alt);
+  border-color: var(--color-acento-soft);
+}
+
+.admin-miembro__avatar {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  flex-shrink: 0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--color-acento-soft);
+}
+
+.admin-miembro__foto {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.admin-miembro__inicial {
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--color-acento);
+}
+
+.admin-miembro__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
+.admin-miembro__nombre {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.admin-miembro__username {
+  font-size: var(--texto-xxs);
+  color: var(--color-texto-terciario);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* ========================================================================
+   RESPONSIVE del panel unificado
+   ======================================================================== */
+
+@media (max-width: 720px) {
+  .admin-vista-general__stats {
+    grid-template-columns: repeat(2, 1fr);
+  }
+  .admin-herramientas {
+    grid-template-columns: 1fr;
+  }
+  .admin-nivel__btn {
+    flex: 1 1 100%;
+  }
+  .admin-panel-cabecera {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--espaciado-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  .admin-vista-general__stats {
+    grid-template-columns: 1fr;
+  }
+  .admin-lista-cabecera__acciones {
+    width: 100%;
+  }
+  .admin-lista-cabecera__acciones .btn-primario,
+  .admin-lista-cabecera__acciones .btn-secundario {
+    flex: 1 1 auto;
+  }
+  .admin-filtro-pill {
+    flex: 1 1 100%;
+  }
+  .admin-ficha__acciones .btn-primario,
+  .admin-ficha__acciones .btn-secundario {
+    flex: 1 1 auto;
+  }
 }

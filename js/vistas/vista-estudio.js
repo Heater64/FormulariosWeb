@@ -55,7 +55,7 @@
               <h2>${window.Iconos.render('book-open')} Estudio Guiado</h2>
               <div class="estudio-cabecera__derecha">
                 <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button>
-                <span class="estudio-usuario">${usuario.nombre_completo}</span>
+                <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${usuario.foto_perfil}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
               </div>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
@@ -72,14 +72,14 @@
                 <h3>Antiguo Testamento</h3>
                 <span class="estudio-testamento__icono" id="iconAT">${window.Iconos.render('chevron-down')}</span>
               </div>
-              <div id="listaAT" class="o-grid-tarjetas"></div>
+              <div id="listaAT" class="o-pila"></div>
             </div>
             <div class="o-pila">
               <div class="estudio-testamento" id="toggleNT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaNT">
                 <h3>Nuevo Testamento</h3>
                 <span class="estudio-testamento__icono" id="iconNT">${window.Iconos.render('chevron-down')}</span>
               </div>
-              <div id="listaNT" class="o-grid-tarjetas"></div>
+              <div id="listaNT" class="o-pila"></div>
             </div>
           </div>`;
         if (siguienteLibro) {
@@ -93,10 +93,17 @@
         const renderLibro = (l) => {
           const leidos = completados.filter(p => p.capitulos?.libro_id === l.id).length;
           const pct = Math.round((leidos / l.num_capitulos) * 100);
-          return `<div class="tarjeta-libro${pct === 100 ? ' tarjeta-libro--completado' : ''}" data-libro="${l.id}" style="cursor:pointer" title="Estudiar ${l.nombre}: progreso ${pct}%">
-            <div class="tarjeta-libro__nombre">${l.nombre}</div>
-            <div class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos</div>
-            <div class="tarjeta-libro__barra${pct > 0 ? ' tarjeta-libro__barra--progreso' : ''}"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
+          const esCompletado = pct === 100;
+          const esVacio = pct === 0;
+          const iconoLibro = esCompletado ? window.Iconos.render('check-circle') : window.Iconos.render('book-open');
+          return `<div class="tarjeta-libro${esCompletado ? ' tarjeta-libro--completado' : ''}${esVacio ? ' tarjeta-libro--vacio' : ''}" data-libro="${l.id}" style="cursor:pointer" title="Estudiar ${l.nombre}: progreso ${pct}%" role="button" tabindex="0">
+            <span class="tarjeta-libro__icono">${iconoLibro}</span>
+            <div class="tarjeta-libro__info">
+              <span class="tarjeta-libro__nombre">${l.nombre}</span>
+              <span class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos</span>
+              <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
+            </div>
+            <span class="tarjeta-libro__flecha">${window.Iconos.render('chevron-right')}</span>
           </div>`;
         };
         raiz.querySelector('#listaAT').innerHTML = antiguos.map(renderLibro).join('');

@@ -309,10 +309,68 @@
     return resultado;
   }
 
+  /* ── Serialización de sesiones para DESAFÍOS ──
+     En un desafío todos los participantes deben recibir EXACTAMENTE la
+     misma sesión: mismas preguntas, mismo orden, mismas opciones y mismo
+     tiempo. Los ejercicios llevan funciones `verificar` (closures, no
+     serializables), así que se guardan solo los datos y al cargar se
+     re-engancha el verificador según el tipo. */
+  function serializarSesion(sesion) {
+    return (sesion || []).map(ej => {
+      const { verificar, ...datos } = ej;
+      return datos;
+    });
+  }
+
+  function hidratarSesion(lista) {
+    return (lista || []).map(ej => {
+      switch (ej.tipo) {
+        case 'completar':
+          ej.verificar = (vals) => (ej.respuestas || []).map((r, i) => limpiar(vals[i]) === limpiar(r));
+          break;
+        case 'ordenar':
+          ej.verificar = (orden) =>
+            JSON.stringify((orden || []).map(limpiar)) === JSON.stringify((ej.respuestaCorrecta || []).map(limpiar));
+          break;
+        case 'elegir_versiculo':
+          ej.verificar = (sel) => limpiar(sel) === limpiar(ej.respuestaCorrecta);
+          break;
+        case 'verdadero_falso':
+          ej.verificar = (sel) => (sel === 'Verdadero') === ej.esVerdadero;
+          break;
+        case 'relacionar': {
+          const pares = ej.pares || [];
+          ej.verificar = (aso) => pares.every(([i, d]) => {
+            const sel = aso[limpiar(i)];
+            return sel && limpiar(sel) === limpiar(d);
+          });
+          break;
+        }
+        case 'escrita':
+          ej.verificar = (val) => {
+            const v = limpiar(val);
+            const r = limpiar(ej.respuestaCorrecta || '');
+            if (!v) return false;
+            if (v === r) return true;
+            const palabrasR = tokenizar(r).length;
+            if (palabrasR >= 4) {
+              const coincide = tokenizar(v).filter(w => r.includes(w)).length;
+              return coincide / palabrasR >= 0.6;
+            }
+            return false;
+          };
+          break;
+      }
+      return ej;
+    });
+  }
+
   window.ejerciciosMemorizacion = {
     limpiar,
     generarEjercicio,
     construirSesion,
-    tiposAplicables
+    tiposAplicables,
+    serializarSesion,
+    hidratarSesion
   };
 })();

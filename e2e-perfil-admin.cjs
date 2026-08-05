@@ -104,22 +104,26 @@ const esperarSelector = async (page, selector, timeoutMs = 15000) => {
     const verMiembros = await page.locator('.admin-grupo-card__ver').count();
     log(verMiembros === grupoCards, `P5 Grupos: enlace "Ver miembros" en cada card (${verMiembros}/${grupoCards})`);
 
-    // ---- P6: Login owner + panel owner standalone ----
+    // ---- P6: Login owner + panel unificado (switch de nivel visible) ----
     await login(OWNER_U, OWNER_C);
     log(true, 'P6 Login owner');
-    await page.goto(BASE + '/paginas/admin/panel-owner.html', { waitUntil: 'domcontentloaded' });
+    await page.goto(BASE + '/paginas/admin/panel-admin.html', { waitUntil: 'domcontentloaded' });
     // Esperar a que el panel monte en vez de un sleep fijo (el arranque puede
     // tardar >2.5s con la máquina cargada). El panel renderiza sus tarjetas
     // de forma asíncrona tras las consultas a Supabase.
-    await esperarSelector(page, '#ownerContenido .tarjeta-estadistica', 20000);
-    const statsOwner = await page.locator('#ownerContenido .tarjeta-estadistica').count();
+    await esperarSelector(page, '#adminContenido .tarjeta-estadistica', 20000);
+    const statsOwner = await page.locator('#adminContenido .tarjeta-estadistica').count();
     log(statsOwner >= 4, `P6 Dashboard owner: ${statsOwner} tarjetas de estadística con iconos`);
-    const tabsOwner = await page.locator('.admin-tab').count();
-    log(tabsOwner >= 6, `P6 Panel owner: ${tabsOwner} pestañas`);
+    const nivelSwitch = await page.locator('.admin-nivel__btn[data-nivel="owner"]').count();
+    log(nivelSwitch === 1, 'P6 Switch de nivel Owner visible para el propietario');
+    const tabsAdminUnif = await page.locator('.admin-tab').count();
+    log(tabsAdminUnif >= 4, `P6 Panel unificado: ${tabsAdminUnif} pestañas del nivel Admin`);
 
-    // ---- P7: Owner — pestaña sugerencias con resumen coloreado ----
-    await page.click('.admin-tab[data-tab="sugerencias"]');
-    await esperar(800);
+    // ---- P7: Owner — cambiar a nivel Owner y ver sugerencias ----
+    await page.click('.admin-nivel__btn[data-nivel="owner"]');
+    await esperar(900);
+    const tabsOwner = await page.locator('.admin-tab').count();
+    log(tabsOwner >= 4, `P7 Nivel Owner: ${tabsOwner} pestañas (Sugerencias, Auditoría, Admins, Marca, Sistema)`);
     const resumenColores = await page.locator('.owner-sug-resumen__card--enviada, .owner-sug-resumen__card--en_revision, .owner-sug-resumen__card--aceptada, .owner-sug-resumen__card--implementada, .owner-sug-resumen__card--rechazada').count();
     log(resumenColores >= 1, `P7 Sugerencias: resumen coloreado por estado (${resumenColores} cards)`);
 
@@ -129,6 +133,24 @@ const esperarSelector = async (page, selector, timeoutMs = 15000) => {
     const auditItems = await page.locator('.owner-auditoria-item').count();
     const auditIconos = await page.locator('.owner-auditoria-item__icono').count();
     log(auditIconos === auditItems, `P8 Auditoría: icono por item (${auditIconos}/${auditItems})`);
+
+    // ---- P9: Owner — pestaña Administradores (fichas) ----
+    await page.click('.admin-tab[data-tab="admins"]');
+    await esperarSelector(page, '.admin-ficha', 15000);
+    const fichasAdmin = await page.locator('.admin-ficha').count();
+    log(fichasAdmin >= 1, `P9 Admins: ${fichasAdmin} fichas de administrador`);
+
+    // ---- P10: Owner — pestaña Marca (formulario) ----
+    await page.click('.admin-tab[data-tab="marca"]');
+    await esperarSelector(page, '#marcaNombre', 15000);
+    const marcaInput = await page.locator('#marcaNombre').count();
+    log(marcaInput === 1, 'P10 Marca: formulario de marca visible');
+
+    // ---- P11: Owner — pestaña Sistema (herramientas + backups) ----
+    await page.click('.admin-tab[data-tab="sistema"]');
+    await esperarSelector(page, '.owner-tool', 15000);
+    const herramientasSistema = await page.locator('.owner-tool').count();
+    log(herramientasSistema >= 2, `P11 Sistema: ${herramientasSistema} herramientas de sistema`);
 
     // ---- Resumen ----
     // Los 404 de la API de Supabase provienen de tablas aún no migradas en producción

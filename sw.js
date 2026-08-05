@@ -118,7 +118,6 @@ const urlsToCache = [
   './js/vistas/vista-explorar.js',
   './js/vistas/vista-perfil.js',
   './js/vistas/admin/vista-panel-admin.js',
-  './js/vistas/admin/vista-owner.js',
   './js/core/index.js'
 ];
 
