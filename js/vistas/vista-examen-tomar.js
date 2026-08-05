@@ -417,6 +417,8 @@
     },
 
     _renderResultados(raiz, examen, preguntas, intento, usuario) {
+      const I = window.Iconos.render;
+      const E = window.helpers.escapeHtml;
       const usuarioEsProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
       if (!usuarioEsProfesor && intento.corregido) {
         try {
@@ -436,8 +438,6 @@
       const correccionMap = (intento.correccion && typeof intento.correccion === 'string') ? JSON.parse(intento.correccion) : (intento.correccion || {});
       const config = this._configDe(examen);
       const visibilidad = config.resultados_visibles || 'al_publicar';
-      // El profesor siempre ve los resultados. El alumno SOLO cuando el profesor
-      // ha publicado la corrección (intento corregido por un profesor).
       const publicadoPorProfesor = intento.corregido && !!intento.corregido_por;
       const puedeVerResultados = usuarioEsProfesor || (publicadoPorProfesor && visibilidad !== 'nunca');
       const correccionVisible = puedeVerResultados;
@@ -445,28 +445,105 @@
       if (window.haptica && correccionVisible && calculo.aciertos < preguntas.length) {
         window.haptica.fallo();
       }
-      // La nota/aciertos solo se muestran si la corrección es visible (profesor la ha publicado)
-      const nota = correccionVisible
-        ? (intento.corregido && intento.nota != null
-          ? `<p class="u-fw-700" style="font-size:1.25rem;color:${intento.nota >= 7 ? 'var(--color-exito)' : 'var(--color-error)'}">Nota: ${intento.nota}/10</p>`
-          : `<p class="u-fw-600">Aciertos: ${calculo.aciertos}/${preguntas.length} (${calculo.porcentaje}%)</p>`)
-        : '';
-      const estadoTexto = intento.corregido ? 'Corregido' : 'Pendiente de corrección';
+
+      // ── Calcular métricas ──
+      const notaFinal = intento.corregido && intento.nota != null ? parseFloat(intento.nota) : calculo.nota;
+      const aciertos = calculo.aciertos;
+      const fallos = preguntas.length - aciertos;
+      const pct = calculo.porcentaje;
+      const corregido = intento.corregido && !!intento.corregido_por;
+      const estadoTexto = corregido ? 'Corregido' : 'Pendiente de corrección';
+      const estadoBadgeClase = corregido ? 'resultado-badge--corregido' : 'resultado-badge--pendiente';
+
+      // ── Color de nota ──
+      const notaColor = notaFinal >= 9 ? 'var(--color-exito)' : notaFinal >= 7 ? 'var(--color-acento)' : notaFinal >= 5 ? 'var(--color-aviso)' : 'var(--color-error)';
+      const notaBg = notaFinal >= 9 ? 'var(--color-exito-soft)' : notaFinal >= 7 ? 'var(--color-acento-soft)' : notaFinal >= 5 ? 'var(--color-aviso-soft)' : 'var(--color-error-soft)';
+
+      // ── Tiempo ──
+      let tiempoStr = '';
+      if (intento.fecha_inicio && intento.fecha_completado) {
+        const difMin = Math.round((new Date(intento.fecha_completado) - new Date(intento.fecha_inicio)) / 60000);
+        tiempoStr = difMin < 1 ? '<1 min' : difMin + ' min';
+      }
+
+      // ── Hero score circle (SVG donut) ──
+      const radio = 58;
+      const circ = 2 * Math.PI * radio;
+      const dashOffset = circ - (pct / 100) * circ;
+      const scoreDonut = `
+        <div class="resultado-hero">
+          <div class="resultado-hero__score">
+            <svg viewBox="0 0 140 140" class="resultado-hero__donut">
+              <circle cx="70" cy="70" r="${radio}" fill="none" stroke="var(--color-fondo-alt)" stroke-width="10"/>
+              <circle cx="70" cy="70" r="${radio}" fill="none" stroke="${notaColor}" stroke-width="10"
+                stroke-dasharray="${circ}" stroke-dashoffset="${dashOffset}"
+                stroke-linecap="round" transform="rotate(-90 70 70)"/>
+            </svg>
+            <div class="resultado-hero__nota" style="color:${notaColor}">${correccionVisible ? notaFinal.toFixed(1) : '—'}</div>
+            <div class="resultado-hero__sobre">/10</div>
+          </div>
+          <div class="resultado-hero__info">
+            <h2 class="resultado-hero__titulo">${E(examen.titulo)}</h2>
+            <span class="resultado-badge ${estadoBadgeClase}">${I(corregido ? 'check-circle' : 'clock')} ${estadoTexto}</span>
+            ${examen.descripcion ? `<p class="resultado-hero__desc">${E(examen.descripcion)}</p>` : ''}
+          </div>
+        </div>`;
+
+      // ── Stats row ──
+      const statsRow = correccionVisible ? `
+        <div class="resultado-stats">
+          <div class="resultado-stat resultado-stat--ok">
+            <span class="resultado-stat__icono">${I('check')}</span>
+            <span class="resultado-stat__valor">${aciertos}</span>
+            <span class="resultado-stat__label">Correctas</span>
+          </div>
+          <div class="resultado-stat resultado-stat--error">
+            <span class="resultado-stat__icono">${I('x')}</span>
+            <span class="resultado-stat__valor">${fallos}</span>
+            <span class="resultado-stat__label">Incorrectas</span>
+          </div>
+          <div class="resultado-stat resultado-stat--neutral">
+            <span class="resultado-stat__icono">${I('target')}</span>
+            <span class="resultado-stat__valor">${pct}%</span>
+            <span class="resultado-stat__label">Precisión</span>
+          </div>
+          ${tiempoStr ? `<div class="resultado-stat resultado-stat--info">
+            <span class="resultado-stat__icono">${I('clock')}</span>
+            <span class="resultado-stat__valor">${tiempoStr}</span>
+            <span class="resultado-stat__label">Tiempo</span>
+          </div>` : ''}
+        </div>` : '';
+
+      // ── Observaciones del profesor ──
+      const obsHtml = intento.observaciones ? `
+        <div class="resultado-obs">
+          <div class="resultado-obs__cabecera">
+            <span class="resultado-obs__icono">${I('message-square')}</span>
+            <span class="resultado-obs__titulo">Comentarios del profesor</span>
+          </div>
+          <p class="resultado-obs__texto">${E(intento.observaciones)}</p>
+        </div>` : '';
+
+      // ── Construir HTML principal ──
       raiz.innerHTML = `
         <div class="examen-page o-contenedor o-pila o-pila--lg anim-exito">
-          <div class="o-flecha o-flecha--between">
-            <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
-            <span class="u-fs-xs u-color-texto-terciario">${estadoTexto}</span>
+          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
+            <button class="btn-secundario" id="btnVolver">${I('arrow-left')} Volver a exámenes</button>
           </div>
-          <div class="tarjeta-capitulo tarjeta-capitulo--completado">
-            <div class="o-flecha o-flecha--between"><span class="u-fw-600">${window.helpers.escapeHtml(examen.titulo)}</span><span class="u-fs-xs u-color-texto-secundario">Resultados</span></div>
-            ${nota}
-            ${intento.observaciones ? `<div class="u-mt-2 u-p-2" style="background:var(--color-acento-soft);border-radius:var(--radio-sm)"><p class="u-fs-xs u-color-texto-secundario">Observación del profesor:</p><p class="u-fs-sm">${window.helpers.escapeHtml(intento.observaciones)}</p></div>` : ''}
-          </div>
-          ${correccionVisible ? `<div class="o-pila" id="desgloseResultados"></div>` : `<p class="u-color-texto-terciario u-fs-sm">${visibilidad === 'nunca' ? 'Este examen no muestra las respuestas a los alumnos.' : 'Los resultados estarán disponibles cuando el profesor los publique.'}</p>`}
+          ${scoreDonut}
+          ${statsRow}
+          ${obsHtml}
+          ${correccionVisible ? `<div class="resultado-preguntas" id="desgloseResultados"></div>` : `<div class="resultado-espera">
+            <span class="resultado-espera__icono">${I('clock')}</span>
+            <p class="resultado-espera__titulo">${visibilidad === 'nunca' ? 'Este examen no muestra las respuestas a los alumnos.' : 'Resultados pendientes de publicación'}</p>
+            <p class="resultado-espera__texto">${visibilidad === 'nunca' ? 'El profesor ha configurado este examen sin visualización de resultados.' : 'Los resultados estarán disponibles cuando el profesor los publique.'}</p>
+          </div>`}
         </div>`;
+
       raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
-      if (!correccionVisible) return;
+      if (!correccionVisible) { window.Iconos.actualizar(); return; }
+
+      // ── Desglose por pregunta ──
       const cont = raiz.querySelector('#desgloseResultados');
       cont.innerHTML = preguntas.map((p, i) => {
         const rUser = respuestas[p.id] !== undefined ? respuestas[p.id] : '(sin respuesta)';
@@ -477,35 +554,64 @@
         } else {
           esCorrecta = window.puntuacionExamen.esCorrectaPregunta(respuestas[p.id], p);
         }
-        const mostrarCheck = p.tipo !== 'texto_largo' ? (esCorrecta ? window.Iconos.render('check') : window.Iconos.render('x')) : '';
+        const estadoClase = esCorrecta ? 'resultado-pregunta--ok' : 'resultado-pregunta--ko';
+        const iconoEstado = p.tipo !== 'texto_largo' ? (esCorrecta ? I('check') : I('x')) : '';
+
         let respuestaUsuarioHtml;
         if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
           respuestaUsuarioHtml = this._renderResultadoCompletar(p, respuestas[p.id]);
         } else if (['multiple', 'verdadero_falso', 'varias_opciones', 'opcion_unica', 'relacionar', 'ordenar'].includes(p.tipo)) {
           respuestaUsuarioHtml = this._textoOpcion(p, rUser);
         } else {
-          respuestaUsuarioHtml = window.helpers.escapeHtml(String(rUser));
+          respuestaUsuarioHtml = E(String(rUser));
         }
+
         let correctaHtml = '';
         if (!esCorrecta) {
           if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
             correctaHtml = this._renderRespuestaCorrectaCompletar(p);
           } else {
-            correctaHtml = window.helpers.escapeHtml(this._textoOpcion(p, p.respuesta_correcta));
+            correctaHtml = E(this._textoOpcion(p, p.respuesta_correcta));
           }
         }
+
         const pts = corr && corr.puntos != null ? corr.puntos : (esCorrecta ? window.puntuacionExamen.puntosPregunta(p) : 0);
         const ptsTotal = window.puntuacionExamen.puntosPregunta(p);
-        return `<div class="pregunta-examen examen-resultado examen-resultado--${esCorrecta ? 'correcta' : 'incorrecta'}">
-          <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
-          <div class="u-fs-sm u-mt-1">Tu respuesta: <strong>${respuestaUsuarioHtml}</strong> ${mostrarCheck}</div>
-          ${!esCorrecta ? `<div class="u-fs-sm u-color-texto-secundario u-mt-1">Correcta: ${correctaHtml}</div>` : ''}
-          ${p.explicacion ? `<div class="u-fs-xs u-color-texto-terciario u-mt-1" style="padding:var(--espaciado-xs);background:var(--color-fondo-alt);border-radius:var(--radio-sm)">${window.helpers.escapeHtml(p.explicacion)}</div>` : ''}
-          ${corr && corr.comentario ? `<div class="u-fs-xs u-color-acento u-mt-1">${window.Iconos.render('message-square')} Profesor: ${window.helpers.escapeHtml(corr.comentario)}</div>` : ''}
-          <p class="u-fs-xs u-color-texto-terciario u-mt-1">${pts}/${ptsTotal} puntos</p>
+
+        return `<div class="resultado-pregunta ${estadoClase}">
+          <div class="resultado-pregunta__cabecera">
+            <span class="resultado-pregunta__numero ${esCorrecta ? 'resultado-pregunta__numero--ok' : 'resultado-pregunta__numero--ko'}">${i + 1}</span>
+            <span class="resultado-pregunta__titulo">${textoPreguntaVisible(p)}</span>
+            <span class="resultado-pregunta__icono ${esCorrecta ? 'resultado-pregunta__icono--ok' : 'resultado-pregunta__icono--ko'}">${iconoEstado}</span>
+          </div>
+          <div class="resultado-pregunta__cuerpo">
+            <div class="resultado-pregunta__fila">
+              <span class="resultado-pregunta__etiqueta">Tu respuesta:</span>
+              <span class="resultado-pregunta__valor">${respuestaUsuarioHtml || '<em class="u-color-texto-terciario">Sin respuesta</em>'}</span>
+            </div>
+            ${!esCorrecta && correctaHtml ? `<div class="resultado-pregunta__fila">
+              <span class="resultado-pregunta__etiqueta">Respuesta correcta:</span>
+              <span class="resultado-pregunta__valor resultado-pregunta__valor--correcta">${correctaHtml}</span>
+            </div>` : ''}
+            ${p.explicacion ? `<div class="resultado-pregunta__expl">${I('info')} ${E(p.explicacion)}</div>` : ''}
+            ${corr && corr.comentario ? `<div class="resultado-pregunta__comentario">${I('message-square')} <em>${E(corr.comentario)}</em></div>` : ''}
+          </div>
+          <div class="resultado-pregunta__pie">
+            <span class="resultado-pregunta__puntos">${pts}/${ptsTotal} pts</span>
+            ${p.tipo !== 'texto_largo' ? `<span class="resultado-pregunta__tipo">${I('tag')} ${this._tipoLegible(p.tipo)}</span>` : ''}
+          </div>
         </div>`;
       }).join('');
       window.Iconos.actualizar();
+    },
+
+    _tipoLegible(tipo) {
+      const map = {
+        multiple: 'Opción múltiple', opcion_unica: 'Única', verdadero_falso: 'V/F',
+        respuesta_corta: 'Resp. corta', texto_largo: 'Desarrollo',
+        completar: 'Completar', varias_opciones: 'Varias', relacionar: 'Relacionar', ordenar: 'Ordenar'
+      };
+      return map[tipo] || tipo;
     },
 
     _renderResultadoCompletar(pregunta, respuesta) {
