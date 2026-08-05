@@ -368,11 +368,11 @@ INSERT INTO storage.buckets (id, name, public, file_size_limit, allowed_mime_typ
 VALUES ('avatars', 'avatars', true, 2097152, ARRAY['image/jpeg', 'image/png', 'image/webp', 'image/gif'])
 ON CONFLICT (id) DO NOTHING;
 
--- Cualquier usuario autenticado puede subir su foto
+-- Cualquier usuario puede subir su foto (app usa auth personalizada, no Supabase Auth)
 DROP POLICY IF EXISTS "avatars_insert_autenticado" ON storage.objects;
 CREATE POLICY "avatars_insert_autenticado"
 ON storage.objects FOR INSERT
-WITH CHECK (bucket_id = 'avatars' AND auth.role() = 'authenticated');
+WITH CHECK (bucket_id = 'avatars');
 
 -- El propietario puede actualizar/borrar su propia foto
 DROP POLICY IF EXISTS "avatars_update_propio" ON storage.objects;
