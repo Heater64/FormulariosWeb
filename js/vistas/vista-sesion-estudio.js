@@ -429,11 +429,44 @@
       else raiz.querySelector('#btnLibro').onclick = () => router.navegar(`/estudio/libro/${e.libroId}`);
       window.Iconos.actualizar();
 
+      // Notificación nativa al completar capítulo
+      if (window.notifications) {
+        window.notifications.notificarCapituloCompletado(e.libro.nombre, e.capituloNum);
+      }
+
+      // Racha, celebración y logros (una sola query a progreso_lectura)
       try {
-        const { data: todoProg } = await window.supabaseClient
-          .from('progreso_lectura').select('fecha_lectura').eq('usuario_id', usuario.id);
-        const nuevaRacha = window.progresoLectura.calcularRacha(todoProg || []);
+        const [progRes, capsCountRes] = await Promise.all([
+          window.supabaseClient.from('progreso_lectura').select('fecha_lectura, capitulos(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
+          window.supabaseClient.from('progreso_lectura').select('*', { count: 'exact', head: true }).eq('usuario_id', usuario.id).eq('completado', true)
+        ]);
+
+        const todoProg = progRes.data || [];
+        const capitulosLeidos = capsCountRes.count || 0;
+
+        // Libros con al menos un capítulo completado (aproximación)
+        const librosUnicos = new Set();
+        todoProg.forEach(r => { if (r.capitulos?.libro_id) librosUnicos.add(r.capitulos.libro_id); });
+
+        const nuevaRacha = window.progresoLectura.calcularRacha(todoProg);
         const anteriorRacha = parseInt(localStorage.getItem('fb_racha') || '0', 10);
+
+        // Verificar y otorgar logros
+        if (window.logrosDominio) {
+          const progreso = {
+            capitulosLeidos,
+            librosCompletados: librosUnicos.size,
+            racha: Math.max(nuevaRacha, anteriorRacha),
+            examenesCompletados: 0,
+            examenPerfecto: false,
+            tarjetasCreadas: 0,
+            totalRepasos: 0,
+            ntCompleto: false,
+            atCompleto: false
+          };
+          await window.logrosDominio.verificarYOtorgar(usuario.id, progreso).catch(() => {});
+        }
+
         if (nuevaRacha > anteriorRacha) {
           localStorage.setItem('fb_racha', String(nuevaRacha));
           if (!haySiguiente) this._celebrar('trophy', '¡Libro completado!');

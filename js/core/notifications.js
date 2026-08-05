@@ -10,18 +10,27 @@ class NotificationManager {
   }
   
   async _init() {
-    // Solicitar permiso después de un tiempo
-    if (Notification.permission === 'default') {
-      setTimeout(async () => {
-        try {
-          const result = await Notification.requestPermission();
-          this._permission = result;
-        } catch (e) {
-          console.warn('[Notifications] Error al solicitar permiso:', e);
-        }
-      }, 5000);
-    } else {
+    if (Notification.permission !== 'default') {
       this._permission = Notification.permission;
+      return;
+    }
+    // Solicitar permiso tras un tiempo prudencial (app ya cargada)
+    setTimeout(() => this._solicitarPermisoSilencioso(), 8000);
+    // También solicitar tras la primera interacción del usuario
+    const pedirEnClick = () => {
+      this._solicitarPermisoSilencioso();
+      document.removeEventListener('click', pedirEnClick);
+    };
+    document.addEventListener('click', pedirEnClick, { once: true });
+  }
+
+  async _solicitarPermisoSilencioso() {
+    if (this._permission !== 'default') return;
+    try {
+      const result = await Notification.requestPermission();
+      this._permission = result;
+    } catch (e) {
+      console.warn('[Notifications] Error al solicitar permiso:', e);
     }
   }
   
@@ -230,6 +239,27 @@ class NotificationManager {
       body: `Versión ${version} ya está disponible. Actualiza para disfrutar de las mejoras.`,
       tag: 'update',
       requireInteraction: true
+    });
+  }
+
+  async notificarDesafio(creador, mazo, desafioId) {
+    if (!this._habilitada('notif_desafios', ['notif_logros'])) return;
+    this._vibrarSiSonido();
+    return this.show('¡Te han desafiado!', {
+      body: `${creador} te ha desafiado al mazo «${mazo}».`,
+      tag: `desafio-${desafioId}`,
+      data: { url: `/desafio/${desafioId}` },
+      requireInteraction: true
+    });
+  }
+
+  async notificarCapituloCompletado(libro, capitulo) {
+    if (!this._habilitada('notif_estudio', ['notif_recordatorios'])) return;
+    this._vibrarSiSonido();
+    return this.show('¡Capítulo completado!', {
+      body: `Has completado el estudio de ${libro} ${capitulo}.`,
+      tag: `capitulo-${libro}-${capitulo}`,
+      data: { url: '/estudio' }
     });
   }
 }

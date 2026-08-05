@@ -347,6 +347,18 @@
         if (nuevo) {
           this._desafioNotifsVistas.add(nuevo.id);
           this._mostrarBannerDesafio(nuevo, usuario);
+          // Notificación nativa del dispositivo
+          if (window.notifications) {
+            const datos = nuevo.datos || {};
+            const creador = (nuevo.titulo || '').includes('te ha desafiado')
+              ? nuevo.titulo.replace(' te ha desafiado', '')
+              : (nuevo.titulo || 'Alguien');
+            window.notifications.notificarDesafio(
+              creador,
+              datos.mazo_nombre || 'Memorización',
+              datos.desafio_id
+            );
+          }
         }
       } catch (e) {}
     },
