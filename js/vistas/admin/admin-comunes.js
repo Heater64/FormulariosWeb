@@ -116,11 +116,15 @@
       return `<span class="admin-tabla-badge ${clase}">${E(texto)}</span>`;
     },
 
-    // Badge de estado de usuario
-    estadoUsuario(activo) {
-      return activo === false
-        ? '<span class="admin-tabla-badge admin-tabla-badge--inactivo">Inactivo</span>'
-        : '<span class="admin-tabla-badge admin-tabla-badge--activo">Activo</span>';
+    // Badge de estado de usuario (online/offline/bloqueado según ultimo_acceso real)
+    estadoUsuario(activo, ultimoAcceso) {
+      if (activo === false) {
+        return '<span class="admin-tabla-badge admin-tabla-badge--inactivo">Bloqueado</span>';
+      }
+      const online = ultimoAcceso && (Date.now() - new Date(ultimoAcceso).getTime()) < 300000;
+      return online
+        ? '<span class="admin-tabla-badge admin-tabla-badge--online">En línea</span>'
+        : '<span class="admin-tabla-badge admin-tabla-badge--offline">Desconectado</span>';
     },
 
     // Modal genérico reutilizable (nuevo diseño)

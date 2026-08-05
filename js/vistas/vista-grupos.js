@@ -308,6 +308,7 @@
 
     _fichaMiembro(m, usuario) {
       const esYo = m.id === usuario.id;
+      const online = m.ultimo_acceso && (Date.now() - new Date(m.ultimo_acceso).getTime()) < 300000;
       return `
         <div class="grupos-miembro" data-miembro="${m.id}" role="button" tabindex="0" aria-label="Ver perfil de ${E(m.nombre_completo || m.username)}">
           <div class="grupos-miembro__avatar">${avatarHtml(m)}</div>
@@ -315,6 +316,7 @@
             <p class="grupos-miembro__nombre">${E(m.nombre_completo || m.username)}${esYo ? ' <span class="grupos-miembro__tu">(tú)</span>' : ''}</p>
             <p class="grupos-miembro__username">@${E(m.username)}</p>
           </div>
+          ${online ? `<span class="grupos-miembro__online" title="En línea"></span>` : ''}
           <label class="grupos-miembro__check" aria-label="Seleccionar a ${E(m.nombre_completo || m.username)}">
             <input type="checkbox" data-id="${m.id}" ${esYo ? 'disabled' : ''}>
           </label>

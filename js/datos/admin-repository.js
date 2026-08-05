@@ -2,6 +2,11 @@
   'use strict';
   const sb = () => window.supabaseClient;
   window.adminRepository = {
+    // Actualiza ultimo_acceso del usuario actual (heartbeat)
+    async actualizarUltimoAcceso(usuarioId) {
+      if (!sb() || !usuarioId) return;
+      await sb().from('perfiles').update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuarioId).catch(() => {});
+    },
     async listarUsuarios() {
       if (!sb()) return [];
       const { data } = await sb().from('perfiles').select('*').order('creado_en', { ascending: false });

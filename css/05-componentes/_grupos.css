@@ -289,6 +289,15 @@
   color: var(--color-texto-terciario);
 }
 
+.grupos-miembro__online {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #22C55E;
+  box-shadow: 0 0 0 2px var(--color-exito-soft);
+  flex-shrink: 0;
+}
+
 .grupos-miembro__badge {
   flex-shrink: 0;
   font-size: var(--texto-xxs);

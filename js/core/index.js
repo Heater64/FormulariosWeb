@@ -36,6 +36,9 @@
       // Poller de invitaciones a desafíos (banner global donde sea que estés)
       this._iniciarPollInvitaciones();
 
+      // Heartbeat: actualizar ultimo_acceso periódicamente
+      this._iniciarHeartbeat();
+
       // ============================================================
       // Eventos de autenticación
       // ============================================================
@@ -324,6 +327,18 @@
       document.body.appendChild(t);
       localStorage.setItem('fb_toast_repaso', new Date().toISOString().slice(0, 10));
       setTimeout(() => { if (t) t.remove(); }, 9000);
+    },
+
+    /* ═══ Heartbeat: actualiza ultimo_acceso cada 3 min ═══ */
+    _iniciarHeartbeat() {
+      const tick = () => {
+        const usuario = store.obtener('usuario');
+        if (usuario && usuario.id && window.adminRepository) {
+          window.adminRepository.actualizarUltimoAcceso(usuario.id);
+        }
+      };
+      // Primer tick a los 30s, luego cada 3 min
+      setTimeout(() => { tick(); setInterval(tick, 180000); }, 30000);
     },
 
     /* ═══ Invitaciones a desafíos: banner global ═══ */

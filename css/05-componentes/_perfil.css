@@ -966,6 +966,8 @@
 
 .admin-tabla-badge--activo   { background: var(--color-exito-soft);  color: var(--color-exito); }
 .admin-tabla-badge--inactivo { background: var(--color-error-soft);  color: var(--color-error); }
+.admin-tabla-badge--online   { background: #D1FAE5;  color: #059669; }
+.admin-tabla-badge--offline  { background: var(--color-fondo-alt);  color: var(--color-texto-terciario); }
 .admin-tabla-badge--publicado { background: var(--color-exito-soft); color: var(--color-exito); }
 .admin-tabla-badge--borrador  { background: var(--color-fondo-alt);   color: var(--color-texto-terciario); }
 .admin-tabla-badge--archivado { background: var(--color-aviso-soft);  color: var(--color-aviso); }

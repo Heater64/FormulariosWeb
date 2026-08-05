@@ -236,6 +236,7 @@
 
       const activos = usuarios.filter(u => u.activo !== false).length;
       const bloqueados = usuarios.filter(u => u.activo === false).length;
+      const online = usuarios.filter(u => u.activo !== false && u.ultimo_acceso && (Date.now() - new Date(u.ultimo_acceso).getTime()) < 300000).length;
       const alumnos = porRol.usuario || 0;
       const profesores = porRol.editor || 0;
       const publicados = examenes.filter(e => e.estado === 'publicado').length;
@@ -291,6 +292,7 @@
         <div class="admin-vista-general">
           <div class="admin-vista-general__stats">
             ${stat('user-check', activos, 'Usuarios activos', 'admin-stat--ok')}
+            ${stat('wifi', online, 'En línea ahora', 'admin-stat--ok')}
             ${stat('user-x', bloqueados, 'Bloqueados', 'admin-stat--error')}
             ${stat('layout', grupos.length, 'Grupos')}
             ${stat('check-circle', publicados, 'Exámenes publicados', 'admin-stat--ok')}
@@ -468,6 +470,13 @@
       const sel = this._seleccion.has(u.id);
       const grupoNombre = u.grupo_id ? (this._datos.grupos.find(g => g.id === u.grupo_id)?.nombre || '') : '';
       const ultima = u.ultimo_acceso || u.creado_en;
+      // ¿En línea? ultimo_acceso en los últimos 5 minutos
+      const online = u.ultimo_acceso && (Date.now() - new Date(u.ultimo_acceso).getTime()) < 300000;
+      const estadoHtml = !activo
+        ? '<span class="admin-tabla-badge admin-tabla-badge--inactivo">Bloqueado</span>'
+        : online
+          ? '<span class="admin-tabla-badge admin-tabla-badge--online">En línea</span>'
+          : '<span class="admin-tabla-badge admin-tabla-badge--offline">Desconectado</span>';
       return `
         <article class="admin-ficha${!activo ? ' admin-ficha--inactiva' : ''}" data-id="${u.id}" data-nombre="${E(u.nombre_completo)}" data-username="${E(u.username)}" data-rol="${u.rol}">
           <div class="admin-ficha__cabecera">
@@ -479,7 +488,7 @@
               <p class="admin-ficha__nombre">${E(u.nombre_completo)}</p>
               <p class="admin-ficha__username">@${E(u.username)} · ${rolBonito(u.rol)}</p>
             </div>
-            ${activo ? '<span class="admin-tabla-badge admin-tabla-badge--activo">Activo</span>' : '<span class="admin-tabla-badge admin-tabla-badge--inactivo">Bloqueado</span>'}
+            ${estadoHtml}
             <div class="admin-ficha__menu">
               <button class="btn-icono btn-ficha-menu" data-menu="${u.id}" aria-label="Más opciones de ${E(u.nombre_completo)}" aria-expanded="false">${I('more-horizontal')}</button>
               <div class="admin-ficha__menu-pop" data-menupop="${u.id}" hidden>
@@ -491,7 +500,7 @@
           </div>
           <div class="admin-ficha__fila">
             <span class="admin-ficha__fila-item">${I('layout')} ${E(grupoNombre || 'Sin grupo')}</span>
-            <span class="admin-ficha__fila-item">${I('clock')} Última actividad: ${TR(ultima)}</span>
+            <span class="admin-ficha__fila-item">${I('clock')} Últ. conexión: ${TR(ultima)}</span>
           </div>
           <div class="admin-ficha__acciones">
             ${puedeEditar ? `<button class="btn-primario u-fs-xs btn-editar-usuario" data-id="${u.id}">${I('edit-3')} Editar</button>` : ''}

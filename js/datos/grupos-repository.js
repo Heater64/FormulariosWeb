@@ -28,7 +28,7 @@
             .select('*, perfiles!admin_id(nombre_completo, username)')
             .eq('id', usuario.grupo_id).limit(1),
           sb().from('perfiles')
-            .select('id, nombre_completo, username, rol, foto_perfil, creado_en')
+            .select('id, nombre_completo, username, rol, foto_perfil, creado_en, ultimo_acceso')
             .eq('grupo_id', usuario.grupo_id)
             .order('nombre_completo'),
           sb().from('miembros_grupo')
@@ -165,7 +165,7 @@
       try {
         const [porGrupoId, rolesRes] = await Promise.all([
           sb().from('perfiles')
-            .select('id, nombre_completo, username, rol, foto_perfil, creado_en')
+            .select('id, nombre_completo, username, rol, foto_perfil, creado_en, ultimo_acceso')
             .eq('grupo_id', grupoId),
           sb().from('miembros_grupo')
             .select('usuario_id, rol_en_grupo')
@@ -178,7 +178,7 @@
         let porMembresia = [];
         if (idsMiembros.length) {
           const r2 = await sb().from('perfiles')
-            .select('id, nombre_completo, username, rol, foto_perfil, creado_en')
+            .select('id, nombre_completo, username, rol, foto_perfil, creado_en, ultimo_acceso')
             .in('id', idsMiembros);
           if (!r2.error) porMembresia = r2.data || [];
         }
