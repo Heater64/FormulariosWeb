@@ -151,7 +151,9 @@
             </div>
           </div>`;
         document.body.appendChild(overlay);
-        const cerrar = (valor) => { document.removeEventListener('keydown', onKey); overlay.remove(); resolve(valor); };
+        let desregistrar = () => {};
+        const cerrar = (valor) => { document.removeEventListener('keydown', onKey); desregistrar(); overlay.remove(); resolve(valor); };
+        desregistrar = window.backNav ? window.backNav.registrar(() => cerrar(false)) : () => {};
         const onKey = (e) => {
           if (e.key === 'Escape') { e.preventDefault(); cerrar(false); return; }
           if (e.key === 'Tab') {
@@ -184,7 +186,9 @@
         </div>`;
       document.body.appendChild(overlay);
       if (window.Iconos && window.Iconos.actualizar) window.Iconos.actualizar();
-      const cerrar = () => overlay.remove();
+      let desregistrar = () => {};
+      const cerrar = () => { desregistrar(); overlay.remove(); };
+      desregistrar = window.backNav ? window.backNav.registrar(cerrar) : () => {};
       overlay.addEventListener('click', e => { if (e.target === overlay) cerrar(); });
       overlay.querySelector('[data-cerrar-guia]').onclick = cerrar;
     },
@@ -233,7 +237,9 @@
           </div>`;
         document.body.appendChild(overlay);
         window.Iconos && window.Iconos.actualizar && window.Iconos.actualizar();
-        const cerrar = (val) => { document.removeEventListener('keydown', onKey); overlay.remove(); resolve(val); };
+        let desregistrar = () => {};
+        const cerrar = (val) => { document.removeEventListener('keydown', onKey); desregistrar(); overlay.remove(); resolve(val); };
+        desregistrar = window.backNav ? window.backNav.registrar(() => cerrar(null)) : () => {};
         const onKey = (e) => {
           if (e.key === 'Escape') { e.preventDefault(); cerrar(null); return; }
           if (e.key === 'Tab') {

@@ -277,8 +277,13 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     root.updateDialog = new UpdateDialog();
-    // La comprobación inicial es diferida para no bloquear el arranque,
-    // pero muestra el diálogo automáticamente si hay una versión nueva.
-    setTimeout(() => root.updateDialog.comprobar(), 1500);
+    // La comprobación automática solo aplica en la app nativa (APK): la versión
+    // web (Vercel /app) no debe molestar con diálogos de actualización de APK.
+    const nativo = !!(root.Capacitor && typeof root.Capacitor.isNativePlatform === 'function' && root.Capacitor.isNativePlatform());
+    if (nativo) {
+      // Diferida para no bloquear el arranque, pero muestra el diálogo
+      // automáticamente si hay una versión nueva.
+      setTimeout(() => root.updateDialog.comprobar(), 1500);
+    }
   });
 })(typeof window !== 'undefined' ? window : globalThis);

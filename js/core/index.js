@@ -409,7 +409,6 @@
       if (!usuario) { 
         nav.innerHTML = ''; 
         nav.style.display = 'none'; 
-        this._renderizarFabNotificaciones();
         return; 
       }
       nav.style.display = '';
@@ -442,27 +441,34 @@
           router.navegar(el.getAttribute('href').replace('#!', '')); 
         });
       });
-      this._renderizarFabNotificaciones();
+      this._renderizarNotificacionBarra(nav);
     },
 
-    // Botón flotante de campana con badge de no leídas (acceso al centro)
-    _renderizarFabNotificaciones() {
+    // Campana de notificaciones INTEGRADA en la barra inferior (sustituye al
+    // antiguo FAB flotante). Solo aparece en las secciones principales (las 5
+    // pestañas), nunca en pantallas secundarias (tomar examen, editor, detalle
+    // de desafío, centro de notificaciones, etc.). Al ser hija de la barra,
+    // se oculta con ella al hacer scroll y no flota sobre el contenido.
+    _renderizarNotificacionBarra(nav) {
+      if (!nav) return;
       const usuario = store.obtener('usuario');
-      let fab = document.getElementById('notif-fab');
-      if (!usuario) {
-        if (fab) fab.remove();
+      const ruta = router.pathActual();
+      const seccionesPrincipales = ['/examenes', '/memorizacion', '/estudio', '/explorar', '/perfil'];
+      let campana = nav.querySelector('#notif-barra');
+      if (!usuario || !seccionesPrincipales.includes(ruta)) {
+        if (campana) campana.remove();
         return;
       }
-      if (!fab) {
-        fab = document.createElement('button');
-        fab.id = 'notif-fab';
-        fab.className = 'notif-fab';
-        fab.setAttribute('aria-label', 'Centro de notificaciones');
-        fab.innerHTML = '<span class="notif-fab__icono"></span><span class="notif-fab__badge" id="notifFabBadge" hidden>0</span>';
-        document.body.appendChild(fab);
-        fab.addEventListener('click', () => router.navegar('/notificaciones'));
+      if (!campana) {
+        campana = document.createElement('button');
+        campana.id = 'notif-barra';
+        campana.className = 'notif-barra';
+        campana.setAttribute('aria-label', 'Centro de notificaciones');
+        campana.innerHTML = '<span class="notif-barra__icono"></span><span class="notif-barra__badge" id="notifBarraBadge" hidden>0</span>';
+        nav.appendChild(campana);
+        campana.addEventListener('click', () => router.navegar('/notificaciones'));
       }
-      const icono = fab.querySelector('.notif-fab__icono');
+      const icono = campana.querySelector('.notif-barra__icono');
       if (icono) icono.innerHTML = window.Iconos.render('bell');
       if (window.Iconos) window.Iconos.actualizar();
       if (window.notificationService) window.notificationService.actualizarBadge();

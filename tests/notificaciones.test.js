@@ -290,6 +290,73 @@ describe('estados del ciclo de vida', () => {
   });
 });
 
+// ============================================================
+// Presentación: bandeja nativa en Android vs. in-app en web
+// ============================================================
+describe('NotificationService._presentar()', () => {
+  function config(p) { return { ...{ categoria: 'sistema', prioridad: 'media', nativo: true, sonido: false, banner: false }, ...p }; }
+  function base() {
+    return { nombre: 'test.evento', titulo: 'Título', cuerpo: 'Cuerpo', url: '/ruta', icono: 'bell', datos: {}, fila: { id: 'n1' } };
+  }
+  let notificacionesLlamadas;
+  let presentadas;
+
+  beforeEach(() => {
+    notificacionesLlamadas = [];
+    presentadas = [];
+    global.notifications = {
+      vibrar: () => {},
+      notificar: async (opts) => { notificacionesLlamadas.push(opts); return {}; }
+    };
+    delete global.pushNotificationService;
+  });
+
+  test('en Android, una categoría no-desafío va a la bandeja nativa (no toast)', () => {
+    global.pushNotificationService = {
+      esCapacitor: () => true,
+      presentarNativa: async (opts) => { presentadas.push(opts); return true; }
+    };
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'examenes' }) });
+    expect(presentadas.length).toBe(1);
+    expect(presentadas[0].categoria).toBe('examenes');
+    expect(presentadas[0].url).toBe('/ruta');
+    expect(presentadas[0].id).toBe('n1');
+    expect(notificacionesLlamadas.length).toBe(0);
+  });
+
+  test('en web, una categoría no-desafío conserva la presentación actual', () => {
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'examenes' }) });
+    expect(notificacionesLlamadas.length).toBe(1);
+    expect(notificacionesLlamadas[0].categoria).toBe('examenes');
+  });
+
+  test('en Android, un desafío se presenta in-app y NO en la bandeja', () => {
+    global.pushNotificationService = {
+      esCapacitor: () => true,
+      presentarNativa: async (opts) => { presentadas.push(opts); return true; }
+    };
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'desafios' }) });
+    expect(notificacionesLlamadas.length).toBe(1);
+    expect(presentadas.length).toBe(0);
+  });
+
+  test('en Android, un evento silencioso (nativo:false) no presenta nada', () => {
+    global.pushNotificationService = {
+      esCapacitor: () => true,
+      presentarNativa: async (opts) => { presentadas.push(opts); return true; }
+    };
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'estudio', nativo: false }) });
+    expect(presentadas.length).toBe(0);
+    expect(notificacionesLlamadas.length).toBe(0);
+  });
+
+  test('sin window.notifications (entorno mínimo) no lanza', () => {
+    delete global.notifications;
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'sistema' }) });
+    expect(notificacionesLlamadas.length).toBe(0);
+  });
+});
+
 // Helper: acceso al estado del store para mutar preferencias
 function estadoUsuario() {
   return global.store.obtener('usuario');

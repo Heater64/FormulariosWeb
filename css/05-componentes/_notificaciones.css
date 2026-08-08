@@ -1,41 +1,44 @@
 /* ============================================================
    _notificaciones.css - Sistema de notificaciones v2
-   Centro de comunicaciones: FAB + badge, centro (tarjetas por
-   categoría y estado), toasts y banner interactivo.
-   Todo usa tokens del sistema de diseño (ver CONVENCIONES.md).
+   Centro de comunicaciones: campana integrada en la barra inferior,
+   centro simplificado (tarjetas pendientes), toasts y banner
+   interactivo. Todo usa tokens del sistema de diseño (ver CONVENCIONES.md).
    ============================================================ */
 
 /* ────────────────────────────────────────────
-   FAB (botón flotante de campana con badge)
+   Campana de notificaciones integrada en la barra inferior.
+   Es hija de #barra-navegacion (position: fixed → bloque contenedor),
+   así que se ancla a su borde superior y se oculta con ella al hacer
+   scroll. Solo se renderiza en las secciones principales.
    ──────────────────────────────────────────── */
-.notif-fab {
-  position: fixed;
-  top: calc(var(--espaciado-sm) + env(safe-area-inset-top));
-  right: var(--espaciado-sm);
-  z-index: 150;
-  width: var(--toque-minimo);
-  height: var(--toque-minimo);
-  border: none;
-  border-radius: 50%;
-  background: var(--color-fondo-tarjeta);
-  color: var(--color-texto);
-  box-shadow: var(--sombra-lg);
+.notif-barra {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 5;
   display: flex;
   align-items: center;
-  justify-content: center;
+  gap: 6px;
+  margin-bottom: 8px;
+  padding: 7px 14px;
+  border: 1px solid var(--color-vidrio-borde);
+  border-radius: var(--radio-pill);
+  background: var(--color-vidrio);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  backdrop-filter: var(--desenfoque-vidrio);
+  box-shadow: var(--sombra-md);
+  color: var(--color-texto);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
   transition: transform var(--transicion-rapida) var(--easing-apple),
               background var(--transicion-rapida) var(--easing-apple);
 }
-.notif-fab:active { transform: scale(0.92); }
-.notif-fab__icono { display: flex; color: var(--color-acento); }
-.notif-fab__icono svg { width: 22px; height: 22px; }
+.notif-barra:active { transform: translateX(-50%) scale(0.94); }
+.notif-barra__icono { display: flex; color: var(--color-acento); }
+.notif-barra__icono svg { width: 18px; height: 18px; }
 
-.notif-fab__badge {
-  position: absolute;
-  top: -4px;
-  right: -4px;
+.notif-barra__badge {
   min-width: 20px;
   height: 20px;
   padding: 0 5px;
@@ -49,7 +52,7 @@
   box-shadow: var(--sombra-sm);
   pointer-events: none;
 }
-.notif-fab__badge--pop { animation: notif-badge-pop 400ms var(--easing-spring); }
+.notif-barra__badge--pop { animation: notif-badge-pop 400ms var(--easing-spring); }
 @keyframes notif-badge-pop {
   0% { transform: scale(0.4); }
   60% { transform: scale(1.25); }
@@ -68,87 +71,6 @@
 .notif-centro__titulo { margin: 0; font-size: var(--texto-xl); font-weight: 800; }
 .notif-centro__acciones { margin-left: auto; display: flex; gap: var(--espaciado-xs); align-items: center; }
 
-/* Pestañas Notificaciones / Actividad */
-.notif-tabs {
-  display: flex;
-  gap: var(--espaciado-2xs);
-  background: var(--color-fondo-alt);
-  padding: 4px;
-  border-radius: var(--radio-pill);
-  margin-bottom: var(--espaciado-md);
-}
-.notif-tab {
-  flex: 1;
-  padding: var(--espaciado-xs) var(--espaciado-sm);
-  border: none;
-  border-radius: var(--radio-pill);
-  background: transparent;
-  color: var(--color-texto-secundario);
-  font: inherit;
-  font-size: var(--texto-sm);
-  font-weight: 600;
-  cursor: pointer;
-  transition: background var(--transicion-rapida) var(--easing-apple),
-              color var(--transicion-rapida) var(--easing-apple);
-}
-.notif-tab--activo {
-  background: var(--color-fondo-tarjeta);
-  color: var(--color-texto);
-  box-shadow: var(--sombra-sm);
-}
-
-/* Chips de filtro por categoría (scroll horizontal) */
-.notif-chips {
-  display: flex;
-  gap: var(--espaciado-xs);
-  overflow-x: auto;
-  padding-bottom: var(--espaciado-xs);
-  margin-bottom: var(--espaciado-sm);
-  scrollbar-width: none;
-}
-.notif-chips::-webkit-scrollbar { display: none; }
-.notif-chip {
-  flex-shrink: 0;
-  display: inline-flex;
-  align-items: center;
-  gap: 6px;
-  padding: var(--espaciado-2xs) var(--espaciado-sm);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-pill);
-  background: var(--color-fondo-tarjeta);
-  color: var(--color-texto-secundario);
-  font: inherit;
-  font-size: var(--texto-xs);
-  font-weight: 600;
-  cursor: pointer;
-  transition: all var(--transicion-rapida) var(--easing-apple);
-}
-.notif-chip svg { width: 14px; height: 14px; }
-.notif-chip--activo {
-  border-color: transparent;
-  background: var(--color-acento);
-  color: #fff;
-}
-.notif-chip__contador { opacity: 0.7; font-weight: 700; }
-
-/* Resumen de no leídas sobre la lista */
-.notif-cabecera-resumen {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  font-weight: 700;
-}
-
-/* Secciones por fecha (Hoy / Ayer / Esta semana / ...) */
-.notif-seccion { margin-bottom: var(--espaciado-md); }
-.notif-seccion__titulo {
-  margin: 0 0 var(--espaciado-xs);
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--color-texto-terciario);
-}
 
 /* ────────────────────────────────────────────
    Tarjeta de notificación
@@ -268,38 +190,18 @@
 .notif-card--completada .notif-card__punto,
 .notif-card--archivada .notif-card__punto { background: transparent; box-shadow: none; }
 
-/* Detalle de agrupaciones (contador > 1) */
-.notif-card__grupo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  margin-top: var(--espaciado-2xs);
-  padding: 2px var(--espaciado-xs);
+/* Contador de agrupaciones (desafíos aceptados, etc.) */
+.notif-card__contador {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 7px;
   border-radius: var(--radio-pill);
   background: var(--color-fondo-alt);
   font-size: var(--texto-xxs);
   font-weight: 700;
   color: var(--color-texto-secundario);
-  cursor: pointer;
-  border: none;
-  font-family: inherit;
+  vertical-align: middle;
 }
-.notif-card__grupo svg { width: 12px; height: 12px; }
-.notif-card__detalle {
-  margin-top: var(--espaciado-xs);
-  padding: var(--espaciado-xs);
-  border-radius: var(--radio-md);
-  background: var(--color-fondo-alt);
-}
-.notif-card__detalle-fila {
-  display: flex;
-  align-items: center;
-  gap: var(--espaciado-xs);
-  padding: var(--espaciado-2xs) 0;
-  font-size: var(--texto-xs);
-  color: var(--color-texto-secundario);
-}
-.notif-card__detalle-fila svg { width: 14px; height: 14px; flex-shrink: 0; }
 
 /* ────────────────────────────────────────────
    Toast (fallback / avisos ligeros)
@@ -375,21 +277,3 @@
 }
 .notif-skeleton__linea--corta { width: 45%; }
 
-/* Botones compactos de acción dentro del centro (marcar todo, etc.) */
-.notif-btn-tool {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  border: none;
-  background: transparent;
-  color: var(--color-acento);
-  font: inherit;
-  font-size: var(--texto-xs);
-  font-weight: 600;
-  cursor: pointer;
-  padding: var(--espaciado-2xs) var(--espaciado-xs);
-  border-radius: var(--radio-pill);
-  transition: background var(--transicion-rapida) var(--easing-apple);
-}
-.notif-btn-tool:active { background: var(--color-acento-soft); }
-.notif-btn-tool svg { width: 14px; height: 14px; }

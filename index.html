@@ -2,7 +2,12 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, maximum-scale=1.0, user-scalable=no">
+  <!-- viewport-fit=cover: aprovecha la pantalla completa (edge-to-edge) con
+       safe-area insets. interactive-widget=resizes-content: el teclado virtual
+       de Android redimensiona la viewport para que el campo activo quede
+       visible (sin esto el teclado tapa inputs). Sin maximum-scale ni
+       user-scalable=no: el zoom por pellizco debe funcionar (WCAG 1.4.4). -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
   <meta name="theme-color" content="#FFFFFF">
   <meta name="color-scheme" content="light dark">
 
@@ -203,6 +208,11 @@
   <script src="js/core/eventBus.js" defer></script>
   <script src="js/core/errores.js" defer></script>
   <script src="js/core/router.js" defer></script>
+  <!-- Coordinador único de back: cierra modales/sheets con el back del sistema
+       (navegador, gesto Android y botón físico de la APK) antes de navegar. -->
+  <script src="js/core/back-navigation.js" defer></script>
+  <!-- Barra inferior: ocultarse al hacer scroll y con el teclado abierto -->
+  <script src="js/core/navigation.js" defer></script>
 
   <!-- JS: Configuración de entorno (modo demo, Supabase) — debe cargar antes
        que supabase-client.js y cualquier vista -->
@@ -257,6 +267,12 @@
   <script src="js/dominio/puntuacion-examen.js" defer></script>
   <script src="js/dominio/logros.js" defer></script>
   <script src="js/dominio/maquina-estudio.js" defer></script>
+  <!-- Motor de ejercicios de memorización (construirSesion/generarEjercicio).
+       Debe cargar ANTES que las vistas que lo usan (vista-memorizacion,
+       vista-grupos retar, vista-desafio revancha): window.ejerciciosMemorizacion
+       se captura al cargar cada vista. Sin este script, "Retar" y la práctica
+       individual fallan con "Cannot read properties of undefined (construirSesion)". -->
+  <script src="js/dominio/ejercicios-memorizacion.js" defer></script>
 
   <!-- JS: Components -->
   <script src="js/componentes/editor-huecos.js" defer></script>
@@ -294,6 +310,21 @@
       if (window.connectionIndicator) window.connectionIndicator.iniciar();
       if (window.syncStatus) window.syncStatus.iniciar();
     });
+  </script>
+
+  <!-- JS: Teclado → ocultar la barra inferior mientras se escribe (el teclado
+       virtual tapa la parte inferior; la barra reaparece al desenfocar). -->
+  <script>
+    document.addEventListener('focusin', (e) => {
+      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        if (window.navigationManager) window.navigationManager.ocultarPorTeclado(true);
+      }
+    }, true);
+    document.addEventListener('focusout', (e) => {
+      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        if (window.navigationManager) window.navigationManager.ocultarPorTeclado(false);
+      }
+    }, true);
   </script>
 </head>
 <body>

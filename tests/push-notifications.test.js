@@ -455,3 +455,82 @@ describe('canales Android', () => {
     }
   });
 });
+
+// ============================================================
+// Presentación nativa en la bandeja (presentarNativa)
+// ============================================================
+describe('PushNotificationService.presentarNativa()', () => {
+  test('programa una notificación local con canal y datos aplanados en Android', async () => {
+    const programadas = [];
+    global.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: {
+        LocalNotifications: { schedule: async (opts) => { programadas.push(opts); return {}; } }
+      }
+    };
+    const s = new PushService();
+    s._capacitor = true;
+    const ok = await s.presentarNativa({
+      titulo: 'Nuevo examen', cuerpo: 'Disponible', categoria: 'examenes',
+      url: '/tomar/7', datos: { examen_id: 7 }, id: 'n7'
+    });
+    expect(ok).toBe(true);
+    expect(programadas.length).toBe(1);
+    const n = programadas[0].notifications[0];
+    expect(n.channelId).toBe('examenes');
+    expect(n.title).toBe('Nuevo examen');
+    expect(n.body).toBe('Disponible');
+    expect(n.data.url).toBe('/tomar/7');
+    expect(n.data.notifId).toBe('n7');
+    expect(n.data['d.examen_id']).toBe('7');
+    expect(Number.isInteger(n.id)).toBe(true);
+  });
+
+  test('usa el canal general para categorías sin canal propio', async () => {
+    const programadas = [];
+    global.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: { LocalNotifications: { schedule: async (opts) => { programadas.push(opts); return {}; } } }
+    };
+    const s = new PushService();
+    s._capacitor = true;
+    await s.presentarNativa({ titulo: 'Aviso', categoria: 'grupos', datos: {} });
+    expect(programadas[0].notifications[0].channelId).toBe('general');
+  });
+
+  test('es no-op en web (sin Capacitor activo)', async () => {
+    let llamadas = 0;
+    global.Capacitor = {
+      isNativePlatform: () => true,
+      Plugins: { LocalNotifications: { schedule: async () => { llamadas += 1; } } }
+    };
+    const s = new PushService(); // _capacitor = false (no iniciado)
+    const ok = await s.presentarNativa({ titulo: 'T', cuerpo: 'C', categoria: 'sistema' });
+    expect(ok).toBe(false);
+    expect(llamadas).toBe(0);
+  });
+
+  test('sin plugin LocalNotifications devuelve false sin lanzar', async () => {
+    global.Capacitor = { isNativePlatform: () => true, Plugins: {} };
+    const s = new PushService();
+    s._capacitor = true;
+    const ok = await s.presentarNativa({ titulo: 'T', categoria: 'sistema' });
+    expect(ok).toBe(false);
+  });
+});
+
+// ============================================================
+// Recepción en primer plano: la presentación la hace la capa in-app
+// (no debe duplicar avisos en la bandeja)
+// ============================================================
+describe('_alRecibir()', () => {
+  test('en primer plano no presenta nada (la capa in-app decide)', () => {
+    const s = new PushService();
+    const antes = JSON.stringify(s);
+    s._alRecibir({ notification: { title: 'X', body: 'Y', data: { url: '/desafio/1' } } });
+    // Sin efectos: no navega, no guarda pendiente, no toca la bandeja
+    expect(s._accionPendiente).toBe(null);
+    expect(s._localId).toBe(0);
+    expect(JSON.stringify(s)).toBe(antes);
+  });
+});

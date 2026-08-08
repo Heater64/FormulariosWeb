@@ -216,6 +216,11 @@ raiz.innerHTML = '';
           requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('app-transicion-entrada')));
         }
 
+        // App-like: cada vista nueva arranca arriba. En una SPA con hash, el
+        // scroll de la vista anterior persiste entre rutas (señal clásica de
+        // web): hay que resetearlo en cada montaje.
+        try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch (e) { window.scrollTo(0, 0); }
+
         this._primeraCarga = false;
         store.actualizar('rutaActual', ruta);
         window.eventBus.publicar('route:change', { ruta, rutaConfig, params, query: queryObj });

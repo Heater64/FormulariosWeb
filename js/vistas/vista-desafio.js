@@ -50,11 +50,17 @@
       this._desafioId = params && params.id;
       if (!this._desafioId) { router.navegar('/grupos'); return; }
       this._detenerLoops();
+      this._desmontado = false;
       raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton ? window.skeleton.tarjetas(3) : '<p class="u-color-texto-terciario">Cargando desafío...</p>'}</div>`;
       await this._loop();
     },
 
-    desmontar() { this._detenerLoops(); },
+    // Al desmontar, además de parar los timers, se marca _desmontado: si un
+    // _loop ya estaba EN VUELO (await de obtenerDesafio) al navegar, su
+    // continuación NO debe re-renderizar el desafío sobre la vista nueva
+    // (el router reutiliza #app-root; un render tardío pisaba la vista
+    // actual — bug de "vista pegajosa" al salir de un desafío).
+    desmontar() { this._desmontado = true; this._detenerLoops(); },
 
     _detenerLoops() {
       if (this._pollTimer) clearTimeout(this._pollTimer);
@@ -73,7 +79,8 @@
       if (this._enJuego) return;
       let desafio;
       try { desafio = await window.desafiosRepository.obtenerDesafio(this._desafioId); }
-      catch (e) { this._renderError(e.message); return; }
+      catch (e) { if (this._desmontado) return; this._renderError(e.message); return; }
+      if (this._desmontado || !this._raiz || !this._raiz.isConnected) return;
       if (!desafio) { this._renderError('El desafío no existe.'); return; }
       this._desafio = desafio;
       const yo = (desafio.participantes || []).find(p => p.usuario_id === this._usuario.id);

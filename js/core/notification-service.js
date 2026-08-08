@@ -497,11 +497,8 @@ class NotificationService {
     this._presentadas.clear();
     const banner = document.getElementById('notif-banner');
     if (banner) banner.remove();
-    const fab = document.getElementById('notif-fab');
-    if (fab) {
-      const b = fab.querySelector('.notif-fab__badge');
-      if (b) { b.hidden = true; b.textContent = '0'; }
-    }
+    const campana = document.getElementById('notif-barra');
+    if (campana) campana.remove();
   }
 
   // ============================================================
@@ -613,24 +610,50 @@ class NotificationService {
 
   // ---- Presentación ----
 
+  /**
+   * Reglas de presentación:
+   *   • DESAFÍOS → se presentan DENTRO de la app en primer plano (banner
+   *     interactivo con Aceptar/Rechazar, o toast). En segundo plano o con la
+   *     app cerrada los muestra el sistema Android vía FCM. Nunca se duplica
+   *     aquí con la bandeja.
+   *   • RESTO DE CATEGORÍAS → en Android (Capacitor) la notificación va a la
+   *     BANDEJA del sistema (nativa, LocalNotifications). En web se mantiene
+   *     el comportamiento actual (notificación del navegador o toast).
+   */
   _presentar({ cfg, nombre, titulo, cuerpo, url, icono, datos, fila }) {
     if (!this._categoriaHabilitada(cfg.categoria)) return;
 
     // Sonido / vibración (respeta preferencias de sonido y vibración)
     if (cfg.sonido !== false && window.notifications) window.notifications.vibrar();
 
-    if (cfg.banner) {
-      this._mostrarBanner({ cfg, titulo, cuerpo, url, datos, fila, icono });
+    const push = window.pushNotificationService;
+    const enAndroid = !!(push && typeof push.esCapacitor === 'function' && push.esCapacitor());
+    const tag = `${nombre}-${(fila && fila.id) || Date.now()}`;
+    const iconoCategoria = icono || (CATEGORIAS[cfg.categoria] && CATEGORIAS[cfg.categoria].icono);
+    const requireInteraction = cfg.requireInteraction || cfg.prioridad === 'critica';
+
+    if (cfg.categoria === 'desafios') {
+      if (cfg.banner) {
+        this._mostrarBanner({ cfg, titulo, cuerpo, url, datos, fila, icono });
+      } else if (cfg.nativo !== false && window.notifications) {
+        window.notifications.notificar({ titulo, cuerpo, categoria: cfg.categoria, icono: iconoCategoria, tag, url, requireInteraction });
+      }
+      return;
     }
+
+    // Android: notificación nativa en la bandeja del sistema (no toasts
+    // dentro de la app). El tap lo gestiona pushNotificationService
+    // (localNotificationActionPerformed → navegar).
+    if (enAndroid) {
+      if (cfg.nativo !== false && push.presentarNativa) {
+        push.presentarNativa({ titulo, cuerpo, categoria: cfg.categoria, url, datos: datos || {}, id: fila ? fila.id : null });
+      }
+      return;
+    }
+
+    // Web: comportamiento actual (notificación del navegador o toast).
     if (cfg.nativo !== false && window.notifications) {
-      window.notifications.notificar({
-        titulo, cuerpo,
-        categoria: cfg.categoria,
-        icono: icono || (CATEGORIAS[cfg.categoria] && CATEGORIAS[cfg.categoria].icono),
-        tag: `${nombre}-${(fila && fila.id) || Date.now()}`,
-        url,
-        requireInteraction: cfg.requireInteraction || cfg.prioridad === 'critica'
-      });
+      window.notifications.notificar({ titulo, cuerpo, categoria: cfg.categoria, icono: iconoCategoria, tag, url, requireInteraction });
     }
   }
 
@@ -738,20 +761,21 @@ class NotificationService {
     }
   }
 
-  /** Actualiza el badge del botón flotante (llamado también desde el shell). */
+  /** Actualiza el badge de la campana de la barra inferior (llamado también
+   *  desde el shell). */
   actualizarBadge() {
     const st = (window.store && window.store.obtener) ? window.store.obtener('notificaciones') : null;
     const n = (st && st.noLeidas) || 0;
     // Guard para entornos sin DOM (tests node) — el badge es puramente visual.
     if (typeof document === 'undefined') return;
-    const badge = document.getElementById('notifFabBadge');
+    const badge = document.getElementById('notifBarraBadge');
     if (!badge) return;
     badge.textContent = n > 99 ? '99+' : String(n);
     badge.hidden = n === 0;
     if (n > 0) {
-      badge.classList.remove('notif-fab__badge--pop');
+      badge.classList.remove('notif-barra__badge--pop');
       void badge.offsetWidth;
-      badge.classList.add('notif-fab__badge--pop');
+      badge.classList.add('notif-barra__badge--pop');
     }
   }
 

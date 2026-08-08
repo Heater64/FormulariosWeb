@@ -129,6 +129,8 @@
     max-width: 100%;
     border-radius: var(--radio-lg) var(--radio-lg) 0 0;
     padding: var(--espaciado-md);
+    /* Safe area: el sheet no debe quedarse detrás de la barra de gestos */
+    padding-bottom: max(var(--espaciado-md), calc(var(--espaciado-md) + env(safe-area-inset-bottom)));
     margin-top: auto;
   }
   .modal__titulo {

@@ -10,6 +10,7 @@ class NavigationManager {
     this._threshold = 50;
     this._isScrolling = false;
     this._scrollTimeout = null;
+    this._tecladoAbierto = false;
     
     this._init();
   }
@@ -100,12 +101,25 @@ class NavigationManager {
   }
   
   _show() {
-    if (!this._isHidden) return;
+    if (this._isHidden) return;
+    // Con el teclado abierto la barra permanece oculta: mostrarla taparía
+    // el campo activo (UX de teclado app-like).
+    if (this._tecladoAbierto) return;
     this._isHidden = false;
     this._nav.style.transform = 'translateY(0)';
     
     // Notificar
     window.eventBus?.publicar('navigation:show');
+  }
+  
+  // ============================================================
+  // TECLADO: oculta la barra mientras un campo está enfocado (el teclado
+  // virtual ocupa la parte inferior) y la restaura al desenfocar.
+  // ============================================================
+  ocultarPorTeclado(abierto) {
+    this._tecladoAbierto = !!abierto;
+    if (abierto) this._hide();
+    else this._show();
   }
   
   // ============================================================

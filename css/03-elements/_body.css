@@ -45,6 +45,24 @@ button, nav, [role="button"], .barra-nav-inferior, .btn-primario, .btn-secundari
   -webkit-user-select: none;
 }
 
+/* Feedback de presión para superficies táctiles que no son <button>
+   (filas, celdas con role="button", enlaces). Rápido y sutil: el estado
+   pressed debe confirmar el contacto, no animar. Solo en táctiles: en
+   escritorio el hover ya da la pista. */
+@media (hover: none) {
+  [role="button"]:active,
+  a:active {
+    filter: brightness(0.94);
+  }
+}
+
+/* Sin retardo de doble-toque en elementos interactivos con forma de fila
+   (complementa el touch-action: manipulation ya presente en buttons). */
+[role="button"],
+a, .barra-nav-inferior__item {
+  touch-action: manipulation;
+}
+
 p, h1, h2, h3, h4, span, .versiculo-texto {
   user-select: text;
   -webkit-user-select: text;

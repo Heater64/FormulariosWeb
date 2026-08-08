@@ -126,6 +126,7 @@
       this._usuarioId = null;
       this._accionPendiente = null;
       this._heartbeatTimer = null;
+      this._localId = 0; // ids enteros únicos para LocalNotifications
     }
 
     /**
@@ -189,6 +190,14 @@
         await PushNotifications.addListener('pushNotificationActionPerformed', (n) => {
           this._alPulsar(n);
         });
+        // Tap en una notificación LOCAL presentada por presentarNativa()
+        // (bandeja del sistema en primer plano) → misma navegación que FCM.
+        const LocalNotifications = this._plugin('LocalNotifications');
+        if (LocalNotifications && LocalNotifications.addListener) {
+          await LocalNotifications.addListener('localNotificationActionPerformed', (n) => {
+            this._alPulsar(n);
+          });
+        }
       } catch (e) {
         console.warn('[Push] No se pudieron instalar las escuchas:', e.message || e);
       }
@@ -235,6 +244,46 @@
       }
       this._token = value;
       this._guardarToken(value);
+    }
+
+    // ---- Presentación nativa en primer plano (bandeja del sistema) ----
+
+    /**
+     * Presenta una notificación NATIVA en la bandeja de Android usando
+     * LocalNotifications (canal según categoría). Lo usa notification-service
+     * para las categorías que NO son desafíos: en la app, los avisos van a la
+     * bandeja del sistema, no a toasts dentro de la interfaz. El payload se
+     * aplanado igual que en la Edge Function (`d.` prefijo + url/notifId) para
+     * que al pulsarla urlDe() derive el destino correcto.
+     */
+    async presentarNativa({ titulo, cuerpo, categoria, url, datos, id }) {
+      if (!this._capacitor) return false;
+      const LocalNotifications = this._plugin('LocalNotifications');
+      if (!LocalNotifications || typeof LocalNotifications.schedule !== 'function') return false;
+      try {
+        const datosPlano = { url: url || '', notifId: id ? String(id) : '' };
+        if (datos && typeof datos === 'object') {
+          for (const [clave, valor] of Object.entries(datos)) {
+            if (valor === null || valor === undefined) continue;
+            datosPlano['d.' + clave] = typeof valor === 'object' ? JSON.stringify(valor) : String(valor);
+          }
+        }
+        this._localId = ((this._localId || 0) % 2147483646) + 1;
+        await LocalNotifications.schedule({
+          notifications: [{
+            id: this._localId,
+            title: String(titulo || 'FormsBiblicos').slice(0, 200),
+            body: String(cuerpo || '').slice(0, 500),
+            channelId: canalDe(categoria),
+            data: datosPlano,
+            schedule: { at: new Date() }
+          }]
+        });
+        return true;
+      } catch (e) {
+        console.warn('[Push] No se pudo presentar la notificación nativa:', e.message || e);
+        return false;
+      }
     }
 
     /**

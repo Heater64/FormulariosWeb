@@ -27,8 +27,11 @@
           <a class="button button-primary" id="downloadButton" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk">
             Descargar aplicación Android
           </a>
+          <a class="button button-secondary" id="browserButton" href="/app">
+            Usar en el navegador
+          </a>
         </div>
-        <p class="device-message" id="deviceMessage" role="status">Descarga la aplicación Android para una experiencia completa.</p>
+        <p class="device-message" id="deviceMessage" role="status">FormsBiblicos está disponible como aplicación Android y directamente en el navegador.</p>
         <p class="device-version" id="deviceVersion"></p>
       </div>
       <div class="hero-card" aria-label="Resumen de funciones">
@@ -55,8 +58,12 @@
         <p class="eyebrow">Aplicación oficial</p>
         <h2 id="download-title">Una app Android completa, sin depender del navegador.</h2>
         <p>La aplicación incluye su interfaz localmente y sincroniza tus datos de forma segura con Supabase. Descarga el archivo, ábrelo y sigue las instrucciones de instalación.</p>
+        <p class="browser-note">¿Prefieres no instalar nada? <a href="/app">Entra desde el navegador</a> — la misma cuenta y los mismos datos.</p>
       </div>
-      <a class="button button-primary" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk" id="downloadButtonBottom">Descargar e instalar</a>
+      <div class="download-actions">
+        <a class="button button-primary" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk" id="downloadButtonBottom">Descargar e instalar</a>
+        <a class="button button-secondary" href="/app">Usar en el navegador</a>
+      </div>
     </section>
 
     <section class="features" aria-labelledby="install-title" id="instalacion">
@@ -107,9 +114,9 @@
       }
 
       if (android) {
-        message.textContent = 'Estás en Android. Pulsa el botón para descargar la aplicación e instálala siguiendo los pasos de abajo.';
+        message.textContent = 'Estás en Android. Descarga la aplicación para la experiencia completa, o entra directamente desde el navegador.';
       } else {
-        message.textContent = 'Esta página funciona mejor en un teléfono Android. Si estás en otro dispositivo, envía el enlace a tu teléfono para descargar la aplicación.';
+        message.textContent = 'FormsBiblicos también funciona en el navegador: pulsa «Usar en el navegador» para entrar ahora. Si tienes un teléfono Android, puedes descargar la aplicación.';
         buttons.forEach((button) => {
           button.href = '#instalacion';
         });

@@ -10,7 +10,9 @@ const vercel = read('vercel.json');
 describe('arquitectura pública y Android', () => {
   test('la landing pública ofrece la APK estable y no implementa instalación web', () => {
     expect(publicHtml).toContain('https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk');
-    expect(publicHtml).toContain('Descarga la aplicación Android');
+    expect(publicHtml).toContain('Descargar aplicación Android');
+    // La landing también ofrece la versión de navegador (enlaza a /app → login).
+    expect(publicHtml).toContain('/app');
     // La landing no ofrece enlaces a la lista de releases: solo el botón de descarga.
     expect(publicHtml).not.toMatch(/Ver releases|Releases de Android/);
     expect(publicHtml).not.toMatch(/serviceWorker|beforeinstallprompt|rel=["']manifest|display-mode|standalone/i);
