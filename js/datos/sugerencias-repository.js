@@ -1,6 +1,10 @@
 (function() {
   'use strict';
   const sb = () => window.supabaseClient;
+  // Traduce mensajes técnicos del servidor a texto amigable de usuario.
+  const _traducir = (error) => window.errores
+    ? window.errores.mensajeUsuario(error)
+    : (error && error.message) || 'Error inesperado';
 
   const ESTADOS = [
     { valor: 'enviada', texto: 'Enviada', clase: 'sug-estado--enviada' },
@@ -63,7 +67,7 @@
         })
         .select()
         .single();
-      if (error) throw new Error('No se pudo enviar la sugerencia: ' + error.message);
+      if (error) throw new Error('No se pudo enviar la sugerencia: ' + _traducir(error));
       return data;
     },
 
@@ -73,13 +77,13 @@
       if (estado !== undefined && estado !== null) cambios.estado = estado;
       if (respuesta !== undefined) cambios.respuesta = respuesta || '';
       const { error } = await sb().from('sugerencias').update(cambios).eq('id', id);
-      if (error) throw new Error('No se pudo actualizar: ' + error.message);
+      if (error) throw new Error('No se pudo actualizar: ' + _traducir(error));
     },
 
     async eliminar(id) {
       if (!sb()) throw new Error('Sin conexión');
       const { error } = await sb().from('sugerencias').delete().eq('id', id);
-      if (error) throw new Error('No se pudo eliminar: ' + error.message);
+      if (error) throw new Error('No se pudo eliminar: ' + _traducir(error));
     }
   };
 })();

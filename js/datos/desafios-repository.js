@@ -54,35 +54,17 @@
       const { error: err2 } = await sb().from('desafio_participantes').insert(filas);
       if (err2) throw err2;
 
-      const notifs = filas
-        .filter(f => f.estado === 'invitado')
-        .map(f => ({
-          usuario_id: f.usuario_id,
-          tipo: 'desafio',
-          titulo: `${creador.nombre_completo || creador.username} te ha desafiado`,
-          cuerpo: `Mazo: ${mazo.nombre}`,
+      // Notificar a los invitados a través del Notification Service
+      // (persiste en BD + banner/nativa según preferencias)
+      const invitados = filas.filter(f => f.estado === 'invitado').map(f => f.usuario_id);
+      if (invitados.length && window.notificationService) {
+        window.notificationService.emitir('desafio.creado', {
+          desafioId: desafio.id,
+          creador: creador.nombre_completo || creador.username || 'Alguien',
+          mazo: mazo.nombre,
+          destinatarios: invitados,
           datos: { desafio_id: desafio.id, mazo_id: mazo.id, mazo_nombre: mazo.nombre }
-        }));
-      if (notifs.length) {
-        try {
-          const { error: notifErr } = await sb().from('notificaciones').insert(notifs);
-          if (notifErr) console.warn('[Desafíos] Error insertando notificaciones:', notifErr.message);
-          else {
-            // Forzar notificación nativa inmediata para los invitados
-            // (el poller tarda hasta 6s, esto es instantáneo si hay permiso)
-            notifs.forEach(n => {
-              if (window.notifications) {
-                window.notifications.notificarDesafio(
-                  creador.nombre_completo || creador.username || 'Alguien',
-                  mazo.nombre,
-                  desafio.id
-                );
-              }
-            });
-          }
-        } catch (e) {
-          console.warn('[Desafíos] No se pudo insertar notificaciones (¿tabla inexistente?):', e.message);
-        }
+        }).catch(e => console.warn('[Desafíos] Notificación:', e.message));
       }
       return desafio;
     },
@@ -104,6 +86,25 @@
             try { await sb().from('desafios').update({ estado: 'expirado' }).eq('id', d.id); } catch (e) {}
           }
         }
+        // Enlazar con la notificación del centro (tipo nuevo 'desafio.creado')
+        // para poder marcarla como completada al responder desde Grupos.
+        try {
+          const ids = lista.filter(d => d.estado === 'invitacion').map(d => d.id);
+          if (ids.length) {
+            const { data: notifs } = await sb().from('notificaciones')
+              .select('id, datos')
+              .eq('usuario_id', usuarioId)
+              .in('tipo', ['desafio', 'desafio.creado'])
+              .in('estado', ['nueva', 'vista'])
+              .limit(50);
+            const porDesafio = {};
+            (notifs || []).forEach(n => {
+              const dId = (n.datos && (n.datos.desafio_id || n.datos.desafioId));
+              if (dId) porDesafio[dId] = n.id;
+            });
+            lista.forEach(d => { if (porDesafio[d.id]) d._notifId = porDesafio[d.id]; });
+          }
+        } catch (e) { /* enlazar notificación es opcional */ }
         return lista.filter(d => d.estado === 'invitacion');
       } catch (e) { console.warn('[Desafíos] Invitaciones:', e.message); return []; }
     },
@@ -136,7 +137,8 @@
     async obtenerDesafio(desafioId) {
       if (!sb()) return null;
       const [dRes, pRes] = await Promise.all([
-        sb().from('desafios').select('*').eq('id', desafioId).limit(1),
+        // Incluir el creador (join to-one) para mostrar "<creador> te ha desafiado"
+        sb().from('desafios').select('*, perfiles!creador_id(nombre_completo, username, foto_perfil)').eq('id', desafioId).limit(1),
         sb().from('desafio_participantes')
           .select('*, perfiles(id, nombre_completo, username, foto_perfil, rol, creado_en, biografia)')
           .eq('desafio_id', desafioId)
@@ -187,24 +189,53 @@
         // Alguien rechazó → se cancela y se avisa al creador
         const { data: d } = await sb().from('desafios').select('creador_id, mazo_nombre').eq('id', desafioId).single();
         try { await sb().from('desafios').update({ estado: 'cancelado' }).eq('id', desafioId); } catch (e) {}
-        if (d && d.creador_id) {
+        if (d && d.creador_id && window.notificationService) {
+          let jugador = 'Un participante';
           try {
-            await sb().from('notificaciones').insert({
-              usuario_id: d.creador_id, tipo: 'info',
-              titulo: 'Desafío rechazado',
-              cuerpo: `Un participante rechazó el desafío de ${d.mazo_nombre || 'memorización'}.`,
-              datos: { desafio_id: desafioId }
-            });
+            const { data: pj } = await sb().from('perfiles').select('nombre_completo, username').eq('id', usuarioId).limit(1);
+            if (pj && pj[0]) jugador = pj[0].nombre_completo || pj[0].username;
           } catch (e) {}
+          window.notificationService.emitir('desafio.rechazado', {
+            desafioId, mazo: d.mazo_nombre, jugador,
+            destinatarios: [d.creador_id]
+          }).catch(() => {});
         }
         return { empezado: false };
       }
 
-      const { data: ps } = await sb().from('desafio_participantes').select('estado').eq('desafio_id', desafioId);
+      // Avisar al creador que alguien aceptó (se agrupa automáticamente:
+      // "4 jugadores aceptaron tu desafío")
+      if (window.notificationService) {
+        const { data: dInfo } = await sb().from('desafios').select('creador_id, mazo_nombre').eq('id', desafioId).single();
+        let jugador = 'Un participante';
+        try {
+          const { data: pj } = await sb().from('perfiles').select('nombre_completo, username').eq('id', usuarioId).limit(1);
+          if (pj && pj[0]) jugador = pj[0].nombre_completo || pj[0].username;
+        } catch (e) {}
+        if (dInfo) {
+          window.notificationService.emitir('desafio.aceptado', {
+            desafioId, mazo: dInfo.mazo_nombre, jugador,
+            destinatarios: [dInfo.creador_id],
+            // `miembro` alimenta la agrupación (nombres acumulados en datos.miembros)
+            datos: { desafio_id: desafioId, miembro: jugador }
+          }).catch(() => {});
+        }
+      }
+
+      const { data: ps } = await sb().from('desafio_participantes').select('estado, usuario_id').eq('desafio_id', desafioId);
       const todos = (ps || []).length >= 2 && (ps || []).every(p => p.estado === 'aceptado');
       if (todos) {
         const iniciadoEn = new Date(Date.now() + CUENTA_ATRAS_SEG * 1000).toISOString();
         await sb().from('desafios').update({ estado: 'en_curso', iniciado_en: iniciadoEn }).eq('id', desafioId);
+        // Avisar al resto de participantes que el desafío arranca
+        if (window.notificationService) {
+          const { data: dMazo } = await sb().from('desafios').select('mazo_nombre').eq('id', desafioId).single();
+          window.notificationService.emitir('desafio.iniciado', {
+            desafioId,
+            mazo: (dMazo && dMazo.mazo_nombre) || 'Memorización',
+            destinatarios: (ps || []).map(p => p.usuario_id).filter(id => id !== usuarioId)
+          }).catch(() => {});
+        }
         return { empezado: true };
       }
       return { empezado: false };
@@ -250,6 +281,15 @@
             estado: 'finalizado', finalizado_en: new Date().toISOString()
           }).eq('id', desafio.id);
         } catch (e) {}
+        // Avisar a los participantes con el resultado
+        if (window.notificationService) {
+          const ids = (participantes || []).map(p => p.usuario_id).filter(Boolean);
+          window.notificationService.emitir('desafio.finalizado', {
+            desafioId: desafio.id,
+            mazo: desafio.mazo_nombre,
+            destinatarios: ids
+          }).catch(() => {});
+        }
       }
     }
   };

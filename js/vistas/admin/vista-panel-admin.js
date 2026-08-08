@@ -485,7 +485,7 @@
             <label class="admin-select-all-wrap" style="margin-right:2px" aria-label="Seleccionar a ${E(u.nombre_completo)}">
               <input type="checkbox" class="admin-select-cb" data-sel-id="${u.id}" ${sel ? 'checked' : ''}>
             </label>
-            <span class="admin-ficha__avatar" data-ver-detalle="${u.id}" title="Ver detalle">${foto ? `<img src="${foto}" alt="">` : inicial}</span>
+            <span class="admin-ficha__avatar" data-ver-detalle="${u.id}" title="Ver detalle">${foto ? `<img src="${E(foto)}" alt="">` : inicial}</span>
             <div class="admin-ficha__info" data-ver-detalle="${u.id}">
               <p class="admin-ficha__nombre">${E(u.nombre_completo)}</p>
               <p class="admin-ficha__username">@${E(u.username)} · ${rolBonito(u.rol)}</p>
@@ -989,8 +989,8 @@
                 ${window.adminComunes.sistemaFila('server', 'Servidor', 'Operativo', 'admin-indicador--ok')}
                 ${window.adminComunes.sistemaFila('database', 'Base de datos', 'Conectada', 'admin-indicador--ok')}
                 ${window.adminComunes.sistemaFila('lock', 'Autenticación', 'Activa', 'admin-indicador--ok')}
-                ${window.adminComunes.sistemaFila('tag', 'Versión', '1.0.1', 'admin-indicador--ok')}
-                ${window.adminComunes.sistemaFila('hard-drive', 'Variables del sistema', 'v1.0.1 · Supabase', 'admin-indicador--ok')}
+                ${window.adminComunes.sistemaFila('tag', 'Versión', window.__FB_APP_VERSION__?.version || '—', 'admin-indicador--ok')}
+                ${window.adminComunes.sistemaFila('hard-drive', 'Variables del sistema', 'v' + (window.__FB_APP_VERSION__?.version || '—') + ' · Supabase', 'admin-indicador--ok')}
               </div>` })}
 
           ${window.adminComunes.seccion({
@@ -1112,7 +1112,21 @@
         this._renderizar(raiz);
       };
       r.querySelectorAll('[data-pendiente]').forEach(btn => {
-        btn.onclick = () => aplicarAccion(JSON.parse(decodeURIComponent(btn.dataset.pendiente)));
+        btn.onclick = () => {
+          // El valor se escribe con encodeURIComponent (línea ~281), así que
+          // dataset.pendiente llega URL-encoded: hay que decodificarlo UNA vez.
+          // El try/catch evita que una secuencia % inválida o JSON corrupto
+          // (truncado, editado) reviente el click sin avisar.
+          let pendiente = null;
+          try {
+            const json = decodeURIComponent(btn.dataset.pendiente || '');
+            pendiente = JSON.parse(json);
+          } catch (e) {
+            window.helpers.mostrarAlerta('No se pudo procesar esta acción (datos corruptos).', 'error');
+            return;
+          }
+          aplicarAccion(pendiente);
+        };
       });
 
       // Tarjetas grandes de herramientas → abrir su lista
@@ -1332,9 +1346,14 @@
           window.ProfileEditor.abrir(u, {
             onGuardar: async (datos) => {
               try {
+                // Contrato 028: admin_actualizar_usuario exige enviar SIEMPRE el
+                // grupo_id actual (o null) y el rol; si no, los interpreta como
+                // desasignación del grupo / cambio de rol.
                 await window.adminRepository.actualizarUsuario(u.id, {
                   nombre_completo: datos.nombre_completo.trim(),
                   username: datos.username.trim(),
+                  rol: u.rol,
+                  grupo_id: u.grupo_id || null,
                   password: datos.password || null
                 });
                 await window.adminRepository.registrarAuditoria('usuario:editar', `Usuario "${datos.nombre_completo}" editado`, usuario.id);
@@ -1460,7 +1479,7 @@
           const inicial = (u.nombre_completo || u.username || '?').charAt(0).toUpperCase();
           panel.innerHTML = `
             <div class="admin-user-detail__header">
-              <div class="admin-user-detail__avatar">${u.foto_perfil ? `<img src="${u.foto_perfil}" alt="">` : inicial}</div>
+              <div class="admin-user-detail__avatar">${u.foto_perfil ? `<img src="${E(u.foto_perfil)}" alt="">` : inicial}</div>
               <div class="admin-user-detail__info">
                 <p class="admin-user-detail__nombre">${E(u.nombre_completo)}</p>
                 <p class="admin-user-detail__meta">@${E(u.username)} · ${rolBonito(u.rol)}</p>
@@ -2043,7 +2062,7 @@
               if (!ok) return;
               const snapshot = {
                 app: 'FormsBiblicos',
-                version: '1.0.1',
+                version: window.__FB_APP_VERSION__?.version || '—',
                 creado_en: new Date().toISOString(),
                 perfiles: datos.perfiles || [],
                 grupos: datos.grupos || [],

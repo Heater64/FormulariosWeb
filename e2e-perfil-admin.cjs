@@ -40,7 +40,7 @@ const esperarSelector = async (page, selector, timeoutMs = 15000) => {
 
   await page.addInitScript(() => {
     const obs = new MutationObserver(() => {
-      document.querySelectorAll('.login-setup, #updateCard').forEach(el => el.remove());
+      document.querySelectorAll('.login-setup').forEach(el => el.remove());
     });
     obs.observe(document, { childList: true, subtree: true });
   });

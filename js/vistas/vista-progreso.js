@@ -16,10 +16,12 @@
 
       try {
         const stats = await Promise.all([
-          window.adminRepository ? window.adminRepository.estadisticas(usuario.grupo_id).catch(() => null) : null,
+          window.adminRepository && window.adminRepository.obtenerActividadUsuario
+            ? window.adminRepository.obtenerActividadUsuario(usuario.id).catch(() => null)
+            : null,
           window.examenesRepository ? window.examenesRepository.misIntentos(usuario.id).catch(() => []) : [],
         ]);
-        const [adminStats, intentos] = stats;
+        const [actividad, intentos] = stats;
 
         const examenesRealizados = intentos.filter(i => i.estado === 'completado' || i.estado === 'calificado');
         const notasExamenes = examenesRealizados.filter(i => i.corregido && i.nota != null).map(i => i.nota);
@@ -28,8 +30,8 @@
           : '—';
 
         const racha = parseInt(localStorage.getItem('fb_racha') || '0', 10);
-        const lecturas = adminStats && adminStats.lecturas != null ? adminStats.lecturas : parseInt(localStorage.getItem('fb_est_lecturas') || '0', 10);
-        const tarjetas = adminStats && adminStats.tarjetas != null ? adminStats.tarjetas : parseInt(localStorage.getItem('fb_est_tarjetas') || '0', 10);
+        const lecturas = actividad && actividad.lecturas != null ? actividad.lecturas : parseInt(localStorage.getItem('fb_est_lecturas') || '0', 10);
+        const repasos = actividad && actividad.repasos != null ? actividad.repasos : parseInt(localStorage.getItem('fb_est_tarjetas') || '0', 10);
 
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
@@ -53,8 +55,8 @@
               <div class="tarjeta-estadistica">
                 <div class="tarjeta-estadistica__icono">${I('brain')}</div>
                 <div class="tarjeta-estadistica__info">
-                  <p class="tarjeta-estadistica__valor">${tarjetas}</p>
-                  <p class="tarjeta-estadistica__etiqueta">Tarjetas memoria</p>
+                  <p class="tarjeta-estadistica__valor">${repasos}</p>
+                  <p class="tarjeta-estadistica__etiqueta">Repasos memoria</p>
                 </div>
               </div>
               <div class="tarjeta-estadistica">

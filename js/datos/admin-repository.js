@@ -1,15 +1,26 @@
 (function() {
   'use strict';
   const sb = () => window.supabaseClient;
+  // Traduce mensajes técnicos del servidor (RLS, códigos SQL, PostgREST)
+  // a texto amigable de usuario. Sin el módulo de errores, degrada al crudo.
+  const _traducir = (error) => window.errores
+    ? window.errores.mensajeUsuario(error)
+    : (error && error.message) || 'Error inesperado';
   window.adminRepository = {
     // Actualiza ultimo_acceso del usuario actual (heartbeat)
     async actualizarUltimoAcceso(usuarioId) {
       if (!sb() || !usuarioId) return;
       try { await sb().from('perfiles').update({ ultimo_acceso: new Date().toISOString() }).eq('id', usuarioId); } catch (e) {}
     },
+    // FASE 2 (028): con el RLS cerrado el SELECT debe listar solo las columnas
+    // del grant (select('*') sobre perfiles daría permission denied).
+    _columnasPerfil() {
+      return window.authRepository ? window.authRepository.COLUMNAS_PERFIL
+        : 'id, username, nombre_completo, rol, activo, grupo_id, foto_perfil, preferencias, ultimo_acceso, creado_en';
+    },
     async listarUsuarios() {
       if (!sb()) return [];
-      const { data } = await sb().from('perfiles').select('*').order('creado_en', { ascending: false });
+      const { data } = await sb().from('perfiles').select(this._columnasPerfil()).order('creado_en', { ascending: false });
       return data || [];
     },
     async listarGrupos() {
@@ -26,67 +37,58 @@
       if (!sb()) throw new Error('Sin conexión');
       await sb().from('auditoria').update({ grupo_id: null }).eq('grupo_id', id);
       const { error } = await sb().from('grupos').delete().eq('id', id);
-      if (error) throw new Error('No se pudo eliminar el grupo: ' + error.message);
+      if (error) throw new Error('No se pudo eliminar el grupo: ' + _traducir(error));
     },
+    // FASE 2 (028): el CRUD de usuarios pasa por las RPCs de admin
+    // (SECURITY DEFINER, validan es_owner y crean/auth.users vía trigger).
     async crearUsuario({ nombre_completo, username, password, rol, grupo_id }) {
       if (!sb()) throw new Error('Sin conexión');
-      const { data, error } = await sb().from('perfiles').insert({
-        nombre_completo: nombre_completo,
-        username: username,
-        password: await window.helpers.hashPassword(password || ''),
-        rol: rol || 'usuario',
-        grupo_id: grupo_id || null,
-        activo: true
-      }).select().single();
+      const { data, error } = await sb().rpc('admin_crear_usuario', {
+        p_nombre_completo: nombre_completo || '',
+        p_username: username,
+        p_password: password || '',
+        p_rol: rol || 'usuario',
+        p_grupo_id: grupo_id || null
+      });
       if (error) {
-        if (/duplicate|unique|ya existe/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
-        throw error;
+        if (/ya existe|duplicate|unique/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
+        if (error) throw new Error(_traducir(error));
       }
-      return data;
+      return { id: data };
     },
     async toggleActivo(usuarioId, activo) {
       if (!sb()) throw new Error('Sin conexión');
-      await sb().from('perfiles').update({ activo }).eq('id', usuarioId);
+      const { error } = await sb().rpc('admin_toggle_activo', { p_usuario_id: usuarioId, p_activo: !!activo });
+      if (error) if (error) throw new Error(_traducir(error));
     },
     async cambiarRol(usuarioId, rol) {
       if (!sb()) throw new Error('Sin conexión');
-      await sb().from('perfiles').update({ rol }).eq('id', usuarioId);
+      const { error } = await sb().rpc('admin_cambiar_rol', { p_usuario_id: usuarioId, p_rol: rol });
+      if (error) if (error) throw new Error(_traducir(error));
     },
+    // actorId se mantiene por compatibilidad con el panel; la RPC hace toda la
+    // limpieza de FKs y reasigna los exámenes al owner autenticado.
     async eliminarUsuario(usuarioId, actorId) {
       if (!sb()) return;
-      if (!actorId) throw new Error('Se requiere el administrador que ejecuta la acción.');
-      // Limpiar referencias hijas antes de borrar el perfil (las FKs impiden borrarlo antes)
-      await sb().from('auditoria').delete().eq('actor_id', usuarioId);
-      await sb().from('miembros_grupo').delete().eq('usuario_id', usuarioId);
-      await sb().from('notas_capitulo').delete().eq('usuario_id', usuarioId);
-      await sb().from('categorias_tarjetas').delete().eq('usuario_id', usuarioId);
-      await sb().from('categorias_memorizacion').delete().eq('usuario_id', usuarioId);
-      await sb().from('mazos_memorizacion').delete().eq('usuario_id', usuarioId);
-      await sb().from('logros_usuario').delete().eq('usuario_id', usuarioId);
-      await sb().from('progreso_lectura').delete().eq('usuario_id', usuarioId);
-      // repasos_memorizacion se borran en cascada al eliminar tarjetas_memorizacion
-      await sb().from('tarjetas_memorizacion').delete().eq('usuario_id', usuarioId);
-      await sb().from('intentos_examen_personalizado').delete().eq('alumno_id', usuarioId);
-      await sb().from('intentos_examen_personalizado').update({ corregido_por: null }).eq('corregido_por', usuarioId);
-      await sb().from('preguntas_sistema').update({ creado_por: null }).eq('creado_por', usuarioId);
-      await sb().from('evaluaciones').update({ creado_por: null }).eq('creado_por', usuarioId);
-      // Exámenes creados por el usuario: creado_por es NOT NULL, se reasignan al actor.
-      await sb().from('examenes_personalizados').update({ creado_por: actorId }).eq('creado_por', usuarioId);
-      await sb().from('grupos').update({ admin_id: null }).eq('admin_id', usuarioId);
-      const { error } = await sb().from('perfiles').delete().eq('id', usuarioId);
-      if (error) throw error;
+      const { error } = await sb().rpc('admin_eliminar_usuario', { p_usuario_id: usuarioId });
+      if (error) if (error) throw new Error(_traducir(error));
     },
+    // FASE 2 (028): el panel envía SIEMPRE el grupo_id actual (o null si se le
+    // quiere desasignar la clase), según el contrato de admin_actualizar_usuario.
     async actualizarUsuario(usuarioId, { nombre_completo, username, rol, grupo_id, password }) {
       if (!sb()) return;
-      const updates = {
-        nombre_completo: nombre_completo,
-        username: username,
-        rol: rol,
-        grupo_id: grupo_id || null
-      };
-      if (password !== undefined && password !== '') updates.password = await window.helpers.hashPassword(password);
-      const { error } = await sb().from('perfiles').update(updates).eq('id', usuarioId);
-      if (error) throw error;
+      const { error } = await sb().rpc('admin_actualizar_usuario', {
+        p_usuario_id: usuarioId,
+        p_nombre_completo: nombre_completo != null ? nombre_completo : null,
+        p_username: username != null ? username : null,
+        p_rol: rol != null ? rol : null,
+        p_grupo_id: grupo_id,
+        p_password: password || null
+      });
+      if (error) {
+        if (/ya existe|duplicate|unique/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
+        if (error) throw new Error(_traducir(error));
+      }
     },
     async listarExamenes() {
       if (!sb()) return [];
@@ -128,11 +130,17 @@
     },
     async batchCambiarRol(ids, rol) {
       if (!sb() || !ids.length) return;
-      await sb().from('perfiles').update({ rol }).in('id', ids);
+      for (const id of ids) {
+        const { error } = await sb().rpc('admin_cambiar_rol', { p_usuario_id: id, p_rol: rol });
+        if (error) if (error) throw new Error(_traducir(error));
+      }
     },
     async batchCambiarGrupo(ids, grupoId) {
       if (!sb() || !ids.length) return;
-      await sb().from('perfiles').update({ grupo_id: grupoId || null }).in('id', ids);
+      for (const id of ids) {
+        const { error } = await sb().rpc('admin_actualizar_usuario', { p_usuario_id: id, p_grupo_id: grupoId || null });
+        if (error) if (error) throw new Error(_traducir(error));
+      }
     },
     async exportarUsuariosCSV() {
       if (!sb()) return '';
@@ -224,6 +232,16 @@
       if (!sb()) throw new Error('Sin conexión');
       const { data, error } = await sb().from('examenes_personalizados').update({ estado: 'publicado', publicado: true, actualizado_en: new Date().toISOString() }).eq('id', id).select().single();
       if (error) throw error;
+      // Avisar a los alumnos del grupo vía Notification Service (igual que
+      // examenesRepository.publicar) para cubrir esta vía alternativa de publicación.
+      if (window.notificationService && data && data.grupo_id) {
+        window.notificationService.emitir('examen.publicado', {
+          examenId: id,
+          titulo: data.titulo || 'Examen',
+          grupoId: data.grupo_id,
+          datos: { examen_id: id, examen_titulo: data.titulo || 'Examen' }
+        }).catch(() => {});
+      }
       return data;
     },
     async eliminarExamen(id) {
@@ -245,7 +263,7 @@
     async crearBackup(actorId) {
       if (!sb()) throw new Error('Sin conexión');
       const [perfiles, grupos, examenes, configuracion, sugerencias] = await Promise.all([
-        sb().from('perfiles').select('*'),
+        sb().from('perfiles').select(this._columnasPerfil()),
         sb().from('grupos').select('*'),
         sb().from('examenes_personalizados').select('*'),
         sb().from('configuracion').select('*'),
@@ -253,7 +271,7 @@
       ]);
       const snapshot = {
         app: 'FormsBiblicos',
-        version: '1.0.1',
+        version: window.__FB_APP_VERSION__?.version || '—',
         creado_en: new Date().toISOString(),
         perfiles: perfiles.data || [],
         grupos: grupos.data || [],
@@ -299,23 +317,12 @@
           creado_en: g.creado_en || new Date().toISOString()
         }); } catch (e) {}
       }
-      // Restaurar perfiles (upsert; solo password si viene incluida)
-      for (const p of perfiles) {
-        if (!p || !p.id) continue;
-        const ups = {
-          id: p.id,
-          nombre_completo: p.nombre_completo || 'Usuario',
-          username: p.username || ('usuario_' + String(p.id).slice(0, 6)),
-          rol: p.rol || 'usuario',
-          activo: p.activo !== false,
-          grupo_id: p.grupo_id || null,
-          creado_en: p.creado_en || new Date().toISOString()
-        };
-        if (p.password) ups.password = p.password;
-        if (p.foto_perfil) ups.foto_perfil = p.foto_perfil;
-        if (p.preferencias) ups.preferencias = p.preferencias;
-        if (p.ultimo_acceso) ups.ultimo_acceso = p.ultimo_acceso;
-        try { await sb().from('perfiles').upsert(ups); } catch (e) {}
+      // ponytail: con el RLS cerrado (028) el cliente ya NO puede INSERT/upsert
+      // en perfiles (sin política de INSERT). Restaurar los perfiles requiere una
+      // RPC SECURITY DEFINER nueva (admin_restaurar_perfiles); hasta entonces se
+      // avisa y NO se omiten en silencio (evita falsa sensación de restauración).
+      if (perfiles.length) {
+        throw new Error('La restauración de perfiles requiere una RPC de admin pendiente (028). Grupos y exámenes sí se restauran.');
       }
       // Restaurar exámenes (upsert)
       for (const ex of examenes) {
@@ -332,7 +339,7 @@
     async exportarDatosJSON() {
       if (!sb()) return null;
       const [perfiles, grupos, examenes, configuracion, sugerencias] = await Promise.all([
-        sb().from('perfiles').select('*'),
+        sb().from('perfiles').select(this._columnasPerfil()),
         sb().from('grupos').select('*'),
         sb().from('examenes_personalizados').select('*'),
         sb().from('configuracion').select('*'),
@@ -340,7 +347,7 @@
       ]);
       return {
         app: 'FormsBiblicos',
-        version: '1.0.1',
+        version: window.__FB_APP_VERSION__?.version || '—',
         exportado: new Date().toISOString(),
         perfiles: perfiles.data || [],
         grupos: grupos.data || [],
@@ -417,9 +424,8 @@
       return n;
     },
 
-    // Envía una notificación de anuncio a todos los usuarios de la plataforma.
-    // Inserta una fila en notificaciones para CADA usuario y además notifica
-    // al propietario con un resumen.
+    // Envía una notificación de anuncio a todos los usuarios de la plataforma
+    // a través del Notification Service (persistencia + entrega centralizadas).
     async enviarAnuncioGlobal({ titulo, cuerpo }, actorId) {
       if (!sb()) throw new Error('Sin conexión');
       const tituloNotif = titulo.trim() || 'Anuncio';
@@ -428,17 +434,29 @@
       const { data: perfiles, error: errPerfiles } = await sb().from('perfiles').select('id, nombre_completo, username').neq('id', actorId);
       if (errPerfiles) throw new Error('No se pudieron listar los usuarios.');
       if (!perfiles || !perfiles.length) throw new Error('No hay usuarios a los que notificar.');
-      const notifs = perfiles.map(p => ({
-        usuario_id: p.id,
-        destinatario: p.nombre_completo || p.username || '',
-        tipo: 'anuncio',
-        titulo: tituloNotif,
-        cuerpo: cuerpoNotif,
-        datos: { anuncio_titulo: tituloNotif, anuncio_cuerpo: cuerpoNotif },
-        leida: false
-      }));
-      const { error } = await sb().from('notificaciones').insert(notifs);
-      if (error) throw new Error('Error al enviar notificaciones: ' + error.message);
+      const destinatarios = perfiles.map(p => p.id);
+      if (window.notificationService) {
+        await window.notificationService.emitir('anuncio.creado', {
+          titulo: tituloNotif,
+          cuerpo: cuerpoNotif,
+          destinatarios,
+          datos: { anuncio_titulo: tituloNotif, anuncio_cuerpo: cuerpoNotif },
+          emisorId: actorId
+        });
+      } else {
+        // Fallback: inserción directa si el servicio no está disponible
+        const notifs = perfiles.map(p => ({
+          usuario_id: p.id,
+          destinatario: p.nombre_completo || p.username || '',
+          tipo: 'anuncio',
+          titulo: tituloNotif,
+          cuerpo: cuerpoNotif,
+          datos: { anuncio_titulo: tituloNotif, anuncio_cuerpo: cuerpoNotif },
+          leida: false
+        }));
+        const { error } = await sb().from('notificaciones').insert(notifs);
+        if (error) throw new Error('Error al enviar notificaciones: ' + _traducir(error));
+      }
       await this.registrarAuditoria('notificaciones:anuncio', `Anuncio enviado a ${perfiles.length} usuarios: "${tituloNotif}"`, actorId);
       return { enviados: perfiles.length };
     }

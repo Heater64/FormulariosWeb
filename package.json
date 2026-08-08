@@ -1,18 +1,29 @@
 {
   "name": "formsbiblicos",
+  "version": "1.0.1",
   "private": true,
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
+    "build:public": "vite build --config vite.public.config.js",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:responsive": "node auditoria-responsive.cjs"
+    "test:responsive": "node auditoria-responsive.cjs",
+    "version:patch": "node scripts/bump-version.mjs patch",
+    "version:minor": "node scripts/bump-version.mjs minor",
+    "version:major": "node scripts/bump-version.mjs major",
+    "version:sync": "node scripts/sync-android-version.mjs"
   },
   "devDependencies": {
+    "@capacitor/cli": "^8.5.0",
     "vite": "^6.3.5",
     "vitest": "^3.1.3"
+  },
+  "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0"
   }
 }

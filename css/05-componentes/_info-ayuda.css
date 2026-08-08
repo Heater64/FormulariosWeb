@@ -1,4 +1,5 @@
 .info-ayuda {
+  position: relative;
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -18,6 +19,14 @@
   line-height: 1;
   background: transparent;
   padding: 0;
+}
+
+/* Área táctil expandida a 44px (WCAG 2.5.5) sin cambiar el círculo visual de 20px */
+.info-ayuda::after {
+  content: '';
+  position: absolute;
+  inset: -12px;
+  border-radius: 50%;
 }
 
 .info-ayuda:hover,

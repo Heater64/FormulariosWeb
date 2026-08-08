@@ -6,13 +6,9 @@
   <meta name="theme-color" content="#FFFFFF">
   <meta name="color-scheme" content="light dark">
 
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
-  <link rel="apple-touch-icon" href="assets/iconos/180x180.png">
-
-  <link rel="manifest" href="manifest.json">
+  <!-- Preconexiones: abre sockets antes de que se pidan los recursos externos -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
 
   <!-- ============================================================
        Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
@@ -52,6 +48,35 @@
         var meta = document.head.querySelector('meta[name="theme-color"]');
         if (meta) meta.setAttribute('content', bg);
       } catch (e) { /* offline / no localStorage -> defaults del navegador */ }
+    })();
+  </script>
+
+  <!-- ============================================================
+       Captura global de errores (corre antes que cualquier script):
+       alimenta el buffer que procesa error-recovery.js (primer
+       script diferido). Sin esto, un error en el arranque pasaría
+       desapercibido y la app podría quedarse en blanco.
+       ============================================================ -->
+  <script>
+    (function () {
+      window.__fbErrores = [];
+      window.__fbRegistrarError = function (e) {
+        try {
+          var msg = (e && e.message) || (e && e.name) || String(e);
+          window.__fbErrores.push({ ts: Date.now(), msg: msg });
+        } catch (err) {}
+        if (window.errorRecovery && window.errorRecovery.registrarError) {
+          try { window.errorRecovery.registrarError(e); } catch (err) {}
+        }
+      };
+      window.addEventListener('error', function (e) {
+        // Los errores de recursos (img, link, audio, vídeo...) no son errores
+        // de código: no cuentan para la autorrecuperación (si no, cualquier
+        // imagen rota dispararía una reparación de caché falsa).
+        if (e && e.target && !e.error) return;
+        window.__fbRegistrarError(e.error || e);
+      }, true);
+      window.addEventListener('unhandledrejection', function (e) { window.__fbRegistrarError(e.reason); });
     })();
   </script>
 
@@ -107,7 +132,7 @@
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
   <link rel="stylesheet" href="css/05-componentes/_memorizacion-juego.css">
   <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
-  <link rel="stylesheet" href="css/05-componentes/_update-card.css">
+  <link rel="stylesheet" href="css/05-componentes/_update-dialog.css">
 
   <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
   <link rel="stylesheet" href="css/05-componentes/_btn-calidad.css">
@@ -116,14 +141,12 @@
   <link rel="stylesheet" href="css/05-componentes/_zona-peligro.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-crear.css">
   <link rel="stylesheet" href="css/05-componentes/_switch.css">
-  <link rel="stylesheet" href="css/05-componentes/_instalar.css">
   <link rel="stylesheet" href="css/05-componentes/_loading.css">
   <link rel="stylesheet" href="css/05-componentes/_sync-indicator.css">
   <link rel="stylesheet" href="css/05-componentes/_animaciones.css">
 
   <link rel="stylesheet" href="css/05-componentes/_skeleton.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-imagen.css">
-  <link rel="stylesheet" href="css/05-componentes/_install-banner.css">
   <link rel="stylesheet" href="css/05-componentes/_transiciones.css">
   <link rel="stylesheet" href="css/05-componentes/_editor-huecos.css">
   <link rel="stylesheet" href="css/05-componentes/_perfil.css">
@@ -146,6 +169,7 @@
   <link rel="stylesheet" href="css/05-componentes/_admin-panel.css">
   <link rel="stylesheet" href="css/05-componentes/_grupos.css">
   <link rel="stylesheet" href="css/05-componentes/_desafios.css">
+  <link rel="stylesheet" href="css/05-componentes/_notificaciones.css">
 
   <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -153,186 +177,110 @@
   <link rel="stylesheet" href="css/06-utilidades/_estilos-inline.css">
   <link rel="stylesheet" href="css/06-utilidades/_accesibilidad.css">
 
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="js/vendor/lucide.min.js"></script>
+  <!-- ============================================================
+       JS: todos los scripts son diferidos (defer) para que la
+       descarga no bloquee el renderizado. Se ejecutan en orden
+       tras parsear el HTML, justo antes de DOMContentLoaded.
+       error-recovery.js va PRIMERO para capturar errores de los
+       demás. Las vistas pesadas se cargan bajo demanda (lazy)
+       desde el router, no aquí.
+       ============================================================ -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="js/vendor/lucide.min.js" defer></script>
+
+  <!-- JS: Autorrecuperación (primero: registra handlers de error antes que el resto) -->
+  <script src="js/utilidades/error-recovery.js" defer></script>
 
   <!-- JS: Utilities -->
-  <script src="js/utilidades/dom-helpers.js"></script>
-  <script src="js/utilidades/iconos.js"></script>
-  <script src="js/utilidades/storage.js"></script>
-  <script src="js/utilidades/preferencias.js"></script>
-  <script src="js/datos/cache-datos.js"></script>
+  <script src="js/utilidades/dom-helpers.js" defer></script>
+  <script src="js/utilidades/iconos.js" defer></script>
+  <script src="js/utilidades/storage.js" defer></script>
+  <script src="js/utilidades/preferencias.js" defer></script>
+  <script src="js/datos/cache-datos.js" defer></script>
 
   <!-- JS: Core -->
-  <script src="js/core/store.js"></script>
-  <script src="js/core/eventBus.js"></script>
-  <script src="js/core/router.js"></script>
+  <script src="js/core/store.js" defer></script>
+  <script src="js/core/eventBus.js" defer></script>
+  <script src="js/core/errores.js" defer></script>
+  <script src="js/core/router.js" defer></script>
+
+  <!-- JS: Configuración de entorno (modo demo, Supabase) — debe cargar antes
+       que supabase-client.js y cualquier vista -->
+  <script src="js/config/entorno.js" defer></script>
+
+  <!-- JS: Actualizaciones de APK/Capacitor -->
+  <script src="js/services/update-service.js" defer></script>
+  <script src="js/componentes/update-installer.js" defer></script>
+  <script src="js/componentes/update-dialog.js" defer></script>
 
   <!-- JS: Data Repositories -->
-  <script src="js/datos/supabase-client.js"></script>
-  <script src="js/datos/auth-repository.js"></script>
-  <script src="js/datos/progreso-repository.js"></script>
-  <script src="js/datos/examenes-repository.js"></script>
-  <script src="js/datos/memorizacion-repository.js"></script>
-  <script src="js/datos/sembrador-memorizacion.js"></script>
-  <script src="js/datos/notas-repository.js"></script>
-  <script src="js/datos/sugerencias-repository.js"></script>
-  <script src="js/datos/admin-repository.js"></script>
-  <script src="js/datos/grupos-repository.js"></script>
-  <script src="js/datos/desafios-repository.js"></script>
-  <script src="js/datos/sync-queue.js"></script>
-  <script src="js/utilidades/sync-status.js"></script>
-  <script src="js/utilidades/connection-indicator.js"></script>
-  <script src="js/utilidades/animaciones.js"></script>
-  <script src="js/utilidades/haptica.js"></script>
-  <script src="js/utilidades/gestos-navegacion.js"></script>
+  <script src="js/datos/supabase-client.js" defer></script>
+  <script src="js/datos/auth-repository.js" defer></script>
+  <script src="js/datos/progreso-repository.js" defer></script>
+  <script src="js/datos/examenes-repository.js" defer></script>
+  <script src="js/datos/memorizacion-repository.js" defer></script>
+  <script src="js/datos/sembrador-memorizacion.js" defer></script>
+  <script src="js/datos/notas-repository.js" defer></script>
+  <script src="js/datos/sugerencias-repository.js" defer></script>
+  <script src="js/datos/admin-repository.js" defer></script>
+  <script src="js/datos/grupos-repository.js" defer></script>
+  <script src="js/datos/desafios-repository.js" defer></script>
+  <script src="js/datos/notificaciones-repository.js" defer></script>
+  <script src="js/datos/sync-queue.js" defer></script>
+  <script src="js/utilidades/sync-status.js" defer></script>
+  <script src="js/utilidades/connection-indicator.js" defer></script>
+  <script src="js/utilidades/animaciones.js" defer></script>
+  <script src="js/utilidades/haptica.js" defer></script>
+  <script src="js/utilidades/gestos-navegacion.js" defer></script>
 
-  <script src="js/utilidades/skeleton.js"></script>
-  <script src="js/utilidades/memoria.js"></script>
-  <script src="js/utilidades/accesibilidad.js"></script>
-  <script src="js/componentes/editor-imagen.js"></script>
-  <script src="js/componentes/editor-dibujo.js"></script>
+  <script src="js/utilidades/skeleton.js" defer></script>
+  <script src="js/utilidades/memoria.js" defer></script>
+  <script src="js/utilidades/accesibilidad.js" defer></script>
+  <script src="js/componentes/editor-imagen.js" defer></script>
+  <script src="js/componentes/editor-dibujo.js" defer></script>
   <!-- Cargado como módulo: el archivo usa import() dinámico (esm.sh) y Vite le inyecta
        un import de /@vite/client al inicio; como script clásico lanzaba
        'Cannot use import statement outside a module' y el editor quedaba roto. -->
   <script type="module" src="js/componentes/editor-tiptap.js"></script>
-  <script src="js/componentes/version-history.js"></script>
+  <script src="js/componentes/version-history.js" defer></script>
 
   <!-- JS: Core (nuevos) -->
-<script src="js/core/notifications.js"></script>
+  <script src="js/core/notifications.js" defer></script>
+  <script src="js/core/notification-service.js" defer></script>
 
   <!-- JS: Domain Logic -->
-  <script src="js/dominio/progreso-lectura.js"></script>
-  <script src="js/dominio/repeticion-espaciada.js"></script>
-  <script src="js/dominio/puntuacion-examen.js"></script>
-  <script src="js/dominio/logros.js"></script>
-  <script src="js/dominio/maquina-estudio.js"></script>
+  <script src="js/dominio/progreso-lectura.js" defer></script>
+  <script src="js/dominio/repeticion-espaciada.js" defer></script>
+  <script src="js/dominio/puntuacion-examen.js" defer></script>
+  <script src="js/dominio/logros.js" defer></script>
+  <script src="js/dominio/maquina-estudio.js" defer></script>
 
   <!-- JS: Components -->
-  <script src="js/componentes/editor-huecos.js"></script>
-  <script src="js/componentes/profile-editor.js"></script>
+  <script src="js/componentes/editor-huecos.js" defer></script>
+  <script src="js/componentes/profile-editor.js" defer></script>
 
-  <!-- JS: Views -->
-  <script src="js/vistas/vista-login.js"></script>
-  <script src="js/vistas/vista-estudio.js"></script>
-  <script src="js/vistas/vista-capitulos.js"></script>
-  <script src="js/vistas/vista-sesion-estudio.js"></script>
-  <script src="js/vistas/vista-mapa.js"></script>
-  <script src="js/vistas/vista-examenes.js"></script>
-  <script src="js/vistas/vista-examen-editor.js"></script>
-  <script src="js/vistas/vista-examen-tomar.js"></script>
-  <script src="js/vistas/vista-examen-corregir.js"></script>
-  <script src="js/vistas/vista-calificaciones.js"></script>
-  <script src="js/dominio/ejercicios-memorizacion.js"></script>
-  <script src="js/vistas/vista-memorizacion.js"></script>
-  <script src="js/vistas/vista-progreso.js"></script>
-  <script src="js/vistas/vista-explorar.js"></script>
-  <script src="js/vistas/vista-perfil.js"></script>
-  <script src="js/vistas/vista-grupos.js"></script>
-  <script src="js/vistas/vista-desafio.js"></script>
-  <script src="js/vistas/admin/admin-comunes.js"></script>
-  <script src="js/vistas/admin/vista-panel-admin.js"></script>
+  <!-- JS: Views (las pesadas se cargan bajo demanda desde el router) -->
+  <script src="js/vistas/vista-login.js" defer></script>
+  <script src="js/vistas/vista-estudio.js" defer></script>
+  <script src="js/vistas/vista-capitulos.js" defer></script>
+  <script src="js/vistas/vista-sesion-estudio.js" defer></script>
+  <script src="js/vistas/vista-examenes.js" defer></script>
+  <script src="js/vistas/vista-memorizacion.js" defer></script>
+  <script src="js/vistas/vista-explorar.js" defer></script>
+  <script src="js/vistas/vista-notificaciones.js" defer></script>
+  <script src="js/vistas/vista-perfil.js" defer></script>
 
-  <!-- JS: App Shell -->
-  <script src="js/core/index.js"></script>
-
-  <!-- JS: Instalación PWA -->
-  <script src="js/core/install.js"></script>
-
-  <!-- JS: Service Worker (producción) + Update Detection -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').then((reg) => {
-          let refreshing = false;
-
-          // Listen for update messages from SW
-          navigator.serviceWorker.addEventListener('message', (event) => {
-            if (event.data?.type === 'SW_UPDATE_AVAILABLE') {
-              showUpdateCard(event.data);
-            }
-          });
-
-          reg.addEventListener('updatefound', () => {
-            const worker = reg.installing;
-            if (!worker) return;
-            worker.addEventListener('statechange', () => {
-              if (worker.state === 'installed' && navigator.serviceWorker.controller && !refreshing) {
-                refreshing = true;
-                window.location.reload();
-              }
-            });
-          });
-
-          // Periodic check for updates
-          setInterval(() => reg.update(), 5 * 60 * 1000);
-        }).catch(e => console.warn('SW:', e.message));
-      });
-    }
-
-    function showUpdateCard({ version, features, fixes, performance }) {
-      if (document.getElementById('updateCard')) return;
-      const card = document.createElement('div');
-      card.id = 'updateCard';
-      card.className = 'update-card';
-      card.setAttribute('role', 'alertdialog');
-      card.setAttribute('aria-modal', 'true');
-      card.innerHTML = `
-        <div class="update-card__content">
-          <div class="update-card__icon">${window.Iconos?.render('download-cloud') || '⬇'}</div>
-          <h2 class="update-card__title">Nueva versión disponible</h2>
-          <p class="update-card__subtitle">Versión ${version}</p>
-          <ul class="update-card__list">
-            ${(features || []).map(f => `<li>${window.Iconos?.render('check') || '✓'} ${f}</li>`).join('')}
-            ${(fixes || []).map(f => `<li>${window.Iconos?.render('bug') || '🐛'} ${f}</li>`).join('')}
-            ${(performance || []).map(f => `<li>${window.Iconos?.render('zap') || '⚡'} ${f}</li>`).join('')}
-          </ul>
-          <button class="btn-primario update-card__btn" id="updateNowBtn">Actualizar ahora</button>
-        </div>`;
-      document.body.appendChild(card);
-      window.Iconos?.actualizar?.();
-
-      card.querySelector('#updateNowBtn').onclick = () => {
-        const btn = card.querySelector('#updateNowBtn');
-        btn.disabled = true;
-        btn.textContent = 'Descargando…';
-
-        // Cuando el nuevo SW tome el control, recargamos para aplicar la versión.
-        let recargado = false;
-        const onControllerChange = () => {
-          if (recargado) return;
-          recargado = true;
-          // La sesión persiste en localStorage, así que se mantiene tras reload.
-          window.location.reload();
-        };
-        navigator.serviceWorker.addEventListener('controllerchange', onControllerChange);
-
-        // Pedir al SW instalado que se active (descarga la nueva versión).
-        navigator.serviceWorker.getRegistration().then((reg) => {
-          const waiting = reg && reg.waiting;
-          if (waiting) {
-            waiting.postMessage({ type: 'SKIP_WAITING' });
-          } else if (navigator.serviceWorker.controller) {
-            navigator.serviceWorker.controller.postMessage({ type: 'SKIP_WAITING' });
-          } else {
-            // Sin SW controlador: recargar para forzar la toma de control.
-            window.location.reload();
-          }
-        });
-
-        card.classList.add('update-card--hiding');
-        setTimeout(() => card.remove(), 300);
-
-        // Fallback por si controllerchange no dispara.
-        setTimeout(() => { if (!recargado) window.location.reload(); }, 4000);
-      };
-    }
-  </script>
+  <!-- JS: App Shell (module porque usa import() dinámico para vistas lazy;
+       como script clásico Vite le inyecta un import de /@vite/client y
+       el navegador lanza "Cannot use import statement outside a module".
+       Los módulos se ejecutan en orden tras los scripts defer, y este es
+       el último script de la página, así que el orden no cambia. -->
+  <script type="module" src="js/core/index.js"></script>
 
   <!-- JS: Feedback háptico -->
   <script>
     document.addEventListener('click', e => {
-      if ('vibrate' in navigator && e.target.closest('button, a, [role="button"], .btn-primario, .btn-secundario, .btn-instalar'))
+      if ('vibrate' in navigator && e.target.closest('button, a, [role="button"], .btn-primario, .btn-secundario'))
         navigator.vibrate(8);
     }, { passive: true });
   </script>

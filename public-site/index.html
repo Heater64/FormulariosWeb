@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="FormsBiblicos: estudio bíblico guiado con progreso, memorización y exámenes.">
+  <meta name="theme-color" content="#0f172a">
+  <title>FormsBiblicos — Estudio bíblico guiado</title>
+  <link rel="stylesheet" href="./landing.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="./" aria-label="FormsBiblicos, inicio">
+      <span class="brand-mark" aria-hidden="true">✦</span>
+      <span>FormsBiblicos</span>
+    </a>
+    <a class="header-link" href="#descarga">Descargar app</a>
+  </header>
+
+  <main>
+    <section class="hero" aria-labelledby="hero-title">
+      <div class="hero-copy">
+        <p class="eyebrow">Estudio bíblico con propósito</p>
+        <h1 id="hero-title">Aprende, memoriza y progresa.</h1>
+        <p class="hero-lead">FormsBiblicos reúne lectura guiada, repetición espaciada, exámenes y seguimiento del progreso para grupos de estudio.</p>
+        <div class="hero-actions" id="descarga">
+          <a class="button button-primary" id="downloadButton" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk">
+            Descargar aplicación Android
+          </a>
+          <a class="button button-secondary" href="https://github.com/Heater64/FormulariosWeb/releases" target="_blank" rel="noopener">Ver releases</a>
+        </div>
+        <p class="device-message" id="deviceMessage" role="status">Descarga la aplicación Android para una experiencia completa.</p>
+      </div>
+      <div class="hero-card" aria-label="Resumen de funciones">
+        <div class="hero-card-top"><span class="status-dot"></span><span>FormsBiblicos Android</span></div>
+        <div class="book-icon" aria-hidden="true">▤</div>
+        <p class="hero-card-title">Tu estudio, siempre contigo.</p>
+        <div class="progress-line"><span style="width:72%"></span></div>
+        <p class="hero-card-caption">Progreso de lectura · 72%</p>
+      </div>
+    </section>
+
+    <section class="features" aria-labelledby="features-title">
+      <p class="eyebrow">Una experiencia completa</p>
+      <h2 id="features-title">Todo lo necesario para estudiar mejor.</h2>
+      <div class="feature-grid">
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">◉</span><h3>Estudio guiado</h3><p>Lee capítulos, responde preguntas y avanza con una estructura clara.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">↻</span><h3>Memorización</h3><p>Repasa versículos con repetición espaciada y conserva lo aprendido.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">✓</span><h3>Exámenes y progreso</h3><p>Evalúa tu avance y comparte el seguimiento con tu grupo o profesor.</p></article>
+      </div>
+    </section>
+
+    <section class="download-panel" aria-labelledby="download-title">
+      <div>
+        <p class="eyebrow">Aplicación oficial</p>
+        <h2 id="download-title">Una app Android completa, sin depender del navegador.</h2>
+        <p>La aplicación incluye su interfaz localmente y sincroniza tus datos de forma segura con Supabase.</p>
+      </div>
+      <a class="button button-primary" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk" id="downloadButtonBottom">Descargar APK estable</a>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 FormsBiblicos</span>
+    <a href="https://github.com/Heater64/FormulariosWeb/releases" target="_blank" rel="noopener">Releases de Android</a>
+  </footer>
+
+  <script>
+    (() => {
+      const android = /Android/i.test(navigator.userAgent);
+      const message = document.getElementById('deviceMessage');
+      const buttons = [document.getElementById('downloadButton'), document.getElementById('downloadButtonBottom')];
+      if (android) {
+        message.textContent = 'Estás en Android. Descarga la APK estable y sigue las instrucciones del instalador.';
+        return;
+      }
+      message.textContent = 'La APK está diseñada para Android. Abre esta página en tu teléfono Android para descargarla directamente.';
+      buttons.forEach((button) => {
+        button.href = 'https://github.com/Heater64/FormulariosWeb/releases';
+        button.textContent = button === buttons[0] ? 'Ver release estable' : 'Ver releases de Android';
+      });
+    })();
+  </script>
+</body>
+</html>

@@ -125,7 +125,12 @@
           if (btn.dataset.accion === 'aceptar') {
             try {
               const r = await window.desafiosRepository.responderInvitacion(d.id, usuario.id, true);
-              await window.desafiosRepository.marcarNotificacionLeida(d._notifId || null);
+              // Cerrar el ciclo de vida en el centro (completada), no solo leída
+              if (d._notifId && window.notificationService) {
+                window.notificationService.marcarCompletada(d._notifId).catch(() => {});
+              } else {
+                await window.desafiosRepository.marcarNotificacionLeida(d._notifId || null);
+              }
               if (r.empezado) { router.navegar('/desafio/' + d.id); }
               else { window.helpers.mostrarAlerta('Has aceptado. Esperando a los demás...', 'exito'); this._montarDirectorio(raiz); }
             } catch (e) { btn.disabled = false; window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }

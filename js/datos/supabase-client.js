@@ -1,14 +1,14 @@
-// Sobrescribe desde window.ENV si existe (para tests o cambios rápidos)
-const SUPABASE_URL = (window.ENV && window.ENV.SUPABASE_URL) || 'https://josxcvncescqqlajahkh.supabase.co';
-const SUPABASE_ANON_KEY = (window.ENV && window.ENV.SUPABASE_ANON_KEY) || 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8';
-
+// Cliente Supabase. La URL y la key anon provienen de js/config/entorno.js
+// (única fuente de verdad, sobrescribible en window.ENV para tests).
 let cliente = null;
 
 try {
-  if (typeof supabase !== 'undefined' && supabase.createClient) {
-    cliente = supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+  const url = window.entorno && window.entorno.supabaseUrl;
+  const key = window.entorno && window.entorno.supabaseAnonKey;
+  if (typeof supabase !== 'undefined' && supabase.createClient && url && key) {
+    cliente = supabase.createClient(url, key);
   } else {
-    console.warn('⚠️ SDK de Supabase no disponible');
+    console.warn('⚠️ SDK de Supabase no disponible o configuración ausente');
   }
 } catch (e) {
   console.warn('⚠️ Error creando cliente Supabase:', e.message);

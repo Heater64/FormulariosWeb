@@ -84,7 +84,7 @@
     montar(raiz, params = {}) {
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      const ruta = router._rutaActual();
+      const ruta = router.pathActual();
       const seccion = params.seccion;
 
       if (ruta.startsWith('/perfil/config/')) {
@@ -106,6 +106,7 @@
       const rol = (usuario.rol || '').trim().toLowerCase();
       const esAdmin = rol === 'admin' || rol === 'owner';
       const prefs = usuario.preferencias || {};
+      const versionActual = window.__FB_APP_VERSION__?.version || '—';
       const descripcion = (prefs.descripcion || prefs.frase || '').trim();
 
       raiz.innerHTML = `
@@ -220,9 +221,12 @@
               <div class="perfil-info-card">
                 <div class="perfil-info-card__texto">
                   <p class="perfil-info-card__nombre">FormsBiblicos</p>
-                  <p class="perfil-info-card__version">Versión 1.0.1</p>
+                  <p class="perfil-info-card__version">Versión ${E(versionActual)}</p>
                 </div>
-                <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
+                <div class="o-flecha" style="gap:var(--espaciado-xxs);justify-content:flex-end;flex-wrap:wrap">
+                  <button class="btn-secundario u-fs-xs" id="btnBuscarActualizacion">Buscar actualizaciones</button>
+                  <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
+                </div>
               </div>
               <div class="o-pila" style="gap:var(--espaciado-xxs);margin-top:var(--espaciado-xs)">
                 ${filaNav('file-text', 'Términos de uso', 'Condiciones del servicio', '/perfil/acerca/terminos')}
@@ -238,7 +242,7 @@
       // Avatar con foto
       if (usuario.foto_perfil) {
         const avatar = raiz.querySelector('#avatarPerfil');
-        if (avatar) avatar.innerHTML = `<img src="${usuario.foto_perfil}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        if (avatar) avatar.innerHTML = `<img src="${E(usuario.foto_perfil)}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
       }
 
       // (El hero ya no se contrae al hacer scroll: la foto de perfil se
@@ -272,8 +276,12 @@
       };
       raiz.querySelector('#btnEditarPerfil').onclick = editarPerfil;
 
-      // Más información
+      // Más información y actualización manual
       raiz.querySelector('#btnMasInfo').onclick = () => router.navegar('/perfil/acerca/que-es');
+      raiz.querySelector('#btnBuscarActualizacion').onclick = () => {
+        if (window.updateDialog) window.updateDialog.comprobar({ manual: true });
+        else window.helpers.mostrarAlerta('El servicio de actualizaciones todavía se está iniciando.', 'info');
+      };
 
       // Foto de perfil — sube a Supabase Storage y guarda la URL pública
       const alElegir = async (base64) => {
@@ -304,7 +312,7 @@
 
           // Actualizar UI
           const avatar = raiz.querySelector('#avatarPerfil');
-          if (avatar) avatar.innerHTML = `<img src="${publicUrl}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+          if (avatar) avatar.innerHTML = `<img src="${E(publicUrl)}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
           const nuevoInput = raiz.querySelector('#inputFotoPerfil');
           if (nuevoInput) nuevoInput.onchange = onFotoChange;
 
@@ -515,6 +523,11 @@
       };
     },
 
+    // ============================================================
+    // NOTIFICACIONES v2: preferencias por categoría + canales
+    // Las claves legacy (notif_logros, notif_repasos, notif_invitaciones)
+    // también desactivan su categoría para no romper configs antiguas.
+    // ============================================================
     _configNotificaciones(cont, usuario, prefs) {
       const permiso = ('Notification' in window) ? Notification.permission : 'unsupported';
       const permisoTexto = {
@@ -523,8 +536,12 @@
         default: 'Aún no has decidido',
         unsupported: 'No soportadas en este dispositivo'
       };
-      // Claves antiguas que también desactivan el aviso (para reflejar el estado real)
-      const LEGACY_NOTIF = { notif_recordatorios: 'notif_repasos', notif_desafios: 'notif_logros' };
+      const LEGACY_NOTIF = {
+        notif_estudio: 'notif_recordatorios',
+        notif_estudio2: 'notif_repasos',
+        notif_desafios: 'notif_logros',
+        notif_grupos: 'notif_invitaciones'
+      };
       const filaToggle = (clave, icono, titulo, desc) => {
         const legacy = LEGACY_NOTIF[clave];
         const activo = prefs[clave] !== false && !(legacy && prefs[legacy] === false);
@@ -537,6 +554,15 @@
           <label class="switch"><input type="checkbox" data-notif="${clave}" ${activo ? 'checked' : ''}><span class="slider"></span></label>
         </div>`;
       };
+      // Preferencias futuras (correo, push, resúmenes): deshabilitadas.
+      const filaFutura = (icono, titulo, desc) => `
+        <div class="perfil-opcion" style="opacity:0.55">
+          <div class="perfil-opcion__info">
+            <p class="perfil-opcion__label">${I(icono)} ${E(titulo)} <span class="u-fs-xxs u-color-texto-terciario">Próximamente</span></p>
+            <p class="perfil-opcion__desc">${E(desc)}</p>
+          </div>
+          <label class="switch"><input type="checkbox" disabled><span class="slider"></span></label>
+        </div>`;
 
       cont.innerHTML = `
         <div class="perfil-seccion">
@@ -555,25 +581,55 @@
           <div class="perfil-seccion__cabecera">
             <div class="perfil-seccion__icono">${I('settings')}</div>
             <div>
-              <h4 class="perfil-seccion__titulo">Avisos</h4>
-              <p class="perfil-seccion__desc">Elige qué notificaciones recibir</p>
+              <h4 class="perfil-seccion__titulo">Categorías</h4>
+              <p class="perfil-seccion__desc">Activa o desactiva cada tipo de aviso</p>
             </div>
           </div>
-          ${filaToggle('notif_desafios', 'trophy', 'Notificaciones de desafíos', 'Logros y desafíos de estudio')}
-          ${filaToggle('notif_examenes', 'clipboard-check', 'Nuevos exámenes', 'Cuando un profesor publica un examen')}
-          ${filaToggle('notif_invitaciones', 'user-plus', 'Invitaciones a grupos', 'Cuando te invitan a un grupo')}
-          ${filaToggle('notif_recordatorios', 'brain', 'Recordatorios de estudio', 'Versículos pendientes de repaso')}
-          ${filaToggle('notif_sonidos', 'volume-2', 'Sonidos', 'Sonido y vibración al recibir avisos')}
+          ${filaToggle('notif_desafios', 'sword', 'Desafíos', 'Invitaciones y resultados de desafíos')}
+          ${filaToggle('notif_examenes', 'clipboard-check', 'Exámenes', 'Publicación, entregas y correcciones')}
+          ${filaToggle('notif_estudio', 'book-open', 'Estudio', 'Repasos y recordatorios de estudio')}
+          ${filaToggle('notif_grupos', 'users', 'Grupos', 'Invitaciones y novedades de tu grupo')}
+          ${filaToggle('notif_logros', 'trophy', 'Logros', 'Logros desbloqueados')}
+          ${filaToggle('notif_sistema', 'settings', 'Sistema', 'Actualizaciones y avisos de la plataforma')}
+        </div>
+
+        <div class="perfil-seccion">
+          <div class="perfil-seccion__cabecera">
+            <div class="perfil-seccion__icono">${I('volume-2')}</div>
+            <div>
+              <h4 class="perfil-seccion__titulo">Sonido y dispositivo</h4>
+              <p class="perfil-seccion__desc">Cómo te avisa la app</p>
+            </div>
+          </div>
+          ${filaToggle('notif_sonidos', 'volume-2', 'Sonidos', 'Sonido al recibir un aviso')}
+          ${filaToggle('notif_vibracion', 'vibrate', 'Vibración', 'Vibra al recibir un aviso')}
+          ${filaToggle('notif_nativas', 'smartphone', 'Notificaciones del dispositivo', 'Mostrar en la bandeja del sistema (si no, avisos internos)')}
+        </div>
+
+        <div class="perfil-seccion">
+          <div class="perfil-seccion__cabecera">
+            <div class="perfil-seccion__icono" style="background:var(--color-info-soft);color:var(--color-info)">${I('send')}</div>
+            <div>
+              <h4 class="perfil-seccion__titulo">Más canales</h4>
+              <p class="perfil-seccion__desc">Próximamente</p>
+            </div>
+          </div>
+          ${filaFutura('mail', 'Correo electrónico', 'Recibe un resumen por correo')}
+          ${filaFutura('bell-plus', 'Web Push', 'Notificaciones con la app cerrada')}
+          ${filaFutura('calendar', 'Resumen diario', 'Un resumen cada mañana')}
+          ${filaFutura('calendar-days', 'Resumen semanal', 'Tu actividad de la semana')}
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
 
       cont.querySelectorAll('[data-notif]').forEach(inp => {
         inp.addEventListener('change', () => {
-          // Al reactivar, limpiar la clave legacy desactivada para que el runtime no la siga suprimiendo
-          if (inp.checked && LEGACY_NOTIF[inp.dataset.notif] && usuario.preferencias) {
+          // Al reactivar, limpiar las claves legacy desactivadas para que el
+          // runtime (y las versiones antiguas) no sigan suprimiendo la categoría.
+          if (inp.checked && usuario.preferencias) {
             const prefs = { ...usuario.preferencias };
-            delete prefs[LEGACY_NOTIF[inp.dataset.notif]];
+            const legacy = LEGACY_NOTIF[inp.dataset.notif];
+            if (legacy) delete prefs[legacy];
             usuario.preferencias = prefs;
           }
           guardarPref(usuario, inp.dataset.notif, inp.checked);
@@ -744,16 +800,8 @@
         if (datos.nueva.length < 6) { window.helpers.mostrarAlerta('La contraseña nueva debe tener al menos 6 caracteres.', 'advertencia'); return; }
         if (datos.nueva !== datos.confirmar) { window.helpers.mostrarAlerta('Las contraseñas no coinciden.', 'advertencia'); return; }
         try {
-          const hashActual = await window.helpers.hashPassword(datos.actual);
-          if (usuario.password !== hashActual && usuario.password !== datos.actual) {
-            window.helpers.mostrarAlerta('La contraseña actual no es correcta.', 'error');
-            return;
-          }
-          const hashNueva = await window.helpers.hashPassword(datos.nueva);
-          await window.supabaseClient.from('perfiles').update({ password: hashNueva }).eq('id', usuario.id);
-          usuario.password = hashNueva;
-          store.actualizar('usuario', { ...usuario });
-          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+          // FASE 2 (028): la contraseña la gestiona Supabase Auth (auth-repository)
+          await authRepository.cambiarPassword(datos.actual, datos.nueva);
           try { await window.adminRepository.registrarAuditoria('config:password', 'Contraseña cambiada', usuario.id, usuario.grupo_id); } catch (e) {}
           window.helpers.mostrarAlerta('Contraseña actualizada.', 'exito');
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
@@ -787,13 +835,14 @@
     // PÁGINAS ACERCA DE
     // ============================================================
     _montarAcerca(raiz, usuario, seccion) {
+      const versionActual = window.__FB_APP_VERSION__?.version || '—';
       const contenido = {
         'que-es': `
           <div class="perfil-seccion">
             <div class="perfil-info-card">
               <div class="perfil-info-card__texto">
                 <p class="perfil-info-card__nombre">FormsBiblicos</p>
-                <p class="perfil-info-card__version">Versión 1.0.1</p>
+                <p class="perfil-info-card__version">Versión ${E(versionActual)}</p>
                 <p class="perfil-info-card__sync">Estudio bíblico guiado</p>
               </div>
             </div>
@@ -802,8 +851,8 @@
             </p>
             <div class="o-pila" style="gap:var(--espaciado-xxs);margin-top:var(--espaciado-sm)">
               <div class="perfil-fila"><span class="perfil-fila__label">Objetivo</span><span class="perfil-fila__valor" style="font-weight:400;max-width:70%">Estudio bíblico sistemático</span></div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Versión</span><span class="perfil-fila__valor">1.0.1</span></div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Plataforma</span><span class="perfil-fila__valor">PWA</span></div>
+              <div class="perfil-fila"><span class="perfil-fila__label">Versión</span><span class="perfil-fila__valor">${E(versionActual)}</span></div>
+              <div class="perfil-fila"><span class="perfil-fila__label">Plataforma</span><span class="perfil-fila__valor">Android (Capacitor)</span></div>
               <div class="perfil-fila"><span class="perfil-fila__label">Tecnologías</span><span class="perfil-fila__valor" style="font-weight:400;max-width:70%">HTML, CSS, JS, Supabase</span></div>
             </div>
           </div>`,

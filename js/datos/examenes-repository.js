@@ -113,21 +113,18 @@
       }
     },
 
+    // El servicio resuelve destinatarios (alumnos del grupo) y persiste.
     async _notificarExamenPublicado(examenId, examen) {
-      if (!sb() || !examen.grupo_id) return;
+      if (!examen || !examen.grupo_id) return;
+      if (!window.notificationService) return;
       try {
-        const { data: miembros } = await sb().from('perfiles').select('id').eq('grupo_id', examen.grupo_id).eq('rol', 'usuario');
-        if (!miembros || !miembros.length) return;
-        const titulo = examen.titulo || 'Examen';
-        const notifs = miembros.map(m => ({
-          usuario_id: m.id,
-          tipo: 'examen_publicado',
-          titulo: 'Nuevo examen disponible',
-          cuerpo: `"${titulo}" esta disponible para realizar.`,
-          datos: { examen_id: examenId, examen_titulo: titulo }
-        }));
-        try { await sb().from('notificaciones').insert(notifs); } catch (ex) {}
-      } catch (e) { /* no critico */ }
+        await window.notificationService.emitir('examen.publicado', {
+          examenId,
+          titulo: examen.titulo || 'Examen',
+          grupoId: examen.grupo_id,
+          datos: { examen_id: examenId, examen_titulo: examen.titulo || 'Examen' }
+        });
+      } catch (e) { /* no crítico */ }
     },
     async obtenerMiembrosGrupo(grupoId, soloAlumnos = true) {
       if (!sb() || !grupoId) return [];

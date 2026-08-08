@@ -18,10 +18,10 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
   page.on('pageerror', (e) => consoleErrors.push('PAGEERROR: ' + e.message));
   page.on('console', (m) => { if (m.type() === 'error') consoleErrors.push('CONSOLE: ' + m.text()); });
 
-  // Overlays intencionales de la app (setup + update card) que pueden tapar clics
+  // Selector inicial de la app que puede tapar clics
   await page.addInitScript(() => {
     const obs = new MutationObserver(() => {
-      document.querySelectorAll('.login-setup, #updateCard').forEach(el => el.remove());
+      document.querySelectorAll('.login-setup').forEach(el => el.remove());
     });
     obs.observe(document, { childList: true, subtree: true });
   });

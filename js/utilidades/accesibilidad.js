@@ -106,12 +106,21 @@
       document.body.prepend(skip);
     },
 
+    _leerPrefs() {
+      // localStorage corrupto no debe romper el toggle de accesibilidad
+      try {
+        return JSON.parse(localStorage.getItem('fb_preferencias') || '{}') || {};
+      } catch (e) {
+        return {};
+      }
+    },
+
     toggleModoAltoContraste() {
       const hc = document.documentElement.dataset.hc === 'true' ? 'false' : 'true';
       document.documentElement.dataset.hc = hc;
       store.actualizar('modoAltoContraste', hc === 'true');
       localStorage.setItem('fb_preferencias', JSON.stringify({
-        ...JSON.parse(localStorage.getItem('fb_preferencias') || '{}'),
+        ...this._leerPrefs(),
         altoContraste: hc === 'true'
       }));
       this.anunciar(hc === 'true' ? 'Modo alto contraste activado' : 'Modo alto contraste desactivado');
@@ -122,7 +131,7 @@
       document.documentElement.dataset.lg = lg;
       store.actualizar('modoLetraGrande', lg === 'true');
       localStorage.setItem('fb_preferencias', JSON.stringify({
-        ...JSON.parse(localStorage.getItem('fb_preferencias') || '{}'),
+        ...this._leerPrefs(),
         letraGrande: lg === 'true'
       }));
       this.anunciar(lg === 'true' ? 'Modo letra grande activado' : 'Modo letra grande desactivado');

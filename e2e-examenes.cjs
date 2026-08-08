@@ -15,12 +15,11 @@ let exitCode = 0;
   page.on('console', m => { if (m.type() === 'error') errores.push(m.text()); });
   page.on('pageerror', e => errores.push('PAGEERROR: ' + e.message));
 
-  // Eliminar en cuanto aparezcan los overlays que interceptan clics
-  // ('.login-setup': tema de primera vez; '#updateCard': actualización PWA).
-  // Ambos son comportamiento intencional de la app; se quitan sin tocar la BD.
+  // Eliminar en cuanto aparezca el selector inicial que pueda interceptar clics.
+  // Es comportamiento intencional de la app y se quita sin tocar la BD.
   await page.addInitScript(() => {
     const limpiarOverlays = () => {
-      document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+      document.querySelectorAll('.login-setup').forEach(o => o.remove());
     };
     limpiarOverlays();
     // Observar 'document' (siempre existe; document.documentElement puede no estar creado aun
@@ -34,15 +33,14 @@ let exitCode = 0;
     if (!ok) exitCode = 1;
   };
 
-  // Cerrar overlays de la app que interceptan clics, de forma no invasiva y sin tocar la BD:
-  //  - '.login-setup': selector de tema de primera vez (intencional).
-  //  - '#updateCard': tarjeta de actualización disponible de la PWA (intencional).
+  // Cerrar el selector inicial de la app que puede interceptar clics,
+  // de forma no invasiva y sin tocar la BD.
   async function cerrarOverlays() {
     try {
-      const n = await page.locator('.login-setup, #updateCard').count();
+      const n = await page.locator('.login-setup').count();
       if (n === 0) return;
       await page.evaluate(() => {
-        document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+        document.querySelectorAll('.login-setup').forEach(o => o.remove());
       });
       await esperar(300);
     } catch (e) {}

@@ -31,9 +31,13 @@ const logrosDominio = {
       const { data: l } = await sb().from('logros').select('id').eq('clave', logro.clave).single();
       if (l) {
         await sb().from('logros_usuario').insert({ usuario_id: usuarioId, logro_id: l.id }).onConflict('usuario_id,logro_id').ignore();
-        // Notificación nativa del dispositivo
-        if (window.notifications) {
-          window.notifications.notificarLogro(logro.nombre, logro.descripcion).catch(() => {});
+        // Notificación de logro vía Notification Service (persiste + nativa)
+        if (window.notificationService) {
+          window.notificationService.emitir('logro.desbloqueado', {
+            nombre: logro.nombre,
+            descripcion: logro.descripcion,
+            datos: { logro_nombre: logro.nombre, logro_descripcion: logro.descripcion }
+          }).catch(() => {});
         }
       }
     }

@@ -14,7 +14,7 @@ const TITULO = 'Examen E2E Verificación';
   // Eliminar overlays intencionales que interceptan clics
   await page.addInitScript(() => {
     const limpiarOverlays = () => {
-      document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+      document.querySelectorAll('.login-setup').forEach(o => o.remove());
     };
     limpiarOverlays();
     new MutationObserver(limpiarOverlays).observe(document, { childList: true, subtree: true });

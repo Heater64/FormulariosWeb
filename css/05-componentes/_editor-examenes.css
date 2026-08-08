@@ -5,7 +5,7 @@
    js/vistas/vista-examen-editor.js a un archivo CSS estático. Ventajas:
    - Las utilities (u-*) y mobile overrides pueden ganar por source order
      sin necesidad de selectores compuestos ni especificidad hack.
-   - El manager de PWA / offline / service-worker cachea el CSS junto al
+   - La aplicación Android empaqueta este CSS junto al
      resto del sistema de diseño, evitando inconsistencia entre sesiones.
    - Sin flash de estilos al cargar la vista (no hay JS async creando style).
    ========================================================================== */

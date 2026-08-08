@@ -49,14 +49,6 @@
     var bg = _bgActual(p);
     var meta = document.head.querySelector('meta[name="theme-color"]');
     if (meta) meta.setAttribute('content', bg);
-    // Actualizar tambien en el manifest (para PWA standalone)
-    try {
-      var manifest = document.querySelector('link[rel="manifest"]');
-      if (manifest && manifest.href) {
-        var url = new URL(manifest.href, window.location.href);
-        // Solo si es un blob/manifest local (no CDN externo)
-      }
-    } catch (e) {}
     // color-scheme en el root
     var isDark = p.tema === 'dark' || (!p.tema && window.matchMedia('(prefers-color-scheme: dark)').matches);
     document.documentElement.style.colorScheme = isDark ? 'dark' : 'light';

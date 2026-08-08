@@ -5,15 +5,15 @@
   --color-texto-acento: #FFFFFF;
   --color-texto: #0F172A;
   --color-texto-secundario: #64748B;
-  --color-texto-terciario: #94A3B8;
+  --color-texto-terciario: #64748B;
   --color-fondo: #FFFFFF;
   --color-fondo-alt: #F1F5F9;
   --color-fondo-tarjeta: #FFFFFF;
   --color-borde: #CBD5E1;
   --color-borde-foco: #2563EB;
-  --color-exito: #10B981;
+  --color-exito: #047857;
   --color-exito-soft: #D1FAE5;
-  --color-error: #EF4444;
+  --color-error: #B91C1C;
   --color-error-soft: #FEE2E2;
   --color-error-hover: #DC2626;
   --color-aviso: #F59E0B;
@@ -29,8 +29,8 @@
   --color-seccion-banda: #555;
   /* Texto blanco legible sobre fondo de banda sección (invariante al tema: bajo contraste deliberado) */
   --color-seccion-texto: #fff;
-  --color-naranja: #F97316;
-  --color-naranja-soft: rgba(249, 115, 22, 0.1);
+  --color-naranja: #C2410C;
+  --color-naranja-soft: #FFEDD5;
   /* Tinte del shimmer (efecto "highlight" en skeletons) por tema.
      Light: blanco semi-transparente sobre fondo gris claro.
      Dark:  blanco aún más tenue para no quemar el dark mode. */

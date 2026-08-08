@@ -1,7 +1,7 @@
 (function() {
   'use strict';
 
-  // Capa de caché de lectura offline (IndexedDB).
+  // Capa de caché de lectura local (IndexedDB).
   // Guarda las respuestas de Supabase para poder servirlas sin conexión.
   const DB_NOMBRE = 'formsbiblicos';
   const DB_VERSION = 2;

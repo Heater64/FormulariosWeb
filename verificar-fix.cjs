@@ -11,7 +11,7 @@ const BASE = 'http://localhost:3000';
   page.on('pageerror', e => errores.push('PAGEERROR: ' + e.message));
 
   await page.addInitScript(() => {
-    const limpiarOverlays = () => document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+    const limpiarOverlays = () => document.querySelectorAll('.login-setup').forEach(o => o.remove());
     limpiarOverlays();
     new MutationObserver(limpiarOverlays).observe(document, { childList: true, subtree: true });
   });

@@ -112,24 +112,17 @@
      Si la BD no tiene la migración 023 (sin es_global), se
      degrada a la consulta antigua por usuario_id. */
 
-  /* Inserta notificaciones en BD para los miembros del grupo del admin
-     cuando se crea un mazo global. */
+  /* Avisa del mazo global a los miembros del grupo vía Notification
+     Service (el servicio resuelve destinatarios y persiste). */
   async function _notificarMazoAGrupo(mazo, adminId) {
-    if (!sb() || !adminId) return;
+    if (!window.notificationService) return;
     try {
-      const { data: admin } = await sb().from('perfiles').select('grupo_id, nombre_completo, username').eq('id', adminId).single();
-      if (!admin || !admin.grupo_id) return;
-      const { data: miembros } = await sb().from('perfiles').select('id').eq('grupo_id', admin.grupo_id).neq('id', adminId);
-      if (!miembros || !miembros.length) return;
-      const creador = admin.nombre_completo || admin.username || 'Un administrador';
-      const notifs = miembros.map(m => ({
-        usuario_id: m.id,
-        tipo: 'mazo_nuevo',
-        titulo: 'Nuevo mazo de memorización',
-        cuerpo: `${creador} ha añadido el mazo «${mazo.nombre}».`,
-        datos: { mazo_id: mazo.id, mazo_nombre: mazo.nombre }
-      }));
-      try { await sb().from('notificaciones').insert(notifs); } catch (e2) {}
+      await window.notificationService.emitir('mazo.nuevo', {
+        mazoId: mazo.id,
+        nombre: mazo.nombre || 'Memorización',
+        adminId,
+        datos: { mazo_id: mazo.id, mazo_nombre: mazo.nombre || 'Memorización' }
+      });
     } catch (e) { /* no crítico */ }
   }
 
@@ -179,13 +172,10 @@
     try {
       const { data, error } = await sb().from('mazos_memorizacion').insert(datos).select().single();
       if (error) throw error;
-      // Notificar a todos los usuarios de este mazo global
-      if (es_global && window.notifications) {
-        window.notifications.notificarMazoNuevo(data.nombre, data.id);
-        // Insertar notificación en BD para que otros usuarios la vean
-        if (usuarioId) {
-          _notificarMazoAGrupo(data, usuarioId);
-        }
+      // Notificar a los miembros del grupo vía Notification Service
+      // (persiste en BD + nativa según preferencias)
+      if (es_global) {
+        _notificarMazoAGrupo(data, usuarioId);
       }
       return data;
     } catch (e) {

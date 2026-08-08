@@ -205,7 +205,7 @@ window.store = new Store({
   online: navigator.onLine,
   sincronizando: false,
   ultimaSincronizacion: null,
-  notificaciones: [],
+  notificaciones: { items: [], noLeidas: 0, porCategoria: {}, cargando: false, error: null },
   preferencias: {
     tema: null,
     altoContraste: false,

@@ -1,6 +1,10 @@
 (function() {
   'use strict';
   const sb = () => window.supabaseClient;
+  // Traduce mensajes técnicos del servidor a texto amigable de usuario.
+  const _traducir = (error) => window.errores
+    ? window.errores.mensajeUsuario(error)
+    : (error && error.message) || 'Error inesperado';
 
   function claveLista(usuarioId, tipo) { return `notas:lista:${usuarioId}:${tipo || 'todas'}`; }
   function claveNota(usuarioId, libroNombre, capituloNumero, tipo) {
@@ -366,7 +370,7 @@
         if (e && e.code === '42703') {
           throw new Error('Fijar notas requiere aplicar la migración 019 en la base de datos.');
         }
-        throw new Error('No se pudo actualizar la nota: ' + (e.message || e));
+        throw new Error('No se pudo actualizar la nota: ' + _traducir(e));
       }
     },
 

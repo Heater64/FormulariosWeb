@@ -4,6 +4,11 @@
   top: var(--espaciado-xs);
   left: var(--espaciado-xs);
   z-index: 9999;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 44px;
+  min-height: 44px;
   padding: var(--espaciado-sm) var(--espaciado-md);
   background: var(--color-acento);
   color: var(--color-texto-acento);

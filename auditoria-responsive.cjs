@@ -25,7 +25,7 @@ const esperar = (ms) => new Promise(r => setTimeout(r, ms));
     page.__errors = consoleErrors;
     await page.addInitScript(() => {
       const obs = new MutationObserver(() => {
-        document.querySelectorAll('.login-setup, #updateCard').forEach(el => el.remove());
+        document.querySelectorAll('.login-setup').forEach(el => el.remove());
       });
       obs.observe(document, { childList: true, subtree: true });
     });

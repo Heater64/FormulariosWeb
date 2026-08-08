@@ -9,7 +9,7 @@ async function probar(viewport) {
   const esperar = ms => page.waitForTimeout(ms);
 
   await page.addInitScript(() => {
-    const limpiarOverlays = () => document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+    const limpiarOverlays = () => document.querySelectorAll('.login-setup').forEach(o => o.remove());
     limpiarOverlays();
     new MutationObserver(limpiarOverlays).observe(document, { childList: true, subtree: true });
   });

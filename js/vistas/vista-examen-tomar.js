@@ -39,7 +39,8 @@
         if (!examen.publicado && !esProfesor) {
           raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está publicado.</p></div>'; return;
         }
-        const preguntas = typeof examen.preguntas === 'string' ? JSON.parse(examen.preguntas) : examen.preguntas;
+        let preguntas = typeof examen.preguntas === 'string' ? JSON.parse(examen.preguntas) : examen.preguntas;
+        if (!Array.isArray(preguntas)) preguntas = [];
         preguntas.forEach(p => {
           if (p.tipo === 'completar' && !Array.isArray(p.huecos)) p.huecos = [];
         });
@@ -49,11 +50,14 @@
         // Ventana de fechas de disponibilidad (solo alumnos) — usa esProfesor ya declarado arriba
         if (!esProfesor) {
           const ahora = Date.now();
-          if (config.fecha_inicio && ahora < new Date(config.fecha_inicio).getTime()) {
+          const tInicio = config.fecha_inicio ? new Date(config.fecha_inicio).getTime() : NaN;
+          const tFin = config.fecha_fin ? new Date(config.fecha_fin).getTime() : NaN;
+          // Fechas inválidas se ignoran (NaN) en lugar de romper o abrir el examen fuera de plazo
+          if (!isNaN(tInicio) && ahora < tInicio) {
             raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">Este examen aún no está disponible. Vuelve en la fecha de inicio indicada.</p></div>';
             return;
           }
-          if (config.fecha_fin && ahora > new Date(config.fecha_fin).getTime()) {
+          if (!isNaN(tFin) && ahora > tFin) {
             raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p class="u-color-texto-secundario">El plazo para realizar este examen ha finalizado.</p></div>';
             return;
           }
@@ -66,7 +70,9 @@
         if (terminado) { this._renderResultados(raiz, examen, preguntas, terminado, usuario); return; }
         let intento = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'en_progreso' || i.estado === 'pendiente'));
         if (!intento) {
-          intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso' });
+          // Guardar fecha_inicio para poder descontar el tiempo transcurrido si
+          // el alumno recarga o navega: el temporizador no se reinicia al volver.
+          intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso', fecha_inicio: new Date().toISOString() });
         } else if (intento.estado === 'pendiente') {
           // Convert pendiente → en_progreso when student starts the exam
           intento = await window.examenesRepository.guardarIntento({
@@ -91,6 +97,17 @@
       const duracionMinutos = this._minutosDesdeConfig(config);
       // Aleatorizar el orden de las preguntas (las respuestas se guardan por id, seguro)
       const preguntasRender = config.aleatorizar_preguntas ? [...preguntas].sort(() => Math.random() - 0.5) : preguntas;
+      if (preguntas.length === 0) {
+        raiz.innerHTML = '<div class="o-contenedor o-pila o-pila--lg u-mt-4 u-texto-centrado"><p class="u-color-texto-secundario">Este examen no tiene preguntas todavía.</p><button class="btn-primario" onclick="router.navegar(\'/examenes\')">← Volver a exámenes</button></div>';
+        return;
+      }
+      // Si el intento ya empezó antes, descontar el tiempo transcurrido para que
+      // recargar o navegar no reinicie el temporizador.
+      let segundosIniciales = duracionMinutos * 60;
+      if (duracionMinutos > 0 && intento && intento.fecha_inicio) {
+        const transcurrido = Math.floor((Date.now() - new Date(intento.fecha_inicio).getTime()) / 1000);
+        if (!isNaN(transcurrido) && transcurrido > 0) segundosIniciales = Math.max(0, segundosIniciales - transcurrido);
+      }
       const respondidas = preguntasRender.filter(p => this._tieneRespuesta(respuestas, p)).length;
       const porcentaje = Math.round((respondidas / preguntas.length) * 100);
 
@@ -103,7 +120,7 @@
                 ${examen.descripcion ? `<p class="u-color-texto-secundario u-fs-sm u-mt-1">${window.helpers.escapeHtml(examen.descripcion)}</p>` : ''}
               </div>
               <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center">
-                ${duracionMinutos > 0 ? `<span class="examen-timer" id="examenTimer">${window.Iconos.render('clock')} ${Math.floor(duracionMinutos / 60)}:${String(duracionMinutos % 60).padStart(2, '0')}</span>` : ''}
+                ${duracionMinutos > 0 ? `<span class="examen-timer" id="examenTimer">${window.Iconos.render('clock')} ${Math.floor(segundosIniciales / 60)}:${String(segundosIniciales % 60).padStart(2, '0')}</span>` : ''}
                 <span class="u-fs-xs u-color-texto-terciario" style="white-space:nowrap">${preguntas.length} preguntas</span>
               </div>
             </div>
@@ -139,8 +156,11 @@
       let _autoTimer = null;
 
       const _actualizarDots = () => {
+        // Los dots se crean en el orden RENDERIZADO (preguntasRender), así que
+        // hay que mirar preguntasRender[di] y no preguntas[di] cuando el orden
+        // de preguntas está aleatorizado (si no, marcan la pregunta equivocada).
         dotsCont.querySelectorAll('.examen-dot').forEach((d, di) => {
-          const p = preguntas[di];
+          const p = preguntasRender[di] || preguntas[di];
           d.classList.toggle('examen-dot--respondida', this._tieneRespuesta(respuestas, p));
         });
       };
@@ -270,7 +290,10 @@
         if (e.key === 'ArrowLeft' && pagActual > 0) { _sincronizarRespuestas(); renderPagina(pagActual - 1); }
         if (e.key === 'ArrowRight' && pagActual < preguntas.length - 1) { _sincronizarRespuestas(); renderPagina(pagActual + 1); }
         if (e.key === 'f' || e.key === 'F') {
-          const pid = preguntas[pagActual].id;
+          // Con aleatorización, la pregunta visible es preguntasRender[pagActual]
+          const pActual = preguntasRender[pagActual] || preguntas[pagActual];
+          if (!pActual) return;
+          const pid = pActual.id;
           flags[pid] = !flags[pid];
           dotsCont.querySelectorAll('.examen-dot')[pagActual]?.classList.toggle('examen-dot--flag', flags[pid]);
           actualizarFlagCount();
@@ -280,8 +303,9 @@
 
       // Timer
       let timerInterval = null;
+      let _entregando = false;
       if (duracionMinutos > 0) {
-        let segundosRestantes = duracionMinutos * 60;
+        let segundosRestantes = segundosIniciales;
         const timerEl = raiz.querySelector('#examenTimer');
         timerInterval = setInterval(() => {
           segundosRestantes--;
@@ -295,7 +319,7 @@
           }
           if (segundosRestantes <= 0) {
             clearInterval(timerInterval);
-            raiz.querySelector('#btnEntregar').click();
+            if (!_entregando) raiz.querySelector('#btnEntregar').click();
           }
         }, 1000);
       }
@@ -304,7 +328,9 @@
       const addFlagBtnToPagina = () => {
         const pagina = raiz.querySelector('#preguntasPagina');
         if (!pagina) return;
-        const pid = preguntas[pagActual].id;
+        const pActual = preguntasRender[pagActual] || preguntas[pagActual];
+        if (!pActual) return;
+        const pid = pActual.id;
         let flagBtn = pagina.querySelector('.flag-btn');
         if (!flagBtn) {
           flagBtn = document.createElement('button');
@@ -338,18 +364,26 @@
       cont.querySelectorAll('.btn-ordenar-down').forEach(btn => this._setupOrdenar(btn, cont, guardarYActualizarBarra));
 
       raiz.querySelector('#btnEntregar').onclick = async () => {
+        if (_entregando) return;
+        _entregando = true;
         const preguntasFlaggeadas = Object.entries(flags).filter(([, v]) => v).length;
         let msg = '¿Estás seguro de entregar el examen? No podrás cambiar las respuestas después.';
         if (preguntasFlaggeadas > 0) {
           msg = `Tienes ${preguntasFlaggeadas} pregunta${preguntasFlaggeadas > 1 ? 's' : ''} marcada${preguntasFlaggeadas > 1 ? 's' : ''} para revisar. ¿Entregar de todas formas?`;
         }
         const ok = await window.helpers.confirmar(msg, { titulo: 'Entregar examen', textoConfirmar: 'Entregar' });
-        if (!ok) return;
+        if (!ok) {
+          // Si el usuario cancela, liberar la guardia: el botón y el auto-envío
+          // por temporizador deben seguir funcionando.
+          _entregando = false;
+          return;
+        }
         if (timerInterval) clearInterval(timerInterval);
         document.removeEventListener('keydown', tecladoHandler);
         try {
           _sincronizarRespuestas();
           this._guardarRespuesta(respuestas, intento);
+          raiz.querySelector('#btnEntregar').disabled = true;
           const respuestasFinales = respuestas;
           const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
           // La corrección SIEMPRE la publica el profesor: al entregar, el intento
@@ -365,30 +399,25 @@
             fecha_completado: new Date().toISOString()
           });
           try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { console.warn('Auditoría no registrada:', e.message); }
-          // Notificar al profesor que el alumno ha entregado
+          // Notificar al profesor vía Notification Service (persiste en BD + nativa)
           try {
-            if (examen.creado_por && window.notifications) {
+            if (examen.creado_por && window.notificationService) {
               const alumnoNombre = usuario.nombre_completo || usuario.username;
-              window.notifications.notificarExamenEntregado(alumnoNombre, examen.titulo, examen.id, usuario.id);
-            }
-            // Insertar en notificaciones BD para que el profesor lo vea aunque no esté online
-            if (examen.creado_por && window.supabaseClient) {
-              const alumnoNombre = usuario.nombre_completo || usuario.username;
-              try {
-                await window.supabaseClient.from('notificaciones').insert({
-                  usuario_id: examen.creado_por,
-                  tipo: 'examen_entregado',
-                  titulo: 'Examen entregado',
-                  cuerpo: `${alumnoNombre} ha entregado "${examen.titulo}".`,
-                  datos: { examen_id: examen.id, alumno_id: usuario.id, alumno_nombre: alumnoNombre }
-                });
-              } catch (e3) {}
+              window.notificationService.emitir('examen.entregado', {
+                examenId: examen.id,
+                titulo: examen.titulo,
+                alumno: alumnoNombre,
+                destinatarios: [examen.creado_por],
+                datos: { examen_id: examen.id, alumno_id: usuario.id, alumno_nombre: alumnoNombre }
+              }).catch(e => console.warn('[Notif] entrega:', e.message));
             }
           } catch (e2) { /* no critico */ }
           if (window.haptica) window.haptica.logro();
           window.helpers.mostrarAlerta('Examen entregado correctamente.', 'exito');
           router.navegar('/examenes');
         } catch (e) {
+          _entregando = false;
+          raiz.querySelector('#btnEntregar').disabled = false;
           window.helpers.mostrarAlerta('Error al entregar: ' + e.message, 'error');
         }
       };
@@ -445,8 +474,13 @@
           const key = 'fb_examen_corregido_' + intento.id;
           if (!localStorage.getItem(key)) {
             localStorage.setItem(key, '1');
-            if (window.notifications) {
-              window.notifications.notificarCalificacion(examen.titulo, intento.nota != null ? intento.nota : null);
+            if (window.notificationService) {
+              window.notificationService.emitir('examen.corregido', {
+                examenId: examen.id,
+                titulo: examen.titulo,
+                nota: intento.nota != null ? intento.nota : null,
+                datos: { examen_id: examen.id }
+              }).catch(() => {});
             }
           }
         } catch (e) {}
@@ -467,7 +501,7 @@
       }
 
       // ── Calcular métricas ──
-      const notaFinal = intento.corregido && intento.nota != null ? parseFloat(intento.nota) : calculo.nota;
+      const notaFinal = intento.corregido && intento.nota != null ? (parseFloat(intento.nota) || 0) : calculo.nota;
       const aciertos = calculo.aciertos;
       const fallos = preguntas.length - aciertos;
       const pct = calculo.porcentaje;
@@ -760,16 +794,26 @@
     _setupOrdenar(btn, cont, guardarYActualizarBarra) {
       btn.addEventListener('click', () => {
         const preguntaId = btn.dataset.orden;
-        const pos = parseInt(btn.dataset.pos);
+        const fila = btn.closest('.o-flecha');
+        if (!fila) return;
+        const inputs = Array.from(cont.querySelectorAll(`input[data-orden="${preguntaId}"]`));
+        // Posición real del input en el DOM (no confiar en data-pos, que puede
+        // quedar obsoleto en los botones tras el primer movimiento).
+        const pos = inputs.indexOf(fila.querySelector(`input[data-orden="${preguntaId}"]`));
+        if (pos === -1) return;
         const isUp = btn.classList.contains('btn-ordenar-up');
-        const inputs = Array.from(cont.querySelectorAll(`input[data-orden="${preguntaId}"]`)).sort((a, b) => parseInt(a.dataset.pos) - parseInt(b.dataset.pos));
         const newPos = isUp ? pos - 1 : pos + 1;
         if (newPos < 0 || newPos >= inputs.length) return;
         const temp = inputs[pos].value;
         inputs[pos].value = inputs[newPos].value;
         inputs[newPos].value = temp;
-        inputs[pos].dataset.pos = newPos;
-        inputs[newPos].dataset.pos = pos;
+        // Re-sincronizar data-pos de inputs y botones con el nuevo orden
+        const filas = Array.from(cont.querySelectorAll('.o-flecha')).filter(f => f.querySelector(`input[data-orden="${preguntaId}"]`));
+        filas.forEach((f, i) => {
+          const inp = f.querySelector(`input[data-orden="${preguntaId}"]`);
+          if (inp) inp.dataset.pos = i;
+          f.querySelectorAll('button[data-orden]').forEach(b => { b.dataset.pos = i; });
+        });
         guardarYActualizarBarra();
       });
     },

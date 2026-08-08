@@ -26,6 +26,35 @@
     });
   }
 
+  // Panel demo SOLO visible en modo demo (window.entorno.modoDemo). Las
+  // credenciales viven en config (js/config/entorno.js), nunca en esta vista.
+  function credencialesDemo() {
+    const e = window.entorno;
+    if (!e || !e.modoDemo) return [];
+    return Array.isArray(e.credencialesDemo) ? e.credencialesDemo : [];
+  }
+
+  function renderDemo(raiz) {
+    const creds = credencialesDemo();
+    if (!creds.length) return;
+    const filas = creds.map(c => `
+      <div class="login-demo__fila">
+        <span class="login-demo__usuario">${window.helpers.escapeHtml(c.usuario)} &bull; ${window.helpers.escapeHtml(c.password)}</span>
+        <button type="button" class="login-demo__copiar" data-copiar="${window.helpers.escapeHtml(c.usuario)}" data-copiar-pass="${window.helpers.escapeHtml(c.password)}">Copiar</button>
+      </div>`).join('');
+    const el = document.createElement('div');
+    el.innerHTML = `
+      <details class="login-demo">
+        <summary>¿Quieres probar la aplicación?</summary>
+        <div class="login-demo__panel">${filas}</div>
+      </details>`;
+    raiz.appendChild(el.firstElementChild);
+    const primerBtn = el.querySelector('.login-demo__copiar');
+    if (el.querySelectorAll('.login-demo__fila').length === 1) {
+      primerBtn.dataset.copia = 'todo'; // fallback: copiar usuario+pass si un solo dato
+    }
+  }
+
   window.vistaLogin = {
     montar(raiz) {
       raiz.innerHTML = `
@@ -40,7 +69,7 @@
 
           <!-- FORMULARIO -->
           <form class="login-formulario" id="loginForm" autocomplete="on">
-            <input type="text" id="loginUser" placeholder="Usuario" autocomplete="username" required>
+            <input type="text" id="loginUser" placeholder="Correo o usuario" autocomplete="username" required>
             <input type="password" id="loginPass" placeholder="Contraseña" autocomplete="current-password" required>
             <label class="login-recordar">
               <input type="checkbox" id="loginRecordar" checked>
@@ -52,16 +81,8 @@
             <div id="loginError" class="login-error" style="display:none" role="alert"></div>
           </form>
 
-          <!-- CREDENCIALES DEMO -->
-          <details class="login-demo">
-            <summary>¿Quieres probar la aplicación?</summary>
-            <div class="login-demo__panel">
-              <div class="login-demo__fila">
-                <span class="login-demo__usuario">usuario &bull; usuario</span>
-                <button type="button" class="login-demo__copiar" id="btnCopiarDemo">Copiar</button>
-              </div>
-            </div>
-          </details>
+          <!-- CREDENCIALES DEMO (solo modo demo; render dinámico) -->
+          <div id="loginDemoContainer"></div>
 
           <!-- MÁS INFORMACIÓN -->
           <details class="login-info">
@@ -96,7 +117,7 @@
                   </div>
                   <div class="login-info__faq-item">
                     <button class="login-info__faq-preg" type="button"><span>¿Funciona sin internet?</span><span>${I('chevron-down')}</span></button>
-                    <div class="login-info__faq-resp">Parcialmente. Como PWA, puedes instalarla y acceder a contenido previamente visitado sin conexión.</div>
+                    <div class="login-info__faq-resp">La aplicación completa se distribuye como APK para Android. Necesitarás conexión para sincronizar tus datos con Supabase.</div>
                   </div>
                   <div class="login-info__faq-item">
                     <button class="login-info__faq-preg" type="button"><span>¿Qué libros hay?</span><span>${I('chevron-down')}</span></button>
@@ -124,6 +145,7 @@
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
+      renderDemo(raiz);
 
       const form = raiz.querySelector('#loginForm');
       const user = raiz.querySelector('#loginUser');
@@ -160,19 +182,26 @@
 
       user.addEventListener('keydown', e => { if (e.key === 'Enter') { e.preventDefault(); pass.focus(); } });
 
-      raiz.querySelector('#btnCopiarDemo')?.addEventListener('click', async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          await navigator.clipboard.writeText('usuario\nusuario');
-          const btn = e.currentTarget;
-          btn.textContent = 'Copiado';
-          btn.classList.add('login-demo__copiar--ok');
-          setTimeout(() => { btn.textContent = 'Copiar'; btn.classList.remove('login-demo__copiar--ok'); }, 2000);
-        } catch (e) {
-          user.value = 'usuario';
-          pass.value = 'usuario';
-        }
+      raiz.querySelectorAll('.login-demo__copiar').forEach(btn => {
+        btn.addEventListener('click', async (e) => {
+          e.preventDefault();
+          e.stopPropagation();
+          if (!btn.dataset.copiar) return; // sin datos (modo demo mal configurado)
+          const cred = btn.dataset.copiarPass
+            ? (btn.dataset.copiar + '\n' + btn.dataset.copiarPass)
+            : btn.dataset.copiar;
+          try {
+            await navigator.clipboard.writeText(cred);
+            const b = e.currentTarget;
+            b.textContent = 'Copiado';
+            b.classList.add('login-demo__copiar--ok');
+            setTimeout(() => { b.textContent = 'Copiar'; b.classList.remove('login-demo__copiar--ok'); }, 2000);
+          } catch (err) {
+            const [cu, cp] = cred.split('\n');
+            if (cu) user.value = cu;
+            if (cp) pass.value = cp;
+          }
+        });
       });
 
       raiz.querySelectorAll('.login-info__faq-preg').forEach(btn => {

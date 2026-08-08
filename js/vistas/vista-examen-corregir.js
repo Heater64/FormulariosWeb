@@ -97,7 +97,7 @@
       return `
         <div class="corregir-card ${abierto ? 'corregir-card--abierta' : ''}" data-intento="${int.id}">
           <div class="corregir-card__header" data-toggle="${int.id}">
-            <div class="corregir-card__avatar">${foto ? `<img src="${foto}" alt="">` : inicial}</div>
+            <div class="corregir-card__avatar">${foto ? `<img src="${window.helpers.escapeHtml(foto)}" alt="">` : inicial}</div>
             <div class="corregir-card__info">
               <span class="corregir-card__nombre">${window.helpers.escapeHtml(nombre)}</span>
               <span class="corregir-card__fecha">${fecha}</span>
@@ -283,9 +283,16 @@
             });
           } catch (noteErr) { /* notas offline o no disponible */ }
 
-          // Notificar al alumno (si el sistema de notificaciones lo permite)
-          if (window.notifications) {
-            window.notifications.notificarCalificacion(this._examen.titulo, nota);
+          // Notificar al alumno vía Notification Service (persiste + entrega)
+          const intentoNotif = (this._intentos || []).find(i => i.id === id);
+          if (intentoNotif && intentoNotif.alumno_id && window.notificationService) {
+            window.notificationService.emitir('examen.corregido', {
+              examenId: this._examen.id,
+              titulo: this._examen.titulo,
+              nota,
+              destinatarios: [intentoNotif.alumno_id],
+              datos: { examen_id: this._examen.id, alumno_id: intentoNotif.alumno_id }
+            }).catch(e => console.warn('[Notif] calificación:', e.message));
           }
 
           window.helpers.mostrarAlerta('Corrección enviada. El alumno puede ver sus resultados.', 'exito');

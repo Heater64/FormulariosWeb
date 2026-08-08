@@ -1,19 +1,21 @@
 {
+  "schemaVersion": 1,
   "version": "1.0.1",
-  "features": [
-    "✅ Nuevo sistema de memorización con flashcards",
-    "✅ Mejoras en la corrección de exámenes",
-    "✅ Sincronización offline automática",
-    "✅ Indicador de conexión en tiempo real"
+  "versionCode": 1,
+  "minimumVersion": "1.0.0",
+  "minimumVersionCode": 1,
+  "mandatory": false,
+  "apkUrl": null,
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases",
+  "releaseNotes": [
+    "Nuevo sistema de memorización con flashcards",
+    "Mejoras en la corrección de exámenes",
+    "Sincronización offline automática",
+    "Indicador de conexión en tiempo real",
+    "Corrección de errores en el editor y la navegación móvil",
+    "Caché inteligente para recursos estáticos"
   ],
-  "fixes": [
-    "🐛 Corrección de errores en el editor de huecos",
-    "🐛 Mejora en la navegación móvil con gestos",
-    "🐛 Corrección de problemas de sincronización"
-  ],
-  "performance": [
-    "⚡ Carga inicial un 40% más rápida",
-    "⚡ Menor consumo de memoria en listas largas",
-    "⚡ Caché inteligente para recursos estáticos"
-  ]
+  "sizeBytes": null,
+  "sha256": null,
+  "publishedAt": "2026-08-08T00:00:00Z"
 }

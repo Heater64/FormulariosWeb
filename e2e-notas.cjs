@@ -55,10 +55,10 @@ async function limpiarNotasE2E() {
   page.on('console', m => { if (m.type() === 'error') errores.push(m.text()); });
   page.on('pageerror', e => errores.push('PAGEERROR: ' + e.message));
 
-  // Eliminar overlays intencionales (login-setup, updateCard) en cuanto aparecen
+  // Eliminar el selector inicial (login-setup) en cuanto aparece
   await page.addInitScript(() => {
     const limpiarOverlays = () => {
-      document.querySelectorAll('.login-setup, #updateCard').forEach(o => o.remove());
+      document.querySelectorAll('.login-setup').forEach(o => o.remove());
     };
     limpiarOverlays();
     new MutationObserver(limpiarOverlays).observe(document, { childList: true, subtree: true });

@@ -120,7 +120,6 @@
         });
 
         this._renderizarLista();
-        this._notificarExamenesNuevos(examenes, esProfesor);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
     },
 
@@ -163,21 +162,6 @@
       raiz.innerHTML = filtrados.map(ex => this._tarjetaExamen(ex)).join('');
       this._conectarEventos(raiz);
       window.Iconos.actualizar();
-    },
-
-    _notificarExamenesNuevos(examenes, esProfesor) {
-      if (esProfesor) return;
-      const usuario = store.obtener('usuario');
-      if ((usuario && usuario.preferencias && usuario.preferencias.notif_examenes === false)) return;
-      try {
-        const vistos = new Set(JSON.parse(localStorage.getItem('fb_examenes_vistos') || '[]'));
-        const nuevos = examenes.filter(ex => ex.publicado && !vistos.has(ex.id));
-        if (nuevos.length > 0 && window.notifications) {
-          window.notifications.notificarExamen(nuevos[0].titulo, nuevos[0].id);
-        }
-        const todos = new Set(examenes.map(ex => ex.id));
-        localStorage.setItem('fb_examenes_vistos', JSON.stringify([...todos]));
-      } catch (e) {}
     },
 
     desmontar() {
@@ -405,7 +389,7 @@
         return `
           <div class="examen-alumno-fila">
             <div class="examen-alumno-fila__avatar">
-              ${a.foto_perfil ? `<img src="${a.foto_perfil}" alt="">` : (a.nombre_completo || a.username || '?').charAt(0).toUpperCase()}
+              ${a.foto_perfil ? `<img src="${_esc(a.foto_perfil)}" alt="">` : (a.nombre_completo || a.username || '?').charAt(0).toUpperCase()}
             </div>
             <div class="examen-alumno-fila__info">
               <div class="examen-alumno-fila__nombre">${_esc(a.nombre_completo || a.username)}</div>

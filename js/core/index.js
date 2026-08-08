@@ -2,15 +2,15 @@
   'use strict';
   
   const APP = {
-    init() {
+    async init() {
       // Aplicar preferencias primero
       if (window.preferencias) window.preferencias.aplicar();
       
       // Controlar splash screen
       this._controlarSplash();
       
-      // Recuperar sesión
-      this._recuperarSesion();
+      // Recuperar sesión (async: valida el JWT de Supabase Auth, 028)
+      await this._recuperarSesion();
 
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
@@ -24,7 +24,7 @@
       // Aplicar preferencias del usuario
       this._aplicarPreferencias();
       
-      // Iniciar sincronización offline
+      // Iniciar sincronización local pendiente
       if (window.colaSync) {
         this.splashEstado('Sincronizando...');
         window.colaSync.iniciar();
@@ -33,11 +33,21 @@
       // Verificar sesión
       this._verificarSesion();
 
-      // Poller de invitaciones a desafíos (banner global donde sea que estés)
-      this._iniciarPollInvitaciones();
+      // Re-validar la sesión contra el servidor: evita que un rol forjado en
+      // localStorage (o una cuenta desactivada) se mantenga tras recargar.
+      this._revalidarSesion();
+      window.addEventListener('online', () => this._revalidarSesion());
+
+      // Sistema de notificaciones centralizado: poller + realtime + recordatorios
+      // (todo delegado a notification-service; ver js/core/notification-service.js)
+      if (window.notificationService) window.notificationService.iniciar();
 
       // Heartbeat: actualizar ultimo_acceso periódicamente
       this._iniciarHeartbeat();
+
+      // Precarga inteligente: descarga en segundo plano (idle) las vistas
+      // pesadas que el rol del usuario probablemente usará.
+      this._precargarPorRol();
 
       // ============================================================
       // Eventos de autenticación
@@ -64,11 +74,13 @@
         
         this._renderizarBarraNavegacion();
 
+        // Marca del centro: configuracion ya no es legible sin sesión (028)
+        this._aplicarMarca();
+
         // Navegar a /estudio ANTES de esperar el welcome (1200ms): evita que un
         // cambio de ruta del usuario durante el arranque sea sobrescrito.
-        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') && 
-                            !usuario.preferencias?.tema && 
-                            usuario.preferencias?.tema !== null;
+        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') &&
+          (!usuario.preferencias || (usuario.preferencias.tema !== null && !usuario.preferencias.tema));
                             
         if (esPrimeraVez) {
           router.reemplazar('/estudio');
@@ -81,7 +93,8 @@
           await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
         }
 
-        this._notificarRepasos();
+        // Notificaciones: arranca poller/realtime/recordatorios tras el login
+        if (window.notificationService) window.notificationService.iniciar();
       });
 
       window.eventBus.suscribir('auth:logout', () => {
@@ -90,6 +103,7 @@
         sessionStorage.removeItem('fb_usuario');
         if (window.preferencias) window.preferencias.aplicar();
         this._renderizarBarraNavegacion();
+        if (window.notificationService) window.notificationService.detener();
         router.reemplazar('/login');
       });
 
@@ -155,9 +169,14 @@
       }, 600);
     },
 
-    // Watchdog: si la app no carga en 15s, limpiar caché y recargar
+    // Watchdog: si la app no carga en 15s, reparar la caché y recargar.
+    // Usa error-recovery para respetar las guardas anti-bucle.
     async _watchdogRecargar() {
       if (this._splashOculto) return;
+      if (window.errorRecovery) {
+        await window.errorRecovery.recuperarCacheYRecargar('watchdog de arranque', true);
+        return;
+      }
       if (this._splashStatus) this._splashStatus.textContent = 'Reiniciando por tiempo de espera...';
       try { await window.cacheDatos?.limpiarTodo(); } catch (e) {}
       setTimeout(() => window.location.reload(), 1500);
@@ -220,17 +239,28 @@
       };
     },
 
-    _recuperarSesion() {
+    // FASE 2 (028): con el RLS cerrado la sesión solo es válida si el SDK de
+    // Supabase Auth tiene un JWT activo para el mismo usuario. Si el token
+    // expiró o no existe, se limpia la sesión local y se pide login de nuevo.
+    async _recuperarSesion() {
       try {
-        const recordar = localStorage.getItem('fb_recordar_sesion');
         const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
-        if (guardado) {
-          const usuario = JSON.parse(guardado);
-          store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
+        if (!guardado) return;
+        const usuario = JSON.parse(guardado);
+        const sb = window.supabaseClient;
+        if (sb) {
+          const { data } = await sb.auth.getSession();
+          if (!data || !data.session || data.session.user.id !== usuario.id) {
+            localStorage.removeItem('fb_usuario');
+            localStorage.removeItem('fb_recordar_sesion');
+            sessionStorage.removeItem('fb_usuario');
+            return;
+          }
         }
-      } catch (e) { 
-        localStorage.removeItem('fb_usuario'); 
-        sessionStorage.removeItem('fb_usuario'); 
+        store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
+      } catch (e) {
+        localStorage.removeItem('fb_usuario');
+        sessionStorage.removeItem('fb_usuario');
       }
     },
 
@@ -262,7 +292,7 @@
 
     _verificarSesion() {
       const usuario = store.obtener('usuario');
-      const ruta = router._rutaActual();
+      const ruta = router.pathActual();
       const esLogin = ruta === '/login' || ruta === '/';
       if (!usuario && !esLogin) { 
         router.reemplazar('/login'); 
@@ -283,51 +313,63 @@
       router._ejecutar();
     },
 
-    async _notificarRepasos() {
+    // ============================================================
+    // Revalidación de sesión: los datos del servidor mandan
+    // ============================================================
+    async _revalidarSesion() {
       const usuario = store.obtener('usuario');
-      if (!usuario) return;
-      // Respetar la preferencia de recordatorios de estudio (por defecto activada)
-      if ((usuario.preferencias || {}).notif_recordatorios === false) return;
-      const hoy = new Date().toISOString().slice(0, 10);
-      if (localStorage.getItem('fb_toast_repaso') === hoy) return;
+      if (!usuario || !usuario.id) return;
+      const sb = window.supabaseClient;
+      if (!sb || !navigator.onLine) return;
       try {
-        const pendientes = await window.memorizacionRepository.tarjetasPendientes(usuario.id);
-        if (pendientes && pendientes.length > 0) {
-          this._mostrarToastRepaso(pendientes.length);
-          
-          // NUEVO: Notificación push si está disponible
-          if (window.notifications) {
-            await window.notifications.notificarRepasos(pendientes.length);
-          }
+        const { data, error } = await sb.from('perfiles')
+          .select('id, activo, rol, grupo_id, nombre_completo, username, foto_perfil, preferencias')
+          .eq('id', usuario.id)
+          .limit(1);
+        if (error || !data || !data.length) {
+          // El usuario ya no existe (o la tabla no permite leerlo): cerrar sesión
+          if (window.authRepository) await window.authRepository.cerrarSesion();
+          return;
         }
-      } catch (e) {}
+        const servidor = data[0];
+        if (servidor.activo === false) {
+          if (window.authRepository) await window.authRepository.cerrarSesion();
+          if (window.helpers) window.helpers.mostrarAlerta('Tu cuenta ha sido desactivada.', 'error');
+          return;
+        }
+        // Fusionar: el servidor gana en rol/activo/grupo_id y datos de perfil.
+        // Así un `rol` forjado en localStorage se corrige en cuanto hay conexión.
+        // Los campos que el servidor devuelve null NO pisan los locales (p.ej.
+        // preferencias/foto_perfil pueden estar vacíos en BD y no deben borrar
+        // lo que el usuario ya eligió en el dispositivo).
+        let preferencias = servidor.preferencias;
+        if (typeof preferencias === 'string') {
+          try { preferencias = JSON.parse(preferencias); }
+          catch (e) { preferencias = {}; }
+        }
+        if (preferencias == null) preferencias = usuario.preferencias || {};
+        const actualizado = {
+          ...usuario,
+          ...servidor,
+          preferencias,
+          foto_perfil: servidor.foto_perfil != null ? servidor.foto_perfil : (usuario.foto_perfil || null)
+        };
+        // Solo tocar localStorage si el usuario eligió "recordar sesión"
+        const recordar = localStorage.getItem('fb_recordar_sesion') === 'true';
+        if (recordar) {
+          try {
+            localStorage.setItem('fb_usuario', JSON.stringify(actualizado));
+          } catch (e) {}
+        }
+        store.actualizar('usuario', actualizado);
+        this._renderizarBarraNavegacion();
+      } catch (e) {
+        // Sin conexión o error de red: mantener la sesión local sin cambios
+      }
     },
 
-    _mostrarToastRepaso(n) {
-      if (document.getElementById('toast-repaso')) return;
-      const t = document.createElement('div');
-      t.id = 'toast-repaso';
-      t.className = 'toast-repaso';
-      t.innerHTML = `
-        <span class="toast-repaso__icono">${window.Iconos.render('brain')}</span>
-        <div class="toast-repaso__cuerpo">
-          <p class="toast-repaso__titulo">Hoy tienes</p>
-          <p class="toast-repaso__texto">${n} versículo${n === 1 ? '' : 's'} pendiente${n === 1 ? '' : 's'}.</p>
-        </div>
-        <button class="toast-repaso__cerrar" aria-label="Cerrar">×</button>
-      `;
-      t.addEventListener('click', (ev) => {
-        if (ev.target.closest('.toast-repaso__cerrar')) { 
-          t.remove(); 
-          return; 
-        }
-        router.navegar('/memorizacion');
-        t.remove();
-      });
-      document.body.appendChild(t);
-      localStorage.setItem('fb_toast_repaso', new Date().toISOString().slice(0, 10));
-      setTimeout(() => { if (t) t.remove(); }, 9000);
-    },
+    // Nota: los repasos y recordatorios ahora los genera el Notification
+    // Service (generarRecordatorios) con datos reales del usuario.
 
     /* ═══ Heartbeat: actualiza ultimo_acceso cada 3 min ═══ */
     _iniciarHeartbeat() {
@@ -341,142 +383,8 @@
       setTimeout(() => { tick(); setInterval(tick, 180000); }, 30000);
     },
 
-    /* ═══ Invitaciones a desafíos: banner global ═══ */
-    _iniciarPollInvitaciones() {
-      this._desafioNotifsVistas = new Set();
-      this._desafioBannerVisible = false;
-      // Verificar cada 6s (más rápido) y arranque inicial a los 2s
-      setInterval(() => this._verificarInvitacionesDesafio(), 6000);
-      setTimeout(() => this._verificarInvitacionesDesafio(), 2000);
-    },
-
-    async _verificarInvitacionesDesafio() {
-      const usuario = store.obtener('usuario');
-      if (!usuario || !window.desafiosRepository) return;
-      // No mostrar banner si ya está viendo el mismo desafío
-      const ruta = router._rutaActual();
-      if (this._desafioBannerVisible) {
-        if (!document.getElementById('desafio-banner')) this._desafioBannerVisible = false;
-        else return;
-      }
-      try {
-        const pendientes = await window.desafiosRepository.notificacionesPendientes(usuario.id);
-        const nuevo = (pendientes || []).find(n => {
-          if (!n || !n.datos || !n.datos.desafio_id) return false;
-          if (this._desafioNotifsVistas.has(n.id)) return false;
-          // No mostrar banner si ya estás viendo ese mismo desafío
-          if (ruta && ruta === '/desafio/' + n.datos.desafio_id) return false;
-          return true;
-        });
-        if (nuevo) {
-          this._desafioNotifsVistas.add(nuevo.id);
-          this._mostrarBannerDesafio(nuevo, usuario);
-          // Notificación nativa del dispositivo
-          if (window.notifications) {
-            const datos = nuevo.datos || {};
-            const creador = (nuevo.titulo || '').includes('te ha desafiado')
-              ? nuevo.titulo.replace(' te ha desafiado', '')
-              : (nuevo.titulo || 'Alguien');
-            window.notifications.notificarDesafio(
-              creador,
-              datos.mazo_nombre || 'Memorización',
-              datos.desafio_id
-            );
-          }
-        }
-      } catch (e) {}
-
-      // Verificar otros tipos de notificaciones (examen_publicado, examen_entregado, mazo_nuevo)
-      this._verificarOtrasNotificaciones(usuario);
-    },
-
-    async _verificarOtrasNotificaciones(usuario) {
-      if (!window.supabaseClient) return;
-      try {
-        const { data } = await window.supabaseClient.from('notificaciones')
-          .select('*')
-          .eq('usuario_id', usuario.id)
-          .eq('leida', false)
-          .in('tipo', ['examen_publicado', 'examen_entregado', 'mazo_nuevo', 'anuncio'])
-          .order('creado_en', { ascending: false })
-          .limit(5);
-        if (!data || !data.length) return;
-        for (const n of data) {
-          if (!this._desafioNotifsVistas.has(n.id)) {
-            this._desafioNotifsVistas.add(n.id);
-            const d = n.datos || {};
-            if (n.tipo === 'examen_publicado' && window.notifications) {
-              window.notifications.notificarExamen(d.examen_titulo || n.cuerpo, d.examen_id);
-            } else if (n.tipo === 'examen_entregado' && window.notifications) {
-              window.notifications.notificarExamenEntregado(
-                d.alumno_nombre || 'Un alumno',
-                d.examen_titulo || '',
-                d.examen_id,
-                d.alumno_id
-              );
-            } else if (n.tipo === 'mazo_nuevo' && window.notifications) {
-              window.notifications.notificarMazoNuevo(d.mazo_nombre || 'Memorización', d.mazo_id);
-            } else if (n.tipo === 'anuncio' && window.notifications) {
-              window.notifications.notificarAnuncio(d.anuncio_titulo || n.titulo || 'Anuncio', d.anuncio_cuerpo || n.cuerpo || '');
-            }
-            // Marcar como leída
-            try { await window.supabaseClient.from('notificaciones').update({ leida: true }).eq('id', n.id); } catch (e) {}
-          }
-        }
-      } catch (e) { /* no crítico */ }
-    },
-
-    _mostrarBannerDesafio(notif, usuario) {
-      if (document.getElementById('desafio-banner')) return;
-      const esc = (t) => window.helpers.escapeHtml(t);
-      this._desafioBannerVisible = true;
-      const datos = notif.datos || {};
-      const b = document.createElement('div');
-      b.id = 'desafio-banner';
-      b.className = 'desafio-banner';
-      b.innerHTML = `
-        <span class="desafio-banner__icono">${window.Iconos.render('sword')}</span>
-        <div class="desafio-banner__cuerpo">
-          <p class="desafio-banner__titulo">${esc(notif.titulo || 'Desafío recibido')}</p>
-          <p class="desafio-banner__texto">${esc(notif.cuerpo || '')}</p>
-        </div>
-        <div class="desafio-banner__acciones">
-          <button class="btn-primario" data-banner-accion="aceptar">${window.Iconos.render('check')} Aceptar</button>
-          <button class="btn-secundario" data-banner-accion="rechazar">${window.Iconos.render('x')} Rechazar</button>
-        </div>
-        <button class="desafio-banner__cerrar" data-banner-accion="cerrar" aria-label="Cerrar">×</button>
-      `;
-      document.body.appendChild(b);
-      window.Iconos.actualizar();
-
-      const cerrar = () => {
-        b.remove();
-        this._desafioBannerVisible = false;
-        try { window.desafiosRepository.marcarNotificacionLeida(notif.id); } catch (e) {}
-      };
-
-      b.querySelector('[data-banner-accion="cerrar"]').onclick = cerrar;
-      b.querySelector('[data-banner-accion="rechazar"]').onclick = async () => {
-        try { await window.desafiosRepository.responderInvitacion(datos.desafio_id, usuario.id, false); } catch (e) {}
-        cerrar();
-        window.helpers.mostrarAlerta('Has rechazado el desafío.', 'info');
-      };
-      b.querySelector('[data-banner-accion="aceptar"]').onclick = async () => {
-        try {
-          const r = await window.desafiosRepository.responderInvitacion(datos.desafio_id, usuario.id, true);
-          cerrar();
-          router.navegar('/desafio/' + datos.desafio_id);
-          if (!r.empezado) window.helpers.mostrarAlerta('Has aceptado. Esperando a los demás...', 'exito');
-        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
-      };
-      setTimeout(() => {
-        if (b && b.parentNode) {
-          b.remove();
-          this._desafioBannerVisible = false;
-          try { window.desafiosRepository.marcarNotificacionLeida(notif.id); } catch (e) {}
-        }
-      }, 30000);
-    },
+    /* ═══ Notificaciones: poller, banner y realtime delegados al
+       Notification Service (js/core/notification-service.js) ═══ */
 
     _renderizarBarraNavegacion() {
       const nav = document.getElementById('barra-navegacion');
@@ -485,6 +393,7 @@
       if (!usuario) { 
         nav.innerHTML = ''; 
         nav.style.display = 'none'; 
+        this._renderizarFabNotificaciones();
         return; 
       }
       nav.style.display = '';
@@ -496,7 +405,7 @@
         { ruta: '/explorar', icono: 'compass', texto: 'Explorar' },
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
       ];
-      const rutaActual = router._rutaActual();
+      const rutaActual = router.pathActual();
       const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/')) || (r === '/perfil' && (rutaActual === '/grupos' || rutaActual.startsWith('/perfil/config/') || rutaActual.startsWith('/perfil/acerca/')));
 
       // Persistir sección activa en localStorage — fuente única de verdad
@@ -517,6 +426,30 @@
           router.navegar(el.getAttribute('href').replace('#!', '')); 
         });
       });
+      this._renderizarFabNotificaciones();
+    },
+
+    // Botón flotante de campana con badge de no leídas (acceso al centro)
+    _renderizarFabNotificaciones() {
+      const usuario = store.obtener('usuario');
+      let fab = document.getElementById('notif-fab');
+      if (!usuario) {
+        if (fab) fab.remove();
+        return;
+      }
+      if (!fab) {
+        fab = document.createElement('button');
+        fab.id = 'notif-fab';
+        fab.className = 'notif-fab';
+        fab.setAttribute('aria-label', 'Centro de notificaciones');
+        fab.innerHTML = '<span class="notif-fab__icono"></span><span class="notif-fab__badge" id="notifFabBadge" hidden>0</span>';
+        document.body.appendChild(fab);
+        fab.addEventListener('click', () => router.navegar('/notificaciones'));
+      }
+      const icono = fab.querySelector('.notif-fab__icono');
+      if (icono) icono.innerHTML = window.Iconos.render('bell');
+      if (window.Iconos) window.Iconos.actualizar();
+      if (window.notificationService) window.notificationService.actualizarBadge();
     },
 
     // ============================================================
@@ -540,6 +473,29 @@
       } catch (e) { /* sin conexión o sin permisos: mantener el título por defecto */ }
     },
 
+    // Carga perezosa de vistas pesadas: muestra un esqueleto mientras se
+    // descargan los módulos. Solo ocurre la primera vez (después el
+    // import() queda en la caché de módulos del navegador).
+    // NOTA: en scripts clásicos, import() resuelve rutas relativas contra la
+    // URL del script (js/core/), no contra el documento. Se resuelve contra
+    // document.baseURI para que funcione en raíz y en subdirectorios.
+    _vistaLazy(archivos, obtener) {
+      const resolver = (ruta) => new URL(ruta, document.baseURI).href;
+      return {
+        montar: async (raiz, params) => {
+          if (raiz && !raiz.children.length && window.skeleton) {
+            raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(6, { ancho: '100%' })}</div>`;
+          }
+          await Promise.all(archivos.map((a) => import(resolver(a))));
+          const vista = obtener();
+          if (!vista || typeof vista.montar !== 'function') {
+            throw new Error('No se pudo cargar esta sección.');
+          }
+          return vista.montar(raiz, params);
+        }
+      };
+    },
+
     _inicializarRutas() {
       router.registrar('/', { 
         montar: () => { 
@@ -552,26 +508,57 @@
       router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
       router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
       router.registrar('/leer/:libro/:capitulo', window.vistaSesionEstudio);
-      router.registrar('/mapa', window.vistaMapa);
       router.registrar('/examenes', window.vistaExamenes);
-      router.registrar('/tomar/:id', window.vistaExamenTomar);
-      router.registrar('/editor/:id', window.vistaExamenEditor);
-      router.registrar('/editor/nuevo', window.vistaExamenEditor);
-      router.registrar('/corregir/:id', window.vistaExamenCorregir);
-      router.registrar('/calificaciones', window.vistaCalificaciones);
       router.registrar('/memorizacion', window.vistaMemorizacion);
-      router.registrar('/progreso', window.vistaProgreso);
       router.registrar('/explorar', window.vistaExplorar);
       router.registrar('/perfil', window.vistaPerfil);
+      router.registrar('/notificaciones', window.vistaNotificaciones);
       router.registrar('/perfil/config/:seccion', window.vistaPerfil);
       router.registrar('/perfil/acerca/:seccion', window.vistaPerfil);
       router.registrar('/perfil/config', { montar: () => router.navegar('/perfil') });
       router.registrar('/perfil/acerca', { montar: () => router.navegar('/perfil') });
-      router.registrar('/grupos', window.vistaGrupos);
-      router.registrar('/grupos/:id', window.vistaGrupos);
-      router.registrar('/desafio/:id', window.vistaDesafio);
-      router.registrar('/admin', window.vistaPanelAdmin);
-    }
+
+      // ── Vistas pesadas: carga perezosa bajo demanda ──
+      // Nota: /editor/nuevo se registra ANTES de /editor/:id para que la ruta
+      // exacta no quede capturada por el parámetro (el router usa orden de registro).
+      router.registrar('/mapa', this._vistaLazy(['./js/vistas/vista-mapa.js'], () => window.vistaMapa));
+      router.registrar('/tomar/:id', this._vistaLazy(['./js/vistas/vista-examen-tomar.js'], () => window.vistaExamenTomar));
+      router.registrar('/editor/nuevo', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
+      router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
+      router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-examen-corregir.js'], () => window.vistaExamenCorregir));
+      router.registrar('/calificaciones', this._vistaLazy(['./js/vistas/vista-calificaciones.js'], () => window.vistaCalificaciones));
+      router.registrar('/progreso', this._vistaLazy(['./js/vistas/vista-progreso.js'], () => window.vistaProgreso));
+      router.registrar('/grupos', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
+      router.registrar('/grupos/:id', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
+      router.registrar('/desafio/:id', this._vistaLazy(['./js/vistas/vista-desafio.js'], () => window.vistaDesafio));
+      router.registrar('/admin', this._vistaLazy(['./js/vistas/admin/admin-comunes.js', './js/vistas/admin/vista-panel-admin.js'], () => window.vistaPanelAdmin));
+    },
+
+    // Precarga inteligente: cuando el dispositivo queda inactivo tras el
+    // arranque, descarga en segundo plano las vistas pesadas que el rol del
+    // usuario probablemente usará. La primera navegación a esas secciones
+    // será instantánea.
+    _precargarPorRol() {
+      const usuario = store.obtener('usuario');
+      if (!usuario) return;
+      const rol = usuario.rol;
+      const archivos = [];
+      if (rol === 'owner' || rol === 'admin') {
+        archivos.push('./js/vistas/admin/admin-comunes.js', './js/vistas/admin/vista-panel-admin.js');
+      }
+      if (rol === 'owner' || rol === 'admin' || rol === 'editor') {
+        archivos.push('./js/vistas/vista-examen-editor.js', './js/vistas/vista-examen-corregir.js', './js/vistas/vista-calificaciones.js');
+      }
+      if (!archivos.length) return;
+      const cargar = () => {
+        archivos.forEach((a) => { try { import(new URL(a, document.baseURI).href).catch(() => {}); } catch (e) {} });
+      };
+      if ('requestIdleCallback' in window) {
+        setTimeout(() => window.requestIdleCallback(cargar, { timeout: 5000 }), 10000);
+      } else {
+        setTimeout(cargar, 15000);
+      }
+    },
   };
 
   // ============================================================

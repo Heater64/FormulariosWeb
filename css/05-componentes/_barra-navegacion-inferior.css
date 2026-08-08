@@ -107,9 +107,12 @@
   .barra-nav-inferior__item {
     padding: 3px 1px;
     min-width: 40px;
-    /* Override del clamp del token: en 360 el clamp puede resolver ~10px,
-       demasiado grande para 6 items en pantalla estrecha */
-    font-size: 9px;
+    /* Legibilidad mínima (WCAG 1.4.4): 11px es el piso; si no cabe, la etiqueta
+       se trunca con ellipsis en lugar de encoger el texto. */
+    font-size: 11px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
   }
   .barra-nav-inferior__item svg {
     width: 20px;

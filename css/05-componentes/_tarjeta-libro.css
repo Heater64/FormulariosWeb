@@ -72,7 +72,7 @@
 }
 
 .tarjeta-libro__progreso {
-  font-size: var(--texto-xxs);
+  font-size: var(--texto-xs);
   color: var(--color-texto-terciario);
 }
 

@@ -55,7 +55,7 @@
               <h2>${window.Iconos.render('book-open')} Estudio Guiado</h2>
               <div class="estudio-cabecera__derecha">
                 <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button>
-                <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${usuario.foto_perfil}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
+                <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${window.helpers.escapeHtml(usuario.foto_perfil)}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
               </div>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">

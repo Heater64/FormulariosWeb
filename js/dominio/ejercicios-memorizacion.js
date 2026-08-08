@@ -329,8 +329,10 @@
           ej.verificar = (vals) => (ej.respuestas || []).map((r, i) => limpiar(vals[i]) === limpiar(r));
           break;
         case 'ordenar':
+          // Tolerar entradas malformadas (string, objeto, null) sin romper
           ej.verificar = (orden) =>
-            JSON.stringify((orden || []).map(limpiar)) === JSON.stringify((ej.respuestaCorrecta || []).map(limpiar));
+            JSON.stringify((Array.isArray(orden) ? orden : []).map(limpiar)) ===
+            JSON.stringify((Array.isArray(ej.respuestaCorrecta) ? ej.respuestaCorrecta : []).map(limpiar));
           break;
         case 'elegir_versiculo':
           ej.verificar = (sel) => limpiar(sel) === limpiar(ej.respuestaCorrecta);

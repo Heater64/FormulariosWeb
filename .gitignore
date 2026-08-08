@@ -1,6 +1,5 @@
 # Dependencias
 node_modules/
-package-lock.json
 yarn.lock
 
 # Variables de entorno
@@ -18,12 +17,19 @@ Thumbs.db
 .idea/
 *.swp
 *.swo
+*.keystore
+*.jks
+android/release.keystore
 
 # Construcción
 dist/
+dist-public/
 build/
 .next/
 out/
 
 # Vercel
 .vercel/
+
+# Herramientas locales
+.freebuff/

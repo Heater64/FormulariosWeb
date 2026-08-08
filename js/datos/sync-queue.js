@@ -150,10 +150,21 @@
           lote.map(op => ejecutarOp(op, hechas, categorias))
         );
 
+        const ahoraLoop = Date.now();
         for (let i = 0; i < resultados.length; i++) {
           const r = resultados[i];
           if (r.status === 'rejected') {
-            pendientes.push(lote[i]);
+            const op = lote[i];
+            if (!op) continue;
+            // NO reintroducir operaciones que ya agotaron sus reintentos
+            // (reintentos > MAX_REINTENTOS): si se vuelven a meter, el bucle
+            // `while` nunca termina (bucle infinito con fallos permanentes).
+            if ((op.reintentos || 0) > MAX_REINTENTOS) continue;
+            // Respetar el backoff también dentro de esta misma ejecución:
+            // si siguienteIntento está en el futuro, se deja en el store y se
+            // reintentará en la próxima sincronización.
+            if (op.siguienteIntento && op.siguienteIntento > ahoraLoop) continue;
+            pendientes.push(op);
           }
         }
 
@@ -211,11 +222,16 @@
       const range = IDBKeyRange.lowerBound([PENDIENTE, 0]);
       return new Promise((resolve, reject) => {
         const resultados = [];
+        const ahora = Date.now();
         const req = idx.openCursor(range, 'next');
         req.onsuccess = (ev) => {
           const cursor = ev.target.result;
           if (cursor) {
-            resultados.push(cursor.value);
+            const op = cursor.value;
+            // Respetar el backoff: no reintentar hasta que llegue siguienteIntento
+            if (!op.siguienteIntento || op.siguienteIntento <= ahora) {
+              resultados.push(op);
+            }
             cursor.continue();
           } else {
             resolve(resultados);

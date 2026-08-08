@@ -429,9 +429,13 @@
       else raiz.querySelector('#btnLibro').onclick = () => router.navegar(`/estudio/libro/${e.libroId}`);
       window.Iconos.actualizar();
 
-      // Notificación nativa al completar capítulo
-      if (window.notifications) {
-        window.notifications.notificarCapituloCompletado(e.libro.nombre, e.capituloNum);
+      // Notificación de capítulo completado vía Notification Service
+      if (window.notificationService) {
+        window.notificationService.emitir('estudio.completado', {
+          libro: e.libro.nombre,
+          capitulo: e.capituloNum,
+          datos: { libro: e.libro.nombre, capitulo: e.capituloNum }
+        }).catch(() => {});
       }
 
       // Racha, celebración y logros (una sola query a progreso_lectura)
