@@ -2,19 +2,39 @@
 // Bridge clásico para el plugin Capacitor nativo.
 // El proyecto usa scripts clásicos; el runtime UMD de Capacitor se
 // carga durante el build para evitar imports bare sin bundlear.
+//
+// Capacitor se resuelve de forma PERZOSA (no al cargar el script):
+// los scripts defer se ejecutan en orden de aparición, y si este
+// archivo corre antes que el runtime, root.Capacitor todavía no
+// tiene registerPlugin. Al resolverlo bajo demanda (primer uso),
+// el runtime ya está cargado y la detección funciona siempre.
 // ============================================================
 (function (root) {
   'use strict';
 
-  const capacitor = root.Capacitor;
-  const UpdateInstallerPlugin = capacitor?.registerPlugin
-    ? capacitor.registerPlugin('UpdateInstaller')
-    : null;
+  let cachedPlugin = null;
+
+  function capacitorRuntime() {
+    return root.Capacitor || (root.capacitorExports && root.capacitorExports.Capacitor) || null;
+  }
+
+  function plugin() {
+    if (cachedPlugin) return cachedPlugin;
+    const capacitor = capacitorRuntime();
+    if (!capacitor || typeof capacitor.registerPlugin !== 'function') return null;
+    try {
+      cachedPlugin = capacitor.registerPlugin('UpdateInstaller');
+    } catch (error) {
+      cachedPlugin = null;
+    }
+    return cachedPlugin;
+  }
 
   const updateInstaller = {
     disponible() {
       try {
-        return !!(UpdateInstallerPlugin && capacitor?.isNativePlatform?.() && capacitor.isPluginAvailable?.('UpdateInstaller'));
+        const capacitor = capacitorRuntime();
+        return !!(capacitor && typeof capacitor.isNativePlatform === 'function' && capacitor.isNativePlatform() && plugin());
       } catch (error) {
         return false;
       }
@@ -27,6 +47,7 @@
         throw error;
       }
 
+      const UpdateInstallerPlugin = plugin();
       let listener = null;
       try {
         if (onProgress && UpdateInstallerPlugin.addListener) {
@@ -39,6 +60,7 @@
     },
 
     async cancelar() {
+      const UpdateInstallerPlugin = plugin();
       if (this.disponible() && UpdateInstallerPlugin.cancelDownload) {
         return UpdateInstallerPlugin.cancelDownload();
       }
@@ -46,6 +68,7 @@
     },
 
     async abrirAjustesInstalacion() {
+      const UpdateInstallerPlugin = plugin();
       if (this.disponible() && UpdateInstallerPlugin.openInstallSettings) {
         return UpdateInstallerPlugin.openInstallSettings();
       }

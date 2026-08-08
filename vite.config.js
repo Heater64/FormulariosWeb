@@ -43,7 +43,12 @@ function injectRuntimeVersion() {
       const versionCode = readAndroidVersionCode();
       const updateManifestUrl = process.env.VITE_UPDATE_MANIFEST_URL || '';
       const runtime = `<script src="./js/vendor/capacitor.js" defer></script><script>window.__FB_APP_VERSION__=${JSON.stringify({ version, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(updateManifestUrl)};</script>`;
-      return html.replace('</head>', `${runtime}\n</head>`);
+      // IMPORTANTE: el runtime de Capacitor debe ser el PRIMER script defer del
+      // documento. Los scripts defer se ejecutan en orden de aparición, y
+      // update-installer.js/push-notification-service.js leen root.Capacitor
+      // al cargar: si el runtime va después, esas lecturas ven undefined y la
+      // instalación de APK falla con "solo disponible en Android" en la app.
+      return html.replace('<head>', `<head>\n    ${runtime}`);
     }
   };
 }
