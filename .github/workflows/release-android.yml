@@ -78,6 +78,14 @@ jobs:
           echo "sha256=$SHA256" >> "$GITHUB_OUTPUT"
           echo "size=$SIZE" >> "$GITHUB_OUTPUT"
 
+      - name: Delete existing release with same tag (idempotent rerun)
+        env:
+          GH_TOKEN: ${{ github.token }}
+        continue-on-error: true
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          gh release delete "v${VERSION}" --yes --cleanup-tag || true
+
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
