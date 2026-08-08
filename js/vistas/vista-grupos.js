@@ -45,6 +45,10 @@
               <p class="grupos-cabecera__sub">Estudia y desafía con tu comunidad</p>
             </div>
           </div>
+          ${['admin', 'owner'].includes(usuario.rol) ? `
+          <div class="o-flecha" style="justify-content:flex-end">
+            <button class="btn-primario" id="btnCrearGrupo">${I('plus')} Crear grupo</button>
+          </div>` : ''}
           <div id="gruposContenido">
             <div class="skeleton-stack" aria-hidden="true">
               <div class="skel" style="height:110px;border-radius:var(--card-radius)"></div>
@@ -53,6 +57,23 @@
           </div>
         </div>`;
       raiz.querySelector('#btnVolverGrupos').onclick = () => router.navegar('/perfil');
+
+      // Crear grupo (admin/owner) sin salir de la pestaña Grupos
+      const btnCrear = raiz.querySelector('#btnCrearGrupo');
+      if (btnCrear) btnCrear.onclick = async () => {
+        const datos = await window.helpers.formulario({
+          titulo: 'Crear grupo',
+          campos: [{ nombre: 'nombre', etiqueta: 'Nombre del grupo', requerido: true, placeholder: 'Ej: Clase 1º ESO A' }],
+          textoConfirmar: 'Crear'
+        });
+        if (!datos || !datos.nombre.trim()) return;
+        try {
+          await window.gruposRepository.crearGrupo(datos.nombre.trim(), usuario.id);
+          try { await window.adminRepository.registrarAuditoria('grupo:crear', `Grupo "${datos.nombre.trim()}" creado`, usuario.id); } catch (e) {}
+          window.helpers.mostrarAlerta('Grupo creado.', 'exito');
+          this._montarDirectorio(raiz);
+        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+      };
 
       const [grupos, invitaciones, clase, membresias, administrados] = await Promise.all([
         window.gruposRepository.listarGruposPublicos(),

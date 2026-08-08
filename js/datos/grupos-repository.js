@@ -67,6 +67,19 @@
       }
     },
 
+    // Crea un grupo con el usuario actual como administrador (admin_id).
+    // La política INSERT (grupos_insert_propio, 028) lo permite para
+    // admin_id = auth.uid() o es_owner(); la 032 hace que el creador
+    // (aunque no sea owner) pueda verlo y gestionarlo después.
+    async crearGrupo(nombre, adminId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data, error } = await sb().from('grupos')
+        .insert({ nombre, admin_id: adminId })
+        .select().single();
+      if (error) throw error;
+      return data;
+    },
+
     // ── Directorio público ──────────────────────────────────────
 
     // Todos los grupos del centro con su número de miembros, para el

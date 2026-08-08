@@ -49,9 +49,29 @@
           this._render(result);
         }
         return result;
+      } catch (diagnosticError) {
+        // El diagnóstico también va a consola para depuración remota
+        try { root.console?.info?.('[update] diagnóstico:', this._diagnostico()); } catch (e) {}
+        throw diagnosticError;
       } finally {
         this._checking = false;
       }
+    }
+
+    // Resumen del estado real del bridge/entorno, para diagnosticar por qué
+    // falla la actualización sin depender de suposiciones (p.ej. "detecta PC").
+    _diagnostico() {
+      const cap = root.Capacitor;
+      const ver = root.__FB_APP_VERSION__;
+      const lineas = [
+        `App: ${ver ? ver.version + ' (versionCode ' + ver.versionCode + ')' : 'desconocida'}`,
+        `Capacitor: ${cap ? (cap.getPlatform ? cap.getPlatform() : 'presente') : 'NO detectado'}`,
+        `isNativePlatform: ${cap && typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : 'n/a'}`,
+        `updateInstaller.disponible: ${this.installer ? this.installer.disponible() : 'no cargado'}`,
+        `Manifiesto: ${root.__FB_UPDATE_MANIFEST_URL__ || root.entorno?.updateManifestUrl || 'NO CONFIGURADO'}`,
+        `UA: ${(root.navigator && root.navigator.userAgent) || '?'}`
+      ];
+      return lineas.join('\n');
     }
 
     cerrar() {
@@ -120,14 +140,20 @@
         body = `<div class="update-dialog__message" role="status"><p>No hay ninguna actualización disponible para este dispositivo.</p></div><div class="update-dialog__actions"><button class="btn-primario" type="button" data-close>Entendido</button></div>`;
       } else if (isError) {
         const unknownSources = state.status === 'unknown_sources';
+        const diag = this._diagnostico().replace(/\n/g, '\n');
         body = `
           <div class="update-dialog__message update-dialog__message--error" role="alert">
             <p>${escapeHtml(unknownSources ? 'Android necesita permiso para instalar aplicaciones descargadas desde fuera de Google Play.' : (state.error?.message || 'La aplicación seguirá funcionando con normalidad.'))}</p>
           </div>
           <div class="update-dialog__actions">
+            <button class="btn-secundario" type="button" data-manual>Descargar manualmente</button>
             ${unknownSources ? '<button class="btn-secundario" type="button" data-settings>Abrir ajustes</button>' : ''}
             <button class="btn-primario" type="button" data-retry>Reintentar</button>
-          </div>`;
+          </div>
+          <details class="update-dialog__diag">
+            <summary>Diagnóstico técnico</summary>
+            <pre>${escapeHtml(diag)}</pre>
+          </details>`;
       }
 
       this._overlay.innerHTML = `
@@ -154,6 +180,17 @@
       this._overlay.querySelector('[data-cancel]')?.addEventListener('click', async () => {
         try { await this.installer?.cancelar(); } catch (error) {}
         this.cerrar();
+      });
+      this._overlay.querySelector('[data-manual]')?.addEventListener('click', async () => {
+        const url = this._state?.apkUrl || this._state?.releaseUrl;
+        if (!url) return;
+        try {
+          const win = root.open ? root.open(url, '_blank') : null;
+          if (!win) throw new Error('popup-bloqueado');
+        } catch (error) {
+          try { if (root.navigator?.clipboard) await root.navigator.clipboard.writeText(url); } catch (e) {}
+          root.helpers?.mostrarAlerta?.('Copia el enlace y ábrelo en tu navegador: ' + url, 'info');
+        }
       });
       this._overlay.querySelector('[data-update]')?.addEventListener('click', () => this._descargar());
     }
