@@ -318,6 +318,7 @@ class NotificationService {
 
     // 3. Persistir (historial permanente; se archiva, nunca desaparece)
     let filaGuardada = null;
+    let resultado = null;
     if (cfg.persistir !== false && window.notificacionesRepository) {
       try {
         const filas = destinatarios.map(uid => ({
@@ -337,7 +338,7 @@ class NotificationService {
           // sustituye por el contador real al fusionar filas.
           tituloAgrupado: cfg.tituloAgrupado ? cfg.tituloAgrupado(payload, '{n}') : null
         }));
-        const resultado = await window.notificacionesRepository.insertarFilas(filas);
+        resultado = await window.notificacionesRepository.insertarFilas(filas);
         filaGuardada = (resultado || []).find(f => f && f.usuario_id === usuario.id) || null;
         // Evitar doble presentación: la fila recién mostrada no debe volver a
         // emitirse por el poller/realtime (que solo leen estado='nueva').
@@ -346,6 +347,15 @@ class NotificationService {
           this._persistirPresentadas();
         }
       } catch (e) { console.warn('[NotifService] persistir:', e); }
+
+      // 3b. Push nativo a destinatarios AJENOS (solo Capacitor/Android): las
+      // mismas filas del historial se entregan como notificación nativa vía
+      // FCM (Edge Function enviar-push). Los eventos propios se omiten porque
+      // el dispositivo ya los muestra la capa in-app (realtime/polling).
+      if (window.pushNotificationService && window.pushNotificationService.enviarPush) {
+        const ajenas = (resultado || []).filter((f) => f && f.usuario_id && f.usuario_id !== usuario.id);
+        if (ajenas.length) window.pushNotificationService.enviarPush(ajenas);
+      }
     }
 
     // 4. Presentar al usuario actual si es destinatario

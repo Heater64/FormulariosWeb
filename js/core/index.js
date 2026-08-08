@@ -9,8 +9,17 @@
       // Controlar splash screen
       this._controlarSplash();
       
+      // Push nativas Android: instalar las escuchas lo antes posible para
+      // capturar la apertura por notificación en arranque en frío. Si ya hay
+      // sesión restaurada, registra el token; si no, lo hará tras el login.
+      if (window.pushNotificationService) await window.pushNotificationService.iniciar();
+      
       // Recuperar sesión (async: valida el JWT de Supabase Auth, 028)
       await this._recuperarSesion();
+      
+      // Tras restaurar la sesión, completar el registro push si quedó
+      // pendiente (el arranque en frío puede haber llegado sin usuario).
+      if (window.pushNotificationService) await window.pushNotificationService.iniciar();
 
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
@@ -95,6 +104,10 @@
 
         // Notificaciones: arranca poller/realtime/recordatorios tras el login
         if (window.notificationService) window.notificationService.iniciar();
+
+        // Push nativas Android: registrar el token del dispositivo y, si la
+        // app se abrió pulsando una notificación, navegar al destino.
+        if (window.pushNotificationService) await window.pushNotificationService.iniciar();
       });
 
       window.eventBus.suscribir('auth:logout', () => {
@@ -104,6 +117,9 @@
         if (window.preferencias) window.preferencias.aplicar();
         this._renderizarBarraNavegacion();
         if (window.notificationService) window.notificationService.detener();
+        // Push nativas: limpiar temporizadores y token local (los tokens de
+        // Supabase ya se desactivaron en authRepository.cerrarSesion).
+        if (window.pushNotificationService) window.pushNotificationService.detener();
         router.reemplazar('/login');
       });
 

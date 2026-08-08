@@ -61,6 +61,9 @@ const authRepository = {
   },
 
   async cerrarSesion() {
+    // Desactivar los tokens FCM del usuario ANTES de invalidar la sesión:
+    // la llamada a Supabase necesita el JWT aún válido.
+    try { if (window.pushNotificationService) await window.pushNotificationService.desactivarTokens(); } catch (e) { /* no bloquea el logout */ }
     const sb = window.supabaseClient;
     if (sb) {
       try { await sb.auth.signOut(); } catch (e) { /* la sesión local se limpia igualmente */ }
