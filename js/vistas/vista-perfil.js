@@ -216,6 +216,18 @@
               <span class="perfil-boton-seccion__flecha">${I('chevron-right')}</span>
             </a>` : ''}
 
+            <!-- CERRAR SESIÓN -->
+            <section class="perfil-seccion">
+              <div class="perfil-seccion__cabecera">
+                <div class="perfil-seccion__icono">${I('log-out')}</div>
+                <div>
+                  <h4 class="perfil-seccion__titulo">Sesión</h4>
+                  <p class="perfil-seccion__desc">Cierra la sesión en este dispositivo</p>
+                </div>
+              </div>
+              <button class="perfil-btn-cerrar" id="btnLogout">${I('log-out')} Cerrar sesión</button>
+            </section>
+
             <!-- INFORMACIÓN (compacta) -->
             <section class="perfil-seccion">
               <div class="perfil-info-card">
@@ -281,6 +293,12 @@
       raiz.querySelector('#btnBuscarActualizacion').onclick = () => {
         if (window.updateDialog) window.updateDialog.comprobar({ manual: true });
         else window.helpers.mostrarAlerta('El servicio de actualizaciones todavía se está iniciando.', 'info');
+      };
+
+      // Cerrar sesión (ahora en el perfil principal, debajo del panel de administración)
+      raiz.querySelector('#btnLogout').onclick = async () => {
+        const ok = await window.helpers.confirmar('¿Estás seguro de cerrar sesión?', { titulo: 'Cerrar sesión', textoConfirmar: 'Cerrar sesión' });
+        if (ok) authRepository.cerrarSesion();
       };
 
       // Foto de perfil — sube a Supabase Storage y guarda la URL pública
@@ -759,17 +777,6 @@
           <button class="perfil-btn-full btn-secundario" id="btnCambiarPassword">${I('key')} Cambiar contraseña</button>
         </div>
 
-        <div class="perfil-seccion">
-          <div class="perfil-seccion__cabecera">
-            <div class="perfil-seccion__icono">${I('log-out')}</div>
-            <div>
-              <h4 class="perfil-seccion__titulo">Sesión</h4>
-              <p class="perfil-seccion__desc">Cierra la sesión en este dispositivo</p>
-            </div>
-          </div>
-          <button class="perfil-btn-cerrar" id="btnLogout">${I('log-out')} Cerrar sesión</button>
-        </div>
-
         <div class="perfil-seccion perfil-seccion--peligro">
           <div class="perfil-seccion__cabecera">
             <div class="perfil-seccion__icono" style="background:var(--color-error-soft);color:var(--color-error)">${I('alert-triangle')}</div>
@@ -805,11 +812,6 @@
           try { await window.adminRepository.registrarAuditoria('config:password', 'Contraseña cambiada', usuario.id, usuario.grupo_id); } catch (e) {}
           window.helpers.mostrarAlerta('Contraseña actualizada.', 'exito');
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
-      };
-
-      cont.querySelector('#btnLogout').onclick = async () => {
-        const ok = await window.helpers.confirmar('¿Estás seguro de cerrar sesión?', { titulo: 'Cerrar sesión', textoConfirmar: 'Cerrar sesión' });
-        if (ok) authRepository.cerrarSesion();
       };
 
       cont.querySelector('#btnEliminarDatos').onclick = async () => {
