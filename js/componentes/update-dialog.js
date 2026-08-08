@@ -41,11 +41,11 @@
 
       try {
         const result = await this.service.checkForUpdate();
+        // Una actualización disponible siempre se muestra, también al
+        // entrar a la app: el usuario no tiene que buscarla manualmente.
         if (result.status === 'available') {
           this._render(result);
-        } else if (manual && result.status === 'up_to_date') {
-          this._render(result);
-        } else if (manual && result.status === 'error') {
+        } else if (manual && (result.status === 'up_to_date' || result.status === 'error')) {
           this._render(result);
         }
         return result;
@@ -238,7 +238,8 @@
 
   document.addEventListener('DOMContentLoaded', () => {
     root.updateDialog = new UpdateDialog();
-    // La comprobación inicial es silenciosa y diferida: no bloquea el arranque.
-    setTimeout(() => root.updateDialog.comprobar({ manual: false }), 1500);
+    // La comprobación inicial es diferida para no bloquear el arranque,
+    // pero muestra el diálogo automáticamente si hay una versión nueva.
+    setTimeout(() => root.updateDialog.comprobar(), 1500);
   });
 })(typeof window !== 'undefined' ? window : globalThis);
