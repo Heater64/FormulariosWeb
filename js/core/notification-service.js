@@ -124,6 +124,16 @@ class NotificationService {
       acciones: ['ver'],
       destinatarios: (p) => p.destinatarios || null
     });
+    r('desafio.cancelado', {
+      categoria: 'desafios', prioridad: 'baja',
+      titulo: () => 'Desafío cerrado',
+      cuerpo: (p) => `El desafío «${p.mazo || 'Memorización'}» se cerró sin resultados.`,
+      url: (p) => `/desafio/${p.desafioId}`,
+      icono: 'x-circle',
+      nativo: false, toast: false, sonido: false,
+      acciones: ['ver'],
+      destinatarios: (p) => p.destinatarios || null
+    });
 
     // ── Exámenes ────────────────────────────────────────────
     r('examen.publicado', {

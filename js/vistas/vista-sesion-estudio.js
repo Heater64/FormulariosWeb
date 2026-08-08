@@ -28,7 +28,10 @@
           fsm: window.maquinaEstudio.estados.NO_INICIADO
         };
         this._renderInicio();
-        raiz.addEventListener('click', async (ev) => {
+        // El listener se adjunta sobre `raiz` (#app-root, nodo permanente del
+        // router): hay que guardar la referencia y eliminarla en desmontar()
+        // para no acumular listeners huérfanos en cada visita a la sesión.
+        this._onClickRaiz = async (ev) => {
           if (ev.target.closest('#btnRetroceder')) {
             if (this.estado && !this.estado.respondido) {
               const ok = await window.helpers.confirmar('¿Seguro que quieres salir? Perderás el progreso de esta sesión.', { titulo: 'Salir de la sesión', textoConfirmar: 'Salir' });
@@ -36,9 +39,18 @@
             }
             router.navegar('/estudio/libro/' + this.estado.libroId);
           }
-        });
+        };
+        raiz.addEventListener('click', this._onClickRaiz);
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor o-pila u-mt-4 u-texto-centrado"><h2 style="color:var(--color-acento);display:flex;justify-content:center">${window.Iconos.render('book-open')}</h2><p class="u-color-texto-secundario">Capítulo no disponible</p><button class="btn-primario" onclick="router.navegar('/estudio')">← Volver</button></div>`;
+      }
+    },
+
+    desmontar() {
+      // Limpiar el listener delegado del nodo raíz del router
+      if (this._onClickRaiz && this.estado && this.estado.raiz) {
+        this.estado.raiz.removeEventListener('click', this._onClickRaiz);
+        this._onClickRaiz = null;
       }
     },
 

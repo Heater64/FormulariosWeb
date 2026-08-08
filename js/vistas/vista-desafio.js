@@ -59,6 +59,11 @@
     _detenerLoops() {
       if (this._pollTimer) clearTimeout(this._pollTimer);
       if (this._juegoTimer) clearInterval(this._juegoTimer);
+      // La cuenta atrás también crea timers propios que deben morir al
+      // desmontar/navegar (si no, el intervalo sigue vivo y puede llamar
+      // _empezarJuego con la vista ya desmontada).
+      if (this._cuentaTimer) { clearInterval(this._cuentaTimer); this._cuentaTimer = null; }
+      if (this._cuentaTimeout) { clearTimeout(this._cuentaTimeout); this._cuentaTimeout = null; }
       this._pollTimer = null;
       this._juegoTimer = null;
     },
@@ -72,6 +77,13 @@
       if (!desafio) { this._renderError('El desafío no existe.'); return; }
       this._desafio = desafio;
       const yo = (desafio.participantes || []).find(p => p.usuario_id === this._usuario.id);
+      // Acceso: solo participantes/creador/owner (el RLS ya lo bloquea en la
+      // consulta; este guard es defensa en profundidad para que un no
+      // participante nunca entre al juego ni vea resultados ajenos).
+      if (!yo && desafio.estado !== 'finalizado') {
+        this._renderMensaje('Sin acceso', 'No participas en este desafío.', 'lock');
+        return;
+      }
       const ahora = Date.now();
 
       if (desafio.estado === 'finalizado') { this._renderResultados(desafio); return; }
@@ -93,6 +105,14 @@
         }
         if (yo && ['abandonado', 'rechazado'].includes(yo.estado)) {
           this._renderEsperando(desafio, 'Has salido de este desafío.');
+          this._pollTimer = setTimeout(() => this._loop(), 2500);
+          return;
+        }
+        // Invitado que nunca respondió pero el desafío ya arrancó (revancha
+        // inmediata): sin este branch la pantalla quedaría con el skeleton
+        // para siempre (ningún render + polling infinito).
+        if (yo && yo.estado === 'invitado') {
+          this._renderEsperando(desafio, 'El desafío ya ha comenzado. Puedes ver los resultados al finalizar.');
           this._pollTimer = setTimeout(() => this._loop(), 2500);
           return;
         }
@@ -130,19 +150,28 @@
           </div>
         </div>`;
       window.Iconos.actualizar();
-      $('#btnAceptar').onclick = async () => {
+      const btnAceptar = $('#btnAceptar');
+      const btnRechazar = $('#btnRechazar');
+      // Deshabilitar ambos botones tras el primer clic: evita que un doble
+      // clic en "Aceptar" llame a responderInvitacion dos veces (que re-fijaría
+      // iniciado_en y duplicaría la notificación de inicio).
+      btnAceptar.onclick = async () => {
+        btnAceptar.disabled = true;
+        btnRechazar.disabled = true;
         try {
           const r = await window.desafiosRepository.responderInvitacion(desafio.id, this._usuario.id, true);
           if (r.empezado) { this._loop(); }
           else { window.helpers.mostrarAlerta('Has aceptado. Esperando a los demás...', 'exito'); this._loop(); }
-        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); btnAceptar.disabled = false; btnRechazar.disabled = false; }
       };
-      $('#btnRechazar').onclick = async () => {
+      btnRechazar.onclick = async () => {
+        btnAceptar.disabled = true;
+        btnRechazar.disabled = true;
         try {
           await window.desafiosRepository.responderInvitacion(desafio.id, this._usuario.id, false);
           window.helpers.mostrarAlerta('Has rechazado el desafío.', 'info');
           router.navegar('/grupos');
-        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); btnAceptar.disabled = false; btnRechazar.disabled = false; }
       };
     },
 
@@ -197,14 +226,18 @@
 
       const num = $('#cuentaNumero');
       const sub = $('#cuentaSub');
+      // Datos legacy pueden llegar con iniciado_en NULL/NaN (desafío en_curso
+      // sin timestamp): sin esta guarda el contador nunca llegaría a 0.
+      if (!Number.isFinite(inicio)) inicio = Date.now();
       const tick = () => {
-        if (this._enJuego) { clearInterval(iv); return; }
+        if (this._enJuego) { clearInterval(iv); this._cuentaTimer = null; return; }
         const restante = inicio - Date.now();
         if (restante <= 0) {
           clearInterval(iv);
+          this._cuentaTimer = null;
           num.textContent = '¡Ya!';
           sub.textContent = 'Comienza...';
-          setTimeout(() => { if (!this._enJuego) this._empezarJuego(this._desafio); }, 400);
+          this._cuentaTimeout = setTimeout(() => { this._cuentaTimeout = null; if (!this._enJuego) this._empezarJuego(this._desafio); }, 400);
           return;
         }
         const seg = Math.ceil(restante / 1000);
@@ -212,7 +245,10 @@
         if (seg <= 1) sub.textContent = '¡Prepárate!';
       };
       tick();
-      const iv = setInterval(tick, 200);
+      // Guardar la referencia para poder limpiarla en _detenerLoops/desmontar:
+      // si el usuario navega durante la cuenta atrás, el intervalo no debe
+      // quedar vivo llamando a _empezarJuego sobre una vista desmontada.
+      this._cuentaTimer = setInterval(tick, 200);
     },
 
     /* ── JUEGO ── */
@@ -231,6 +267,15 @@
         inicioMs: inicioReal,
         tiempoLimiteMs: (desafio.tiempo_limite_seg || 120) * 1000
       };
+      // Restaurar progreso guardado (recarga o cierre a mitad de desafío):
+      // se retoma en el ejercicio siguiente sin perder respuestas válidas.
+      const miFila = (desafio.participantes || []).find(p => p.usuario_id === this._usuario.id);
+      const guardado = miFila && miFila.progreso;
+      if (guardado && Number.isInteger(guardado.idx) && guardado.idx > 0 && guardado.idx <= this._estado.ejercicios.length) {
+        this._estado.idx = guardado.idx;
+        this._estado.correctas = Math.min(Number(guardado.correctas) || 0, this._estado.ejercicios.length);
+        this._estado.incorrectas = Math.min(Number(guardado.incorrectas) || 0, this._estado.ejercicios.length);
+      }
       this._pintarJuego();
     },
 
@@ -289,6 +334,7 @@
     _feedback(slot, ej, bien) {
       const e = this._estado;
       if (bien) e.correctas++; else e.incorrectas++;
+      this._guardarProgreso();
       if (window.haptica) bien ? window.haptica.logro() : window.haptica.fallo();
       const respuestaTexto = ej.respuestaCorrecta || (ej.tipo === 'verdadero_falso' ? (ej.esVerdadero ? 'Verdadero' : 'Falso') : '');
 
@@ -308,6 +354,20 @@
       slot.appendChild(fb);
       slot.appendChild(btn);
       btn.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    },
+
+    // Persistencia del progreso (migración 030: columna progreso JSONB).
+    // Se guarda tras cada respuesta; si la app se recarga o se cierra,
+    // al volver se retoma el ejercicio siguiente.
+    _guardarProgreso() {
+      const e = this._estado;
+      if (!e) return;
+      const siguiente = Math.min(e.idx + 1, e.ejercicios.length);
+      window.desafiosRepository.guardarProgreso(e.desafio.id, this._usuario.id, {
+        idx: siguiente,
+        correctas: e.correctas,
+        incorrectas: e.incorrectas
+      }).catch(() => {});
     },
 
     /* ── Fin del turno ── */
@@ -384,6 +444,10 @@
       const rivales = participantes.filter(p => p.usuario_id !== this._usuario.id && !p.abandonado);
       const crearNuevo = async (inmediato) => {
         try {
+          if (!rivales.length) {
+            window.helpers.mostrarAlerta('No hay rivales disponibles para volver a jugar.', 'advertencia');
+            return;
+          }
           const mazos = await window.desafiosRepository.listarMazosDesafio();
           const mazo = mazos.find(m => m.id === desafio.mazo_id) || mazos[0];
           if (!mazo) { window.helpers.mostrarAlerta('El mazo ya no está disponible.', 'advertencia'); return; }

@@ -218,7 +218,12 @@
           p_tipo: fila.tipo || 'generica',
           p_titulo: fila.titulo || '',
           p_cuerpo: fila.cuerpo || '',
-          p_datos: fila.datos || {}
+          p_datos: fila.datos || {},
+          // Migración 030: la RPC conserva la categoría/prioridad/estado
+          // (antes las notificaciones ajenas caían en 'sistema').
+          p_categoria: fila.categoria || 'sistema',
+          p_prioridad: fila.prioridad || 'media',
+          p_estado: fila.estado || 'nueva'
         });
         if (error) return null;
         return normalizar({

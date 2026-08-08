@@ -387,10 +387,15 @@
 
     // Paso común: elegir mazo → construir sesión idéntica → crear desafío
     async _flujoDesafio(participantes) {
+      // Evita crear dos desafíos por doble clic en "Desafiar".
+      if (this._flujoEnCurso) return;
+      this._flujoEnCurso = true;
+      const terminarFlujo = () => { this._flujoEnCurso = false; };
       const usuario = this._usuario;
       const mazos = await window.desafiosRepository.listarMazosDesafio();
       if (!mazos.length) {
         window.helpers.mostrarAlerta('Aún no hay mazos de memorización para desafiar.', 'info');
+        terminarFlujo();
         return;
       }
       const tarjetasTodas = await window.memorizacionRepository.listarTarjetas(null);
@@ -424,7 +429,7 @@
       document.body.appendChild(overlay);
       if (window.Iconos) window.Iconos.actualizar();
       let resolver = null;
-      const cerrarModal = () => { overlay.remove(); if (resolver) resolver(null); };
+      const cerrarModal = () => { overlay.remove(); if (resolver) resolver(null); terminarFlujo(); };
       overlay.querySelector('[data-cerrar]').onclick = cerrarModal;
       overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
 
@@ -448,12 +453,14 @@
               });
               window.helpers.mostrarAlerta(`Desafío enviado a ${participantes.length} participante${participantes.length !== 1 ? 's' : ''}.`, 'exito');
               resolve(desafio);
+              terminarFlujo();
               // Redirigir al creador a la pantalla de espera del desafío
               router.navegar('/desafio/' + desafio.id);
             } catch (e) {
               btn.disabled = false;
               window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
               resolve(null);
+              terminarFlujo();
             }
           };
         });
