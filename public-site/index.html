@@ -29,6 +29,7 @@
           </a>
         </div>
         <p class="device-message" id="deviceMessage" role="status">Descarga la aplicación Android para una experiencia completa.</p>
+        <p class="device-version" id="deviceVersion"></p>
       </div>
       <div class="hero-card" aria-label="Resumen de funciones">
         <div class="hero-card-top"><span class="status-dot"></span><span>FormsBiblicos Android</span></div>
@@ -75,17 +76,45 @@
 
   <script>
     (() => {
+      // Enlace por defecto (también con JavaScript desactivado): apunta a la
+      // release más reciente de GitHub. Al cargar se sustituye por la URL
+      // versionada concreta que sirve version.json, para que el móvil nunca
+      // descargue una APK antigua cacheada de una release anterior.
+      const FALLBACK_URL = 'https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk';
       const android = /Android/i.test(navigator.userAgent);
       const message = document.getElementById('deviceMessage');
+      const versionLine = document.getElementById('deviceVersion');
       const buttons = [document.getElementById('downloadButton'), document.getElementById('downloadButtonBottom')];
+
+      async function aplicarVersion() {
+        try {
+          const respuesta = await fetch('./version.json', { cache: 'no-store' });
+          if (!respuesta.ok) return;
+          const manifiesto = await respuesta.json();
+          const url = typeof manifiesto.apkUrl === 'string' && /^https:\/\/github\.com\/[^\s]+\.apk$/.test(manifiesto.apkUrl)
+            ? manifiesto.apkUrl
+            : FALLBACK_URL;
+          const version = typeof manifiesto.version === 'string' ? manifiesto.version : null;
+          if (android) {
+            buttons.forEach((button) => { button.href = url; });
+          }
+          if (version && versionLine) {
+            versionLine.textContent = 'Versión actual: v' + version;
+          }
+        } catch (error) {
+          // Sin conexión o manifiesto inaccesible: se mantiene el enlace por defecto.
+        }
+      }
+
       if (android) {
         message.textContent = 'Estás en Android. Pulsa el botón para descargar la aplicación e instálala siguiendo los pasos de abajo.';
-        return;
+      } else {
+        message.textContent = 'Esta página funciona mejor en un teléfono Android. Si estás en otro dispositivo, envía el enlace a tu teléfono para descargar la aplicación.';
+        buttons.forEach((button) => {
+          button.href = '#instalacion';
+        });
       }
-      message.textContent = 'Esta página funciona mejor en un teléfono Android. Si estás en otro dispositivo, envía el enlace a tu teléfono para descargar la aplicación.';
-      buttons.forEach((button) => {
-        button.href = '#instalacion';
-      });
+      aplicarVersion();
     })();
   </script>
 </body>

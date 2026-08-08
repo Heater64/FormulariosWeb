@@ -33,6 +33,7 @@ h2 { color: var(--navy); font-size: clamp(2rem, 4vw, 3.2rem); line-height: 1.05;
 .button-primary:hover { background: #1d4ed8; }
 .button-secondary { border: 1px solid var(--line); background: white; color: var(--navy); }
 .device-message { max-width: 540px; margin: 16px 0 0; color: var(--muted); font-size: .9rem; line-height: 1.5; }
+.device-version { margin: 6px 0 0; color: var(--muted); font-size: .85rem; font-weight: 600; }
 .hero-card { min-height: 370px; padding: 28px; border-radius: 32px; background: linear-gradient(145deg, #172554, #0f172a); color: white; box-shadow: 0 28px 60px rgba(15, 23, 42, .24); transform: rotate(2deg); }
 .hero-card-top { display: flex; align-items: center; gap: 8px; color: #bfdbfe; font-size: .85rem; }
 .status-dot { width: 8px; height: 8px; border-radius: 50%; background: #4ade80; box-shadow: 0 0 0 5px rgba(74, 222, 128, .12); }
