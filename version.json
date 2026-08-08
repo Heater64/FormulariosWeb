@@ -11,7 +11,7 @@
     "Detección del motivo exacto cuando una instalación falla (firma distinta o APK más antigua)",
     "Mensajes claros en lugar del error genérico 'App not installed'"
   ],
-  "sizeBytes": null,
-  "sha256": null,
+  "sizeBytes": 5151402,
+  "sha256": "a03237ee05cd9133a555cc8d04c0ad77a177ab97ecd6e48c00941d8163325e91",
   "publishedAt": "2026-08-08T00:00:00Z"
 }
