@@ -206,6 +206,8 @@
 
     _friendlyDownloadError(error) {
       if (error?.code === 'CHECKSUM_MISMATCH') return 'La verificación de integridad falló. La descarga se eliminó y no se instalará.';
+      if (error?.code === 'SIGNATURE_MISMATCH') return 'Esta copia de FormsBiblicos no es la oficial (firma distinta). Desinstálala e instala la versión desde la web: https://formsbiblicos.com';
+      if (error?.code === 'OLD_DOWNLOAD') return 'El archivo descargado es más antiguo que la app instalada (probablemente caché del navegador). Borra la APK de Descargas y descárgala de nuevo desde la web.';
       if (error?.code === 'DOWNLOAD_CANCELLED') return 'Descarga cancelada.';
       if (error?.code === 'INSUFFICIENT_STORAGE') return 'No hay espacio suficiente para descargar la actualización.';
       if (error?.code === 'NETWORK_ERROR') return 'Se perdió la conexión durante la descarga.';

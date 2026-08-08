@@ -3,6 +3,7 @@ package com.formsbiblicos.app;
 import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
+import android.content.pm.Signature;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
@@ -270,6 +271,68 @@ public class UpdateInstallerPlugin extends Plugin {
         if (!expectedVersion.equals(info.versionName) || actualVersionCode != expectedVersionCode) {
             throw new UpdateException("VERSION_MISMATCH", "La versión de la APK no coincide con el manifiesto.");
         }
+        // Causa típica de "tengo que desinstalar para actualizar": la APK
+        // INSTALADA está firmada con otra clave (p.ej. una build de prueba
+        // local con keystore debug) o la descarga trae una versión MÁS
+        // ANTIGUA que la instalada (caché del navegador). Android rechaza
+        // instalar en ambos casos sin explicarlo. Aquí se detecta ANTES de
+        // abrir el instalador y se avisa con un mensaje claro.
+        verifySignaturesMatch(apkFile);
+        verifyIsNewer(apkFile, actualVersionCode);
+    }
+
+    private void verifyIsNewer(File apkFile, long expectedVersionCode) throws UpdateException {
+        try {
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? PackageManager.GET_SIGNING_CERTIFICATES
+                : PackageManager.GET_SIGNATURES;
+            PackageManager manager = getContext().getPackageManager();
+            PackageInfo instalada = manager.getPackageInfo(getContext().getPackageName(), flags);
+            long instaladoCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? instalada.getLongVersionCode() : instalada.versionCode;
+            if (instaladoCode > expectedVersionCode) {
+                throw new UpdateException(
+                    "OLD_DOWNLOAD",
+                    "El archivo descargado es más antiguo que la app instalada (¿caché del navegador?). Borra la APK de Descargas y vuelve a descargarla."
+                );
+            }
+        } catch (PackageManager.NameNotFoundException notInstalled) {
+            // Primera instalación
+        }
+    }
+
+    private void verifySignaturesMatch(File apkFile) throws UpdateException {
+        try {
+            int flags = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P
+                ? PackageManager.GET_SIGNING_CERTIFICATES
+                : PackageManager.GET_SIGNATURES;
+            PackageManager manager = getContext().getPackageManager();
+            PackageInfo nuevo = manager.getPackageArchiveInfo(apkFile.getAbsolutePath(), flags);
+            PackageInfo instalada = manager.getPackageInfo(getContext().getPackageName(), flags);
+            if (nuevo == null) return; // no se pudieron leer firmas; el instalador decidirá
+            if (!mismaFirma(firmasDe(nuevo), firmasDe(instalada))) {
+                throw new UpdateException(
+                    "SIGNATURE_MISMATCH",
+                    "La app instalada tiene otra firma (¿versión de prueba?). Desinstálala e instala la oficial desde la web."
+                );
+            }
+        } catch (PackageManager.NameNotFoundException notInstalled) {
+            // Primera instalación: no hay firma previa con la que comparar
+        }
+    }
+
+    private Signature[] firmasDe(PackageInfo info) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P && info.signingInfo != null) {
+            Signature[] firmas = info.signingInfo.getApkContentsSigners();
+            if (firmas != null && firmas.length > 0) return firmas;
+        }
+        return info.signatures;
+    }
+
+    private boolean mismaFirma(Signature[] a, Signature[] b) {
+        if (a == null || b == null || a.length == 0 || b.length == 0) return false;
+        for (Signature x : a) for (Signature y : b) if (x.equals(y)) return true;
+        return false;
     }
 
     private boolean looksLikeApk(File file) throws IOException {
