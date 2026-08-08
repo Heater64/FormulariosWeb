@@ -1,19 +1,19 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.2",
-  "versionCode": 2,
+  "version": "1.0.3",
+  "versionCode": 3,
   "minimumVersion": "1.0.1",
   "minimumVersionCode": 1,
-  "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.2/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.2",
+  "mandatory": false,
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.3/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.3",
   "releaseNotes": [
-    "Nueva aplicación Android de FormsBiblicos",
-    "Icono oficial del libro azul",
-    "Actualizaciones automáticas integradas",
-    "Sincronización con Supabase"
+    "Notificaciones nativas Android",
+    "Registro de dispositivos y tokens FCM",
+    "Avisos al recibir desafíos, exámenes y recordatorios",
+    "Navegación directa al pulsar una notificación"
   ],
-  "sizeBytes": 3846536,
-  "sha256": "75991ce968d4077a995c2dc47a6cb3bc9817dc5a83b155d4876bd7700f7bbe6e",
+  "sizeBytes": null,
+  "sha256": null,
   "publishedAt": "2026-08-08T00:00:00Z"
 }

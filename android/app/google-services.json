@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "72481524662",
+    "project_id": "formsbiblicos",
+    "storage_bucket": "formsbiblicos.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:72481524662:android:076c9b48732a893dcb0f17",
+        "android_client_info": {
+          "package_name": "com.formsbiblicos.app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBNw5Hdz1AQa3hO0x2U6fXhqeO01nQGonc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
