@@ -1,19 +1,17 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.1",
-  "versionCode": 1,
-  "minimumVersion": "1.0.0",
+  "version": "1.0.2",
+  "versionCode": 2,
+  "minimumVersion": "1.0.1",
   "minimumVersionCode": 1,
   "mandatory": false,
-  "apkUrl": null,
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases",
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.2/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.2",
   "releaseNotes": [
-    "Nuevo sistema de memorización con flashcards",
-    "Mejoras en la corrección de exámenes",
-    "Sincronización offline automática",
-    "Indicador de conexión en tiempo real",
-    "Corrección de errores en el editor y la navegación móvil",
-    "Caché inteligente para recursos estáticos"
+    "Nueva aplicación Android de FormsBiblicos",
+    "Icono oficial del libro azul",
+    "Sistema de actualizaciones integrado",
+    "Sincronización con Supabase"
   ],
   "sizeBytes": null,
   "sha256": null,
