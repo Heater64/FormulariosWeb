@@ -1,19 +1,20 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.3",
-  "versionCode": 3,
+  "version": "1.0.4",
+  "versionCode": 4,
   "minimumVersion": "1.0.1",
   "minimumVersionCode": 1,
   "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.3/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.3",
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.4/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.4",
   "releaseNotes": [
+    "Corregida la actualización automática dentro de la app",
     "Notificaciones nativas Android",
     "Registro de dispositivos y tokens FCM",
     "Avisos al recibir desafíos, exámenes y recordatorios",
     "Navegación directa al pulsar una notificación"
   ],
-  "sizeBytes": 5150562,
-  "sha256": "057eb58e94316e6d8a8cc54de691964b84e68651312d72bdaf5299f02632b666",
+  "sizeBytes": 5150698,
+  "sha256": "26fe594a9ef9f499da66dd1cd8cf8267a584bf35fabba97390dfaa3a44b91148",
   "publishedAt": "2026-08-08T00:00:00Z"
 }
