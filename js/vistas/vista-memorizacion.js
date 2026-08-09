@@ -69,7 +69,10 @@
         <div class="o-contenedor mem-juego-home">
           <div class="mem-juego-cabecera">
             <h2>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion-juego" aria-label="Guía de Memorización">i</button></h2>
-            <span class="mem-juego-racha">${I('flame')} ${totalPendientes} para hoy</span>
+            <div class="mem-juego-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+              <span class="mem-juego-racha">${I('flame')} ${totalPendientes} para hoy</span>
+            </div>
           </div>
           <p class="mem-juego-sub">Entrena tu memoria jugando. Cada mazo es un reto: completa, ordena, relaciona y escribe. ¡Aprende la Biblia divirtiéndote!</p>
 
@@ -81,6 +84,7 @@
         </div>`;
 
       this._bindHome(raiz);
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
       window.Iconos.actualizar();
       window.helpers.registrarGuias(raiz, {
         'memorizacion-juego': ['Memorización', 'Aprende la Biblia jugando: cada mazo combina completar palabras, ordenar, relacionar y más. Sin exámenes: solo práctica divertida.', 'Elige un mazo y pulsa Continuar. Cada sesión mezcla tipos de ejercicios automáticamente. Las tarjetas que fallas aparecen más veces hasta que las dominas.']
@@ -503,37 +507,50 @@
       /* ESCRITA */
       escrita(slot, ej, estado, raiz) {
         let valor = '';
-        const render = () => {
-          slot.innerHTML = `
-            <div class="mem-juego-tarjeta">
-              <span class="mem-juego-tipo">${I(TIPOS_ICONO[ej.tipo])} ${TIPOS_NOMBRE[ej.tipo]}</span>
-              <p class="mem-juego-tarjeta__instruccion">${E(ej.instruccion)}</p>
-              <p class="mem-juego-tarjeta__enunciado">${E(ej.enunciado)}</p>
-              <div class="mem-juego-escrita">
-                <input type="text" class="mem-juego-input" id="txtResp" value="${E(valor)}" placeholder="Escribe aquí..." autocomplete="off">
-              </div>
-              ${ej.referencia ? `<p class="mem-juego-tarjeta__ref">${E(ej.referencia)}</p>` : ''}
-              ${ej.pista ? `<button class="mem-juego-pista" data-pista>${I('lightbulb')} Pista</button>` : ''}
-              <div class="mem-juego-pista__box" data-pista-box style="display:none">${E(ej.pista)}</div>
-              <button class="mem-juego-continuar" id="btnResp" ${!valor.trim() ? 'disabled' : ''}>Comprobar</button>
-            </div>`;
-          window.Iconos.actualizar();
-          $(slot, '#txtResp').addEventListener('input', (e) => { valor = e.target.value; render(); });
-          $(slot, '[data-pista]')?.addEventListener('click', () => {
-            const b = $(slot, '[data-pista-box]');
-            if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
-          });
-          $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(valor);
-            const inp = $(slot, '#txtResp');
-            inp.disabled = true;
-            inp.classList.add(bien ? 'mem-juego-input--ok' : 'mem-juego-input--ko');
-            if (!bien) inp.value = ej.respuestaCorrecta;
-            $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien, estado, raiz);
-          };
+        // Render inicial: pinta la tarjeta completa una sola vez.
+        // Las actualizaciones posteriores (tecleo) solo modifican el botón,
+        // sin destruir el input ni perder el foco.
+        const _actualizarBoton = () => {
+          const btn = $(slot, '#btnResp');
+          if (!btn) return;
+          const hayTexto = valor.trim().length > 0;
+          btn.disabled = !hayTexto;
+          if (hayTexto) btn.classList.remove('btn-desactivado');
+          else btn.classList.add('btn-desactivado');
         };
-        render();
+
+        slot.innerHTML = `
+          <div class="mem-juego-tarjeta">
+            <span class="mem-juego-tipo">${I(TIPOS_ICONO[ej.tipo])} ${TIPOS_NOMBRE[ej.tipo]}</span>
+            <p class="mem-juego-tarjeta__instruccion">${E(ej.instruccion)}</p>
+            <p class="mem-juego-tarjeta__enunciado">${E(ej.enunciado)}</p>
+            <div class="mem-juego-escrita">
+              <input type="text" class="mem-juego-input" id="txtResp" value="" placeholder="Escribe aquí..." autocomplete="off">
+            </div>
+            ${ej.referencia ? `<p class="mem-juego-tarjeta__ref">${E(ej.referencia)}</p>` : ''}
+            ${ej.pista ? `<button class="mem-juego-pista" data-pista>${I('lightbulb')} Pista</button>` : ''}
+            <div class="mem-juego-pista__box" data-pista-box style="display:none">${E(ej.pista)}</div>
+            <button class="mem-juego-continuar btn-desactivado" id="btnResp" disabled>Comprobar</button>
+          </div>`;
+        window.Iconos.actualizar();
+
+        $(slot, '#txtResp').addEventListener('input', (e) => {
+          valor = e.target.value;
+          _actualizarBoton();
+        });
+        $(slot, '[data-pista]')?.addEventListener('click', () => {
+          const b = $(slot, '[data-pista-box]');
+          if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
+        });
+        $(slot, '#btnResp').onclick = () => {
+          const bien = ej.verificar(valor);
+          const inp = $(slot, '#txtResp');
+          inp.disabled = true;
+          inp.classList.add(bien ? 'mem-juego-input--ok' : 'mem-juego-input--ko');
+          if (!bien) inp.value = ej.respuestaCorrecta;
+          $(slot, '#btnResp').remove();
+          this._feedback(slot, ej, bien, estado, raiz);
+        };
       }
     },
 

@@ -6,57 +6,80 @@
    ============================================================ */
 
 /* ────────────────────────────────────────────
-   Campana de notificaciones integrada en la barra inferior.
-   Es hija de #barra-navegacion (position: fixed → bloque contenedor),
-   así que se ancla a su borde superior y se oculta con ella al hacer
-   scroll. Solo se renderiza en las secciones principales.
+   Campana de notificaciones en la CABECERA superior de las
+   secciones principales (Estudio, Exámenes, Memoria, Explorar,
+   Perfil). Sustituye al item "Avisos" de la barra inferior: el
+   acceso a notificaciones vive en la cabecera de cada sección,
+   integrado con el resto de acciones de cabecera (botón de ayuda,
+   avatar, racha...). Botón compacto: icono + badge sobre el icono.
    ──────────────────────────────────────────── */
-.notif-barra {
-  position: absolute;
-  bottom: 100%;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 5;
-  display: flex;
+.notif-cabecera {
+  position: relative;
+  display: inline-flex;
   align-items: center;
-  gap: 6px;
-  margin-bottom: 8px;
-  padding: 7px 14px;
-  border: 1px solid var(--color-vidrio-borde);
+  justify-content: center;
+  width: var(--toque-minimo);
+  height: var(--toque-minimo);
+  border: none;
   border-radius: var(--radio-pill);
-  background: var(--color-vidrio);
-  -webkit-backdrop-filter: var(--desenfoque-vidrio);
-  backdrop-filter: var(--desenfoque-vidrio);
-  box-shadow: var(--sombra-md);
-  color: var(--color-texto);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-texto-secundario);
   cursor: pointer;
   -webkit-tap-highlight-color: transparent;
-  transition: transform var(--transicion-rapida) var(--easing-apple),
-              background var(--transicion-rapida) var(--easing-apple);
+  transition: color var(--transicion-rapida) var(--easing-apple),
+              transform var(--transicion-rapida) var(--easing-apple),
+              box-shadow var(--transicion-rapida) var(--easing-apple);
 }
-.notif-barra:active { transform: translateX(-50%) scale(0.94); }
-.notif-barra__icono { display: flex; color: var(--color-acento); }
-.notif-barra__icono svg { width: 18px; height: 18px; }
+.notif-cabecera:active { transform: scale(0.92); }
+.notif-cabecera__icono { display: flex; color: inherit; }
+.notif-cabecera__icono svg {
+  width: 22px;
+  height: 22px;
+  stroke-width: 1.75;
+}
 
-.notif-barra__badge {
-  min-width: 20px;
-  height: 20px;
-  padding: 0 5px;
+/* Badge anclado a la esquina del icono */
+.notif-cabecera__badge {
+  position: absolute;
+  top: -4px;
+  right: -6px;
+  min-width: 18px;
+  height: 18px;
+  padding: 0 4px;
   border-radius: var(--radio-pill);
   background: var(--color-error);
   color: #fff;
-  font-size: var(--texto-xxs);
+  font-size: 11px;
   font-weight: 700;
-  line-height: 20px;
+  line-height: 18px;
   text-align: center;
   box-shadow: var(--sombra-sm);
   pointer-events: none;
 }
-.notif-barra__badge--pop { animation: notif-badge-pop 400ms var(--easing-spring); }
+.notif-cabecera__badge--pop { animation: notif-badge-pop 400ms var(--easing-spring); }
 @keyframes notif-badge-pop {
   0% { transform: scale(0.4); }
   60% { transform: scale(1.25); }
   100% { transform: scale(1); }
+}
+
+@media (hover: hover) {
+  .notif-cabecera:hover {
+    color: var(--color-texto-primario);
+    box-shadow: var(--sombra-sm);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .notif-cabecera,
+  .notif-cabecera__icono svg,
+  .notif-cabecera__badge--pop {
+    animation: none !important;
+    transition: none !important;
+  }
+  .notif-cabecera:active {
+    transform: none !important;
+  }
 }
 
 /* ────────────────────────────────────────────

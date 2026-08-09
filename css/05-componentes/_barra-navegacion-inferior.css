@@ -133,3 +133,88 @@
     transform: none !important;
   }
 }
+
+/* ════════════════════════════════════════════════════════════
+   EXPANDED (desktop ≥1024px): la bottom bar pasa a rail lateral.
+   Una barra inferior estirada a 1920px con 5 ítems separados es
+   "móvil gigante" — en pantallas anchas las apps nativas usan una
+   barra lateral (rail). Misma estructura DOM, mismo estado activo:
+   solo cambia la geometría (columna fija a la izquierda) y el
+   contenido se desplaza. La campana (notif-barra) también se
+   alinea en fila dentro del rail.
+   ════════════════════════════════════════════════════════════ */
+@media (min-width: 1024px) {
+  .barra-nav-inferior {
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: auto;
+    width: 240px;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: flex-start;
+    gap: var(--espaciado-2xs);
+    border-top: none;
+    border-right: 1px solid var(--color-vidrio-borde);
+    box-shadow: none;
+    padding: calc(env(safe-area-inset-top) + var(--espaciado-lg)) var(--espaciado-sm) calc(env(safe-area-inset-bottom) + var(--espaciado-md));
+    min-height: 100dvh;
+  }
+
+  .barra-nav-inferior__item {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--espaciado-sm);
+    min-width: 0;
+    width: 100%;
+    padding: var(--espaciado-sm) var(--espaciado-md);
+    border-radius: var(--radio-md);
+    text-align: left;
+  }
+
+  .barra-nav-inferior__item--centro {
+    flex: 0 0 auto;
+  }
+
+  .barra-nav-inferior__item svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  .barra-nav-inferior__item--centro svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* La campana integrada se alinea con el resto del rail */
+  .notif-barra {
+    flex: 0 0 auto;
+    flex-direction: row;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--espaciado-sm);
+    width: 100%;
+    padding: var(--espaciado-sm) var(--espaciado-md);
+    border-radius: var(--radio-md);
+    text-align: left;
+  }
+  .notif-barra__icono svg {
+    width: 22px;
+    height: 22px;
+  }
+
+  /* El contenido deja sitio al rail lateral */
+  #app-root {
+    margin-left: 240px;
+  }
+}
+
+/* Medium (tablet 768–1023px): bottom bar clásica, pero el contenido
+   no se estira más allá del ancho de lectura. */
+@media (min-width: 768px) and (max-width: 1023px) {
+  .o-contenedor {
+    max-width: 720px;
+  }
+}

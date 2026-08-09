@@ -759,10 +759,8 @@ class NotificationService {
     } catch (e) {
       if (window.store && window.store.actualizar) window.store.actualizar('notificaciones', { items: [], noLeidas: 0, porCategoria: {}, cargando: false, error: true });
     }
-  }
-
-  /** Actualiza el badge de la campana de la barra inferior (llamado también
-   *  desde el shell). */
+  }  /** Actualiza el badge de la campana de notificaciones de la cabecera de
+   *   sección (llamado también desde el shell y el componente). */
   actualizarBadge() {
     const st = (window.store && window.store.obtener) ? window.store.obtener('notificaciones') : null;
     const n = (st && st.noLeidas) || 0;

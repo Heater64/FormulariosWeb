@@ -257,9 +257,13 @@
         });
         if (!datos) return;
         try {
-          await window.authRepository.asegurarGrupo(usuario);
+          // asegurarGrupo devuelve el usuario ACTUALIZADO (con grupo_id recién
+          // creado si no tenía); el objeto local `usuario` no se muta, así que
+          // hay que usar el retorno o el INSERT iría con grupo_id null y RLS
+          // lo denegaría (42501).
+          const usuarioActualizado = await window.authRepository.asegurarGrupo(usuario) || usuario;
           await window.examenesRepository.crearEvaluacion({
-            grupoId: usuario.grupo_id, creadoPor: usuario.id,
+            grupoId: usuarioActualizado.grupo_id, creadoPor: usuarioActualizado.id,
             titulo: datos.titulo.trim() || 'Nueva evaluación', asignatura: '', descripcion: ''
           });
           window.helpers.mostrarAlerta('Evaluación creada. Ahora añade exámenes.', 'exito');
@@ -519,12 +523,12 @@
         );
         if (!ok) return;
         try {
-          await window.authRepository.asegurarGrupo(ctx.usuario);
+          const usuarioActualizado = await window.authRepository.asegurarGrupo(ctx.usuario) || ctx.usuario;
           let creadas = 0;
           for (const nombre of nombres) {
             await window.examenesRepository.crearEvaluacion({
-              grupoId: ctx.usuario.grupo_id,
-              creadoPor: ctx.usuario.id,
+              grupoId: usuarioActualizado.grupo_id,
+              creadoPor: usuarioActualizado.id,
               titulo: nombre,
               asignatura: '',
               descripcion: ''

@@ -434,45 +434,19 @@
           <span>${i.texto}</span>
         </a>
       `).join('');
-      window.Iconos.actualizar();
-      nav.querySelectorAll('[data-nav]').forEach(el => {
+      window.Iconos.actualizar();      nav.querySelectorAll('[data-nav]').forEach(el => {
         el.addEventListener('click', e => { 
           e.preventDefault(); 
           router.navegar(el.getAttribute('href').replace('#!', '')); 
         });
       });
-      this._renderizarNotificacionBarra(nav);
+
+
     },
 
-    // Campana de notificaciones INTEGRADA en la barra inferior (sustituye al
-    // antiguo FAB flotante). Solo aparece en las secciones principales (las 5
-    // pestañas), nunca en pantallas secundarias (tomar examen, editor, detalle
-    // de desafío, centro de notificaciones, etc.). Al ser hija de la barra,
-    // se oculta con ella al hacer scroll y no flota sobre el contenido.
-    _renderizarNotificacionBarra(nav) {
-      if (!nav) return;
-      const usuario = store.obtener('usuario');
-      const ruta = router.pathActual();
-      const seccionesPrincipales = ['/examenes', '/memorizacion', '/estudio', '/explorar', '/perfil'];
-      let campana = nav.querySelector('#notif-barra');
-      if (!usuario || !seccionesPrincipales.includes(ruta)) {
-        if (campana) campana.remove();
-        return;
-      }
-      if (!campana) {
-        campana = document.createElement('button');
-        campana.id = 'notif-barra';
-        campana.className = 'notif-barra';
-        campana.setAttribute('aria-label', 'Centro de notificaciones');
-        campana.innerHTML = '<span class="notif-barra__icono"></span><span class="notif-barra__badge" id="notifBarraBadge" hidden>0</span>';
-        nav.appendChild(campana);
-        campana.addEventListener('click', () => router.navegar('/notificaciones'));
-      }
-      const icono = campana.querySelector('.notif-barra__icono');
-      if (icono) icono.innerHTML = window.Iconos.render('bell');
-      if (window.Iconos) window.Iconos.actualizar();
-      if (window.notificationService) window.notificationService.actualizarBadge();
-    },
+    // La campana de notificaciones ya NO vive en la barra inferior: cada
+    // sección principal la renderiza en su cabecera vía el componente
+    // campana-notificaciones (js/componentes/campana-notificaciones.js).
 
     // ============================================================
     // Marca del centro: nombre/logo configurados por el propietario

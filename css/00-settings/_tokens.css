@@ -156,7 +156,11 @@
     --color-texto: #FFFFFF;
     --color-shimmer: rgba(255, 255, 255, 0.10);
     --color-texto-secundario: #94A3B8;
-    --color-texto-terciario: #64748B;
+    /* Terciario legible en dark (WCAG AA): #64748B daba 3.07:1 sobre la
+       tarjeta (#1E293B) — fallaba AA. #8494AE: 4.76:1 sobre tarjeta y
+       5.80:1 sobre fondo, manteniendo la jerarquía (más apagado que el
+       secundario #94A3B8). */
+    --color-texto-terciario: #8494AE;
     --color-fondo: #0F172A;
     --color-fondo-alt: #1E293B;
     --color-fondo-tarjeta: #1E293B;
@@ -179,7 +183,11 @@
   --color-texto: #FFFFFF;
   --color-shimmer: rgba(255, 255, 255, 0.10);
   --color-texto-secundario: #94A3B8;
-  --color-texto-terciario: #64748B;
+  /* Terciario legible en dark (WCAG AA): #64748B daba 3.07:1 sobre la
+     tarjeta (#1E293B) — fallaba AA. #8494AE: 4.76:1 sobre tarjeta y
+     5.80:1 sobre fondo, manteniendo la jerarquía (más apagado que el
+     secundario #94A3B8). */
+  --color-texto-terciario: #8494AE;
   --color-fondo: #0F172A;
   --color-fondo-alt: #1E293B;
   --color-fondo-tarjeta: #1E293B;

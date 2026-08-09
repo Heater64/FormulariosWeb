@@ -56,6 +56,7 @@
             <div class="examen-header" style="margin-bottom:var(--espaciado-lg)">
               <h2 class="examen-header__titulo">${I('clipboard-check')} Exámenes <button class="info-ayuda" data-guia="examenes" aria-label="Guía de Exámenes">i</button></h2>
               <div class="examen-header__acciones">
+                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
                 ${esProfesor ? `<button class="btn-secundario examen-header__btn" id="btnCalificaciones">${I('bar-chart-2')} Notas</button>` : ''}
                 ${esProfesor ? `<button class="btn-primario examen-header__btn" id="btnNuevoExamen">${I('plus')} Nuevo</button>` : ''}
               </div>
@@ -161,6 +162,7 @@
 
       raiz.innerHTML = filtrados.map(ex => this._tarjetaExamen(ex)).join('');
       this._conectarEventos(raiz);
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(document);
       window.Iconos.actualizar();
     },
 

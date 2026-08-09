@@ -559,6 +559,7 @@
         <div class="o-contenedor explorar">
           <div class="explorar__titulo">
             <h2>${I('compass')} Explorar</h2>
+            ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
           </div>
           ${mostrarBusqueda ? `
           <div class="explorar__search">
@@ -575,6 +576,7 @@
           <div id="explorarContent" class="explorar__contenido">${esSkeleton ? _skeletonHTML() : ''}</div>
         </div>`;
 
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
       raiz.querySelectorAll('[data-tab]').forEach(btn => {
         btn.addEventListener('click', () => {
           if (_pestana === btn.dataset.tab) return;

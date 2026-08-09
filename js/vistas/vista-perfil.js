@@ -121,6 +121,7 @@
             <div class="perfil-hero__info">
               <div class="perfil-nombre-fila">
                 <h2 id="nombrePerfil">${E(usuario.nombre_completo)}</h2>
+                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
               </div>
               <span class="perfil-username">@${E(usuario.username)}</span>
               <span class="perfil-rol-badge perfil-rol-badge--${rol}">${rolBonito(usuario.rol)}</span>
@@ -287,6 +288,7 @@
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
       };
       raiz.querySelector('#btnEditarPerfil').onclick = editarPerfil;
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
 
       // Más información y actualización manual
       raiz.querySelector('#btnMasInfo').onclick = () => router.navegar('/perfil/acerca/que-es');

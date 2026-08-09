@@ -273,17 +273,25 @@
 .toolbar-btn {
   background: none;
   border: none;
-  width: 40px;
-  height: 40px;
+  width: 48px;
+  height: 48px;
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
   color: var(--color-texto-secundario);
   cursor: pointer;
+  /* Área táctil mínima (WCAG 2.5.5 / toque mínimo de la app) */
+  min-width: var(--toque-minimo);
+  min-height: var(--toque-minimo);
   transition: background var(--transicion-rapida) var(--easing-apple),
               color var(--transicion-rapida) var(--easing-apple),
               transform var(--transicion-rapida) var(--easing-apple);
+}
+
+.toolbar-btn svg {
+  width: 26px;
+  height: 26px;
 }
 
 .toolbar-btn:hover {
@@ -302,12 +310,17 @@
 
   .toolbar-btn {
     width: auto;
-    height: 46px;
+    height: 52px;
     border-radius: var(--radio-md);
     padding: 0 var(--espaciado-md);
     gap: var(--espaciado-xs);
     font-size: var(--texto-sm);
     font-weight: 600;
+  }
+
+  .toolbar-btn svg {
+    width: 24px;
+    height: 24px;
   }
 
   .toolbar-btn::after {

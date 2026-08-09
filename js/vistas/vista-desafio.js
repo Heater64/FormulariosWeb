@@ -762,37 +762,50 @@
 
       escrita(slot, ej) {
         let valor = '';
-        const render = () => {
-          slot.innerHTML = `
-            <div class="mem-juego-tarjeta">
-              <span class="mem-juego-tipo">${I(TIPOS_ICONO[ej.tipo])} ${TIPOS_NOMBRE[ej.tipo]}</span>
-              <p class="mem-juego-tarjeta__instruccion">${E(ej.instruccion)}</p>
-              <p class="mem-juego-tarjeta__enunciado">${E(ej.enunciado)}</p>
-              <div class="mem-juego-escrita">
-                <input type="text" class="mem-juego-input" id="txtResp" value="${E(valor)}" placeholder="Escribe aquí..." autocomplete="off">
-              </div>
-              ${ej.referencia ? `<p class="mem-juego-tarjeta__ref">${E(ej.referencia)}</p>` : ''}
-              ${ej.pista ? `<button class="mem-juego-pista" data-pista>${I('lightbulb')} Pista</button>` : ''}
-              <div class="mem-juego-pista__box" data-pista-box style="display:none">${E(ej.pista)}</div>
-              <button class="mem-juego-continuar" id="btnResp" ${!valor.trim() ? 'disabled' : ''}>Comprobar</button>
-            </div>`;
-          window.Iconos.actualizar();
-          $(slot, '#txtResp').addEventListener('input', (e) => { valor = e.target.value; render(); });
-          $(slot, '[data-pista]')?.addEventListener('click', () => {
-            const b = $(slot, '[data-pista-box]');
-            if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
-          });
-          $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(valor);
-            const inp = $(slot, '#txtResp');
-            inp.disabled = true;
-            inp.classList.add(bien ? 'mem-juego-input--ok' : 'mem-juego-input--ko');
-            if (!bien) inp.value = ej.respuestaCorrecta;
-            $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien);
-          };
+        // Render inicial: pinta la tarjeta completa una sola vez.
+        // Las actualizaciones posteriores (tecleo) solo modifican el botón,
+        // sin destruir el input ni perder el foco.
+        const _actualizarBoton = () => {
+          const btn = $(slot, '#btnResp');
+          if (!btn) return;
+          const hayTexto = valor.trim().length > 0;
+          btn.disabled = !hayTexto;
+          if (hayTexto) btn.classList.remove('btn-desactivado');
+          else btn.classList.add('btn-desactivado');
         };
-        render();
+
+        slot.innerHTML = `
+          <div class="mem-juego-tarjeta">
+            <span class="mem-juego-tipo">${I(TIPOS_ICONO[ej.tipo])} ${TIPOS_NOMBRE[ej.tipo]}</span>
+            <p class="mem-juego-tarjeta__instruccion">${E(ej.instruccion)}</p>
+            <p class="mem-juego-tarjeta__enunciado">${E(ej.enunciado)}</p>
+            <div class="mem-juego-escrita">
+              <input type="text" class="mem-juego-input" id="txtResp" value="" placeholder="Escribe aquí..." autocomplete="off">
+            </div>
+            ${ej.referencia ? `<p class="mem-juego-tarjeta__ref">${E(ej.referencia)}</p>` : ''}
+            ${ej.pista ? `<button class="mem-juego-pista" data-pista>${I('lightbulb')} Pista</button>` : ''}
+            <div class="mem-juego-pista__box" data-pista-box style="display:none">${E(ej.pista)}</div>
+            <button class="mem-juego-continuar btn-desactivado" id="btnResp" disabled>Comprobar</button>
+          </div>`;
+        window.Iconos.actualizar();
+
+        $(slot, '#txtResp').addEventListener('input', (e) => {
+          valor = e.target.value;
+          _actualizarBoton();
+        });
+        $(slot, '[data-pista]')?.addEventListener('click', () => {
+          const b = $(slot, '[data-pista-box]');
+          if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
+        });
+        $(slot, '#btnResp').onclick = () => {
+          const bien = ej.verificar(valor);
+          const inp = $(slot, '#txtResp');
+          inp.disabled = true;
+          inp.classList.add(bien ? 'mem-juego-input--ok' : 'mem-juego-input--ko');
+          if (!bien) inp.value = ej.respuestaCorrecta;
+          $(slot, '#btnResp').remove();
+          this._feedback(slot, ej, bien);
+        };
       }
     }
   };

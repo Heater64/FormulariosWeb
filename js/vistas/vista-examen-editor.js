@@ -1044,15 +1044,10 @@
       contenedor.innerHTML = `
         <div class="preview-barra">
           <span class="u-fs-sm u-color-texto-secundario">Simula la experiencia interactiva que tendrán tus alumnos:</span>
-          <div class="o-flecha" style="gap:4px">
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'ordenador' ? 'btn-device--activo' : ''}" data-device="ordenador" title="Vista ordenador">${window.Iconos.render('monitor')}</button>
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'tablet' ? 'btn-device--activo' : ''}" data-device="tablet" title="Vista tablet">${window.Iconos.render('tablet')}</button>
-            <button class="btn-secundario btn-icono btn-device ${this._modoVistaPrevia === 'movil' ? 'btn-device--activo' : ''}" data-device="movil" title="Vista móvil">${window.Iconos.render('phone')}</button>
-          </div>
         </div>
 
         <div class="preview-container">
-          <div class="preview-device preview-device--${this._modoVistaPrevia}" id="previewDeviceBody">
+          <div class="preview-device preview-device--ordenador" id="previewDeviceBody">
             <div class="preview-screen">
               <div class="forms-card preview-portada" style="border-top-color: ${examen.color || '#2563EB'}">
                 <h2 style="margin:0">${window.helpers.escapeHtml(examen.titulo)}</h2>
@@ -1068,13 +1063,8 @@
         </div>
       `;
 
-      // Eventos de dispositivo (conservan las respuestas marcadas)
-      contenedor.querySelectorAll('.btn-device').forEach(btn => {
-        btn.onclick = () => {
-          this._modoVistaPrevia = btn.dataset.device;
-          this._renderizarPestanaVistaPrevia(contenedor, true);
-        };
-      });
+      // (Selector de dispositivo eliminado: la previsualización se muestra
+      // siempre a ancho completo — la vista que mejor refleja el contenido.)
 
       // Render de preguntas con numeración correcta (las secciones no cuentan)
       const areaPreguntas = contenedor.querySelector('#previewInteractiveQuestions');

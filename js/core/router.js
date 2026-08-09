@@ -8,6 +8,7 @@ class Router {
     this._middlewares = [];
     this._cacheVistas = new Map();
     this._ejecucionToken = 0;
+    this._ultimaEjecucionMs = 0;
 
     window.addEventListener('hashchange', () => this._ejecutar());
   }
@@ -166,7 +167,14 @@ class Router {
         const raiz = document.getElementById('app-root');
         if (!raiz) return;
 
-        if (!this._primeraCarga && this._transiciones) {
+        // Saltar animación de salida si el usuario está navegando muy rápido
+        // (menos de 250ms entre ejecuciones): evita parpadeo por transiciones
+        // solapadas de opacity: 0 → 1 → 0.
+        const ahora = Date.now();
+        const navegacionRapida = !this._primeraCarga && (ahora - this._ultimaEjecucionMs) < 250;
+        this._ultimaEjecucionMs = ahora;
+
+        if (!this._primeraCarga && this._transiciones && !navegacionRapida) {
           raiz.classList.add('app-transicion-salida');
           await new Promise(r => setTimeout(r, 150));
           raiz.classList.remove('app-transicion-salida');
@@ -198,9 +206,10 @@ raiz.innerHTML = '';
           }
           // Una vista async puede terminar de escribir su HTML DESPUÉS de que
           // el usuario ya navegó a otra (carrera de monturas). Si eso ocurre,
-          // re-ejecutar el router para que la vista actual vuelva a mostrarse.
+          // re-renderizar la vista actual DIRECTAMENTE (sin re-ejecutar el router
+          // entero, lo que causaría otra cascada de animaciones y parpadeo).
           if (token !== this._ejecucionToken || this._rutaActual() !== cruda) {
-            this._ejecutar();
+            this._repararVistaActual();
             return;
           }
         } else {
@@ -232,6 +241,40 @@ raiz.innerHTML = '';
       }
     }
     this._irError('Página no encontrada');
+  }
+
+  // Repara la vista actual sin transiciones: se usa cuando una vista async
+  // obsoleta pisó el DOM (carrera de monturas). Re-monta la vista correcta
+  // directamente, sin animaciones, para evitar parpadeo en navegación rápida.
+  async _repararVistaActual() {
+    const raiz = document.getElementById('app-root');
+    if (!raiz || !this._vistaActual || !this._vistaActual.montar) return;
+
+    // Limpiar sin animación
+    raiz.classList.remove('app-transicion-salida', 'app-transicion-entrada');
+    raiz.innerHTML = '';
+
+    // Reconstruir el contexto desde la ruta actual
+    const cruda = this._rutaActual();
+    const { pathScript: ruta, query } = this._descomponer(cruda);
+    for (const [rutaConfig, config] of this._rutas) {
+      const match = ruta.match(config.patron);
+      if (!match) continue;
+      const params = {};
+      if (config.parametros) {
+        config.parametros.forEach((nombre, i) => { params[nombre] = match[i + 1]; });
+      }
+      const queryObj = Object.fromEntries(query.entries());
+      const contextoVista = { ...params, query: queryObj, path: ruta };
+
+      try {
+        await this._vistaActual.montar(raiz, contextoVista);
+      } catch (e) {
+        console.error('[Router] Error reparando vista:', e);
+        this._irError('Error al recuperar la vista.');
+      }
+      return;
+    }
   }
 
   _irError(mensaje) {

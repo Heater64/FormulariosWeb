@@ -350,6 +350,14 @@
     },
 
     _actualizarSeleccion(raiz) {
+      // Sincronizar los checkboxes visuales con el Set interno: al pulsar
+      // "Seleccionar" (todos) o "Quitar selección", los checkboxes deben
+      // reflejar el estado real. Antes solo se actualizaba la barra y el
+      // usuario veía "5 seleccionados" con 0 casillas marcadas (o al revés)
+      // — discrepancia confusa entre el contador y la UI.
+      raiz.querySelectorAll('.grupos-miembro__check input').forEach(cb => {
+        cb.checked = this._seleccion.has(cb.dataset.id);
+      });
       const bar = raiz.querySelector('#desafioBar');
       const texto = raiz.querySelector('#desafioBarTexto');
       if (bar && texto) {

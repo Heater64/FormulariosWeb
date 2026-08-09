@@ -46,3 +46,13 @@
     font-size: var(--texto-sm);
   }
 }
+
+/* Expanded (desktop ≥1024px): la barra de acción comparte el margen del rail
+   lateral (240px) y se ancla al borde inferior del viewport (en desktop no
+   hay barra inferior). */
+@media (min-width: 1024px) {
+  .barra-accion {
+    left: 240px;
+    bottom: 0;
+  }
+}
