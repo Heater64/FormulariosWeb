@@ -69,6 +69,135 @@
   flex: 1 1 auto;
 }
 
+/* ── DESAFÍO RECHAZADO / CANCELADO ── */
+.desafio-cancelado {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-xl) var(--espaciado-md);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  animation: fadeIn var(--transicion-normal);
+}
+
+.desafio-cancelado__icono {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--color-error-soft), var(--color-error));
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 0 6px var(--color-error-soft);
+}
+
+.desafio-cancelado__icono svg {
+  width: 28px;
+  height: 28px;
+}
+
+.desafio-cancelado h2 {
+  margin: var(--espaciado-xs) 0 0;
+  font-size: var(--texto-xl);
+  font-weight: 900;
+}
+
+.desafio-cancelado__mazo {
+  margin: 0;
+  font-size: var(--texto-sm);
+  font-weight: 700;
+  color: var(--color-acento);
+}
+
+.desafio-cancelado__quien {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  margin: var(--espaciado-sm) 0 0;
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.desafio-cancelado__avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(145deg, var(--color-acento-300, #93C5FD), var(--color-acento));
+  color: #fff;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  flex-shrink: 0;
+}
+
+.desafio-cancelado__avatar img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.desafio-cancelado__rivales {
+  margin-top: var(--espaciado-sm);
+  width: 100%;
+  max-width: 420px;
+}
+
+.desafio-cancelado__rivales-titulo {
+  margin: 0 0 var(--espaciado-xs);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--color-texto-terciario);
+  text-transform: uppercase;
+  letter-spacing: 0.4px;
+}
+
+.desafio-cancelado__chips {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+}
+
+.desafio-cancelado__chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 12px 4px 4px;
+  background: var(--color-exito-soft);
+  border: 1px solid color-mix(in srgb, var(--color-exito) 25%, transparent);
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-exito);
+}
+
+.desafio-cancelado__chip .desafio-cancelado__avatar {
+  width: 22px;
+  height: 22px;
+  background: linear-gradient(145deg, var(--color-exito), #059669);
+}
+
+.desafio-cancelado__acciones {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  margin-top: var(--espaciado-md);
+  width: 100%;
+  max-width: 360px;
+}
+
 /* ── ESPERANDO a los demás ── */
 .desafio-espera {
   display: flex;
@@ -183,6 +312,34 @@
 .desafio-estado--activo { background: var(--color-acento-soft); color: var(--color-acento); }
 .desafio-estado--espera { background: var(--color-fondo-alt); color: var(--color-texto-terciario); }
 
+/* Lado derecho de la fila de jugador (badge + botón Eliminar) */
+.desafio-espera__jugador-der {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-shrink: 0;
+}
+
+/* Expulsar a un invitado que no responde (solo el creador, en la espera) */
+.desafio-espera__eliminar {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--texto-xxs);
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: var(--radio-pill);
+  border: 1px solid color-mix(in srgb, var(--color-error) 30%, transparent);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.desafio-espera__eliminar svg { width: 12px; height: 12px; }
+.desafio-espera__eliminar:hover { background: var(--color-error); color: #fff; }
+.desafio-espera__eliminar:disabled { opacity: 0.5; cursor: default; }
+
 /* ── CUENTA ATRÁS sincronizada ── */
 .desafio-cuenta {
   display: flex;
@@ -258,6 +415,10 @@
 .desafio-timer--peligro {
   color: var(--color-error);
   animation: desafioLatido 0.9s ease-in-out infinite;
+}
+
+.desafio-timer--ilimitado {
+  color: var(--color-acento);
 }
 
 @keyframes desafioLatido {
@@ -366,6 +527,36 @@
   margin: 0;
   font-size: var(--texto-xs);
   color: var(--color-texto-secundario);
+}
+
+/* Empate: verde solo cuando TODOS hicieron 10/10 (partida perfecta);
+   naranja en el resto de empates (incluido 0/0 si nadie respondió). */
+.desafio-resultado__empate-avatares {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.desafio-resultado__empate--verde {
+  background: var(--color-exito-soft);
+  border-color: color-mix(in srgb, var(--color-exito) 30%, transparent);
+}
+
+.desafio-resultado__empate--verde .desafio-resultado__ganador-nombre { color: var(--color-exito); }
+.desafio-resultado__empate--verde .desafio-resultado__ganador-avatar {
+  background: linear-gradient(145deg, var(--color-exito), #059669);
+  box-shadow: 0 0 0 4px var(--color-exito-soft);
+}
+
+.desafio-resultado__empate--naranja {
+  background: var(--color-naranja-soft);
+  border-color: color-mix(in srgb, var(--color-naranja) 30%, transparent);
+}
+
+.desafio-resultado__empate--naranja .desafio-resultado__ganador-nombre { color: var(--color-naranja); }
+.desafio-resultado__empate--naranja .desafio-resultado__ganador-avatar {
+  background: linear-gradient(145deg, var(--color-naranja), #9A3412);
+  box-shadow: 0 0 0 4px var(--color-naranja-soft);
 }
 
 .desafio-resultado__tabla {

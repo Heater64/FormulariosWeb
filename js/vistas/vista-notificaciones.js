@@ -110,6 +110,9 @@
       const cats = CATEGORIAS();
       const meta = cats[f.categoria] || cats.sistema;
       const accs = Array.isArray(f.acciones) ? f.acciones.filter(a => a && a.id) : [];
+      // Una tarjeta ya respondida (aceptada/rechazada/completada) no debe
+      // volver a ofrecer Aceptar/Rechazar: el reto ya está resuelto.
+      const accsVisibles = f.estado === 'completada' ? [] : accs;
       const agrupado = (f.contador || 1) > 1;
 
       return `
@@ -121,9 +124,9 @@
             <span class="notif-card__fecha">${E(_tiempoRelativo(f.creado_en))}</span>
           </div>
           ${f.cuerpo ? `<p class="notif-card__desc">${E(f.cuerpo)}</p>` : ''}
-          ${accs.length ? `
+          ${accsVisibles.length ? `
             <div class="notif-card__acciones">
-              ${accs.map(a => `<button class="notif-card__accion${a.id === 'rechazar' ? ' notif-card__accion--peligro' : ''}" data-accion="${a.id}" data-id="${f.id}">${I(a.icono)} ${E(a.etiqueta)}</button>`).join('')}
+              ${accsVisibles.map(a => `<button class="notif-card__accion${a.id === 'rechazar' ? ' notif-card__accion--peligro' : ''}" data-accion="${a.id}" data-id="${f.id}">${I(a.icono)} ${E(a.etiqueta)}</button>`).join('')}
             </div>` : ''}
         </div>
         <div class="notif-card__marca"><span class="notif-card__punto"></span></div>

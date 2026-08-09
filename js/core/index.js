@@ -488,6 +488,16 @@
             throw new Error('No se pudo cargar esta sección.');
           }
           return vista.montar(raiz, params);
+        },
+        // El router solo conoce este wrapper (no la vista real): sin reenviar
+        // desmontar, la vista real nunca se desmontaba → la vista del desafío
+        // seguía con su bucle de polling y re-renderizaba la pantalla de
+        // espera sobre cualquier vista a la que se navegara ("no me deja
+        // salir del desafío hasta recargar").
+        desmontar: (ruta) => {
+          const vista = obtener();
+          if (vista && typeof vista.desmontar === 'function') return vista.desmontar(ruta);
+          return undefined;
         }
       };
     },
@@ -528,6 +538,36 @@
       router.registrar('/grupos/:id', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
       router.registrar('/desafio/:id', this._vistaLazy(['./js/vistas/vista-desafio.js'], () => window.vistaDesafio));
       router.registrar('/admin', this._vistaLazy(['./js/vistas/admin/admin-comunes.js', './js/vistas/admin/vista-panel-admin.js'], () => window.vistaPanelAdmin));
+
+      // Guardia global: confirmar antes de salir de un desafío ACTIVO (en
+      // juego, cuenta atrás o esperando con el desafío en marcha). Cubre TODAS
+      // las salidas — barra inferior, botón atrás, notificaciones, enlaces —
+      // no solo el botón "Salir" de la vista. La vista marca _salidaConfirmada
+      // cuando su propio diálogo ya confirmó, para no preguntar dos veces.
+      router.registrarGuardia(async (ruta) => {
+        const v = window.vistaDesafio;
+        if (!v || typeof v._hayPartidaActiva !== 'function' || !v._hayPartidaActiva()) return true;
+        if (v._salidaConfirmada) return true;
+        if (ruta === '/desafio/' + v._desafioId) return true;
+        const ok = await window.helpers.confirmar(
+          '¿Seguro que quieres salir? Si sales ahora se contará como abandono.',
+          { titulo: 'Salir del desafío', textoConfirmar: 'Salir' }
+        );
+        if (!ok) {
+          // El hash YA cambió (evento hashchange). Revertirlo SIN disparar otro
+          // hashchange (history.replaceState no emite eventos) para que la
+          // partida siga exactamente donde estaba, sin re-montar la vista.
+          window.history.replaceState(null, '', '#!/desafio/' + v._desafioId);
+          return false;
+        }
+        v._salidaConfirmada = true;
+        // El diálogo promete "se contará como abandono": cumplirlo, igual que
+        // el botón Salir de la vista (si no, el rival quedaría esperando para
+        // siempre, sobre todo en desafíos sin límite de tiempo). Fire-and-forget:
+        // el router navega en paralelo.
+        if (typeof v._abandonarPartida === 'function') v._abandonarPartida();
+        return true;
+      });
     },
 
     // Precarga inteligente: cuando el dispositivo queda inactivo tras el

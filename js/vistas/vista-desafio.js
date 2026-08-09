@@ -41,6 +41,8 @@
     _pollTimer: null,
     _juegoTimer: null,
     _enJuego: false,
+    _montada: false,
+    _salidaConfirmada: false,
 
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
@@ -51,6 +53,14 @@
       if (!this._desafioId) { router.navegar('/grupos'); return; }
       this._detenerLoops();
       this._desmontado = false;
+      this._montada = true;
+      this._salidaConfirmada = false;
+      // Re-montaje (navegar fuera a mitad de partida y volver): si _enJuego
+      // quedó en true, _loop → _empezarJuego haría return por la guardia y la
+      // vista se quedaría en el skeleton para siempre. Al resetearlo, el
+      // _empezarJuego del _loop reconstruye el estado y restaura el progreso
+      // guardado (columna progreso) en el ejercicio siguiente.
+      this._enJuego = false;
       raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton ? window.skeleton.tarjetas(3) : '<p class="u-color-texto-terciario">Cargando desafío...</p>'}</div>`;
       await this._loop();
     },
@@ -60,7 +70,35 @@
     // continuación NO debe re-renderizar el desafío sobre la vista nueva
     // (el router reutiliza #app-root; un render tardío pisaba la vista
     // actual — bug de "vista pegajosa" al salir de un desafío).
-    desmontar() { this._desmontado = true; this._detenerLoops(); },
+    desmontar() { this._desmontado = true; this._montada = false; this._detenerLoops(); },
+
+    // ¿Hay una partida activa que no debería abandonarse sin confirmar?
+    // La usa la guardia global del router (salida por barra inferior, botón
+    // atrás, notificaciones...). Solo considera la vista ACTUALMENTE montada
+    // (_montada) para no disparar la alerta al entrar a un desafío nuevo con
+    // el estado de uno anterior aún en memoria.
+    _hayPartidaActiva() {
+      if (!this._montada) return false;
+      if (this._enJuego) return true;
+      if (!this._desafio) return false;
+      const d = this._desafio;
+      if (d.estado !== 'en_curso') return false;
+      const yo = (d.participantes || []).find(p => p.usuario_id === (this._usuario && this._usuario.id));
+      if (yo && ['terminado', 'abandonado', 'rechazado'].includes(yo.estado)) return false;
+      return true;
+    },
+
+    // La guardia global del router la llama cuando el usuario confirma salir
+    // por una vía externa (barra inferior, botón atrás...): marca el abandono
+    // igual que el botón "Salir" de la vista, para que el rival no quede
+    // esperando para siempre (sobre todo en desafíos sin límite de tiempo).
+    async _abandonarPartida() {
+      if (!this._desafio || !this._usuario) return;
+      this._detenerLoops();
+      try {
+        await window.desafiosRepository.abandonar(this._desafio.id, this._usuario.id);
+      } catch (e) { console.warn('[Desafío] Abandono:', e); }
+    },
 
     _detenerLoops() {
       if (this._pollTimer) clearTimeout(this._pollTimer);
@@ -70,6 +108,9 @@
       // _empezarJuego con la vista ya desmontada).
       if (this._cuentaTimer) { clearInterval(this._cuentaTimer); this._cuentaTimer = null; }
       if (this._cuentaTimeout) { clearTimeout(this._cuentaTimeout); this._cuentaTimeout = null; }
+      // Vigilancia del modo carrera ("el primero que acabe"): poll ligero
+      // mientras se juega; también debe morir al desmontar.
+      if (this._carreraTimer) { clearInterval(this._carreraTimer); this._carreraTimer = null; }
       this._pollTimer = null;
       this._juegoTimer = null;
     },
@@ -95,7 +136,13 @@
 
       if (desafio.estado === 'finalizado') { this._renderResultados(desafio); return; }
       if (desafio.estado === 'expirado') { this._renderMensaje('Invitación expirada', 'El desafío no se aceptó a tiempo. Puedes crear uno nuevo desde Grupos.', 'timer'); return; }
-      if (desafio.estado === 'cancelado') { this._renderMensaje('Desafío cancelado', 'Uno de los participantes lo rechazó.', 'x-circle'); return; }
+      if (desafio.estado === 'cancelado') { this._renderCancelado(desafio); return; }
+      // Expulsado por el creador en la pantalla de espera (no respondió a
+      // tiempo y el desafío empezó con los que estaban listos).
+      if (yo && yo.estado === 'eliminado') {
+        this._renderMensaje('Fuiste eliminado del desafío', 'El creador empezó con los que estaban listos.', 'user-x');
+        return;
+      }
 
       if (desafio.estado === 'invitacion') {
         if (yo && yo.estado === 'invitado') this._renderInvitacion(desafio);
@@ -135,8 +182,8 @@
           // o reconexión tras agotarse el tiempo), NO se re-entra al juego:
           // reiniciaría _estado (idx 0, correctas 0) y machacaría los aciertos
           // ya guardados. Se espera a que el servidor cierre el desafío.
-          const limiteMs = (desafio.tiempo_limite_seg || 120) * 1000;
-          if (ahora - inicio >= limiteMs) {
+          const limiteMs = desafio.tiempo_limite_seg ? desafio.tiempo_limite_seg * 1000 : null;
+          if (limiteMs && ahora - inicio >= limiteMs) {
             this._renderEsperando(desafio, 'Se acabó el tiempo. Has terminado tu desafío — esperando a los demás.');
             this._pollTimer = setTimeout(() => this._loop(), 2500);
             return;
@@ -196,14 +243,23 @@
     /* ── ESPERANDO ── */
     _renderEsperando(desafio, mensaje) {
       const yoId = this._usuario.id;
-      const estados = (desafio.participantes || []).map(p => {
+      const esCreador = desafio.creador_id === yoId;
+      const participantes = (desafio.participantes || []).filter(p => p.estado !== 'eliminado');
+      // Solo se puede expulsar si tras la eliminación quedan al menos 2
+      // participantes activos (creador + 1 rival): con un único invitado que
+      // no responde no hay con quién jugar — se sale del desafío y ya.
+      const puedeEliminar = esCreador && desafio.estado === 'invitacion' && participantes.length >= 3;
+      const estados = participantes.map(p => {
         const clase = p.estado === 'terminado' ? '--ok' : p.estado === 'aceptado' || p.estado === 'en_juego' ? '--activo' : '--espera';
         return `
           <div class="desafio-espera__jugador">
             <span class="desafio-espera__avatar">${avatarHtml(p.perfil || {})}</span>
             <span class="desafio-espera__nombre">${E((p.perfil && (p.perfil.nombre_completo || p.perfil.username)) || 'Jugador')}${p.usuario_id === yoId ? ' (tú)' : ''}</span>
-            <span class="desafio-estado desafio-estado${clase}">
-              ${p.estado === 'terminado' ? I('check') + ' Terminado' : p.estado === 'aceptado' ? I('user-check') + ' Listo' : p.estado === 'en_juego' ? I('activity') + ' Jugando' : I('clock') + ' Pendiente'}
+            <span class="desafio-espera__jugador-der">
+              <span class="desafio-estado desafio-estado${clase}">
+                ${p.estado === 'terminado' ? I('check') + ' Terminado' : p.estado === 'aceptado' ? I('user-check') + ' Listo' : p.estado === 'en_juego' ? I('activity') + ' Jugando' : I('clock') + ' Pendiente'}
+              </span>
+              ${p.estado === 'invitado' && puedeEliminar ? `<button class="desafio-espera__eliminar" data-eliminar="${p.usuario_id}" title="Eliminar del desafío">${I('user-x')} Eliminar</button>` : ''}
             </span>
           </div>`;
       }).join('');
@@ -224,13 +280,40 @@
       $('#btnSalirDesafio').onclick = async () => {
         const ok = await window.helpers.confirmar('¿Salir del desafío?', { titulo: 'Salir', textoConfirmar: 'Salir' });
         if (!ok) return;
+        // El diálogo ya confirmó: la guardia del router no debe preguntar otra vez.
+        this._salidaConfirmada = true;
         await window.desafiosRepository.abandonar(desafio.id, this._usuario.id).catch(() => {});
         router.navegar('/grupos');
       };
+
+      // Expulsar a un invitado que no responde (solo el creador, en la espera)
+      const btnsEliminar = this._raiz.querySelectorAll('[data-eliminar]');
+      btnsEliminar.forEach((btn) => {
+        btn.onclick = async () => {
+          const invitadoId = btn.dataset.eliminar;
+          const ok = await window.helpers.confirmar(
+            '¿Eliminar a este jugador del desafío? No podrá aceptar el reto y podrás empezar con los que estén listos.',
+            { titulo: 'Eliminar jugador', textoConfirmar: 'Eliminar' }
+          );
+          if (!ok) return;
+          btn.disabled = true;
+          await window.desafiosRepository.eliminarInvitado(desafio.id, invitadoId).catch(() => {});
+          window.helpers.mostrarAlerta('Jugador eliminado. Puedes empezar con los que estén listos.', 'exito');
+          this._loop();
+        };
+      });
     },
 
     /* ── CUENTA ATRÁS sincronizada ── */
     _renderCuentaAtras(desafio, inicio) {
+      // Limpiar timers previos de la cuenta atrás: _loop llama a este método
+      // cada ~400ms mientras espera el inicio y, sin esta limpieza, cada
+      // llamada huérfana un setInterval (leak). Esos intervalos siguen vivos
+      // aunque se limpie this._cuentaTimer, y al llegar el resto<=0 programan
+      // _empezarJuego repetidamente — re-entrada infinita que machaca los
+      // aciertos a 0 aunque el desafío ya esté finalizado.
+      if (this._cuentaTimer) { clearInterval(this._cuentaTimer); this._cuentaTimer = null; }
+      if (this._cuentaTimeout) { clearTimeout(this._cuentaTimeout); this._cuentaTimeout = null; }
       this._raiz.innerHTML = `
         <div class="o-contenedor desafio-pantalla">
           <div class="desafio-cuenta">
@@ -275,7 +358,11 @@
       this._enJuego = true;
       this._detenerLoops();
       window.desafiosRepository.marcarEnJuego(desafio.id, this._usuario.id).catch(() => {});
-      const inicioReal = new Date(desafio.iniciado_en).getTime();
+      // Datos legacy/incompletos pueden llegar con iniciado_en NULL/NaN:
+      // new Date(null) = epoch → el reloj de tiempo transcurrido mostraría
+      // decenas de millones de minutos. Mismo fallback que la cuenta atrás.
+      let inicioReal = new Date(desafio.iniciado_en).getTime();
+      if (!Number.isFinite(inicioReal) || inicioReal <= 0) inicioReal = Date.now();
       this._estado = {
         desafio,
         ejercicios: desafio.sesion || [],
@@ -283,8 +370,18 @@
         correctas: 0,
         incorrectas: 0,
         inicioMs: inicioReal,
-        tiempoLimiteMs: (desafio.tiempo_limite_seg || 120) * 1000
+        // null = desafío sin límite de tiempo: el reloj muestra el tiempo
+        // transcurrido y el turno solo acaba al responder todo (o si el
+        // servidor cierra el desafío).
+        tiempoLimiteMs: desafio.tiempo_limite_seg ? desafio.tiempo_limite_seg * 1000 : null
       };
+      // Modo carrera ("el primero que acabe"): mientras se juega no corre el
+      // _loop (solo poll cuando NO estás jugando), así que se vigila con un
+      // poll ligero cada 5s: si el rival termina (o el servidor cierra), se
+      // salta a la pantalla final con el resultado de los dos.
+      if (desafio.finaliza_primer_terminado && !this._carreraTimer) {
+        this._carreraTimer = setInterval(() => this._chequearFinCarrera(), 5000);
+      }
       // Restaurar progreso guardado (recarga o cierre a mitad de desafío):
       // se retoma en el ejercicio siguiente sin perder respuestas válidas.
       const miFila = (desafio.participantes || []).find(p => p.usuario_id === this._usuario.id);
@@ -302,7 +399,7 @@
       this._raiz.innerHTML = `
         <div class="o-contenedor mem-juego-sesion desafio-juego">
           <div class="mem-juego-sesion__barra desafio-juego__barra">
-            <span class="desafio-timer" id="desafioTimer">${tiempoBonito(Math.max(0, e.tiempoLimiteMs - (Date.now() - e.inicioMs)))}</span>
+            <span class="desafio-timer${e.tiempoLimiteMs ? '' : ' desafio-timer--ilimitado'}" id="desafioTimer">${tiempoBonito(e.tiempoLimiteMs ? Math.max(0, e.tiempoLimiteMs - (Date.now() - e.inicioMs)) : (Date.now() - e.inicioMs))}</span>
             <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" id="fill" style="width:${e.ejercicios.length ? Math.round((1 / e.ejercicios.length) * 100) : 0}%"></div></div>
             <span class="desafio-progreso" id="desafioProgreso">1/${e.ejercicios.length}</span>
           </div>
@@ -314,20 +411,28 @@
       $('#btnSalirJuego').onclick = async () => {
         const ok = await window.helpers.confirmar('¿Salir del desafío? Se contará como abandono.', { titulo: 'Salir', textoConfirmar: 'Salir' });
         if (!ok) return;
+        // El diálogo ya confirmó: la guardia del router no debe preguntar otra vez.
+        this._salidaConfirmada = true;
         this._detenerLoops();
         await window.desafiosRepository.abandonar(e.desafio.id, this._usuario.id).catch(() => {});
         router.navegar('/grupos');
       };
 
-      // Cronómetro del desafío (mismo límite para todos)
+      // Cronómetro del desafío (mismo límite para todos; null = sin límite)
       this._juegoTimer = setInterval(() => {
-        const restante = e.tiempoLimiteMs - (Date.now() - e.inicioMs);
         const timer = $('#desafioTimer');
-        if (timer) {
-          timer.textContent = tiempoBonito(restante);
-          timer.classList.toggle('desafio-timer--peligro', restante < 15000);
+        if (e.tiempoLimiteMs) {
+          const restante = e.tiempoLimiteMs - (Date.now() - e.inicioMs);
+          if (timer) {
+            timer.textContent = tiempoBonito(restante);
+            timer.classList.toggle('desafio-timer--peligro', restante < 15000);
+          }
+          if (restante <= 0) this._finJuego(true);
+        } else if (timer) {
+          // Sin límite: mostrar tiempo transcurrido; el turno acaba al
+          // responder todo o si el servidor cierra el desafío.
+          timer.textContent = tiempoBonito(Date.now() - e.inicioMs);
         }
-        if (restante <= 0) this._finJuego(true);
       }, 250);
 
       this._ejercicio();
@@ -397,12 +502,52 @@
       const total = e.ejercicios.length;
       const correctas = e.correctas;
       const tiempoMs = Date.now() - e.inicioMs;
+      const esCarrera = !!(this._desafio && this._desafio.finaliza_primer_terminado);
       this._renderEsperando(this._desafio, porTiempo
         ? 'Se acabó el tiempo. Has terminado tu desafío — esperando a los demás.'
-        : 'Has terminado tu desafío. Estamos esperando a que los demás finalicen.');
+        : esCarrera
+          ? '¡Has terminado! Mostrando resultados...'
+          : 'Has terminado tu desafío. Estamos esperando a que los demás finalicen.');
       window.desafiosRepository.terminarJugador(e.desafio.id, this._usuario.id, { correctas, total, tiempoMs })
         .then(() => { this._pollTimer = setTimeout(() => this._loop(), 1500); })
         .catch(() => { this._pollTimer = setTimeout(() => this._loop(), 1500); });
+    },
+
+    /* ── Modo carrera: "el primero que acabe" ── */
+    // Poll ligero (cada 5s) que corre SOLO mientras se juega un desafío en
+    // modo carrera. Cuando el rival termina (o el servidor ya cerró), se salta
+    // a la pantalla final con el resultado de los dos.
+    async _chequearFinCarrera() {
+      if (!this._enJuego || !this._desafioId) return;
+      try {
+        const desafio = await window.desafiosRepository.obtenerDesafio(this._desafioId);
+        if (!desafio || this._desmontado || !this._enJuego) return;
+        if (desafio.estado === 'finalizado') {
+          // El rival (o yo) acabó y el servidor ya cerró el desafío.
+          this._enJuego = false;
+          this._detenerLoops();
+          this._renderResultados(desafio);
+          return;
+        }
+        if (desafio.estado === 'en_curso') {
+          const rivalTermino = (desafio.participantes || [])
+            .some(p => p.usuario_id !== this._usuario.id && p.estado === 'terminado');
+          if (rivalTermino) {
+            // El rival acabó primero: cerrar con mi progreso actual (el
+            // servidor/cliente del rival ya forzó mi resultado; este camino es
+            // el respaldo si esa finalización no llegó a completarse).
+            this._enJuego = false;
+            this._detenerLoops();
+            const e = this._estado;
+            const tiempoMs = Date.now() - e.inicioMs;
+            this._renderEsperando(this._desafio, 'Tu rival ha terminado. Mostrando resultados...');
+            window.desafiosRepository.terminarJugador(this._desafioId, this._usuario.id, {
+              correctas: e.correctas, total: e.ejercicios.length, tiempoMs
+            }).then(() => { this._pollTimer = setTimeout(() => this._loop(), 1200); })
+              .catch(() => { this._pollTimer = setTimeout(() => this._loop(), 1200); });
+          }
+        }
+      } catch (e) { /* silencioso: el siguiente tick reintentará */ }
     },
 
     /* ── RESULTADOS ── */
@@ -411,24 +556,37 @@
         .map(p => ({
           ...p,
           perfil: p.perfil || {},
-          abandonado: p.estado === 'abandonado' || p.estado === 'rechazado'
+          abandonado: p.estado === 'abandonado' || p.estado === 'rechazado' || p.estado === 'eliminado'
         }));
       const jugadores = participantes.filter(p => !p.abandonado);
+      const esCarrera = desafio.finaliza_primer_terminado === true;
       const ordenados = [...jugadores].sort((a, b) => {
+        if (esCarrera) {
+          // "El primero que acabe": gana quien terminó antes (menor tiempo;
+          // el perdedor se cierra con el tiempo en que finalizó el rival).
+          if ((a.tiempo_ms || Infinity) !== (b.tiempo_ms || Infinity)) return (a.tiempo_ms || Infinity) - (b.tiempo_ms || Infinity);
+          return (b.correctas || 0) - (a.correctas || 0);
+        }
         if ((b.correctas || 0) !== (a.correctas || 0)) return (b.correctas || 0) - (a.correctas || 0);
         return (a.tiempo_ms || Infinity) - (b.tiempo_ms || Infinity);
       });
       const ganador = ordenados.length ? ordenados[0] : null;
+      // Empate: todos los que jugaron (sin abandonos) con la MISMA puntuación.
+      // 10/10 ambos → empate en verde (partida perfecta); cualquier otra
+      // igualdad (incluido 0/0 si ninguno respondió) → empate en naranja.
+      const esEmpate = jugadores.length >= 2 &&
+        jugadores.every(p => (p.correctas || 0) === (jugadores[0].correctas || 0));
+      const empatePerfecto = esEmpate && (jugadores[0].correctas || 0) === (jugadores[0].total || 0) && (jugadores[0].total || 0) > 0;
       const yo = participantes.find(p => p.usuario_id === this._usuario.id);
 
       const filas = participantes.map(p => {
         const pos = ordenados.indexOf(p);
-        const medalla = pos === 0 && !p.abandonado ? '<span class="desafio-medalla">🥇</span>' : '';
+        const medalla = !esEmpate && pos === 0 && !p.abandonado ? '<span class="desafio-medalla">🥇</span>' : '';
         return `
           <div class="desafio-resultado__fila${p.abandonado ? ' desafio-resultado__fila--abandonado' : ''}">
             <span class="desafio-resultado__avatar">${avatarHtml(p.perfil)}</span>
             <span class="desafio-resultado__nombre">${E((p.perfil.nombre_completo || p.perfil.username) || 'Jugador')}${p.usuario_id === this._usuario.id ? ' <span class="grupos-miembro__tu">(tú)</span>' : ''} ${medalla}</span>
-            <span class="desafio-resultado__puntos">${p.abandonado ? 'Abandonó' : `${p.correctas || 0}/${p.total || 0}`}</span>
+            <span class="desafio-resultado__puntos">${p.estado === 'eliminado' ? 'Eliminado' : p.abandonado ? 'Abandonó' : `${p.correctas || 0}/${p.total || 0}`}</span>
             <span class="desafio-resultado__tiempo">${p.abandonado ? '—' : tiempoBonito(p.tiempo_ms)}</span>
           </div>`;
       }).join('');
@@ -440,7 +598,14 @@
             <h2>Resultado</h2>
             <p class="desafio-resultado__mazo">${E(desafio.mazo_nombre || 'Desafío')}</p>
 
-            ${ganador ? `
+            ${esEmpate ? `
+            <div class="desafio-resultado__ganador desafio-resultado__empate ${empatePerfecto ? 'desafio-resultado__empate--verde' : 'desafio-resultado__empate--naranja'}">
+              <div class="desafio-resultado__empate-avatares">
+                ${jugadores.map(p => `<span class="desafio-resultado__ganador-avatar">${avatarHtml(p.perfil)}</span>`).join('')}
+              </div>
+              <p class="desafio-resultado__ganador-nombre">${I('handshake')} Empate</p>
+              <p class="desafio-resultado__ganador-meta">${jugadores.map(p => E((p.perfil.nombre_completo || p.perfil.username) || 'Jugador')).join(' · ')} · ${jugadores[0].correctas || 0}/${jugadores[0].total || 0}</p>
+            </div>` : ganador ? `
             <div class="desafio-resultado__ganador">
               <span class="desafio-resultado__ganador-avatar">${avatarHtml(ganador.perfil)}</span>
               <p class="desafio-resultado__ganador-nombre">Ganador · ${E((ganador.perfil.nombre_completo || ganador.perfil.username) || 'Jugador')}</p>
@@ -474,7 +639,11 @@
           const nuevo = await window.desafiosRepository.crearDesafio({
             creador: this._usuario,
             participantes: rivales,
-            mazo, sesion, iniciarInmediato: inmediato
+            mazo, sesion, iniciarInmediato: inmediato,
+            // Conservar las reglas del desafío original (con tiempo, sin límite
+            // o "el primero que acabe")
+            tiempoLimiteSeg: desafio.tiempo_limite_seg,
+            finalizaPrimerTerminado: desafio.finaliza_primer_terminado === true
           });
           window.helpers.mostrarAlerta(inmediato ? '¡Nuevo desafío en marcha!' : 'Revancha enviada. Esperando aceptación...', 'exito');
           this._desafioId = nuevo.id;
@@ -488,6 +657,76 @@
       $('#btnOtroMazo').onclick = () => router.navegar('/grupos');
       $('#btnSalirResultado').onclick = () => router.navegar('/grupos');
       void yo;
+    },
+
+    /* ── DESAFÍO RECHAZADO / CANCELADO ── */
+    _renderCancelado(desafio) {
+      const yoId = this._usuario.id;
+      const participantes = desafio.participantes || [];
+      const rechazado = participantes.find(p => p.estado === 'rechazado');
+      const fuiYo = rechazado && rechazado.usuario_id === yoId;
+      const nombre = rechazado && rechazado.perfil
+        ? (rechazado.perfil.nombre_completo || rechazado.perfil.username)
+        : null;
+      // Los que sí estaban listos (no rechazaron ni fueron expulsados)
+      const rivales = participantes.filter(p =>
+        p.usuario_id !== yoId && p.estado !== 'rechazado' && p.estado !== 'eliminado');
+
+      this._raiz.innerHTML = `
+        <div class="o-contenedor desafio-pantalla">
+          <div class="desafio-cancelado">
+            <span class="desafio-cancelado__icono">${I(fuiYo ? 'x' : 'x-circle')}</span>
+            <h2>${fuiYo ? 'Rechazaste el desafío' : 'Desafío cancelado'}</h2>
+            <p class="desafio-cancelado__mazo">${E(desafio.mazo_nombre || 'Desafío')}</p>
+            ${rechazado ? `
+            <p class="desafio-cancelado__quien">
+              <span class="desafio-cancelado__avatar">${avatarHtml(rechazado.perfil || {})}</span>
+              <span>${fuiYo ? 'Tú rechazaste la invitación.' : `${E(nombre || 'Un participante')} rechazó la invitación.`}</span>
+            </p>` : ''}
+            ${!fuiYo && rivales.length ? `
+            <div class="desafio-cancelado__rivales">
+              <p class="desafio-cancelado__rivales-titulo">Estos jugadores sí estaban listos:</p>
+              <div class="desafio-cancelado__chips">
+                ${rivales.map(p => `
+                  <span class="desafio-cancelado__chip">${avatarHtml(p.perfil || {})} ${E((p.perfil && (p.perfil.nombre_completo || p.perfil.username)) || 'Jugador')}</span>`).join('')}
+              </div>
+            </div>` : ''}
+            <div class="desafio-cancelado__acciones">
+              ${!fuiYo && rivales.length ? `<button class="btn-primario" id="btnRetoListos" style="justify-content:center">${I('sword')} Retar a los listos</button>` : ''}
+              <button class="btn-secundario" id="btnCanceladoGrupos" style="justify-content:center">${I('users')} Ir a Grupos</button>
+            </div>
+          </div>
+        </div>`;
+      window.Iconos.actualizar();
+
+      $('#btnCanceladoGrupos').onclick = () => router.navegar('/grupos');
+      const btnReto = $('#btnRetoListos');
+      if (btnReto) {
+        btnReto.onclick = async () => {
+          btnReto.disabled = true;
+          try {
+            const mazos = await window.desafiosRepository.listarMazosDesafio();
+            const mazo = mazos.find(m => m.id === desafio.mazo_id) || mazos[0];
+            if (!mazo) { window.helpers.mostrarAlerta('El mazo ya no está disponible.', 'advertencia'); return; }
+            const tarjetas = await window.memorizacionRepository.listarTarjetas(null, mazo.id);
+            const sesion = J().construirSesion(tarjetas, tarjetas, { maxTarjetas: 10 });
+            const nuevo = await window.desafiosRepository.crearDesafio({
+              creador: this._usuario,
+              participantes: rivales,
+              mazo, sesion,
+              // Conservar las reglas del desafío original
+              tiempoLimiteSeg: desafio.tiempo_limite_seg,
+              finalizaPrimerTerminado: desafio.finaliza_primer_terminado === true
+            });
+            window.helpers.mostrarAlerta('Nuevo desafío enviado a los que estaban listos.', 'exito');
+            this._desafioId = nuevo.id;
+            this._detenerLoops();
+            await this._loop();
+          } catch (e) {
+            window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
+          }
+        };
+      }
     },
 
     _renderMensaje(titulo, texto, icono) {

@@ -440,6 +440,30 @@
               <button class="btn-icono" data-cerrar aria-label="Cerrar">${I('x')}</button>
             </div>
             <p class="u-fs-xs u-color-texto-terciario">Desafiarás a ${participantes.length} participante${participantes.length !== 1 ? 's' : ''}. Todos responderéis las mismas preguntas.</p>
+            <div class="grupos-tiempo">
+              <p class="grupos-tiempo__titulo">Tiempo por desafío</p>
+              <div class="grupos-tiempo__opciones" role="radiogroup" aria-label="Tiempo del desafío">
+                <label class="grupos-tiempo__opcion">
+                  <input type="radio" name="tiempoDesafio" value="limitado" checked>
+                  <span>Con tiempo</span>
+                </label>
+                <label class="grupos-tiempo__opcion">
+                  <input type="radio" name="tiempoDesafio" value="ilimitado">
+                  <span>Sin límite</span>
+                </label>
+                <label class="grupos-tiempo__opcion">
+                  <input type="radio" name="tiempoDesafio" value="carrera">
+                  <span>El primero que acabe</span>
+                </label>
+              </div>
+              <div class="grupos-tiempo__minutos" id="gruposTiempoMinutos">
+                <label class="grupos-tiempo__campo">
+                  <span>Minutos</span>
+                  <input type="number" id="tiempoMinutos" min="1" step="1" value="2" inputmode="numeric">
+                </label>
+                <p class="grupos-tiempo__ayuda">Mínimo 1 minuto</p>
+              </div>
+            </div>
             <div class="grupos-mazos">
               ${mazos.length === 0
                 ? '<p class="u-color-texto-terciario u-fs-sm">Sin mazos disponibles.</p>'
@@ -461,6 +485,13 @@
       const cerrarModal = () => { overlay.remove(); if (resolver) resolver(null); terminarFlujo(); };
       overlay.querySelector('[data-cerrar]').onclick = cerrarModal;
       overlay.addEventListener('click', e => { if (e.target === overlay) cerrarModal(); });
+      // "Sin límite" y "El primero que acabe" ocultan el campo de minutos
+      const minutosBox = overlay.querySelector('#gruposTiempoMinutos');
+      const alternarMinutos = () => {
+        const sel = overlay.querySelector('input[name="tiempoDesafio"]:checked');
+        if (minutosBox && sel) minutosBox.hidden = sel.value !== 'limitado';
+      };
+      overlay.querySelectorAll('input[name="tiempoDesafio"]').forEach(r => r.addEventListener('change', alternarMinutos));
 
       return new Promise((resolve) => {
         resolver = resolve;
@@ -470,6 +501,10 @@
             if (!mazo) return;
             const tarjetas = (tarjetasTodas || []).filter(t => t.mazo_id === mazo.id);
             if (!tarjetas.length) { window.helpers.mostrarAlerta('Ese mazo no tiene tarjetas todavía.', 'advertencia'); return; }
+            const selTiempo = overlay.querySelector('input[name="tiempoDesafio"]:checked');
+            const ilimitado = selTiempo && selTiempo.value === 'ilimitado';
+            const esCarrera = selTiempo && selTiempo.value === 'carrera';
+            const minutos = Math.max(1, parseInt(overlay.querySelector('#tiempoMinutos')?.value, 10) || 2);
             const sesion = J().construirSesion(tarjetas, tarjetasTodas || [], { maxTarjetas: 10 });
             overlay.remove();
             btn.disabled = true;
@@ -478,7 +513,12 @@
                 creador: usuario,
                 participantes,
                 mazo,
-                sesion
+                sesion,
+                // null = sin límite de tiempo; en caso contrario, minutos (mín. 1)
+                tiempoLimiteSeg: (ilimitado || esCarrera) ? null : minutos * 60,
+                // "El primero que acabe": el desafío se cierra cuando el
+                // primer participante termina (migración 036).
+                finalizaPrimerTerminado: esCarrera
               });
               window.helpers.mostrarAlerta(`Desafío enviado a ${participantes.length} participante${participantes.length !== 1 ? 's' : ''}.`, 'exito');
               resolve(desafio);
@@ -487,7 +527,14 @@
               router.navegar('/desafio/' + desafio.id);
             } catch (e) {
               btn.disabled = false;
-              window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
+              const msg = (e && e.message) || '';
+              // El modo carrera requiere la migración 036 (columna
+              // finaliza_primer_terminado): aviso claro en vez del error SQL.
+              if (/finaliza_primer_terminado.*does not exist/i.test(msg)) {
+                window.helpers.mostrarAlerta('El modo "El primero que acabe" requiere aplicar la migración 036 en la base de datos.', 'advertencia');
+              } else {
+                window.helpers.mostrarAlerta('Error: ' + msg, 'error');
+              }
               resolve(null);
               terminarFlujo();
             }

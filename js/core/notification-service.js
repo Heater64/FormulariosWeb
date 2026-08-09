@@ -89,7 +89,7 @@ class NotificationService {
       cuerpo: (p) => `«${p.mazo || 'Memorización'}» — se acerca el comienzo`,
       url: (p) => `/desafio/${p.desafioId}`,
       icono: 'users',
-      nativo: false, toast: false, sonido: false,
+      nativo: false, toast: true, sonido: true,
       acciones: ['ver'],
       agrupacionClave: (p) => `desafio:aceptados:${p.desafioId}`,
       destinatarios: (p) => p.destinatarios || null
@@ -100,7 +100,7 @@ class NotificationService {
       cuerpo: (p) => `${p.jugador || 'Un participante'} rechazó el desafío de «${p.mazo || 'memorización'}».`,
       url: (p) => `/desafio/${p.desafioId}`,
       icono: 'x',
-      nativo: false, toast: false, sonido: false,
+      nativo: false, toast: true, sonido: true,
       acciones: ['ver'],
       destinatarios: (p) => p.destinatarios || null
     });
@@ -114,13 +114,23 @@ class NotificationService {
       acciones: ['ver'],
       destinatarios: (p) => p.destinatarios || null
     });
+    r('desafio.abandonado', {
+      categoria: 'desafios', prioridad: 'baja',
+      titulo: (p) => `${p.jugador || 'Un participante'} abandonó el desafío`,
+      cuerpo: (p) => `«${p.mazo || 'Memorización'}» — se retiró a mitad de partida.`,
+      url: (p) => `/desafio/${p.desafioId}`,
+      icono: 'log-out',
+      nativo: false, toast: true, sonido: true,
+      acciones: ['ver'],
+      destinatarios: (p) => p.destinatarios || null
+    });
     r('desafio.finalizado', {
       categoria: 'desafios', prioridad: 'media',
       titulo: () => 'Desafío finalizado',
       cuerpo: (p) => `Consulta los resultados del desafío «${p.mazo || 'Memorización'}».`,
       url: (p) => `/desafio/${p.desafioId}`,
       icono: 'trophy',
-      nativo: false, toast: false, sonido: false,
+      nativo: false, toast: true, sonido: true,
       acciones: ['ver'],
       destinatarios: (p) => p.destinatarios || null
     });
@@ -196,12 +206,18 @@ class NotificationService {
         const sb = window.supabaseClient;
         if (!sb || !p.adminId) return [];
         try {
+          const ids = new Set();
           const { data: admin } = await sb.from('perfiles').select('grupo_id').eq('id', p.adminId).limit(1);
           const grupoId = admin && admin[0] && admin[0].grupo_id;
-          if (!grupoId) return [];
-          const { data } = await sb.from('perfiles').select('id').eq('grupo_id', grupoId).neq('id', p.adminId);
-          return (data || []).map(m => m.id);
-        } catch (e) { return []; }
+          if (grupoId) {
+            const { data } = await sb.from('perfiles').select('id').eq('grupo_id', grupoId);
+            (data || []).forEach(m => ids.add(m.id));
+          }
+          // El admin/owner también recibe el aviso (antes quedaba excluido y
+          // "no le llegaban" las notificaciones de mazo nuevo como al resto).
+          ids.add(p.adminId);
+          return [...ids];
+        } catch (e) { return [p.adminId]; }
       }
     });
     r('recordatorio.repasos', {
@@ -534,6 +550,17 @@ class NotificationService {
   async _poll() {
     const usuario = this._usuario();
     if (!usuario || !window.notificacionesRepository) return;
+    // Barrido de desafíos vencidos (~1/min, fire-and-forget): ningún desafío
+    // queda abierto con el reloj contando infinito aunque nadie abra su vista
+    // (la RPC global de la migración 038 cierra invitaciones expiradas,
+    // vencidos por límite de tiempo y sin-límite abiertos hace >24h).
+    if (!this._ultimoSweep || Date.now() - this._ultimoSweep > 60000) {
+      this._ultimoSweep = Date.now();
+      const repo = window.desafiosRepository;
+      if (repo && typeof repo.sweepVencidos === 'function') {
+        repo.sweepVencidos().catch(() => {});
+      }
+    }
     try {
       const filas = await window.notificacionesRepository.listar(usuario.id, { soloNuevas: true, limite: 15 });
       for (const f of filas) {
@@ -637,6 +664,14 @@ class NotificationService {
         this._mostrarBanner({ cfg, titulo, cuerpo, url, datos, fila, icono });
       } else if (cfg.nativo !== false && window.notifications) {
         window.notifications.notificar({ titulo, cuerpo, categoria: cfg.categoria, icono: iconoCategoria, tag, url, requireInteraction });
+      } else if (cfg.toast && window.notifications) {
+        // Flujo del desafío (aceptado/rechazado/finalizado): aviso ligero
+        // in-app para que el avance se VEA (antes era silencioso y solo
+        // subía el badge, que quedaba "pegado" con no leídas fantasma).
+        window.notifications.mostrarToast(titulo, cuerpo, { icono: iconoCategoria, categoria: cfg.categoria });
+        // El toast ya se vio: marcar vista para que el badge no se quede
+        // clavado en 'nueva' para siempre (la fila sigue en el centro).
+        if (fila && fila.id) this._marcarVista(fila.id);
       }
       return;
     }
@@ -658,7 +693,14 @@ class NotificationService {
   }
 
   _mostrarBanner({ cfg, titulo, cuerpo, url, datos, fila, icono }) {
-    if (document.getElementById('notif-banner')) return;
+    if (document.getElementById('notif-banner')) {
+      // Ya hay un banner activo: no descartar el aviso — mostrarlo como toast
+      // ligero (antes el segundo desafío se perdía silenciosamente y quedaba
+      // 'nueva' para siempre).
+      if (window.notifications) window.notifications.mostrarToast(titulo, cuerpo, { icono, categoria: cfg.categoria });
+      if (fila && fila.id) this._marcarVista(fila.id);
+      return;
+    }
     // No mostrar el banner si el usuario ya está viendo ese desafío
     try {
       if (datos && datos.desafio_id && window.router && router.pathActual() === '/desafio/' + datos.desafio_id) return;
@@ -666,7 +708,13 @@ class NotificationService {
     const I = (n) => window.Iconos ? window.Iconos.render(n) : '';
     const esc = (t) => window.helpers ? window.helpers.escapeHtml(t) : t;
     const meta = CATEGORIAS[cfg.categoria];
-    const accs = (cfg.acciones || []).slice(0, 3);
+    // Las acciones de la CONFIG son ids ('aceptar', 'rechazar', 'ver'): se
+    // mapean al catálogo ACCIONES para obtener icono+etiqueta (igual que al
+    // persistir). Sin esto los botones del banner salían con data-accion
+    // "undefined" y sin texto — imposible aceptar/rechazar desde el banner.
+    const accs = (cfg.acciones || []).slice(0, 3).map(a =>
+      (typeof a === 'string') ? { id: a, ...(ACCIONES[a] || {}) } : a
+    ).filter(a => a && a.id);
 
     const b = document.createElement('div');
     b.id = 'notif-banner';

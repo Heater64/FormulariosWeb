@@ -168,16 +168,27 @@
               <div class="mem-juego-detalle__stat"><p class="mem-juego-detalle__stat-valor">${dominadas}</p><p class="mem-juego-detalle__stat-etiqueta">Dominadas</p></div>
               <div class="mem-juego-detalle__stat"><p class="mem-juego-detalle__stat-valor">${pendientes.length}</p><p class="mem-juego-detalle__stat-etiqueta">Pendientes</p></div>
             </div>
-            <button class="mem-juego-empezar" id="btnEmpezar" ${pendientes.length === 0 ? 'disabled' : ''}>
-              ${I('play')} Empezar sesión ${pendientes.length ? `(${pendientes.length})` : ''}
-            </button>
+            <div class="mem-juego-detalle__acciones">
+              <button class="mem-juego-empezar" id="btnEmpezar" ${pendientes.length === 0 ? 'disabled' : ''}>
+                ${I('play')} Empezar sesión ${pendientes.length ? `(${pendientes.length})` : ''}
+              </button>
+              ${this._puedeEditar() ? `<button class="btn-secundario" id="btnEditarMazo">${I('edit-3')} Editar mazo</button>` : ''}
+            </div>
             ${pendientes.length === 0 && dominadas > 0 ? `<p class="mem-juego-sub">¡Mazo dominado! ${I('party-popper')} Vuelve mañana para consolidar.</p>` : ''}
           </div>
         </div>`;
 
       $(raiz, '#btnVolver').onclick = () => this._pintar(raiz);
       $(raiz, '#btnEmpezar').onclick = () => this._sesion(raiz, mazoId);
+      const btnEditar = $(raiz, '#btnEditarMazo');
+      if (btnEditar) btnEditar.onclick = () => router.navegar(`/admin?tab=memorizacion&mazo=${encodeURIComponent(mazoId)}`);
       window.Iconos.actualizar();
+    },
+
+    _puedeEditar() {
+      // El editor de mazos vive en el panel de administración (solo admin/owner).
+      const rol = ((this._datos.usuario && this._datos.usuario.rol) || '').toString().toLowerCase();
+      return rol === 'owner' || rol === 'admin';
     },
 
     /* ═══ SESIÓN DE JUEGO ═══ */

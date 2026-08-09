@@ -100,3 +100,52 @@ describe('router registra rutas con prioridad', () => {
     expect(patronId.test('/editor/nuevo')).toBe(true); // captura como id='nuevo'
   });
 });
+
+describe('guardias de navegación', () => {
+  test('una guardia que devuelve false bloquea la navegación sin montar la vista', async () => {
+    const router = window.router;
+    let montada = false;
+    router.registrar('/privada', { montar: async () => { montada = true; } });
+    let consultas = 0;
+    router.registrarGuardia(async () => { consultas++; return false; });
+    global.scrollTo = () => {};
+    location.hash = '#!/privada';
+    await router._ejecutar();
+    expect(montada).toBe(false);
+    expect(consultas).toBe(1);
+  });
+
+  test('una guardia que devuelve true permite la navegación', async () => {
+    const router = window.router;
+    let montada = false;
+    router.registrar('/abierta', { montar: async () => { montada = true; } });
+    router.registrarGuardia(async () => true);
+    global.scrollTo = () => {};
+    global.document.getElementById = () => ({
+      innerHTML: '',
+      children: [],
+      classList: { add() {}, remove() {} },
+      querySelector: () => null,
+      focus: () => {}
+    });
+    location.hash = '#!/abierta';
+    await router._ejecutar();
+    expect(montada).toBe(true);
+  });
+
+  test('una guardia async puede preguntar al usuario y bloquear si cancela', async () => {
+    const router = window.router;
+    let montada = false;
+    router.registrar('/con-guardia', { montar: async () => { montada = true; } });
+    let confirmaciones = 0;
+    router.registrarGuardia(async () => {
+      confirmaciones++;
+      return false; // el usuario canceló el diálogo
+    });
+    global.scrollTo = () => {};
+    location.hash = '#!/con-guardia';
+    await router._ejecutar();
+    expect(confirmaciones).toBe(1);
+    expect(montada).toBe(false);
+  });
+});

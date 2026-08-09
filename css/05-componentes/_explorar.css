@@ -8,6 +8,7 @@
 .explorar__titulo {
   display: flex;
   align-items: center;
+  justify-content: space-between;
   gap: var(--espaciado-sm);
   margin-bottom: var(--espaciado-md);
 }

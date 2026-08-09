@@ -52,10 +52,9 @@
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="estudio-cabecera">
-              <h2>${window.Iconos.render('book-open')} Estudio Guiado</h2>
+              <h2>${window.Iconos.render('book-open')} Estudio Guiado <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button></h2>
               <div class="estudio-cabecera__derecha">
                 ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
-                <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button>
                 <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${window.helpers.escapeHtml(usuario.foto_perfil)}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
               </div>
             </div>

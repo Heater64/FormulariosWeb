@@ -20,5 +20,14 @@
   { "evento": "Muerte y resurrección", "periodo": "~30 d.C.", "refs": ["Mateo 27-28"], "detalle": "Jesús fue crucificado, muerto y resucitó al tercer día." },
   { "evento": "Pentecostés", "periodo": "~30 d.C.", "refs": ["Hechos 2"], "detalle": "El Espíritu Santo descendió sobre los discípulos. Nació la iglesia." },
   { "evento": "Misiones de Pablo", "periodo": "~45-65 d.C.", "refs": ["Hechos 13-28"], "detalle": "Pablo predicó el evangelio por todo el mundo romano." },
-  { "evento": "Destrucción de Jerusalén", "periodo": "70 d.C.", "refs": ["Mateo 24", "Josefo"], "detalle": "Roma destruyó Jerusalén y el Templo, cumpliendo la profecía de Jesús." }
+  { "evento": "Destrucción de Jerusalén", "periodo": "70 d.C.", "refs": ["Mateo 24", "Josefo"], "detalle": "Roma destruyó Jerusalén y el Templo, cumpliendo la profecía de Jesús." },
+  { "evento": "David y Goliat", "periodo": "~1010 a.C.", "refs": ["1 Samuel 17"], "detalle": "El joven pastor David venció al gigante filisteo con una honda y una piedra." },
+  { "evento": "Construcción del Templo de Salomón", "periodo": "~960 a.C.", "refs": ["1 Reyes 6"], "detalle": "Salomón edificó el primer Templo en Jerusalén con los tesoros de su padre David." },
+  { "evento": "Ministerio de Elías y Eliseo", "periodo": "~870-800 a.C.", "refs": ["1 Reyes 17-2 Reyes 13"], "detalle": "Dos profetas poderosos que hicieron milagros y denunciaron la idolatría." },
+  { "evento": "Caída de Samaria", "periodo": "722 a.C.", "refs": ["2 Reyes 17"], "detalle": "Asiria conquistó el reino del norte e Israel fue llevado al exilio." },
+  { "evento": "Daniel en el foso de los leones", "periodo": "~537 a.C.", "refs": ["Daniel 6"], "detalle": "Dios protegió a Daniel cuando fue echado a los leones por orar a Dios." },
+  { "evento": "Reina Ester salva a su pueblo", "periodo": "~470 a.C.", "refs": ["Ester 7-8"], "detalle": "La reina judía intercedió ante el rey y salvó a los judíos del exterminio." },
+  { "evento": "Nehemías reconstruye los muros", "periodo": "~445 a.C.", "refs": ["Nehemías 2-6"], "detalle": "Nehemías reconstruyó los muros de Jerusalén en 52 días a pesar de la oposición." },
+  { "evento": "Juan el Bautista predica", "periodo": "~26-27 d.C.", "refs": ["Mateo 3", "Lucas 3"], "detalle": "El precursor preparó el camino del Señor llamando al arrepentimiento junto al Jordán." },
+  { "evento": "El martirio de los apóstoles", "periodo": "~64-95 d.C.", "refs": ["Hechos 12", "2 Timoteo 4"], "detalle": "Pedro, Pablo y los demás apóstoles dieron su vida por el evangelio." }
 ]

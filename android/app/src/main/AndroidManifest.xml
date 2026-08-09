@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <application
         android:allowBackup="true"
@@ -22,7 +23,37 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
 
+            <!-- Deep links de la app (formsbiblicos://...). Los usan los
+                 botones Aceptar/Rechazar de la notificación nativa de un
+                 reto (NotificacionesService + DesafioActionReceiver). -->
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+                <data android:scheme="formsbiblicos" />
+            </intent-filter>
+
         </activity>
+
+        <!-- El servicio FCM del plugin no distingue botones (siempre reporta
+             actionId "tap"), así que se reemplaza por NotificacionesService,
+             que añade Aceptar/Rechazar a los retos recibidos en segundo plano. -->
+        <service
+            android:name="com.capacitorjs.plugins.pushnotifications.MessagingService"
+            android:exported="false"
+            tools:node="remove" />
+        <service
+            android:name=".NotificacionesService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <!-- Botones Aceptar/Rechazar de la notificación de retos -->
+        <receiver
+            android:name=".DesafioActionReceiver"
+            android:exported="false" />
 
         <provider
             android:name="androidx.core.content.FileProvider"

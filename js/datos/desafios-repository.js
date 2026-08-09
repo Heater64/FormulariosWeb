@@ -12,6 +12,47 @@
 
   window.desafiosRepository = {
 
+    /**
+     * Barre y cierra desafíos vencidos/abandonados para que ninguno quede
+     * abierto con el reloj contando para siempre. Se llama desde el poller de
+     * notificaciones (~cada minuto, con la app abierta) y desde el cierre de
+     * otros desafíos.
+     *
+     * Con la migración 038 aplicada: una sola RPC global (SECURITY DEFINER)
+     * cierra invitaciones expiradas, participantes vencidos (límite +30s),
+     * sin-límite abiertos hace >24h, y finaliza los que quedaron sin activos.
+     * Sin la migración (fallback): barre los desafíos en_curso del usuario
+     * con la RPC antigua y finaliza vía obtenerDesafio.
+     */
+    async sweepVencidos() {
+      if (!sb()) return 0;
+      let total = 0;
+      try {
+        const r = await sb().rpc('desafio_cerrar_vencidos');
+        if (!r.error) return Number(r.data) || 0;
+      } catch (e) { /* RPC aún no desplegada (BD sin 038): fallback abajo */ }
+
+      // Fallback pre-038: solo los desafíos en_curso de este usuario
+      try {
+        const usuario = window.store && window.store.obtener ? window.store.obtener('usuario') : null;
+        if (!usuario || !usuario.id) return 0;
+        const { data: ps } = await sb().from('desafio_participantes')
+          .select('desafio_id')
+          .eq('usuario_id', usuario.id)
+          .in('estado', ['aceptado', 'en_juego']);
+        const ids = [...new Set((ps || []).map(p => p.desafio_id))];
+        for (const id of ids) {
+          const { data: afectados } = await sb().rpc('desafio_abandonar_vencidos', { p_desafio_id: id });
+          if (Number(afectados) > 0) {
+            // Re-leer cierra el desafío si todos quedaron terminales
+            await this.obtenerDesafio(id);
+            total += Number(afectados);
+          }
+        }
+      } catch (e) { /* best-effort */ }
+      return total;
+    },
+
     // Mazos disponibles para desafiar: solo mazos globales (visibles para todos)
     async listarMazosDesafio() {
       if (!sb()) return [];
@@ -25,8 +66,14 @@
      * Crea un desafío con una sesión IDÉNTICA para todos los participantes
      * (snapshot serializado en `desafios.sesion`). Notifica a los invitados.
      */
-    async crearDesafio({ creador, participantes, mazo, sesion, tiempoLimiteSeg = 120, iniciarInmediato = false }) {
+    async crearDesafio({ creador, participantes, mazo, sesion, tiempoLimiteSeg = 120, iniciarInmediato = false, finalizaPrimerTerminado = false }) {
       if (!sb()) throw new Error('Sin conexión');
+      // null = desafío SIN límite de tiempo (solo termina al responder todo o
+      // si el servidor cierra el desafío). Cualquier valor con límite no baja
+      // de 1 minuto (requisito del producto). El modo carrera ("el primero
+      // que acabe") es por definición sin límite de tiempo: se cierra cuando
+      // el primer participante termina.
+      const limiteSeg = finalizaPrimerTerminado ? null : (tiempoLimiteSeg == null ? null : Math.max(60, Math.round(tiempoLimiteSeg)));
       const sesionSerializada = J().serializarSesion(sesion);
       // Se inserta siempre como 'invitacion': si iniciarInmediato, el inicio
       // se fija DESPUÉS vía RPC desafio_iniciar (031) para anclarlo al reloj
@@ -38,7 +85,13 @@
         mazo_nombre: mazo.nombre,
         estado: 'invitacion',
         sesion: sesionSerializada,
-        tiempo_limite_seg: tiempoLimiteSeg,
+        tiempo_limite_seg: limiteSeg,
+        // Modo carrera ("el primero que acabe"): el desafío se cierra cuando
+        // el PRIMER participante termina. Compatible con la BD anterior a la
+        // migración 036 (la columna no existe → INSERT fallaría si la
+        // incluimos a false... se incluye solo cuando es true para no romper
+        // instalaciones sin migrar).
+        ...(finalizaPrimerTerminado ? { finaliza_primer_terminado: true } : {}),
         iniciado_en: null,
         expira_en: new Date(Date.now() + EXPIRA_MIN * 60000).toISOString()
       }).select().single();
@@ -255,7 +308,10 @@
       }
 
       const { data: ps } = await sb().from('desafio_participantes').select('estado, usuario_id').eq('desafio_id', desafioId);
-      const todos = (ps || []).length >= 2 && (ps || []).every(p => p.estado === 'aceptado');
+      // Quien fue ELIMINADO por el creador ya no cuenta: el desafío puede
+      // arrancar con los que estén listos aunque ese invitado no haya respondido.
+      const activos = (ps || []).filter(p => p.estado !== 'eliminado');
+      const todos = activos.length >= 2 && activos.every(p => p.estado === 'aceptado');
       if (todos) {
         // Iniciar UNA sola vez. Preferimos la RPC desafio_iniciar (031):
         // ancla iniciado_en al reloj del SERVIDOR y es idempotente (un doble
@@ -285,7 +341,7 @@
             window.notificationService.emitir('desafio.iniciado', {
               desafioId,
               mazo: (dMazo && dMazo.mazo_nombre) || 'Memorización',
-              destinatarios: (ps || []).map(p => p.usuario_id).filter(id => id !== usuarioId)
+              destinatarios: activos.map(p => p.usuario_id).filter(id => id !== usuarioId)
             }).catch(() => {});
           }
         }
@@ -335,12 +391,107 @@
       await sb().from('desafio_participantes').update({ estado: 'abandonado' })
         .eq('desafio_id', desafioId).eq('usuario_id', usuarioId);
       const desafio = await this.obtenerDesafio(desafioId);
+      // Avisar al rival con un toast cuando se abandona a mitad de partida
+      // (solo en 'en_curso'; salir de la pantalla de espera/invitación no
+      // notifica: el desafío aún no ha empezado).
+      if (desafio && desafio.estado === 'en_curso' && window.notificationService) {
+        const rivales = (desafio.participantes || [])
+          .map(p => p.usuario_id).filter(id => id && id !== usuarioId);
+        if (rivales.length) {
+          let jugador = 'Un participante';
+          try {
+            const { data: pj } = await sb().from('perfiles').select('nombre_completo, username').eq('id', usuarioId).limit(1);
+            if (pj && pj[0]) jugador = pj[0].nombre_completo || pj[0].username;
+          } catch (e) {}
+          window.notificationService.emitir('desafio.abandonado', {
+            desafioId, mazo: desafio.mazo_nombre, jugador,
+            destinatarios: rivales
+          }).catch(() => {});
+        }
+      }
       if (desafio) await this._verificarFinalizado(desafio, desafio.participantes);
     },
 
     // Revancha: nuevo desafío con el mismo mazo y los mismos participantes
-    async revancha({ creador, mazo, sesion, participantes, tiempoLimiteSeg = 120 }) {
-      return this.crearDesafio({ creador, participantes, mazo, sesion, tiempoLimiteSeg });
+    async revancha({ creador, mazo, sesion, participantes, tiempoLimiteSeg = 120, finalizaPrimerTerminado = false }) {
+      return this.crearDesafio({ creador, participantes, mazo, sesion, tiempoLimiteSeg, finalizaPrimerTerminado });
+    },
+
+    /**
+     * El creador elimina a un invitado que NO ha respondido, para poder
+     * empezar con los que estén listos (estado 'eliminado', no se borra la
+     * fila: el invitado ve un aviso y no rompe la finalización del desafío).
+     * Solo desde 'invitado' (pantalla de espera, antes de arrancar) y solo
+     * si quedan al menos 2 participantes activos tras la eliminación — si
+     * solo queda 1, no se puede jugar: mejor salir del desafío.
+     */
+    async eliminarInvitado(desafioId, invitadoId) {
+      if (!sb()) return;
+      // Estado 'eliminado' (migración 037 aplicada): el expulsado ve un aviso
+      // amable. Si la BD aún no tiene esa migración (CHECK sin 'eliminado' →
+      // error 23514), cae al DELETE: la política RLS desafio_participantes_delete
+      // ya permite al creador borrar la fila, y el expulsado verá el aviso
+      // genérico "No participas en este desafío".
+      let ok = false;
+      try {
+        const r = await sb().from('desafio_participantes').update({ estado: 'eliminado' })
+          .eq('desafio_id', desafioId).eq('usuario_id', invitadoId)
+          .eq('estado', 'invitado');
+        ok = !r.error;
+      } catch (e) { /* best-effort */ }
+      if (!ok) {
+        try {
+          await sb().from('desafio_participantes').delete()
+            .eq('desafio_id', desafioId).eq('usuario_id', invitadoId)
+            .eq('estado', 'invitado');
+        } catch (e) { /* best-effort */ }
+      }
+
+      // Su notificación pendiente deja de ser accionable (no puede aceptar un
+      // reto del que ya fue expulsado).
+      try {
+        const { data: notifs } = await sb().from('notificaciones')
+          .select('id')
+          .eq('desafio_id', desafioId).eq('usuario_id', invitadoId)
+          .eq('tipo', 'desafio.creado').eq('estado', 'nueva')
+          .limit(1);
+        if (notifs && notifs[0]) {
+          await sb().from('notificaciones').update({ estado: 'completada' }).eq('id', notifs[0].id);
+        }
+      } catch (e) { /* best-effort */ }
+
+      // Si con los restantes todos aceptaron, el desafío arranca ya (sin
+      // esperar a nadie más).
+      const { data: ps } = await sb().from('desafio_participantes').select('estado, usuario_id').eq('desafio_id', desafioId);
+      const activos = (ps || []).filter(p => p.estado !== 'eliminado');
+      if (activos.length >= 2 && activos.every(p => p.estado === 'aceptado')) {
+        await this._iniciarSiListos(desafioId, activos);
+      }
+    },
+
+    /** Fija el inicio del desafío (RPC 031 idempotente) y avisa a los listos. */
+    async _iniciarSiListos(desafioId, activos) {
+      let eraInvitacion = false;
+      try {
+        const { data: dEstado } = await sb().from('desafios').select('estado').eq('id', desafioId).limit(1);
+        eraInvitacion = dEstado && dEstado[0] && dEstado[0].estado === 'invitacion';
+      } catch (e) { /* best-effort */ }
+      if (!eraInvitacion) return;
+      try {
+        await sb().rpc('desafio_iniciar', { p_desafio_id: desafioId });
+      } catch (e) {
+        // Fallback: BD sin 031 → fijar el inicio con el reloj local
+        const iniciadoEn = new Date(Date.now() + CUENTA_ATRAS_SEG * 1000).toISOString();
+        await sb().from('desafios').update({ estado: 'en_curso', iniciado_en: iniciadoEn }).eq('id', desafioId);
+      }
+      if (window.notificationService) {
+        const { data: dMazo } = await sb().from('desafios').select('mazo_nombre').eq('id', desafioId).single();
+        window.notificationService.emitir('desafio.iniciado', {
+          desafioId,
+          mazo: (dMazo && dMazo.mazo_nombre) || 'Memorización',
+          destinatarios: (activos || []).map(p => p.usuario_id)
+        }).catch(() => {});
+      }
     },
 
     // Devuelve true si el desafío quedó finalizado (para que el llamador
@@ -348,13 +499,46 @@
     // cuando varios flujos verifican la finalización en la misma llamada).
     async _verificarFinalizado(desafio, participantes) {
       if (!desafio || desafio.estado !== 'en_curso') return false;
-      const fin = (participantes || []).every(p =>
-        ['terminado', 'abandonado', 'rechazado'].includes(p.estado));
+      const lista = participantes || [];
+      const terminados = lista.filter(p => p.estado === 'terminado');
+      // Modo carrera ("el primero que acabe", migración 036): el desafío se
+      // cierra en cuanto ALGUIEN termina (no hace falta esperar a todos). Si
+      // todos abandonan sin que nadie termine, también se cierra (cancelado).
+      const esCarrera = desafio.finaliza_primer_terminado === true;
+      // 'eliminado' (expulsado por el creador en la espera) es terminal: si
+      // no se contara, un desafío que arrancó tras la expulsión nunca se
+      // cerraría (la fila del eliminado quedaría sin 'terminado' para siempre).
+      const terminales = ['terminado', 'abandonado', 'rechazado', 'eliminado'];
+      const fin = esCarrera
+        ? terminados.length >= 1 || lista.every(p => terminales.includes(p.estado))
+        : lista.every(p => terminales.includes(p.estado));
       if (fin) {
+        // Modo carrera: quien aún no terminó se cierra con su progreso REAL
+        // (correctas acumuladas en la columna progreso) y el tiempo
+        // transcurrido, para que la pantalla final muestre el resultado de
+        // los DOS jugadores (el rival no queda colgado ni a medias).
+        if (esCarrera) {
+          const inicioMs = new Date(desafio.iniciado_en).getTime();
+          const totalReferencia = (terminados[0] && terminados[0].total) || null;
+          for (const p of lista) {
+            if (p.estado === 'aceptado' || p.estado === 'en_juego') {
+              const prog = (p.progreso && typeof p.progreso === 'object') ? p.progreso : {};
+              const correctas = Number(prog.correctas) || 0;
+              const tiempoMs = (Number.isFinite(inicioMs) && inicioMs > 0) ? Math.max(0, Date.now() - inicioMs) : 0;
+              await sb().from('desafio_participantes').update({
+                estado: 'terminado',
+                correctas,
+                total: p.total || totalReferencia,
+                tiempo_ms: tiempoMs,
+                progreso: null
+              }).eq('desafio_id', desafio.id).eq('usuario_id', p.usuario_id);
+            }
+          }
+        }
         // Todos alcanzaron un estado terminal. Si nadie terminó (todos
         // abandonaron/rechazaron) el desafío también debe cerrarse: si no,
         // quedaría colgado en 'en_curso' para siempre sin resultados.
-        const hayResultado = (participantes || []).some(p => p.estado === 'terminado');
+        const hayResultado = terminados.length >= 1;
         try {
           await sb().from('desafios').update({
             estado: 'finalizado', finalizado_en: new Date().toISOString()

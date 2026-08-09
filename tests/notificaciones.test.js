@@ -189,6 +189,26 @@ describe('NotificationService.emitir()', () => {
     expect(resultado).toBeNull();
   });
 
+  test('desafio.abandonado se construye como toast con el nombre del jugador', async () => {
+    const insertadas = [];
+    global.notificacionesRepository = {
+      insertarFilas: async (filas) => { insertadas.push(...filas); return filas; },
+      listar: async () => [],
+      noLeidas: async () => 0,
+      contarPorCategoria: async () => ({})
+    };
+    const fila = await window.notificationService.emitir('desafio.abandonado', {
+      desafioId: 3, mazo: 'Salmos', jugador: 'Ana', destinatarios: ['u1']
+    });
+    expect(fila.titulo).toContain('Ana');
+    expect(insertadas[0].categoria).toBe('desafios');
+    // Aviso ligero: toast, no bandeja del sistema
+    const cfg = window.notificationService._configs['desafio.abandonado'];
+    expect(cfg.toast).toBe(true);
+    expect(cfg.nativo).toBe(false);
+    expect(cfg.acciones).toEqual(['ver']);
+  });
+
   test('construye título agrupado para desafío aceptado', async () => {
     const insertadas = [];
     global.notificacionesRepository = {
@@ -354,6 +374,127 @@ describe('NotificationService._presentar()', () => {
     delete global.notifications;
     window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'sistema' }) });
     expect(notificacionesLlamadas.length).toBe(0);
+  });
+
+  test('un desafío de flujo (aceptado/rechazado/finalizado, toast:true) se presenta como toast in-app', async () => {
+    const toasts = [];
+    global.notifications = {
+      vibrar: () => {},
+      notificar: async (opts) => { notificacionesLlamadas.push(opts); return {}; },
+      mostrarToast: (titulo, cuerpo, opts) => { toasts.push({ titulo, cuerpo, opts }); }
+    };
+    const marcadas = [];
+    window.notificationService._marcarVista = async (id) => { marcadas.push(id); };
+    // Desafío con nativo:false y toast:true → toast, nunca la bandeja/notificar
+    window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'desafios', nativo: false, toast: true }), fila: { id: 'n1' } });
+    expect(toasts.length).toBe(1);
+    expect(toasts[0].titulo).toBe('Título');
+    expect(notificacionesLlamadas.length).toBe(0);
+    // El toast ya se vio: la fila se marca 'vista' para no dejar el badge pegado
+    await new Promise(r => setTimeout(r, 0));
+    expect(marcadas).toEqual(['n1']);
+  });
+
+  test('un desafío con banner:true sigue usando el banner (no el toast)', () => {
+    const toasts = [];
+    global.notifications = {
+      vibrar: () => {},
+      notificar: async () => ({}),
+      mostrarToast: (titulo, cuerpo, opts) => { toasts.push({ titulo, cuerpo, opts }); }
+    };
+    let bannerLlamado = false;
+    const original = window.notificationService._mostrarBanner;
+    window.notificationService._mostrarBanner = () => { bannerLlamado = true; };
+    try {
+      window.notificationService._presentar({ ...base(), cfg: config({ categoria: 'desafios', nativo: false, toast: true, banner: true }) });
+      expect(bannerLlamado).toBe(true);
+      expect(toasts.length).toBe(0);
+    } finally {
+      window.notificationService._mostrarBanner = original;
+    }
+  });
+
+  test('el banner mapea las acciones string de la config a botones reales (aceptar/rechazar/ver)', () => {
+    const captured = {};
+    const el = {
+      id: '', style: { setProperty: () => {} }, className: '', parentNode: null,
+      set innerHTML(v) { captured.html = v; },
+      get innerHTML() { return captured.html; },
+      remove() {},
+      querySelector: () => ({ onclick: null }),
+      querySelectorAll: () => []
+    };
+    global.document = {
+      getElementById: () => null,
+      body: { appendChild: () => {} },
+      createElement: () => el,
+      querySelector: () => null,
+      querySelectorAll: () => []
+    };
+    global.Iconos = { render: (n) => `<i>${n}</i>`, actualizar: () => {} };
+    try {
+      const cfg = { categoria: 'desafios', acciones: ['aceptar', 'rechazar', 'ver'] };
+      window.notificationService._mostrarBanner({ cfg, titulo: 'Título', cuerpo: 'Cuerpo', url: '/d/1', datos: {}, fila: { id: 'n1' }, icono: 'sword' });
+      expect(captured.html).toContain('data-notif-accion="aceptar"');
+      expect(captured.html).toContain('data-notif-accion="rechazar"');
+      expect(captured.html).toContain('data-notif-accion="ver"');
+      expect(captured.html).toContain('Aceptar');
+      expect(captured.html).toContain('Rechazar');
+      // Regresión: antes salía data-notif-accion="undefined" y botones vacíos
+      expect(captured.html).not.toContain('undefined');
+    } finally {
+      delete global.Iconos;
+      delete global.document;
+    }
+  });
+
+  test('si ya hay un banner activo, el siguiente desafío se muestra como toast (no se descarta)', () => {
+    const toasts = [];
+    const marcadas = [];
+    const banner = { remove: () => {} };
+    global.document = {
+      getElementById: (id) => (id === 'notif-banner' ? banner : null),
+      body: { appendChild: () => {} },
+      querySelector: () => null,
+      querySelectorAll: () => []
+    };
+    global.notifications = {
+      vibrar: () => {},
+      notificar: async () => ({}),
+      mostrarToast: (titulo, cuerpo, opts) => { toasts.push({ titulo, cuerpo, opts }); }
+    };
+    window.notificationService._marcarVista = async (id) => { marcadas.push(id); };
+    window.notificationService._mostrarBanner({ ...base(), cfg: config({ categoria: 'desafios' }), titulo: 'Segundo desafío', fila: { id: 'n2' } });
+    expect(toasts.length).toBe(1);
+    expect(toasts[0].titulo).toBe('Segundo desafío');
+    delete global.document;
+  });
+});
+
+// ============================================================
+// _poll(): barrido de desafíos vencidos (cierre automático)
+// ============================================================
+describe('NotificationService._poll() — barrido de desafíos vencidos', () => {
+  test('llama sweepVencidos una vez por minuto (throttle)', async () => {
+    let sweeps = 0;
+    global.notificacionesRepository = {
+      listar: async () => [],
+      noLeidas: async () => 0,
+      contarPorCategoria: async () => ({})
+    };
+    global.desafiosRepository = { sweepVencidos: async () => { sweeps += 1; return 0; } };
+    const svc = window.notificationService;
+    // Primer poll: el throttle está a 0 → barre
+    svc._ultimoSweep = 0;
+    await svc._poll();
+    expect(sweeps).toBe(1);
+    // Segundo poll inmediato: dentro del minuto → NO vuelve a barrer
+    await svc._poll();
+    expect(sweeps).toBe(1);
+    // Pasado el minuto → barre de nuevo
+    svc._ultimoSweep = Date.now() - 61000;
+    await svc._poll();
+    expect(sweeps).toBe(2);
   });
 });
 

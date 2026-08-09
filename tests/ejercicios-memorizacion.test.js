@@ -150,4 +150,28 @@ describe('ejerciciosMemorizacion.construirSesion()', () => {
   test('sesión vacía devuelve lista vacía', () => {
     expect(J().construirSesion([], [])).toEqual([]);
   });
+
+  test('con un mazo grande toma tarjetas ALEATORIAS y únicas (no las primeras 10)', () => {
+    const tarjetas = Array.from({ length: 30 }, (_, i) => ({ ...versiculo, id: 't' + (i + 1) }));
+    const sesion = J().construirSesion(tarjetas, tarjetas, { maxTarjetas: 10 });
+    expect(sesion.length).toBe(10);
+    const ids = sesion.map(e => e.tarjetaId);
+    // Todas distintas (sin repetir la misma tarjeta)
+    expect(new Set(ids).size).toBe(10);
+    // Todas pertenecen al mazo
+    ids.forEach(id => expect(tarjetas.some(t => t.id === id)).toBe(true));
+  });
+
+  test('aleatorizar reordena de forma determinista con Math.random controlado', () => {
+    const originalRandom = Math.random;
+    try {
+      Math.random = () => 0;
+      const mezclada = J().aleatorizar(['a', 'b', 'c', 'd']);
+      // Fisher–Yates con rand=0: cada paso intercambia con la posición 0
+      expect(mezclada).toEqual(['b', 'c', 'd', 'a']);
+      expect(mezclada).not.toEqual(['a', 'b', 'c', 'd']);
+    } finally {
+      Math.random = originalRandom;
+    }
+  });
 });

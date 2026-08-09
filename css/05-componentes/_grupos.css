@@ -779,6 +779,85 @@
    MODAL: SELECCIÓN DE MAZO PARA DESAFIAR
    ======================================================================== */
 
+.grupos-tiempo {
+  padding: var(--espaciado-sm) 0;
+  border-top: 1px solid var(--color-borde);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.grupos-tiempo__titulo {
+  margin: 0 0 var(--espaciado-xs);
+  font-size: var(--fuente-xs);
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.grupos-tiempo__opciones {
+  display: flex;
+  gap: var(--espaciado-xs);
+}
+
+.grupos-tiempo__opcion {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  font: inherit;
+  font-size: var(--fuente-sm);
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+}
+
+.grupos-tiempo__opcion:has(input:checked) {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+  color: var(--color-texto-acento);
+}
+
+.grupos-tiempo__opcion input {
+  accent-color: var(--color-acento);
+}
+
+.grupos-tiempo__minutos {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+  margin-top: var(--espaciado-sm);
+}
+
+.grupos-tiempo__minutos[hidden] {
+  display: none;
+}
+
+.grupos-tiempo__campo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  font-size: var(--fuente-sm);
+  color: var(--color-texto-secundario);
+}
+
+.grupos-tiempo__campo input {
+  width: 72px;
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  font: inherit;
+  font-size: var(--fuente-sm);
+  background: var(--color-fondo);
+  color: var(--color-texto);
+}
+
+.grupos-tiempo__ayuda {
+  margin: 0;
+  font-size: var(--fuente-xs);
+  color: var(--color-texto-terciario);
+}
+
 .grupos-mazos {
   display: flex;
   flex-direction: column;

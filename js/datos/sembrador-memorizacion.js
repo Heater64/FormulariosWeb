@@ -26,7 +26,40 @@
     { ref: 'Juan 14:6', texto: 'Jesús le dijo: Yo soy el camino, y la verdad, y la vida.' },
     { ref: 'Isaías 40:31', texto: 'Pero los que esperan a Jehová tendrán nuevas fuerzas; levantarán alas como las águilas.' },
     { ref: 'Efesios 2:8', texto: 'Porque por gracia sois salvos por medio de la fe; y esto no de vosotros, pues es don de Dios.' },
-    { ref: 'Salmo 46:1', texto: 'Dios es nuestro amparo y fortaleza, nuestro pronto auxilio en las tribulaciones.' }
+    { ref: 'Salmo 46:1', texto: 'Dios es nuestro amparo y fortaleza, nuestro pronto auxilio en las tribulaciones.' },
+    { ref: 'Salmo 34:8', texto: 'Gustad, y ved que es bueno Jehová; dichoso el hombre que confía en él.' },
+    { ref: 'Mateo 6:33', texto: 'Mas buscad primeramente el reino de Dios y su justicia, y todas estas cosas os serán añadidas.' },
+    { ref: 'Salmo 27:1', texto: 'Jehová es mi luz y mi salvación; ¿de quién temeré? Jehová es la fortaleza de mi vida; ¿de quién he de atemorizarme?' },
+    { ref: 'Romanos 12:2', texto: 'No os conforméis a este siglo, sino transformaos por medio de la renovación de vuestro entendimiento.' },
+    { ref: 'Gálatas 5:22', texto: 'Mas el fruto del Espíritu es amor, gozo, paz, paciencia, benignidad, bondad, fe.' },
+    { ref: 'Juan 14:27', texto: 'La paz os dejo, mi paz os doy; yo no os la doy como el mundo la da.' },
+    { ref: 'Salmo 121:1-2', texto: 'Alzaré mis ojos a los montes; ¿de dónde vendrá mi socorro? Mi socorro viene de Jehová, que hizo los cielos y la tierra.' },
+    { ref: 'Proverbios 22:6', texto: 'Instruye al niño en su camino, y aun cuando fuere viejo no se apartará de él.' },
+    { ref: '1 Juan 1:9', texto: 'Si confesamos nuestros pecados, él es fiel y justo para perdonar nuestros pecados y limpiarnos de toda maldad.' },
+    { ref: 'Mateo 5:16', texto: 'Así alumbre vuestra luz delante de los hombres, para que vean vuestras buenas obras y glorifiquen a vuestro Padre.' },
+    { ref: 'Hebreos 11:1', texto: 'Es, pues, la fe la certeza de lo que se espera, la convicción de lo que no se ve.' },
+    { ref: 'Filipenses 4:6', texto: 'Por nada estéis afanosos, sino sean conocidas vuestras peticiones delante de Dios en toda oración y ruego, con acción de gracias.' },
+    { ref: '2 Timoteo 3:16', texto: 'Toda la Escritura es inspirada por Dios, y útil para enseñar, para redargüir, para corregir, para instruir en justicia.' },
+    { ref: 'Mateo 28:19', texto: 'Por tanto, id, y haced discípulos a todas las naciones, bautizándolos en el nombre del Padre, y del Hijo, y del Espíritu Santo.' }
+  ];
+
+  // ── Tarjetas extra del mazo "Desafío Bíblico" (juego de desafíos) ──
+  const DESAFIO_BIBLICO = [
+    { tipo: 'versiculo', pregunta: 'Juan 14:6', respuesta: 'Jesús le dijo: Yo soy el camino, y la verdad, y la vida; nadie viene al Padre sino por mí.', referencia: 'Juan 14:6', explicacion: 'Jesús se presentó como el único camino al Padre.' },
+    { tipo: 'versiculo', pregunta: 'Romanos 8:28', respuesta: 'Y sabemos que a los que aman a Dios, todas las cosas les ayudan a bien.', referencia: 'Romanos 8:28', explicacion: 'Dios obra todas las cosas para el bien de los que le aman.' },
+    { tipo: 'versiculo', pregunta: 'Mateo 11:28', respuesta: 'Venid a mí todos los que estáis trabajados y cargados, y yo os haré descansar.', referencia: 'Mateo 11:28', explicacion: 'Jesús ofrece descanso a los cansados.' },
+    { tipo: 'versiculo', pregunta: 'Jeremías 29:11', respuesta: 'Porque yo sé los pensamientos que tengo acerca de vosotros, pensamientos de paz, y no de mal.', referencia: 'Jeremías 29:11', explicacion: 'Dios tiene planes de bien para su pueblo.' },
+    { tipo: 'multiple', pregunta: '¿Cuántos discípulos eligió Jesús?', respuesta: '12' },
+    { tipo: 'multiple', pregunta: '¿Cuántos libros tiene el Nuevo Testamento?', respuesta: '27' },
+    { tipo: 'multiple', pregunta: '¿Quién traicionó a Jesús?', respuesta: 'Judas Iscariote' },
+    { tipo: 'multiple', pregunta: '¿Cuántos días estuvo Jesús en el desierto siendo tentado?', respuesta: '40' },
+    { tipo: 'escrita', pregunta: '¿En qué ciudad nació Jesús?', respuesta: 'Belén' },
+    { tipo: 'escrita', pregunta: '¿Quién fue el primer mártir cristiano?', respuesta: 'Esteban' },
+    { tipo: 'escrita', pregunta: '¿Cómo se llamaba la esposa de Abraham?', respuesta: 'Sara' },
+    { tipo: 'escrita', pregunta: '¿Qué profeta fue tragado por un gran pez?', respuesta: 'Jonás' },
+    { tipo: 'verdadero_falso', pregunta: 'Moisés recibió los Diez Mandamientos en el monte Sinaí.', respuesta: 'true', explicacion: 'Éxodo 20 relata la entrega de la Ley en el Sinaí.' },
+    { tipo: 'verdadero_falso', pregunta: 'La Biblia tiene 60 libros.', respuesta: 'false', explicacion: 'La Biblia protestante tiene 66 libros.' },
+    { tipo: 'verdadero_falso', pregunta: 'Pedro negó a Jesús tres veces.', respuesta: 'true', explicacion: 'Mateo 26:69-75 narra las tres negaciones de Pedro.' }
   ];
 
   // ── Mazos temáticos generados desde data/*.json ──
@@ -217,6 +250,23 @@
         });
         return tarjetas;
       }
+    },
+    {
+      nombre: 'Desafío Bíblico',
+      icono: 'sword',
+      color: '#F59E0B',
+      descripcion: 'Preguntas rápidas de cultura bíblica para tus desafíos: versículos, datos y curiosidades.',
+      generar: () => DESAFIO_BIBLICO.map(t => ({
+        tipo: t.tipo,
+        pregunta: t.pregunta,
+        respuesta: t.respuesta,
+        texto: t.tipo === 'versiculo' ? t.respuesta : '',
+        referencia: t.referencia || '',
+        explicacion: t.explicacion || '',
+        libro: (t.referencia ? t.referencia.split(' ')[0].replace(/\d+$/, '') : ''),
+        capitulo: (t.referencia ? (t.referencia.match(/\s(\d+):/) || [])[1] || '' : ''),
+        versiculo: (t.referencia ? (t.referencia.match(/:(\d+)/) || [])[1] || '' : '')
+      }))
     }
   ];
 
@@ -268,7 +318,8 @@
       'Parábolas': parabolas,
       'Curiosidades': curiosidades,
       'Objetos': objetos,
-      'Profecías': profecias
+      'Profecías': profecias,
+      'Desafío Bíblico': DESAFIO_BIBLICO
     };
 
     let orden = 0;
@@ -278,28 +329,11 @@
         resumen.omitidos.push(`${def.nombre} (sin datos)`);
         continue;
       }
-      const existente = await _existeMazoGlobal(def.nombre);
-      if (existente) { resumen.omitidos.push(`${def.nombre} (ya existe)`); continue; }
 
-      // Crear el mazo global
-      const { data: mazo, error: errMazo } = await sb().from('mazos_memorizacion').insert({
-        usuario_id: null,
-        es_global: true,
-        activo: true,
-        nombre: def.nombre,
-        descripcion: def.descripcion,
-        icono: def.icono,
-        color: def.color,
-        orden: orden++,
-        creado_por: creadoPor || null
-      }).select().single();
-      if (errMazo || !mazo) { resumen.omitidos.push(`${def.nombre} (error)`); continue; }
-
-      // Generar y crear las tarjetas (en lotes de 20)
+      // Generar las tarjetas del mazo
       const tarjetas = def.generar(fuente) || [];
       const filas = tarjetas.map((t, i) => ({
         usuario_id: null,
-        mazo_id: mazo.id,
         tipo: t.tipo,
         pregunta: t.pregunta || '',
         respuesta: t.respuesta || '',
@@ -314,15 +348,69 @@
         activa: true,
         creado_por: creadoPor || null
       }));
-      for (let i = 0; i < filas.length; i += 20) {
-        const { error } = await sb().from('tarjetas_memorizacion').insert(filas.slice(i, i + 20));
-        if (error) { resumen.omitidos.push(`${def.nombre} (error al insertar tarjetas)`); break; }
+
+      const existente = await _existeMazoGlobal(def.nombre);
+      if (!existente) {
+        // Crear el mazo global nuevo
+        const { data: mazo, error: errMazo } = await sb().from('mazos_memorizacion').insert({
+          usuario_id: null,
+          es_global: true,
+          activo: true,
+          nombre: def.nombre,
+          descripcion: def.descripcion,
+          icono: def.icono,
+          color: def.color,
+          orden: orden++,
+          creado_por: creadoPor || null
+        }).select().single();
+        if (errMazo || !mazo) { resumen.omitidos.push(`${def.nombre} (error al crear mazo)`); continue; }
+        resumen.mazos += 1;
+        await _insertarTarjetas(mazo.id, filas, resumen, def.nombre);
+        // Avisar del mazo nuevo (grupo + admin/owner) como al crear uno a mano
+        if (window.notificationService) {
+          window.notificationService.emitir('mazo.nuevo', {
+            mazoId: mazo.id,
+            nombre: def.nombre,
+            adminId: creadoPor,
+            datos: { mazo_id: mazo.id, mazo_nombre: def.nombre }
+          }).catch(() => {});
+        }
+        continue;
       }
-      resumen.mazos += 1;
-      resumen.tarjetas += filas.length;
+
+      // Mazo ya existente: refrescar metadatos y completar solo las tarjetas que falten (top-up idempotente)
+      await sb().from('mazos_memorizacion')
+        .update({ descripcion: def.descripcion, icono: def.icono, color: def.color })
+        .eq('id', existente);
+      const { data: actuales } = await sb().from('tarjetas_memorizacion')
+        .select('pregunta, respuesta')
+        .eq('mazo_id', existente);
+      const clavesExistentes = new Set((actuales || []).map(t => (t.pregunta || '') + '\u0001' + (t.respuesta || '')));
+      const nuevas = filas.filter(f => !clavesExistentes.has((f.pregunta || '') + '\u0001' + (f.respuesta || '')));
+      if (nuevas.length === 0) {
+        resumen.omitidos.push(`${def.nombre} (ya completo)`);
+        continue;
+      }
+      const { data: maxOrden } = await sb().from('tarjetas_memorizacion')
+        .select('orden')
+        .eq('mazo_id', existente)
+        .order('orden', { ascending: false })
+        .limit(1);
+      const baseOrden = (maxOrden && maxOrden.length ? maxOrden[0].orden : 0) + 1;
+      nuevas.forEach((f, i) => { f.orden = baseOrden + i; });
+      await _insertarTarjetas(existente, nuevas, resumen, def.nombre);
     }
 
     return resumen;
+  }
+
+  async function _insertarTarjetas(mazoId, filas, resumen, nombreMazo) {
+    const conMazo = filas.map(f => ({ ...f, mazo_id: mazoId }));
+    for (let i = 0; i < conMazo.length; i += 20) {
+      const { error } = await sb().from('tarjetas_memorizacion').insert(conMazo.slice(i, i + 20));
+      if (error) { resumen.omitidos.push(`${nombreMazo} (error al insertar tarjetas)`); return; }
+    }
+    resumen.tarjetas += conMazo.length;
   }
 
   window.sembradorMemorizacion = { sembrarTodo };

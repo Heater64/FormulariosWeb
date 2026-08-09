@@ -330,6 +330,98 @@ describe('_alPulsar()', () => {
 });
 
 // ============================================================
+// Deep links de la notificación nativa de un reto (Aceptar/Rechazar)
+// ============================================================
+describe('_alAbrirDeepLink() / _responderReto()', () => {
+  test('aceptar responde la invitación, marca completada y navega al desafío', async () => {
+    const respuestas = [];
+    const estados = [];
+    const navegadas = [];
+    global.supabaseClient = {};
+    global.desafiosRepository = {
+      responderInvitacion: async (id, uid, aceptar) => { respuestas.push([id, uid, aceptar]); return { empezado: false }; }
+    };
+    global.notificacionesRepository = { actualizarEstado: async (id, est) => estados.push([id, est]) };
+    global.router = { navegar: (r) => navegadas.push(r) };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/aceptar?notifId=n5');
+    await new Promise((r) => setTimeout(r, 700));
+    expect(respuestas).toEqual([['abc-123', 'u1', true]]);
+    expect(estados).toEqual([['n5', 'completada']]);
+    expect(navegadas).toEqual(['/desafio/abc-123']);
+  });
+
+  test('rechazar responde con false y muestra la alerta sin navegar', async () => {
+    const respuestas = [];
+    const alertas = [];
+    global.supabaseClient = {};
+    global.desafiosRepository = {
+      responderInvitacion: async (id, uid, aceptar) => { respuestas.push([id, uid, aceptar]); return { empezado: false }; }
+    };
+    global.helpers = { mostrarAlerta: (t, tipo) => alertas.push([t, tipo]) };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/rechazar?notifId=n5');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(respuestas).toEqual([['abc-123', 'u1', false]]);
+    expect(alertas).toEqual([['Has rechazado el desafío.', 'info']]);
+  });
+
+  test('sin sesión guarda pendiente y lo responde al procesar (arranque en frío)', async () => {
+    const respuestas = [];
+    global.store = { obtener: () => null };
+    global.supabaseClient = {};
+    global.desafiosRepository = {
+      responderInvitacion: async (id, uid, aceptar) => { respuestas.push([id, uid, aceptar]); return {}; }
+    };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/aceptar?notifId=n5');
+    expect(s._accionPendiente).toEqual({
+      desafioId: 'abc-123', accion: 'aceptar', notifId: 'n5',
+      url: 'formsbiblicos://desafio/abc-123/aceptar?notifId=n5'
+    });
+    global.store = { obtener: () => ({ id: 'u1' }) };
+    s._procesarAccionPendiente();
+    await new Promise((r) => setTimeout(r, 0));
+    expect(respuestas).toEqual([['abc-123', 'u1', true]]);
+  });
+
+  test('la misma URL no se procesa dos veces (dedupe de getLaunchUrl)', () => {
+    const respuestas = [];
+    global.supabaseClient = {};
+    global.desafiosRepository = {
+      responderInvitacion: async (id, uid, aceptar) => { respuestas.push([id, uid, aceptar]); return {}; }
+    };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/aceptar');
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/aceptar');
+    expect(respuestas).toEqual([['abc-123', 'u1', true]]);
+  });
+
+  test('deep links que no son de reto se ignoran', () => {
+    const navegadas = [];
+    global.router = { navegar: (r) => navegadas.push(r) };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://otra-cosa/x');
+    s._alAbrirDeepLink('https://ejemplo.com');
+    expect(navegadas).toEqual([]);
+  });
+
+  test('sin Supabase listo deja la respuesta pendiente para reintentar', async () => {
+    const respuestas = [];
+    global.supabaseClient = null;
+    global.desafiosRepository = { responderInvitacion: async () => { respuestas.push('no debe llamarse'); return {}; } };
+    const s = new PushService();
+    s._alAbrirDeepLink('formsbiblicos://desafio/abc-123/aceptar');
+    await new Promise((r) => setTimeout(r, 0));
+    expect(respuestas).toEqual([]);
+    expect(s._accionPendiente).toEqual({
+      desafioId: 'abc-123', accion: 'aceptar', notifId: null,
+      url: 'formsbiblicos://desafio/abc-123/aceptar'
+    });
+  });
+});
+
+// ============================================================
 // Logout: desactivación de tokens
 // ============================================================
 describe('desactivarTokens()', () => {

@@ -138,6 +138,10 @@
       if (!esCapacitor()) return false;
       this._capacitor = true;
       await this._instalarEscuchas();
+      // Arranque en frío: un deep link de Aceptar/Rechazar (notificación
+      // nativa de un reto) puede venir en el intent de lanzamiento antes de
+      // que appUrlOpen tenga listeners; getLaunchUrl lo recupera siempre.
+      await this._procesarDeepLinkLanzamiento();
       const usuario = this._usuario();
       if (usuario && usuario.id) {
         this._usuarioId = usuario.id;
@@ -196,6 +200,16 @@
         if (LocalNotifications && LocalNotifications.addListener) {
           await LocalNotifications.addListener('localNotificationActionPerformed', (n) => {
             this._alPulsar(n);
+          });
+        }
+        // Deep links (formsbiblicos://...): al pulsar Aceptar/Rechazar en la
+        // notificación NATIVA de un reto (app en segundo plano), la app se
+        // abre con formsbiblicos://desafio/{id}/{accion} y aquí se responde
+        // la invitación sin que el usuario tenga que navegar ni escribir.
+        const App = this._plugin('App');
+        if (App && App.addListener) {
+          await App.addListener('appUrlOpen', (datos) => {
+            this._alAbrirDeepLink(datos && datos.url);
           });
         }
       } catch (e) {
@@ -340,11 +354,87 @@
       }
     }
 
+    /** Deep link del intent de lanzamiento (arranque en frío). */
+    async _procesarDeepLinkLanzamiento() {
+      try {
+        const App = this._plugin('App');
+        if (!App || typeof App.getLaunchUrl !== 'function') return;
+        const info = await App.getLaunchUrl();
+        if (info && info.url) this._alAbrirDeepLink(info.url);
+      } catch (e) {
+        console.warn('[Push] No se pudo leer el deep link de lanzamiento:', e.message || e);
+      }
+    }
+
+    /**
+     * Deep link formsbiblicos://desafio/{id}/{accion}?notifId=... (botones
+     * Aceptar/Rechazar de la notificación nativa de un reto). Responde la
+     * invitación con la sesión del usuario; si aún no hay sesión (arranque
+     * en frío), lo deja pendiente para procesarlo al restaurarla.
+     */
+    _alAbrirDeepLink(url) {
+      if (typeof url !== 'string' || !url) return;
+      // Dedupe por URL: getLaunchUrl devuelve el mismo deep link en cada
+      // iniciar() (arranque en frío) y appUrlOpen puede repetirlo; un mismo
+      // enlace solo debe procesarse una vez por sesión.
+      if (this._ultimoDeepLink === url) return;
+      this._ultimoDeepLink = url;
+      const m = url.match(/^formsbiblicos:\/\/desafio\/([^/]+)\/([a-z]+)(?:\?(.*))?$/i);
+      if (!m || (m[2].toLowerCase() !== 'aceptar' && m[2].toLowerCase() !== 'rechazar')) return;
+      const desafioId = decodeURIComponent(m[1]);
+      const accion = m[2].toLowerCase();
+      let notifId = null;
+      if (m[3]) {
+        try { notifId = new URLSearchParams(m[3]).get('notifId') || null; } catch (e) { /* ignorar */ }
+      }
+      const usuario = this._usuario();
+      if (usuario && usuario.id) {
+        this._responderReto(desafioId, accion, notifId, url);
+      } else {
+        // Arranque en frío: la sesión aún no está restaurada.
+        this._accionPendiente = { desafioId, accion, notifId, url };
+      }
+    }
+
+    /** Responde el reto desde el botón de la notificación nativa. */
+    async _responderReto(desafioId, accion, notifId, url) {
+      const usuario = this._usuario();
+      if (!usuario || !usuario.id) return;
+      const repo = root.desafiosRepository;
+      if (!repo || typeof repo.responderInvitacion !== 'function' || !root.supabaseClient) {
+        // Supabase aún no está listo (arranque): reintentar al procesar pendientes.
+        this._accionPendiente = { desafioId, accion, notifId, url };
+        return;
+      }
+      try {
+        await repo.responderInvitacion(desafioId, usuario.id, accion === 'aceptar');
+        if (notifId && root.notificacionesRepository && root.notificacionesRepository.actualizarEstado) {
+          root.notificacionesRepository.actualizarEstado(notifId, 'completada').catch(() => {});
+        }
+        if (root.router) {
+          if (accion === 'aceptar') {
+            setTimeout(() => root.router.navegar('/desafio/' + desafioId), 600);
+          } else if (root.helpers && root.helpers.mostrarAlerta) {
+            root.helpers.mostrarAlerta('Has rechazado el desafío.', 'info');
+          }
+        }
+      } catch (e) {
+        console.warn('[Push] No se pudo responder el reto desde la notificación:', e.message || e);
+        if (root.helpers && root.helpers.mostrarAlerta) {
+          root.helpers.mostrarAlerta('No se pudo responder el reto: ' + e.message, 'error');
+        }
+      }
+    }
+
     _procesarAccionPendiente() {
       if (!this._accionPendiente) return;
-      const { url } = this._accionPendiente;
+      const pendiente = this._accionPendiente;
       this._accionPendiente = null;
-      if (url && root.router) setTimeout(() => root.router.navegar(url), 600);
+      if (pendiente.desafioId) {
+        this._responderReto(pendiente.desafioId, pendiente.accion, pendiente.notifId, pendiente.url);
+        return;
+      }
+      if (pendiente.url && root.router) setTimeout(() => root.router.navegar(pendiente.url), 600);
     }
 
     // ---- Envío (desde notification-service, para destinatarios ajenos) ----

@@ -182,20 +182,38 @@ function aplanarDatos(notif) {
 
 function mensajeFcm(token, notif, accessToken) {
   const data = aplanarDatos(notif);
+
+  // Los RETOS (desafio.creado) viajan como mensaje SOLO-DATOS: en segundo
+  // plano FCM no llama a onMessageReceived cuando el mensaje lleva bloque
+  // `notification` (lo muestra el sistema sin botones). Sin ese bloque, el
+  // servicio nativo NotificacionesService construye la notificación con los
+  // botones Aceptar/Rechazar, y al pulsarlos la app responde el reto sin
+  // abrirse manualmente.
+  const esReto = String(notif.tipo || "") === "desafio.creado";
+
   const mensaje = {
     message: {
       token,
-      notification: {
-        title: String(notif.titulo || "FormsBiblicos").slice(0, 200),
-        body: String(notif.cuerpo || "").slice(0, 500),
-      },
       data,
+      ...(esReto
+        ? {}
+        : {
+            notification: {
+              title: String(notif.titulo || "FormsBiblicos").slice(0, 200),
+              body: String(notif.cuerpo || "").slice(0, 500),
+            },
+          }),
       android: {
-        notification: {
-          channelId: canalDe(notif.categoria),
-          priority: "high",
-          tag: notif.id ? String(notif.id) : undefined,
-        },
+        priority: "high",
+        ...(esReto
+          ? {}
+          : {
+              notification: {
+                channelId: canalDe(notif.categoria),
+                priority: "high",
+                tag: notif.id ? String(notif.id) : undefined,
+              },
+            }),
       },
     },
   };

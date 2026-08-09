@@ -104,7 +104,7 @@
       // En la página standalone no hay rutas registradas: usar hook si existe, si no router.
       window.adminComunes.volver(this);
     },
-    async montar(raiz) {
+    async montar(raiz, contextoVista) {
       const usuario = store.obtener('usuario');
       if (!usuario || !['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase())) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" onclick="window.vistaPanelAdmin._volver()">Volver</button></div>'; return;
@@ -143,6 +143,15 @@
         this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, usuario };
         this._nivelActivo = 'admin';
         this._tabActivo = 'centro';
+        // Deep link desde Memorización: /admin?tab=memorizacion&mazo=ID abre la gestión del mazo
+        const q = contextoVista && contextoVista.query;
+        const qVal = (k) => (q && typeof q.get === 'function') ? q.get(k) : (q ? q[k] : null);
+        const tabQ = qVal('tab');
+        if (tabQ) {
+          this._tabActivo = tabQ;
+          const mazoQ = qVal('mazo');
+          if (mazoQ && this._tabActivo === 'memorizacion') this._mazoDeepLink = mazoQ;
+        }
         this._pagUsuarios = 1;
         this._porPagina = 50;
         this._buscarUsuarios = '';
@@ -667,7 +676,13 @@
       ]);
       this._datos.mazosMem = mazos;
       this._datos.tarjetasMem = tarjetas;
-      this._mazoMemActivo = null;
+      if (this._mazoDeepLink) {
+        // Deep link desde Memorización: abrir la gestión de ese mazo concreto
+        this._mazoMemActivo = this._mazoDeepLink;
+        this._mazoDeepLink = null;
+      } else {
+        this._mazoMemActivo = null;
+      }
     },
 
     _renderMemorizacion() {

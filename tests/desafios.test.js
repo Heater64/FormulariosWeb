@@ -155,6 +155,42 @@ describe('crearDesafio', () => {
     });
     expect(emitidos.length).toBe(0);
   });
+
+  test('tiempoLimiteSeg null → desafío SIN límite de tiempo (INSERT con NULL)', async () => {
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'insert') return { data: { id: 'd4', estado: 'invitacion' }, error: null };
+        return { data: null, error: null };
+      }
+    });
+    await window.desafiosRepository.crearDesafio({
+      creador: { id: 'u1' },
+      participantes: [{ usuario_id: 'u2' }],
+      mazo: { id: 'm1', nombre: 'Salmos' },
+      sesion: [],
+      tiempoLimiteSeg: null
+    });
+    const ins = supabase.llamadas.find(l => l.tabla === 'desafios' && l.op === 'insert');
+    expect(ins.valor.tiempo_limite_seg).toBeNull();
+  });
+
+  test('el límite de tiempo nunca baja de 1 minuto (mínimo 60 s)', async () => {
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'insert') return { data: { id: 'd5', estado: 'invitacion' }, error: null };
+        return { data: null, error: null };
+      }
+    });
+    await window.desafiosRepository.crearDesafio({
+      creador: { id: 'u1' },
+      participantes: [{ usuario_id: 'u2' }],
+      mazo: { id: 'm1', nombre: 'Salmos' },
+      sesion: [],
+      tiempoLimiteSeg: 30 // por debajo del mínimo → se eleva a 60
+    });
+    const ins = supabase.llamadas.filter(l => l.tabla === 'desafios' && l.op === 'insert').pop();
+    expect(ins.valor.tiempo_limite_seg).toBe(60);
+  });
 });
 
 describe('terminarJugador (idempotencia y doble envío)', () => {
@@ -515,5 +551,422 @@ describe('revancha', () => {
     // Los invitados vuelven a ser invitados (no aceptados)
     const insertPart = supabase.llamadas.find(l => l.tabla === 'desafio_participantes' && l.op === 'insert');
     expect(insertPart.valor.find(f => f.usuario_id === 'u2').estado).toBe('invitado');
+  });
+});
+
+// ============================================================
+// abandonar: notificación al rival (desafio.abandonado)
+// ============================================================
+describe('abandonar (notificación al rival)', () => {
+  test('abandonar a mitad de partida avisa al rival con un toast', async () => {
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'en_curso', iniciado_en: '2026-08-08T10:00:00Z', tiempo_limite_seg: 120, mazo_nombre: 'Salmos' }], error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return {
+            data: [
+              { id: 'p1', desafio_id: 'd1', usuario_id: 'u1', estado: 'en_juego' },
+              { id: 'p2', desafio_id: 'd1', usuario_id: 'u2', estado: 'en_juego' }
+            ],
+            error: null
+          };
+        }
+        if (tabla === 'perfiles' && op === 'select') {
+          return { data: [{ id: 'u1', nombre_completo: 'Ana', username: 'ana' }], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_abandonar_vencidos: () => ({ data: 0 }) }
+    });
+    await window.desafiosRepository.abandonar('d1', 'u1');
+    const abandonos = emitidos.filter(e => e.nombre === 'desafio.abandonado');
+    expect(abandonos.length).toBe(1);
+    // Solo el rival recibe el aviso (nunca el que abandona)
+    expect(abandonos[0].payload.destinatarios).toEqual(['u2']);
+    expect(abandonos[0].payload.jugador).toBe('Ana');
+    expect(abandonos[0].payload.mazo).toBe('Salmos');
+  });
+
+  test('abandonar desde la pantalla de espera (invitación) NO notifica', async () => {
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'invitacion', mazo_nombre: 'Salmos' }], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_abandonar_vencidos: () => ({ data: 0 }) }
+    });
+    await window.desafiosRepository.abandonar('d1', 'u1');
+    expect(emitidos.filter(e => e.nombre === 'desafio.abandonado').length).toBe(0);
+  });
+});
+
+// ============================================================
+// eliminarInvitado: expulsar a quien no responde y empezar con los listos
+// ============================================================
+describe('eliminarInvitado (expulsar a quien no responde)', () => {
+  test('marca eliminado (solo desde invitado), completa su notificación y arranca con los listos', async () => {
+    const notifUpdates = [];
+    let rpcIniciar = null;
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'notificaciones' && op === 'select') {
+          return { data: [{ id: 'n3' }], error: null };
+        }
+        if (tabla === 'notificaciones' && op === 'update') notifUpdates.push(q._valor);
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          // Tras la expulsión: creador + rival listos + el eliminado
+          return { data: [
+            { usuario_id: 'u1', estado: 'aceptado' },
+            { usuario_id: 'u2', estado: 'aceptado' },
+            { usuario_id: 'u3', estado: 'eliminado' }
+          ], error: null };
+        }
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'invitacion', mazo_nombre: 'Salmos' }], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_iniciar: (params) => { rpcIniciar = params; return { data: '2026-08-08T12:00:00Z' }; } }
+    });
+    await window.desafiosRepository.eliminarInvitado('d1', 'u3');
+    // Expulsado con filtro de estado 'invitado' (nunca a quien ya aceptó/jugó)
+    const expulsiones = supabase.llamadas.filter(l => l.tabla === 'desafio_participantes' && l.op === 'update' && l.valor && l.valor.estado === 'eliminado');
+    expect(expulsiones.length).toBe(1);
+    expect(expulsiones[0].filtros).toEqual([['desafio_id', 'd1'], ['usuario_id', 'u3'], ['estado', 'invitado']]);
+    // Notificación del expulsado completada (ya no puede aceptar)
+    expect(notifUpdates).toEqual([{ estado: 'completada' }]);
+    // Arrancó con los que estaban listos
+    expect(rpcIniciar).toEqual({ p_desafio_id: 'd1' });
+    expect(emitidos.filter(e => e.nombre === 'desafio.iniciado').length).toBe(1);
+    expect(emitidos.find(e => e.nombre === 'desafio.iniciado').payload.destinatarios).toEqual(['u1', 'u2']);
+  });
+
+  test('si la BD no tiene la migración 037 (CHECK sin eliminado), borra la fila y arranca igual', async () => {
+    let rpcIniciar = null;
+    const deletes = [];
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'desafio_participantes' && op === 'update') {
+          // CHECK constraint aún sin 'eliminado' (migración 037 no aplicada)
+          return { error: { code: '23514', message: 'violates check constraint' } };
+        }
+        if (tabla === 'desafio_participantes' && op === 'delete') {
+          deletes.push(q._filtros);
+          return { data: null, error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return { data: [
+            { usuario_id: 'u1', estado: 'aceptado' },
+            { usuario_id: 'u2', estado: 'aceptado' }
+          ], error: null };
+        }
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'invitacion', mazo_nombre: 'Salmos' }], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_iniciar: (params) => { rpcIniciar = params; return { data: '2026-08-08T12:00:00Z' }; } }
+    });
+    await window.desafiosRepository.eliminarInvitado('d1', 'u3');
+    // Borrado con filtro de estado 'invitado'
+    expect(deletes.length).toBe(1);
+    expect(deletes[0]).toEqual([['desafio_id', 'd1'], ['usuario_id', 'u3'], ['estado', 'invitado']]);
+    // Arrancó con los que quedaron listos
+    expect(rpcIniciar).toEqual({ p_desafio_id: 'd1' });
+    expect(emitidos.filter(e => e.nombre === 'desafio.iniciado').length).toBe(1);
+  });
+
+  test('si tras la expulsión solo queda el creador NO arranca', async () => {
+    let rpcIniciar = null;
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return { data: [
+            { usuario_id: 'u1', estado: 'aceptado' },
+            { usuario_id: 'u2', estado: 'eliminado' }
+          ], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_iniciar: (params) => { rpcIniciar = params; return { data: 'x' }; } }
+    });
+    await window.desafiosRepository.eliminarInvitado('d1', 'u2');
+    expect(rpcIniciar).toBe(null);
+    expect(emitidos.filter(e => e.nombre === 'desafio.iniciado').length).toBe(0);
+  });
+
+  test('responderInvitacion ignora a los eliminados: basta con que los activos acepten', async () => {
+    let rpcIniciar = null;
+    usarSupabase({
+      respuesta(tabla, op, modo) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'invitacion', mazo_nombre: 'Salmos', creador_id: 'u1' }], error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return { data: [
+            { usuario_id: 'u1', estado: 'aceptado' },
+            { usuario_id: 'u2', estado: 'aceptado' },
+            { usuario_id: 'u3', estado: 'eliminado' }
+          ], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: { desafio_iniciar: (params) => { rpcIniciar = params; return { data: '2026-08-08T12:00:00Z' }; } }
+    });
+    const r = await window.desafiosRepository.responderInvitacion('d1', 'u2', true);
+    expect(r.empezado).toBe(true);
+    expect(rpcIniciar).toEqual({ p_desafio_id: 'd1' });
+  });
+
+  test('_verificarFinalizado trata eliminado como estado terminal (el desafío se cierra)', async () => {
+    let finalizado = false;
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'update') finalizado = true;
+        return { data: null, error: null };
+      }
+    });
+    const ok = await window.desafiosRepository._verificarFinalizado(
+      { id: 'd1', estado: 'en_curso', mazo_nombre: 'Salmos', finaliza_primer_terminado: false },
+      [
+        { usuario_id: 'u1', estado: 'terminado', correctas: 8, total: 10 },
+        { usuario_id: 'u2', estado: 'eliminado' }
+      ]
+    );
+    expect(ok).toBe(true);
+    expect(finalizado).toBe(true);
+  });
+
+// ============================================================
+// sweepVencidos: cierre automático de desafíos abiertos
+// ============================================================
+describe('sweepVencidos (ningún desafío queda abierto para siempre)', () => {
+  test('con la migración 038 llama una sola RPC global y devuelve el conteo', async () => {
+    let abandonarLlamadas = 0;
+    usarSupabase({
+      rpc: {
+        desafio_cerrar_vencidos: () => ({ data: 7, error: null }),
+        desafio_abandonar_vencidos: () => { abandonarLlamadas += 1; return { data: 0 }; }
+      }
+    });
+    const total = await window.desafiosRepository.sweepVencidos();
+    expect(total).toBe(7);
+    expect(abandonarLlamadas).toBe(0);
+    const rpcs = supabase.llamadas.filter(l => l.rpc).map(l => l.rpc);
+    expect(rpcs).toEqual(['desafio_cerrar_vencidos']);
+  });
+
+  test('sin la migración 038 (RPC no existe) barre los desafíos en_curso del usuario con la RPC antigua', async () => {
+    const abandonados = [];
+    global.store = { obtener: (c) => c === 'usuario' ? { id: 'u1' } : null };
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return { data: [{ desafio_id: 'd1' }, { desafio_id: 'd2' }], error: null };
+        }
+        return { data: null, error: null };
+      },
+      rpc: {
+        desafio_cerrar_vencidos: () => ({ error: { message: 'PGRST202: function not found' } }),
+        desafio_abandonar_vencidos: (params) => { abandonados.push(params); return { data: 0 }; }
+      }
+    });
+    const total = await window.desafiosRepository.sweepVencidos();
+    expect(total).toBe(0);
+    // Solo los desafíos del usuario, con la RPC antigua por cada uno
+    expect(abandonados).toEqual([{ p_desafio_id: 'd1' }, { p_desafio_id: 'd2' }]);
+  });
+
+  test('si la RPC antigua marcó a alguien, relee el desafío para finalizarlo', async () => {
+    let releido = 0;
+    global.store = { obtener: (c) => c === 'usuario' ? { id: 'u1' } : null };
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return { data: [{ desafio_id: 'd1' }], error: null };
+        }
+        if (tabla === 'desafios' && op === 'select') { releido += 1; return { data: null, error: null }; }
+        return { data: null, error: null };
+      },
+      rpc: {
+        desafio_cerrar_vencidos: () => ({ error: { message: 'PGRST202: function not found' } }),
+        desafio_abandonar_vencidos: () => ({ data: 2 })
+      }
+    });
+    const total = await window.desafiosRepository.sweepVencidos();
+    expect(total).toBe(2);
+    expect(releido).toBeGreaterThan(0);
+  });
+
+  test('sin sesión no barre nada', async () => {
+    global.store = { obtener: () => null };
+    const rpcs = [];
+    usarSupabase({
+      rpc: {
+        desafio_cerrar_vencidos: () => ({ error: { message: 'x' } }),
+        desafio_abandonar_vencidos: (params) => { rpcs.push(params); return { data: 1 }; }
+      }
+    });
+    const total = await window.desafiosRepository.sweepVencidos();
+    expect(total).toBe(0);
+    expect(rpcs.length).toBe(0);
+  });
+});
+
+  test('_verificarFinalizado NO cierra si un activo sigue en juego y hay un eliminado', async () => {
+    let finalizado = false;
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'update') finalizado = true;
+        return { data: null, error: null };
+      }
+    });
+    const ok = await window.desafiosRepository._verificarFinalizado(
+      { id: 'd1', estado: 'en_curso', mazo_nombre: 'Salmos', finaliza_primer_terminado: false },
+      [
+        { usuario_id: 'u1', estado: 'terminado' },
+        { usuario_id: 'u2', estado: 'en_juego' },
+        { usuario_id: 'u3', estado: 'eliminado' }
+      ]
+    );
+    expect(ok).toBe(false);
+    expect(finalizado).toBe(false);
+  });
+});
+
+// ============================================================
+// Modo carrera: "El primero que acabe" (migración 036)
+// ============================================================
+describe('modo carrera (finaliza_primer_terminado)', () => {
+  test('crearDesafio con finalizaPrimerTerminado=true persiste la columna', async () => {
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'insert') return { data: { id: 'd5', estado: 'invitacion' }, error: null };
+        return { data: null, error: null };
+      }
+    });
+    await window.desafiosRepository.crearDesafio({
+      creador: { id: 'u1' },
+      participantes: [{ usuario_id: 'u2' }],
+      mazo: { id: 'm1', nombre: 'Salmos' },
+      sesion: [],
+      finalizaPrimerTerminado: true
+    });
+    const insert = supabase.llamadas.find(l => l.tabla === 'desafios' && l.op === 'insert');
+    expect(insert.valor.finaliza_primer_terminado).toBe(true);
+    // Sin límite de tiempo: la carrera no tiene reloj
+    expect(insert.valor.tiempo_limite_seg).toBeNull();
+  });
+
+  test('crearDesafio por defecto NO incluye la columna (compatible con BD sin migrar)', async () => {
+    usarSupabase({
+      respuesta(tabla, op) {
+        if (tabla === 'desafios' && op === 'insert') return { data: { id: 'd6', estado: 'invitacion' }, error: null };
+        return { data: null, error: null };
+      }
+    });
+    await window.desafiosRepository.crearDesafio({
+      creador: { id: 'u1' },
+      participantes: [{ usuario_id: 'u2' }],
+      mazo: { id: 'm1', nombre: 'Salmos' },
+      sesion: []
+    });
+    const insert = supabase.llamadas.find(l => l.tabla === 'desafios' && l.op === 'insert');
+    expect('finaliza_primer_terminado' in insert.valor).toBe(false);
+  });
+
+  test('si alguien termina en modo carrera, se finaliza y el rival se cierra con su progreso', async () => {
+    let updatesFinalizado = 0;
+    const updatesTerminados = [];
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'en_curso', iniciado_en: '2026-08-08T10:00:00Z', tiempo_limite_seg: null, mazo_nombre: 'Salmos', finaliza_primer_terminado: true }], error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return {
+            data: [
+              { id: 'p1', desafio_id: 'd1', usuario_id: 'u1', estado: 'terminado', correctas: 9, total: 10, tiempo_ms: 50000, progreso: null },
+              { id: 'p2', desafio_id: 'd1', usuario_id: 'u2', estado: 'en_juego', correctas: 0, total: null, tiempo_ms: null, progreso: { idx: 5, correctas: 3, incorrectas: 1 } }
+            ],
+            error: null
+          };
+        }
+        if (tabla === 'desafios' && op === 'update' && q._valor.estado === 'finalizado') updatesFinalizado++;
+        if (tabla === 'desafio_participantes' && op === 'update') updatesTerminados.push(q._valor);
+        return { data: null, error: null };
+      },
+      rpc: { desafio_abandonar_vencidos: () => ({ data: 0 }) }
+    });
+    // u1 termina su turno → en carrera eso cierra el desafío al instante
+    await window.desafiosRepository.terminarJugador('d1', 'u1', { correctas: 9, total: 10, tiempoMs: 50000 });
+
+    expect(updatesFinalizado).toBe(1);
+    // El rival (u2, aún en_juego) se fuerza a 'terminado' con su progreso REAL
+    const cierre = updatesTerminados.find(u => u && u.correctas === 3 && u.estado === 'terminado');
+    expect(cierre).toBeTruthy();
+    expect(cierre.total).toBe(10); // hereda el total del que terminó
+    expect(cierre.tiempo_ms).toBeGreaterThan(0); // tiempo transcurrido al cerrar
+    expect(cierre.progreso).toBeNull();
+    const finalizados = emitidos.filter(e => e.nombre === 'desafio.finalizado');
+    expect(finalizados.length).toBe(1);
+  });
+
+  test('en modo carrera, si NADIE ha terminado aún NO se finaliza', async () => {
+    let updatesFinalizado = 0;
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'en_curso', iniciado_en: '2026-08-08T10:00:00Z', tiempo_limite_seg: null, mazo_nombre: 'Salmos', finaliza_primer_terminado: true }], error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return {
+            data: [
+              { id: 'p1', desafio_id: 'd1', usuario_id: 'u1', estado: 'en_juego', correctas: 0, total: null, progreso: { idx: 3, correctas: 2 } },
+              { id: 'p2', desafio_id: 'd1', usuario_id: 'u2', estado: 'en_juego', correctas: 0, total: null, progreso: { idx: 1, correctas: 0 } }
+            ],
+            error: null
+          };
+        }
+        if (tabla === 'desafios' && op === 'update' && q._valor.estado === 'finalizado') updatesFinalizado++;
+        return { data: null, error: null };
+      },
+      rpc: { desafio_abandonar_vencidos: () => ({ data: 0 }) }
+    });
+    await window.desafiosRepository.abandonar('d1', 'u1');
+    // u1 abandonó pero u2 sigue jugando → la carrera continúa (no se cierra)
+    expect(updatesFinalizado).toBe(0);
+    expect(emitidos.filter(e => e.nombre === 'desafio.finalizado').length).toBe(0);
+  });
+
+  test('si todos abandonan en carrera sin que nadie termine, se cierra como cancelado', async () => {
+    let updatesFinalizado = 0;
+    usarSupabase({
+      respuesta(tabla, op, modo, q) {
+        if (tabla === 'desafios' && op === 'select') {
+          return { data: [{ id: 'd1', estado: 'en_curso', iniciado_en: '2026-08-08T10:00:00Z', tiempo_limite_seg: null, mazo_nombre: 'Salmos', finaliza_primer_terminado: true }], error: null };
+        }
+        if (tabla === 'desafio_participantes' && op === 'select') {
+          return {
+            data: [
+              { id: 'p1', desafio_id: 'd1', usuario_id: 'u1', estado: 'abandonado', correctas: 0, total: null },
+              { id: 'p2', desafio_id: 'd1', usuario_id: 'u2', estado: 'abandonado', correctas: 0, total: null }
+            ],
+            error: null
+          };
+        }
+        if (tabla === 'desafios' && op === 'update' && q._valor.estado === 'finalizado') updatesFinalizado++;
+        return { data: null, error: null };
+      },
+      rpc: { desafio_abandonar_vencidos: () => ({ data: 0 }) }
+    });
+    await window.desafiosRepository.abandonar('d1', 'u1');
+    expect(updatesFinalizado).toBe(1);
+    const cerrados = emitidos.filter(e => ['desafio.finalizado', 'desafio.cancelado'].includes(e.nombre));
+    expect(cerrados[0].nombre).toBe('desafio.cancelado');
   });
 });

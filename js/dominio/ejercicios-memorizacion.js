@@ -280,29 +280,60 @@
     return ejercicio;
   }
 
+  /** Baraja Fisher–Yates: devuelve una copia en orden aleatorio. */
+  function aleatorizar(lista) {
+    const a = Array.isArray(lista) ? [...lista] : [];
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      const tmp = a[i]; a[i] = a[j]; a[j] = tmp;
+    }
+    return a;
+  }
+
   /**
    * Construye la mezcla de una sesión: reparte las tarjetas
    * entre los tipos de ejercicio para que varíen sin repetirse
    * siempre el mismo tipo. Las tarjetas falladas se repiten.
+   *
+   * Las tarjetas se BARAJAN antes de seleccionar: con un mazo de 500
+   * tarjetas la sesión toma 10 ALEATORIAS (no las primeras 10), y el banco
+   * de distractores también se mezcla para que las opciones varíen.
    */
   function construirSesion(tarjetas, banco, { maxTarjetas = 12 } = {}) {
-    const lista = [...tarjetas];
+    const lista = aleatorizar(tarjetas);
+    const bancoMezclado = aleatorizar(banco || []);
     const resultado = [];
     const tiposDisponibles = ['completar', 'ordenar', 'elegir_versiculo', 'verdadero_falso', 'relacionar', 'escrita'];
-    let idx = 0;
-    while (resultado.length < maxTarjetas && lista.length) {
-      const tarjeta = lista[idx % lista.length];
-      idx++;
-      // Rotar el tipo por posición para mezclar
-      const tipoRota = tiposDisponibles[resultado.length % tiposDisponibles.length];
-      const ejercicio = generarEjercicio(tarjeta, banco, [tipoRota]);
+
+    // 1) Tarjetas DISTINTAS en orden aleatorio: con un mazo de 500 tarjetas
+    //    la sesión toma maxTarjetas al azar (nunca "las primeras 10"). El
+    //    tipo rota por posición de la tarjeta; si el tipo rotado no aplica a
+    //    esa tarjeta se prueba otro aplicable (si el tipo rotado fallara y
+    //    el avance dependiera del resultado, el bucle se quedaría atascado
+    //    probando el mismo tipo para siempre — bug preexistente).
+    for (let i = 0; i < lista.length && resultado.length < maxTarjetas; i++) {
+      const tarjeta = lista[i];
+      const tipoRota = tiposDisponibles[i % tiposDisponibles.length];
+      const ejercicio = generarEjercicio(tarjeta, bancoMezclado, [tipoRota])
+        || generarEjercicio(tarjeta, bancoMezclado);
       if (ejercicio) resultado.push(ejercicio);
-      if (idx >= lista.length * 2) break; // seguridad: no bucles infinitos
     }
+
+    // 2) Mazo pequeño: reutilizar tarjetas (con distinto tipo) hasta llenar
+    if (resultado.length < maxTarjetas && lista.length) {
+      for (let i = 0; i < lista.length * 3 && resultado.length < maxTarjetas; i++) {
+        const tarjeta = lista[i % lista.length];
+        const ejercicio = generarEjercicio(tarjeta, bancoMezclado);
+        if (ejercicio && !resultado.some(e => e.tarjetaId === tarjeta.id && e.tipo === ejercicio.tipo)) {
+          resultado.push(ejercicio);
+        }
+      }
+    }
+
+    // 3) Fallback final: un ejercicio cualquiera por tarjeta
     if (!resultado.length) {
-      // Fallback: un ejercicio cualquiera por tarjeta
       for (const t of lista.slice(0, maxTarjetas)) {
-        const ej = generarEjercicio(t, banco);
+        const ej = generarEjercicio(t, bancoMezclado);
         if (ej) resultado.push(ej);
       }
     }
@@ -369,6 +400,7 @@
 
   window.ejerciciosMemorizacion = {
     limpiar,
+    aleatorizar,
     generarEjercicio,
     construirSesion,
     tiposAplicables,
