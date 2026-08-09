@@ -2,92 +2,25 @@
 // js/core/navigation.js - Barra de navegación inteligente
 // ============================================================
 
+// La barra inferior es SIEMPRE visible (decisión de producto): no se oculta
+// al hacer scroll. Lo único que la oculta temporalmente es el teclado
+// virtual (para no tapar el campo activo), y reaparece al desenfocar.
 class NavigationManager {
   constructor() {
     this._nav = document.getElementById('barra-navegacion');
-    this._lastScrollY = 0;
     this._isHidden = false;
-    this._threshold = 50;
-    this._isScrolling = false;
-    this._scrollTimeout = null;
     this._tecladoAbierto = false;
-    
+    this._scrollTimeout = null;
+
     this._init();
   }
-  
+
   _init() {
     if (!this._nav) return;
-    
-    // Solo en móvil (pantallas menores a 768px)
-    if (window.innerWidth < 768) {
-      this._attachScrollListener();
-      this._attachTouchListener();
-    }
-    
-    // Escuchar cambios de tamaño
-    window.addEventListener('resize', () => {
-      if (window.innerWidth < 768) {
-        this._attachScrollListener();
-      } else {
-        this._detachScrollListener();
-        this._show();
-      }
-    });
+    // Garantizar estado visible inicial (nunca oculta por scroll)
+    this._nav.style.transform = '';
   }
-  
-  // ============================================================
-  // SCROLL LISTENER
-  // ============================================================
-  _attachScrollListener() {
-    if (this._scrollListener) return;
-    
-    this._scrollListener = this._handleScroll.bind(this);
-    document.addEventListener('scroll', this._scrollListener, { passive: true });
-  }
-  
-  _detachScrollListener() {
-    if (this._scrollListener) {
-      document.removeEventListener('scroll', this._scrollListener);
-      this._scrollListener = null;
-    }
-  }
-  
-  _handleScroll() {
-    // No ocultar si el usuario está en la parte superior
-    if (window.scrollY < 50) {
-      this._show();
-      return;
-    }
-    
-    const currentScrollY = window.scrollY;
-    const delta = currentScrollY - this._lastScrollY;
-    
-    // Si el scroll es hacia abajo y pasó el umbral
-    if (delta > this._threshold && !this._isHidden) {
-      this._hide();
-    }
-    // Si el scroll es hacia arriba
-    else if (delta < -this._threshold && this._isHidden) {
-      this._show();
-    }
-    
-    this._lastScrollY = currentScrollY;
-  }
-  
-  // ============================================================
-  // TOUCH LISTENER (para evitar ocultar al tocar la barra)
-  // ============================================================
-  _attachTouchListener() {
-    this._nav.addEventListener('touchstart', () => {
-      this._show();
-      // Cancelar cualquier ocultación pendiente
-      if (this._scrollTimeout) {
-        clearTimeout(this._scrollTimeout);
-        this._scrollTimeout = null;
-      }
-    }, { passive: true });
-  }
-  
+
   // ============================================================
   // MOSTRAR / OCULTAR
   // ============================================================
@@ -101,7 +34,12 @@ class NavigationManager {
   }
   
   _show() {
-    if (this._isHidden) return;
+    // Guardia: solo actuar si la barra está realmente oculta (si ya está
+    // visible, no hacer nada). La versión anterior invertía esta condición
+    // (`if (this._isHidden) return;`) y hacía que _show() no hiciera NADA
+    // cuando la barra estaba oculta: tras ocultarse con scroll (o con el
+    // teclado), la barra NUNCA volvía a mostrarse.
+    if (!this._isHidden) return;
     // Con el teclado abierto la barra permanece oculta: mostrarla taparía
     // el campo activo (UX de teclado app-like).
     if (this._tecladoAbierto) return;
@@ -125,23 +63,7 @@ class NavigationManager {
   // ============================================================
   // MÉTODOS PÚBLICOS
   // ============================================================
-  
-  // Ocultar temporalmente (ej: al abrir teclado)
-  hideTemporarily() {
-    if (this._scrollTimeout) {
-      clearTimeout(this._scrollTimeout);
-    }
-    this._hide();
-    
-    // Mostrar después de 3 segundos si no hay interacción
-    this._scrollTimeout = setTimeout(() => {
-      if (this._isHidden) {
-        this._show();
-      }
-      this._scrollTimeout = null;
-    }, 3000);
-  }
-  
+
   // Mostrar permanentemente
   showPermanent() {
     if (this._scrollTimeout) {
@@ -160,10 +82,8 @@ class NavigationManager {
   // DESTRUIR
   // ============================================================
   destroy() {
-    this._detachScrollListener();
     this._nav.style.transform = '';
     this._isHidden = false;
-    window.removeEventListener('resize', this._resizeListener);
   }
 }
 
