@@ -4,11 +4,13 @@ import android.content.Intent;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager;
 import android.content.pm.Signature;
+import android.app.Activity;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Environment;
 import android.os.StatFs;
 import android.provider.Settings;
+import android.util.Log;
 
 import androidx.core.content.FileProvider;
 
@@ -36,6 +38,7 @@ import java.util.concurrent.Future;
 
 @CapacitorPlugin(name = "UpdateInstaller")
 public class UpdateInstallerPlugin extends Plugin {
+    private static final String TAG = "UpdateInstaller";
     private static final long MAX_APK_BYTES = 250L * 1024L * 1024L;
     private static final long RESERVED_BYTES = 10L * 1024L * 1024L;
     private static final int MAX_REDIRECTS = 5;
@@ -150,11 +153,18 @@ public class UpdateInstallerPlugin extends Plugin {
                 throw new UpdateException("INSUFFICIENT_STORAGE", "No hay espacio suficiente para la actualización.");
             }
 
+            // Reintentos: los fallos de red (IOException) y los errores
+            // transitorios de contenido (página HTML puntual o descarga
+            // cortada a mitad) se reintentan hasta 3 veces; los errores
+            // deterministas (URL, redirección, checksum, firma...) fallan
+            // de inmediato.
             IOException lastNetworkError = null;
+            UpdateException lastTransientError = null;
             for (int attempt = 1; attempt <= 3; attempt++) {
                 try {
                     downloadOnce(new URL(rawUrl), partFile, expectedSize);
                     lastNetworkError = null;
+                    lastTransientError = null;
                     break;
                 } catch (IOException error) {
                     if (Thread.currentThread().isInterrupted()) {
@@ -162,17 +172,28 @@ public class UpdateInstallerPlugin extends Plugin {
                     }
                     lastNetworkError = error;
                     deleteQuietly(partFile);
-                    if (attempt < 3) {
-                        try { Thread.sleep(attempt * 500L); }
-                        catch (InterruptedException interrupted) {
-                            Thread.currentThread().interrupt();
-                            throw new UpdateException("DOWNLOAD_CANCELLED", "Descarga cancelada.");
-                        }
+                } catch (UpdateException error) {
+                    boolean transitorio = error.code.equals("INVALID_CONTENT") || error.code.equals("INCOMPLETE_DOWNLOAD");
+                    if (!transitorio) throw error;
+                    if (Thread.currentThread().isInterrupted()) {
+                        throw new UpdateException("DOWNLOAD_CANCELLED", "Descarga cancelada.");
+                    }
+                    lastTransientError = error;
+                    deleteQuietly(partFile);
+                }
+                if (attempt < 3) {
+                    try { Thread.sleep(attempt * 500L); }
+                    catch (InterruptedException interrupted) {
+                        Thread.currentThread().interrupt();
+                        throw new UpdateException("DOWNLOAD_CANCELLED", "Descarga cancelada.");
                     }
                 }
             }
             if (lastNetworkError != null) {
                 throw new UpdateException("NETWORK_ERROR", "No se pudo descargar la APK.", lastNetworkError);
+            }
+            if (lastTransientError != null) {
+                throw lastTransientError;
             }
 
             if (!partFile.renameTo(apkFile)) {
@@ -196,6 +217,7 @@ public class UpdateInstallerPlugin extends Plugin {
             reject(call, error.code, error.getMessage());
         } catch (Exception error) {
             if (apkFile != null) deleteQuietly(apkFile);
+            Log.e(TAG, "INSTALL_ERROR: " + error.getMessage(), error);
             reject(call, "INSTALL_ERROR", "No se pudo preparar la instalación.");
         } finally {
             activeConnection = null;
@@ -277,7 +299,9 @@ public class UpdateInstallerPlugin extends Plugin {
         progress.put("downloadedBytes", downloaded);
         progress.put("totalBytes", total > 0 ? total : 0);
         progress.put("percent", total > 0 ? Math.min(100, Math.round((downloaded * 100d) / total)) : 0);
-        getActivity().runOnUiThread(() -> notifyListeners("downloadProgress", progress));
+        Activity activity = getActivity();
+        if (activity == null) return;
+        activity.runOnUiThread(() -> notifyListeners("downloadProgress", progress));
     }
 
     private void verifyPackage(File apkFile, String expectedVersion, long expectedVersionCode) throws UpdateException {
@@ -377,7 +401,11 @@ public class UpdateInstallerPlugin extends Plugin {
         Intent intent = new Intent(Intent.ACTION_VIEW);
         intent.setDataAndType(uri, APK_MIME);
         intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION | Intent.FLAG_ACTIVITY_NEW_TASK);
-        getActivity().startActivity(intent);
+        Activity activity = getActivity();
+        if (activity == null) {
+            throw new UpdateException("INSTALL_ERROR", "La actividad no está disponible para abrir el instalador.");
+        }
+        activity.startActivity(intent);
     }
 
     private boolean openUnknownSourcesSettings() {
@@ -413,6 +441,7 @@ public class UpdateInstallerPlugin extends Plugin {
     }
 
     private void reject(PluginCall call, String code, String message) {
+        Log.e(TAG, code + ": " + message);
         call.reject(message, code);
     }
 

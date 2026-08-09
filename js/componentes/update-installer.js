@@ -51,11 +51,26 @@
       let listener = null;
       try {
         if (onProgress && UpdateInstallerPlugin.addListener) {
-          listener = await UpdateInstallerPlugin.addListener('downloadProgress', onProgress);
+          try {
+            listener = await UpdateInstallerPlugin.addListener('downloadProgress', onProgress);
+          } catch (error) {
+            // El progreso es opcional: que la suscripción falle no debe
+            // bloquear la descarga (si no, se ve como un error genérico).
+            listener = null;
+          }
         }
         return await UpdateInstallerPlugin.downloadAndInstall(options);
+      } catch (error) {
+        // Normaliza el error para que el diálogo siempre pueda mostrar un
+        // código (algunos fallos del puente pueden llegar sin .code).
+        if (error && typeof error === 'object' && !error.code) {
+          error.code = error.data?.code || 'NATIVE_ERROR';
+        }
+        throw error;
       } finally {
-        if (listener) await listener.remove();
+        if (listener) {
+          try { await listener.remove(); } catch (error) {}
+        }
       }
     },
 

@@ -63,13 +63,15 @@
     _diagnostico() {
       const cap = root.Capacitor;
       const ver = root.__FB_APP_VERSION__;
+      const ultimo = this._ultimoError;
       const lineas = [
         `App: ${ver ? ver.version + ' (versionCode ' + ver.versionCode + ')' : 'desconocida'}`,
         `Capacitor: ${cap ? (cap.getPlatform ? cap.getPlatform() : 'presente') : 'NO detectado'}`,
         `isNativePlatform: ${cap && typeof cap.isNativePlatform === 'function' ? cap.isNativePlatform() : 'n/a'}`,
         `updateInstaller.disponible: ${this.installer ? this.installer.disponible() : 'no cargado'}`,
         `Manifiesto: ${root.__FB_UPDATE_MANIFEST_URL__ || root.entorno?.updateManifestUrl || 'NO CONFIGURADO'}`,
-        `UA: ${(root.navigator && root.navigator.userAgent) || '?'}`
+        `UA: ${(root.navigator && root.navigator.userAgent) || '?'}`,
+        `Último error: ${ultimo ? ((ultimo.code || '?') + ' — ' + (ultimo.message || '')) : 'ninguno'}`
       ];
       return lineas.join('\n');
     }
@@ -232,7 +234,10 @@
           if (this._overlay) this._render({ ...state, status: 'preparing' });
         }, 500);
       } catch (error) {
-        this._render({ ...state, status: 'error', error: { message: this._friendlyDownloadError(error) } });
+        const code = error?.code || error?.data?.code;
+        this._ultimoError = { code, message: error?.message || '' };
+        try { root.console?.error?.('[update] error al descargar/instalar:', code, error?.message); } catch (e) {}
+        this._render({ ...state, status: 'error', error: { code, message: this._friendlyDownloadError(error) } });
       }
     }
 
@@ -245,13 +250,21 @@
     }
 
     _friendlyDownloadError(error) {
-      if (error?.code === 'CHECKSUM_MISMATCH') return 'La verificación de integridad falló. La descarga se eliminó y no se instalará.';
-      if (error?.code === 'SIGNATURE_MISMATCH') return 'Esta copia de FormsBiblicos no es la oficial (firma distinta). Desinstálala e instala la versión desde la web: https://formsbiblicos.com';
-      if (error?.code === 'OLD_DOWNLOAD') return 'El archivo descargado es más antiguo que la app instalada (probablemente caché del navegador). Borra la APK de Descargas y descárgala de nuevo desde la web.';
-      if (error?.code === 'DOWNLOAD_CANCELLED') return 'Descarga cancelada.';
-      if (error?.code === 'INSUFFICIENT_STORAGE') return 'No hay espacio suficiente para descargar la actualización.';
-      if (error?.code === 'NETWORK_ERROR') return 'Se perdió la conexión durante la descarga.';
-      return 'No se pudo descargar o preparar la APK. La aplicación actual seguirá funcionando.';
+      const code = error?.code || error?.data?.code;
+      if (code === 'CHECKSUM_MISMATCH') return 'La verificación de integridad falló. La descarga se eliminó y no se instalará.';
+      if (code === 'SIGNATURE_MISMATCH') return 'Esta copia de FormsBiblicos no es la oficial (firma distinta). Desinstálala e instala la versión desde la web: https://formsbiblicos.com';
+      if (code === 'OLD_DOWNLOAD') return 'El archivo descargado es más antiguo que la app instalada (probablemente caché del navegador). Borra la APK de Descargas y descárgala de nuevo desde la web.';
+      if (code === 'DOWNLOAD_CANCELLED') return 'Descarga cancelada.';
+      if (code === 'INSUFFICIENT_STORAGE') return 'No hay espacio suficiente para descargar la actualización. Libera almacenamiento y reintenta.';
+      if (code === 'NETWORK_ERROR') return 'Se perdió la conexión durante la descarga. Comprueba tu red y reintenta.';
+      if (code === 'INVALID_URL' || code === 'INVALID_REDIRECT') return 'La descarga no procede del origen permitido. Vuelve a intentarlo o descarga la APK desde la web.';
+      if (code === 'INVALID_CONTENT' || code === 'INCOMPLETE_DOWNLOAD' || code === 'APK_TOO_LARGE' || code === 'TOO_MANY_REDIRECTS') return 'La descarga no devolvió una APK válida (posiblemente un corte de red o una página de error temporal). Reintenta.';
+      if (code === 'STORAGE_ERROR') return 'No se pudo preparar el almacenamiento temporal de la actualización.';
+      if (code === 'INVALID_APK') return 'El archivo descargado no es una APK válida de FormsBiblicos. Se eliminó y no se instalará.';
+      if (code === 'VERSION_MISMATCH') return 'La versión de la APK descargada no coincide con el manifiesto de actualización.';
+      if (code === 'DOWNLOAD_IN_PROGRESS') return 'Ya hay una descarga en curso. Espera a que termine y reintenta.';
+      if (code === 'INSTALL_ERROR' || code === 'NATIVE_UNAVAILABLE') return 'No se pudo abrir el instalador de Android. Reintenta o descarga la APK desde la web.';
+      return `No se pudo descargar o preparar la APK (${code || 'error desconocido'}). La aplicación actual seguirá funcionando.`;
     }
 
     _focusFirstAction() {

@@ -160,6 +160,50 @@ describe('updateInstaller.descargarEInstalar()', () => {
     expect(descarga[2]).toBe('downloadAndInstall');
     expect(descarga[3]).toMatchObject({ apkUrl: 'https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.4/x.apk' });
   });
+
+  test('un fallo al suscribirse al progreso NO bloquea la descarga (regresión error genérico)', async () => {
+    // Nota: el runtime real de Capacitor, ante un nativeCallback que lanza,
+    // deja el promise de addListener PENDIENTE para siempre (no se rechaza),
+    // por lo que el rechazo no es reproducible a través del runtime proxy.
+    // Se prueba la guardia directamente con un plugin fake que rechaza.
+    const llamadas = [];
+    const window = baseWindow();
+    window.androidBridge = { postMessage: () => {} };
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      registerPlugin: () => ({
+        addListener: async () => { throw new Error('suscripción falló'); },
+        downloadAndInstall: async () => { llamadas.push('downloadAndInstall'); return { status: 'ok' }; }
+      })
+    };
+    cargar('js/componentes/update-installer.js', window);
+
+    const resultado = await window.updateInstaller.descargarEInstalar(
+      { apkUrl: 'https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.11/x.apk' },
+      () => {}
+    );
+    expect(resultado).toEqual({ status: 'ok' });
+    expect(llamadas).toContain('downloadAndInstall');
+  });
+
+  test('propaga el código de error del plugin nativo (para que el diálogo lo muestre)', async () => {
+    const window = baseWindow();
+    window.androidBridge = { postMessage: () => {} };
+    window.Capacitor = {
+      isNativePlatform: () => true,
+      registerPlugin: () => ({
+        downloadAndInstall: async () => {
+          const e = new Error('No se pudo preparar el almacenamiento temporal.');
+          e.code = 'STORAGE_ERROR';
+          throw e;
+        }
+      })
+    };
+    cargar('js/componentes/update-installer.js', window);
+
+    await expect(window.updateInstaller.descargarEInstalar({ apkUrl: 'https://github.com/x/y.apk' }, () => {}))
+      .rejects.toMatchObject({ code: 'STORAGE_ERROR' });
+  });
 });
 
 describe('updateInstaller.obtenerVersionInstalada()', () => {

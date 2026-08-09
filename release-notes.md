@@ -1,14 +1,19 @@
 # Notas de release
 
-# Escribe aquí las novedades de la release actual, una por línea, empezando
-# por "- " o "* ". El workflow `Android Release` las usa como cuerpo de la
-# GitHub Release y como `releaseNotes` de `version.json`. Las líneas que
-# empiezan por "#" y la prosa se ignoran.
+Fuente única de las novedades de cada versión. El workflow `Android Release`
+usa este archivo como cuerpo de la GitHub Release **y** como `releaseNotes`
+de `version.json`. Solo se publican las líneas con prefijo de lista (`- ` / `* `);
+los comentarios (`#`) y la prosa se ignoran.
 
-- La barra de navegación inferior ya no se oculta al hacer scroll: permanece siempre visible
-- Corregido que la barra inferior no volviera a aparecer tras escribir en un campo
-- La campana de notificaciones ahora está en la cabecera de cada sección (Estudio, Exámenes, Memoria, Explorar, Perfil)
-- Navegación más fluida: sin parpadeos al cambiar de sección rápidamente
-- Corregido que el campo de escritura perdiera el foco en los ejercicios de memoria y desafíos
-- Barra de navegación lateral en pantallas grandes (escritorio)
-- Seguridad reforzada con cabeceras HTTP y corrección de permisos para editores de grupo
+## 1.0.12
+
+- Corregida la actualización en Android: la descarga ya no falla con error genérico si la suscripción al progreso falla, y el error real ahora se muestra con su código en el diagnóstico
+- Más robustez en el plugin nativo: reintento de errores transitorios de red y registro detallado para diagnóstico
+
+## 1.0.11
+
+- La barra de navegación inferior ya no se oculta al hacer scroll
+- Nueva campana de notificaciones en la cabecera
+- Navegación más fluida entre vistas
+- Mejoras de seguridad en la web (cabeceras HTTP)
+- Mejor gestión del foco en memorización y desafíos
