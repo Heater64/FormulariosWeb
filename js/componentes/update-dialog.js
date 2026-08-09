@@ -199,10 +199,13 @@
       const state = this._state;
       if (!state?.apkUrl) return;
       if (!this.installer?.disponible?.()) {
+        // En un navegador la instalación de APK no aplica; en una APK mal
+        // construida (assets obsoletos sin runtime nativo) el diagnóstico
+        // técnico del diálogo permite ver la causa. Mensaje no técnico:
         this._render({
           status: 'error',
           mandatory: false,
-          error: { message: 'La instalación de APK está disponible en la aplicación Android, no en el navegador.' }
+          error: { message: 'Esta instalación no puede descargar la actualización. Descarga la última versión desde la web o reinstala la aplicación desde el enlace oficial.' }
         });
         return;
       }

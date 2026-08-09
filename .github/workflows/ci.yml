@@ -30,3 +30,8 @@ jobs:
 
       - name: Production build
         run: npm run build
+        env:
+          # La URL es pública por diseño (ver docs/app-updates.md). Sin ella, el
+          # guard de vite.config.js falla el build para no empaquetar una APK
+          # que no puede comprobar actualizaciones.
+          VITE_UPDATE_MANIFEST_URL: https://formularios-web-flax.vercel.app/version.json

@@ -35,13 +35,35 @@ function readAndroidVersionCode() {
 }
 
 function injectRuntimeVersion() {
+  // 'build' = npm run build (APK Android); 'serve' = npm run dev (preview web).
+  let command = 'serve';
   return {
     name: 'inject-runtime-version',
+    configResolved(config) {
+      command = config.command;
+    },
     transformIndexHtml(html) {
+      const updateManifestUrl = process.env.VITE_UPDATE_MANIFEST_URL || '';
+      // Guard de build (solo APK): un APK sin endpoint HTTPS absoluto de
+      // producción no puede comprobar actualizaciones (la URL relativa se
+      // resuelve contra https://localhost dentro de la WebView y falla en
+      // silencio). Mejor fallar en build que empaquetar una app que nunca
+      // verá una release. La app web pública (build-public.mjs) marca su
+      // build con FB_PUBLIC_BUILD y usa '/version.json' del mismo origen.
+      if (command === 'build' && process.env.FB_PUBLIC_BUILD !== '1') {
+        let esHttpsAbsoluta = false;
+        try { esHttpsAbsoluta = new URL(updateManifestUrl).protocol === 'https:'; } catch (error) { esHttpsAbsoluta = false; }
+        if (!esHttpsAbsoluta) {
+          throw new Error(
+            '[build] VITE_UPDATE_MANIFEST_URL debe ser una URL HTTPS absoluta del manifiesto de producción ' +
+            '(p.ej. https://formularios-web-flax.vercel.app/version.json). Un build de APK sin esta variable ' +
+            'empaqueta una app que no puede comprobar ni descargar actualizaciones.'
+          );
+        }
+      }
       const pkg = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
       const version = pkg.version || '0.0.0';
       const versionCode = readAndroidVersionCode();
-      const updateManifestUrl = process.env.VITE_UPDATE_MANIFEST_URL || '';
       const runtime = `<script src="./js/vendor/capacitor.js" defer></script><script>window.__FB_APP_VERSION__=${JSON.stringify({ version, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(updateManifestUrl)};</script>`;
       // IMPORTANTE: el runtime de Capacitor debe ser el PRIMER script defer del
       // documento. Los scripts defer se ejecutan en orden de aparición, y

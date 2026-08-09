@@ -131,4 +131,57 @@ describe('updateService.checkForUpdate', () => {
     expect(corrupt.status).toBe('error');
     expect(network.updateAvailable).toBe(false);
   });
+
+  test('en la app nativa usa la versión REAL del sistema como fuente de verdad', async () => {
+    global.updateInstaller = {
+      obtenerVersionInstalada: async () => ({ version: '1.0.9', versionCode: 9 }),
+    };
+    try {
+      const result = await window.updateService.checkForUpdate({
+        manifestUrl: 'https://formsbiblicos.example/version.json',
+        fetchImpl: async () => new Response(JSON.stringify(manifiesto({ version: '1.0.9', versionCode: 9 })), { status: 200 }),
+      });
+      expect(result.status).toBe('up_to_date');
+      expect(result.currentVersion).toBe('1.0.9');
+    } finally {
+      delete global.updateInstaller;
+    }
+  });
+
+  test('no entra en bucle con un __FB_APP_VERSION__ obsoleto (build viejo)', async () => {
+    // Un build obsoleto inyectaría 1.0.3/3; la versión REAL del sistema es
+    // 1.0.9/9 y el manifiesto remoto anuncia 1.0.9/9: no debe ofrecer nada.
+    global.__FB_APP_VERSION__ = { version: '1.0.3', versionCode: 3 };
+    global.updateInstaller = {
+      obtenerVersionInstalada: async () => ({ version: '1.0.9', versionCode: 9 }),
+    };
+    try {
+      const result = await window.updateService.checkForUpdate({
+        manifestUrl: 'https://formsbiblicos.example/version.json',
+        fetchImpl: async () => new Response(JSON.stringify(manifiesto({ version: '1.0.9', versionCode: 9 })), { status: 200 }),
+      });
+      expect(result.status).toBe('up_to_date');
+      expect(result.updateAvailable).toBe(false);
+    } finally {
+      delete global.updateInstaller;
+      delete global.__FB_APP_VERSION__;
+    }
+  });
+
+  test('en la app nativa una URL relativa del manifiesto es un error de configuración', async () => {
+    global.Capacitor = { isNativePlatform: () => true };
+    global.__FB_UPDATE_MANIFEST_URL__ = '/version.json';
+    try {
+      const result = await window.updateService.checkForUpdate({
+        currentVersion: '1.0.0',
+        currentVersionCode: 1,
+        fetchImpl: async () => new Response('{}', { status: 200 }),
+      });
+      expect(result.status).toBe('error');
+      expect(result.error.code).toBe('NOT_CONFIGURED');
+    } finally {
+      delete global.Capacitor;
+      delete global.__FB_UPDATE_MANIFEST_URL__;
+    }
+  });
 });

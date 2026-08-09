@@ -84,6 +84,8 @@ Vercel publica el archivo en `/version.json` con caché desactivada o corta:
 
 La comparación es numérica: `1.10.0` es superior a `1.9.0`. También se comprueba `versionCode` cuando la SemVer coincide. `mandatory: true`, o una versión instalada inferior a `minimumVersion`/`minimumVersionCode`, elimina la opción “Más tarde”.
 
+**Versión instalada real:** en la APK, `updateService` consulta al sistema (PackageManager vía el plugin `UpdateInstaller.getInstalledVersion`) el `versionName`/`versionCode` reales en lugar de confiar solo en el valor inyectado en el build. Si un build quedó obsoleto (assets viejos con otro `__FB_APP_VERSION__`), la app no ofrece una actualización fantasma ni entra en bucle de “siempre hay actualización”. En web se usa el valor del build.
+
 ## 4. Builds y entornos
 
 Hay dos builds separados:
@@ -98,11 +100,11 @@ Vercel usa exclusivamente `npm run build:public` y publica `dist-public/`. Esa l
 Capacitor usa exclusivamente `dist/` mediante `webDir: "dist"`. No existe `server.url` en producción y la APK puede arrancar sin conexión a Vercel. Para que la app consulte el endpoint de producción, el build Android/CI recibe:
 
 ```bash
-VITE_UPDATE_MANIFEST_URL=https://formsbiblicos.com/version.json npm run build
+VITE_UPDATE_MANIFEST_URL=https://formularios-web-flax.vercel.app/version.json npm run build
 npx cap sync android
 ```
 
-La variable es pública por diseño; no contiene secretos. El workflow de GitHub Actions usa la variable pública `UPDATE_MANIFEST_URL`. No uses un dominio de Preview en una APK de producción.
+**Guard de build:** `npm run build` (el build de la APK) falla si `VITE_UPDATE_MANIFEST_URL` no es una URL HTTPS absoluta. Una URL relativa (p.ej. `/version.json`) se resolvería contra `https://localhost` dentro de la WebView y la app nunca podría comprobar actualizaciones; un build sin la variable empaquetaría una APK rota. Es un fallo deliberado en build, no un error en runtime. El servidor de desarrollo (`npm run dev`) no aplica el guard. La variable es pública por diseño; no contiene secretos. El workflow de GitHub Actions usa la variable pública `UPDATE_MANIFEST_URL`, y `ci.yml` la fija explícitamente para que el guard pase. No uses un dominio de Preview en una APK de producción.
 
 ## 5. Primera configuración Android
 
@@ -137,17 +139,18 @@ El plugin local `UpdateInstaller` está en `android/app/src/main/java/com/formsb
 
 ## 6. Flujo de descarga e instalación
 
-1. `updateService` obtiene `version.json` con timeout y `cache: no-store`.
-2. Valida la respuesta y compara la versión instalada con la remota.
-3. `UpdateDialog` muestra versión actual, nueva, notas, tamaño y estado.
-4. Android valida que la URL inicial sea HTTPS y un asset `.apk` de GitHub Releases.
-5. Sigue solo redirecciones HTTPS a hosts de GitHub permitidos.
-6. Descarga por streaming a `cache/updates/formsbiblicos-update.apk.part`; nunca carga la APK completa en memoria.
-7. Reintenta hasta tres veces en errores de red, informa progreso y comprueba espacio disponible.
-8. Comprueba tamaño, firma ZIP/APK, package name, `versionName`, `versionCode` y SHA-256 si está configurado.
-9. Si falla una comprobación, elimina la APK y no inicia instalación.
-10. Renombra el temporal y genera una URI `content://` mediante `FileProvider`.
-11. Abre el instalador oficial con `Intent.ACTION_VIEW` y MIME `application/vnd.android.package-archive`.
+1. `updateService` lee la versión instalada real del sistema (APK) o del build (web).
+2. Obtiene `version.json` con timeout y `cache: no-store`.
+3. Valida la respuesta y compara la versión instalada con la remota.
+4. `UpdateDialog` muestra versión actual, nueva, notas, tamaño y estado.
+5. Android valida que la URL inicial sea HTTPS y un asset `.apk` de GitHub Releases.
+6. Sigue solo redirecciones HTTPS a hosts de GitHub permitidos.
+7. Descarga por streaming a `cache/updates/formsbiblicos-update.apk.part`; nunca carga la APK completa en memoria.
+8. Reintenta hasta tres veces en errores de red, informa progreso y comprueba espacio disponible.
+9. Comprueba tamaño, firma ZIP/APK, package name, `versionName`, `versionCode` y SHA-256 si está configurado.
+10. Si falla una comprobación, elimina la APK y no inicia instalación.
+11. Renombra el temporal y genera una URI `content://` mediante `FileProvider`.
+12. Abre el instalador oficial con `Intent.ACTION_VIEW` y MIME `application/vnd.android.package-archive`.
 
 El archivo se conserva hasta el siguiente intento para que el instalador pueda leerlo; los `.part` y archivos fallidos se eliminan. El directorio es privado de la app y el `FileProvider` solo expone `cache/updates`.
 
@@ -253,7 +256,8 @@ Publica el hotfix y actualiza el manifiesto. No borres una release que ya esté 
 
 ## 12. Qué hacer si falla
 
-- **No aparece actualización:** confirma que la URL de producción está inyectada en el build Android, que `version.json` tiene versión superior y que Vercel no lo está cacheando.
+- **No aparece actualización:** confirma que la URL de producción está inyectada en el build Android (si el build falla, es el guard de `VITE_UPDATE_MANIFEST_URL`), que `version.json` tiene versión superior y que Vercel no lo está cacheando.
+- **“La actualización solo está disponible para Android” dentro de la APK:** es síntoma de assets obsoletos: el `update-installer.js` viejo capturaba `root.Capacitor` al cargar antes que el runtime y `disponible()` quedaba en `false`. Reconstruye con `VITE_UPDATE_MANIFEST_URL=... npm run build && npx cap sync android` y genera la APK de nuevo. El guard de build y la resolución perezosa del bridge evitan que vuelva a ocurrir.
 - **JSON inválido:** valida comillas, tipos, SemVer, `publishedAt`, URL y checksum.
 - **HTTP 404 de APK:** comprueba que el nombre del asset coincida exactamente con la URL de `version.json`.
 - **Checksum incorrecto:** vuelve a calcularlo sobre el archivo subido; no desactives la comprobación.

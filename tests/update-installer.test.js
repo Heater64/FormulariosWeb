@@ -162,6 +162,56 @@ describe('updateInstaller.descargarEInstalar()', () => {
   });
 });
 
+describe('updateInstaller.obtenerVersionInstalada()', () => {
+  test('devuelve null fuera de Android (sin puente nativo)', async () => {
+    const window = cargar('js/componentes/update-installer.js', baseWindow());
+    expect(await window.updateInstaller.obtenerVersionInstalada()).toBe(null);
+  });
+
+  test('devuelve la versión REAL del sistema en Android', async () => {
+    const window = baseWindow();
+    window.androidBridge = { postMessage: () => {} };
+    window.Capacitor = {
+      Plugins: { UpdateInstaller: {} },
+      PluginHeaders: [{
+        name: 'UpdateInstaller',
+        methods: [{ name: 'getInstalledVersion', rtype: 'promise' }]
+      }],
+      nativePromise: async (plugin, method) => {
+        if (method === 'getInstalledVersion') return { versionName: '1.0.9', versionCode: 9 };
+        return { status: 'ok' };
+      },
+      nativeCallback: () => {},
+      addListener: () => ({ remove: async () => {} }),
+      logJs: () => {},
+      triggerEvent: () => {}
+    };
+    cargarRuntime(window);
+    cargar('js/componentes/update-installer.js', window);
+    expect(await window.updateInstaller.obtenerVersionInstalada()).toEqual({ version: '1.0.9', versionCode: 9 });
+  });
+
+  test('devuelve null si la respuesta del sistema no es válida', async () => {
+    const window = baseWindow();
+    window.androidBridge = { postMessage: () => {} };
+    window.Capacitor = {
+      Plugins: { UpdateInstaller: {} },
+      PluginHeaders: [{
+        name: 'UpdateInstaller',
+        methods: [{ name: 'getInstalledVersion', rtype: 'promise' }]
+      }],
+      nativePromise: async () => ({ status: 'ok' }),
+      nativeCallback: () => {},
+      addListener: () => ({ remove: async () => {} }),
+      logJs: () => {},
+      triggerEvent: () => {}
+    };
+    cargarRuntime(window);
+    cargar('js/componentes/update-installer.js', window);
+    expect(await window.updateInstaller.obtenerVersionInstalada()).toBe(null);
+  });
+});
+
 describe('orden de scripts en el build (dist/index.html)', () => {
   const distIndex = join(srcDir, 'dist/index.html');
   const skip = !existsSync(distIndex)
@@ -183,5 +233,13 @@ describe('orden de scripts en el build (dist/index.html)', () => {
     const capPos = html.indexOf('js/vendor/capacitor.js');
     expect(capPos).toBeGreaterThanOrEqual(0);
     expect(capPos).toBeLessThan(headClose);
+  });
+
+  test('el build inyecta una URL de manifiesto HTTPS absoluta', { skip }, () => {
+    const html = readFileSync(distIndex, 'utf8');
+    const match = html.match(/window\.__FB_UPDATE_MANIFEST_URL__="([^"]+)"/);
+    expect(match).toBeTruthy();
+    const url = new URL(match[1]);
+    expect(url.protocol).toBe('https:');
   });
 });

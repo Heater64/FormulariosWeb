@@ -106,6 +106,25 @@ public class UpdateInstallerPlugin extends Plugin {
         call.resolve(result);
     }
 
+    // Versión REAL instalada en el sistema (versionName/versionCode del APK).
+    // Es la fuente de verdad para comparar con el manifiesto: si el build quedó
+    // obsoleto (p.ej. assets viejos con otro __FB_APP_VERSION__ inyectado), la
+    // app no debe ofrecer una actualización fantasma ni entrar en un bucle de
+    // "siempre hay actualización".
+    @PluginMethod
+    public void getInstalledVersion(PluginCall call) {
+        try {
+            PackageInfo info = getContext().getPackageManager().getPackageInfo(getContext().getPackageName(), 0);
+            long versionCode = Build.VERSION.SDK_INT >= Build.VERSION_CODES.P ? info.getLongVersionCode() : info.versionCode;
+            JSObject result = new JSObject();
+            result.put("versionName", info.versionName);
+            result.put("versionCode", versionCode);
+            call.resolve(result);
+        } catch (PackageManager.NameNotFoundException error) {
+            call.reject("UNAVAILABLE", "No se pudo leer la versión instalada.");
+        }
+    }
+
     private void downloadAndStartInstaller(
         PluginCall call,
         String rawUrl,

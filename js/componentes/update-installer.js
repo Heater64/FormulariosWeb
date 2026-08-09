@@ -73,6 +73,26 @@
         return UpdateInstallerPlugin.openInstallSettings();
       }
       return { status: 'unsupported' };
+    },
+
+    // Versión REAL de la app instalada en el sistema (la lee el plugin nativo
+    // de PackageManager). Fuente de verdad para updateService: evita que un
+    // build obsoleto (con __FB_APP_VERSION__ desfasado) ofrezca actualizaciones
+    // fantasma o entre en bucle. Devuelve null fuera de Android o si el plugin
+    // no está disponible; el llamador usa entonces el valor del build.
+    async obtenerVersionInstalada() {
+      const UpdateInstallerPlugin = plugin();
+      if (this.disponible() && UpdateInstallerPlugin.getInstalledVersion) {
+        try {
+          const result = await UpdateInstallerPlugin.getInstalledVersion();
+          if (result && typeof result.versionName === 'string' && Number.isInteger(result.versionCode)) {
+            return { version: result.versionName, versionCode: result.versionCode };
+          }
+        } catch (error) {
+          return null;
+        }
+      }
+      return null;
     }
   };
 

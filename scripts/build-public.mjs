@@ -43,7 +43,10 @@ run(process.execPath, [viteBin, 'build', '--config', 'vite.public.config.js']);
 //    manual de Perfil consulta version.json y muestra el diálogo si procede.
 console.log('[build-public] 2/3 App (base /app/)…');
 run(process.execPath, [viteBin, 'build', '--base', '/app/'], {
-  VITE_UPDATE_MANIFEST_URL: '/version.json'
+  VITE_UPDATE_MANIFEST_URL: '/version.json',
+  // La web sirve el manifiesto en el mismo origen; el guard de vite.config.js
+  // (URL HTTPS absoluta) aplica solo al build de la APK (npm run build).
+  FB_PUBLIC_BUILD: '1'
 });
 
 // 3) Copiar la app dentro del despliegue público

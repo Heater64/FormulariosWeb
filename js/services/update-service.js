@@ -184,6 +184,30 @@
     };
   }
 
+  // Fuente de verdad de la versión instalada:
+  // 1. Si el llamador la fija explícitamente (tests o web), se respeta.
+  // 2. En la app nativa se pregunta al sistema (PackageManager vía el plugin
+  //    UpdateInstaller): un build obsoleto puede inyectar un __FB_APP_VERSION__
+  //    distinto del APK real, y eso provocaría actualizaciones fantasma o un
+  //    bucle de "siempre hay actualización" (FASE 8/12).
+  // 3. Fallback: el valor inyectado en el build.
+  async function installedVersionInfo(options) {
+    if (options.currentVersion != null || options.currentVersionCode != null) {
+      return { version: currentVersion(options), versionCode: currentVersionCode(options) };
+    }
+    try {
+      if (root.updateInstaller && typeof root.updateInstaller.obtenerVersionInstalada === 'function') {
+        const real = await root.updateInstaller.obtenerVersionInstalada();
+        if (real && typeof real.version === 'string' && Number.isInteger(real.versionCode)) {
+          return { version: real.version, versionCode: real.versionCode };
+        }
+      }
+    } catch (error) {
+      // Sin runtime nativo o plugin no disponible: se usa el valor del build.
+    }
+    return { version: currentVersion(options), versionCode: currentVersionCode(options) };
+  }
+
   async function fetchWithTimeout(fetchImpl, url, timeoutMs, parentSignal) {
     const controller = typeof AbortController === 'function' ? new AbortController() : null;
     let timer = null;
@@ -215,10 +239,9 @@
   }
 
   async function checkForUpdate(options = {}) {
-    const installed = currentVersion(options);
-    const installedCode = currentVersionCode(options);
+    const { version: installed, versionCode: installedCode } = await installedVersionInfo(options);
     const url = resolveManifestUrl(options);
-    if (!url) return errorResult(installed, installedCode, 'NOT_CONFIGURED', 'No se ha configurado el endpoint de actualizaciones de producción.');
+    if (!url) return errorResult(installed, installedCode, 'NOT_CONFIGURED', 'Esta versión no incluye el endpoint de actualizaciones de producción. Instala la última versión desde la web o reinstala la aplicación.');
 
     const fetchImpl = options.fetchImpl || root.fetch;
     if (typeof fetchImpl !== 'function') return errorResult(installed, installedCode, 'FETCH_UNAVAILABLE', 'El navegador no permite comprobar actualizaciones.');
