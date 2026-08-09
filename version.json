@@ -1,22 +1,22 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.11",
-  "versionCode": 11,
+  "version": "1.0.12",
+  "versionCode": 12,
   "minimumVersion": "1.0.4",
   "minimumVersionCode": 4,
   "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.11/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.11",
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.12/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.12",
   "releaseNotes": [
-    "La barra de navegación inferior ya no se oculta al hacer scroll: permanece siempre visible",
-    "Corregido que la barra inferior no volviera a aparecer tras escribir en un campo",
-    "La campana de notificaciones ahora está en la cabecera de cada sección (Estudio, Exámenes, Memoria, Explorar, Perfil)",
-    "Navegación más fluida: sin parpadeos al cambiar de sección rápidamente",
-    "Corregido que el campo de escritura perdiera el foco en los ejercicios de memoria y desafíos",
-    "Barra de navegación lateral en pantallas grandes (escritorio)",
-    "Seguridad reforzada con cabeceras HTTP y corrección de permisos para editores de grupo"
+    "Corregida la actualización en Android: la descarga ya no falla con error genérico si la suscripción al progreso falla, y el error real ahora se muestra con su código en el diagnóstico",
+    "Más robustez en el plugin nativo: reintento de errores transitorios de red y registro detallado para diagnóstico",
+    "La barra de navegación inferior ya no se oculta al hacer scroll",
+    "Nueva campana de notificaciones en la cabecera",
+    "Navegación más fluida entre vistas",
+    "Mejoras de seguridad en la web (cabeceras HTTP)",
+    "Mejor gestión del foco en memorización y desafíos"
   ],
-  "sizeBytes": 5154884,
-  "sha256": "554eb6dcd2210233f54779d1240374782a179a95997e07031e5d711103b44de9",
-  "publishedAt": "2026-08-09T08:42:21.337Z"
+  "sizeBytes": 5168432,
+  "sha256": "51828cf0a2be85019c75d493102995f008262bc6e55f4fba68683105ce75fcea",
+  "publishedAt": "2026-08-09T13:13:12.679Z"
 }
