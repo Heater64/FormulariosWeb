@@ -1,21 +1,18 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.9",
-  "versionCode": 9,
+  "version": "1.0.10",
+  "versionCode": 10,
   "minimumVersion": "1.0.4",
   "minimumVersionCode": 4,
   "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.9/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.9",
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.10/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.10",
   "releaseNotes": [
-    "Experiencia de aplicación nativa: el botón atrás cierra los diálogos y hojas sin salir de la pantalla",
-    "El teclado ya no tapa los campos: la vista se adapta y la barra inferior se oculta al escribir",
-    "Zoom accesible restaurado y feedback háptico nativo en Android (éxito, error, logro)",
-    "Cada sección abre arriba (sin arrastrar el scroll de la pantalla anterior)",
-    "Corregido: un desafío ahora arranca cuando todos aceptan y la vista no se queda pegada al salir",
-    "Corregido: los participantes de un desafío ven el estado de todos los jugadores"
+    "Corregida la actualización desde la propia aplicación: el botón Actualizar descarga e instala la nueva versión sin errores",
+    "Ya no aparece el aviso «solo disponible para Android» estando dentro de la app Android",
+    "La app usa la versión real instalada para no ofrecer repetida la misma actualización"
   ],
-  "sizeBytes": 5152868,
-  "sha256": "377d181cdbe49920893ec104719476fa64e1a35b336060b032736fe895c0c424",
-  "publishedAt": "2026-08-08T00:00:00Z"
+  "sizeBytes": 5153280,
+  "sha256": "3a0843a2a39b9f798c58c4a65f9f509b5acc4ec75375a19d21d821edf9429659",
+  "publishedAt": "2026-08-09T08:23:40Z"
 }
