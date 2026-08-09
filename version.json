@@ -1,18 +1,17 @@
 {
   "schemaVersion": 1,
-  "version": "1.0.10",
-  "versionCode": 10,
+  "version": "1.0.11",
+  "versionCode": 11,
   "minimumVersion": "1.0.4",
   "minimumVersionCode": 4,
   "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.10/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.10",
+  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.11/formsbiblicos.apk",
+  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.11",
   "releaseNotes": [
-    "Corregida la actualización desde la propia aplicación: el botón Actualizar descarga e instala la nueva versión sin errores",
-    "Ya no aparece el aviso «solo disponible para Android» estando dentro de la app Android",
-    "La app usa la versión real instalada para no ofrecer repetida la misma actualización"
+    "La barra de navegación inferior ya no se oculta al hacer scroll: permanece siempre visible",
+    "Corregido que la barra inferior no volviera a aparecer tras escribir en un campo"
   ],
-  "sizeBytes": 5153280,
-  "sha256": "3a0843a2a39b9f798c58c4a65f9f509b5acc4ec75375a19d21d821edf9429659",
-  "publishedAt": "2026-08-09T08:23:40Z"
+  "sizeBytes": 5154884,
+  "sha256": "554eb6dcd2210233f54779d1240374782a179a95997e07031e5d711103b44de9",
+  "publishedAt": "2026-08-09T08:40:49.961Z"
 }
