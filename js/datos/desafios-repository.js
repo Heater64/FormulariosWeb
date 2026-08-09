@@ -296,8 +296,17 @@
 
     async marcarEnJuego(desafioId, usuarioId) {
       if (!sb()) return;
-      try { await sb().from('desafio_participantes').update({ estado: 'en_juego' })
-        .eq('desafio_id', desafioId).eq('usuario_id', usuarioId); } catch (e) {}
+      try {
+        // Solo desde 'aceptado' → 'en_juego'. Nunca sobrescribir un estado
+        // terminal ('terminado'/'abandonado'/'rechazado'): una re-entrada
+        // tardía de _empezarJuego (carrera con terminarJugador cuando el
+        // tiempo expira) revertiría el resultado ya guardado y dejaría el
+        // desafío sin cerrarse nunca (ambos jugadores a 0/10, tiempo 320s
+        // en producción).
+        await sb().from('desafio_participantes').update({ estado: 'en_juego' })
+          .eq('desafio_id', desafioId).eq('usuario_id', usuarioId)
+          .in('estado', ['aceptado']);
+      } catch (e) {}
     },
 
     // Guarda el progreso del participante (persistencia al recargar/cerrar

@@ -130,6 +130,17 @@
           return;
         }
         if (yo && ['aceptado', 'en_juego'].includes(yo.estado)) {
+          // Si el tiempo del desafío ya se agotó pero este participante sigue
+          // marcado como activo (carrera entre marcarEnJuego y terminarJugador,
+          // o reconexión tras agotarse el tiempo), NO se re-entra al juego:
+          // reiniciaría _estado (idx 0, correctas 0) y machacaría los aciertos
+          // ya guardados. Se espera a que el servidor cierre el desafío.
+          const limiteMs = (desafio.tiempo_limite_seg || 120) * 1000;
+          if (ahora - inicio >= limiteMs) {
+            this._renderEsperando(desafio, 'Se acabó el tiempo. Has terminado tu desafío — esperando a los demás.');
+            this._pollTimer = setTimeout(() => this._loop(), 2500);
+            return;
+          }
           this._empezarJuego(desafio);
           return;
         }

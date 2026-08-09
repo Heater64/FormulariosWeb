@@ -257,6 +257,22 @@ describe('terminarJugador (idempotencia y doble envío)', () => {
   });
 });
 
+describe('marcarEnJuego (regresión: nunca sobrescribe un estado terminal)', () => {
+  test('solo transiciona desde "aceptado" (filtro estado IN aceptado)', async () => {
+    usarSupabase({
+      respuesta: () => ({ data: null, error: null })
+    });
+    await window.desafiosRepository.marcarEnJuego('d1', 'u1');
+    const update = supabase.llamadas.find(l => l.tabla === 'desafio_participantes' && l.op === 'update');
+    expect(update).toBeTruthy();
+    expect(update.valor).toEqual({ estado: 'en_juego' });
+    // El filtro estado IN ['aceptado'] impide que una re-entrada tardía
+    // revierta 'terminado'/'abandonado' → 'en_juego' (bucle de re-entrada
+    // que machacaba los aciertos a 0 y dejaba el desafío sin cerrar).
+    expect(update.filtros).toContainEqual(['estado', ['aceptado']]);
+  });
+});
+
 describe('obtenerDesafio + RPC abandonar_vencidos', () => {
   test('invoca la RPC cuando hay candidatos vencidos y relee participantes si afectó', async () => {
     const rpcLlamadas = [];
