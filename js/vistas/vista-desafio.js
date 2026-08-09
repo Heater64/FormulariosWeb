@@ -237,10 +237,10 @@
       // sin timestamp): sin esta guarda el contador nunca llegaría a 0.
       if (!Number.isFinite(inicio)) inicio = Date.now();
       const tick = () => {
-        if (this._enJuego) { clearInterval(iv); this._cuentaTimer = null; return; }
+        if (this._enJuego) { clearInterval(this._cuentaTimer); this._cuentaTimer = null; return; }
         const restante = inicio - Date.now();
         if (restante <= 0) {
-          clearInterval(iv);
+          clearInterval(this._cuentaTimer);
           this._cuentaTimer = null;
           num.textContent = '¡Ya!';
           sub.textContent = 'Comienza...';
