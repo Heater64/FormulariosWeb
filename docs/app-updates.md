@@ -186,31 +186,23 @@ Si el permiso se deniega, la app sigue funcionando con la versión actual. En un
 
 5. En Android Studio configura el keystore de firma o usa el workflow de release con los secretos documentados.
 6. Genera `android/app/build/outputs/apk/release/app-release.apk`.
-7. Crea una GitHub Release con tag `v1.0.2` y sube la APK versionada junto con una copia estable llamada `formsbiblicos.apk`. El workflow ya prepara ambos nombres.
-8. Calcula checksum y tamaño:
+7. Escribe las novedades de la release en `release-notes.md` (una por línea, empezando por `- ` o `* `; los comentarios `#` y la prosa se ignoran). El workflow las usa como cuerpo de la GitHub Release y como `releaseNotes` de `version.json`.
+8. Revisa `minimumVersion`/`minimumVersionCode`/`mandatory` en el `version.json` commiteado: el workflow conserva esos campos tal cual y los publica sin tocarlos.
+9. Ejecuta el workflow **Actions → Android Release → Run workflow** (rama `main`). Compila la APK firmada, crea la GitHub Release y genera y publica `version.json` automáticamente (commit + push a main; Vercel despliega el manifiesto con ese push).
+10. Comprueba desde un navegador:
 
-   ```bash
-   sha256sum formsbiblicos-1.0.2.apk
-   # PowerShell:
-   Get-FileHash .\formsbiblicos-1.0.2.apk -Algorithm SHA256
-   ```
+    ```bash
+    curl -i https://TU-DOMINIO/version.json
+    ```
 
-9. Actualiza `version.json` con la URL pública, `versionCode`, `sizeBytes`, `sha256`, notas y fecha.
-10. Despliega Vercel.
-11. Comprueba desde un navegador:
-
-   ```bash
-   curl -i https://TU-DOMINIO/version.json
-   ```
-
-   Debe responder HTTP 200, JSON y caché no prolongada.
-12. Instala la versión anterior en un dispositivo Android, abre la app y usa **Perfil → Buscar actualizaciones**.
+    Debe responder HTTP 200, JSON, caché no prolongada y la nueva versión/checksum.
+11. Instala la versión anterior en un dispositivo Android, abre la app y usa **Perfil → Buscar actualizaciones**.
 
 ## 9. Workflow de GitHub Actions
 
 `.github/workflows/ci.yml` ejecuta tests y build en push/PR.
 
-`.github/workflows/release-android.yml` se ejecuta manualmente desde **Actions → Android Release → Run workflow**. No contiene secretos falsos; necesita estos secretos del repositorio:
+`.github/workflows/release-android.yml` se ejecuta manualmente desde **Actions → Android Release → Run workflow** y solo acepta la rama `main`. No contiene secretos falsos; necesita estos secretos del repositorio:
 
 - `ANDROID_KEYSTORE_BASE64`: keystore de firma codificado en Base64.
 - `ANDROID_KEYSTORE_PASSWORD`: contraseña del keystore.
@@ -221,7 +213,9 @@ Y esta variable pública del repositorio:
 
 - `UPDATE_MANIFEST_URL`: URL HTTPS de producción a `/version.json`.
 
-El workflow compila, firma, calcula SHA-256, crea la GitHub Release con `GITHUB_TOKEN` y deja en el resumen los datos que deben copiarse a `version.json`. No modifica ni despliega automáticamente `version.json` para evitar publicar un manifiesto antes de verificar manualmente la release.
+El workflow compila y firma la APK, calcula SHA-256 y tamaño, crea la GitHub Release y **genera y publica `version.json` automáticamente**: `scripts/generate-version-manifest.mjs` construye el manifiesto (versión/versionCode desde las fuentes, sha256/tamaño reales del asset, notas de `release-notes.md`) y valida el resultado contra el contrato de la app. Después hace commit + push a main; Vercel despliega el manifiesto con ese push. El orden garantiza que la APK ya existe cuando el manifiesto la anuncia: primero se crea la release y después se publica el manifiesto.
+
+Para cambiar el mínimo soportado o el carácter obligatorio de una release, edita `minimumVersion`/`minimumVersionCode`/`mandatory` en el `version.json` commiteado y súbelos ANTES de ejecutar el workflow: esos tres campos se conservan tal cual.
 
 ## 10. Hacer una actualización obligatoria
 

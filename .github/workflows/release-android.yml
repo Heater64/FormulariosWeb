@@ -19,8 +19,13 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Validate production manifest URL
-        run: test -n "$VITE_UPDATE_MANIFEST_URL"
+      # Guardas de fail-fast: la release solo se publica desde main, con el
+      # endpoint de producción configurado y con las novedades escritas.
+      - name: Validate release context
+        run: |
+          test "$GITHUB_REF" = "refs/heads/main" || { echo "Ejecuta el workflow desde la rama main."; exit 1; }
+          test -n "$VITE_UPDATE_MANIFEST_URL" || { echo "Configura la variable pública UPDATE_MANIFEST_URL del repositorio."; exit 1; }
+          test -f release-notes.md || { echo "Crea release-notes.md con las novedades (una por línea empezando por \"- \") antes de lanzar la release."; exit 1; }
 
       - name: Setup Node
         uses: actions/setup-node@v4
@@ -86,6 +91,9 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           gh release delete "v${VERSION}" --yes --cleanup-tag || true
 
+      # Orden importante: la release (con la APK subida) se crea ANTES de
+      # publicar version.json, para que el manifiesto nunca anuncie una versión
+      # cuya APK aún no existe.
       - name: Create GitHub Release
         env:
           GH_TOKEN: ${{ github.token }}
@@ -93,7 +101,30 @@ jobs:
           VERSION="${{ steps.version.outputs.version }}"
           gh release create "v${VERSION}" "release/formsbiblicos-${VERSION}.apk" "release/formsbiblicos.apk" \
             --title "FormsBiblicos ${VERSION}" \
-            --generate-notes
+            --notes-file release-notes.md
+
+      # Genera version.json (versión/versionCode de las fuentes, sha256/tamaño
+      # reales del asset, notas de release-notes.md; conserva minimumVersion/
+      # minimumVersionCode/mandatory del manifiesto commiteado), valida el
+      # resultado contra el contrato y lo publica con un commit + push: Vercel
+      # despliega el manifiesto automáticamente con ese push.
+      - name: Generate and publish version.json
+        run: |
+          VERSION="${{ steps.version.outputs.version }}"
+          node scripts/generate-version-manifest.mjs \
+            --repo "${{ github.repository }}" \
+            --sha256 "${{ steps.asset.outputs.sha256 }}" \
+            --size "${{ steps.asset.outputs.size }}" \
+            --notes release-notes.md
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add version.json
+          if git diff --cached --quiet; then
+            echo "version.json sin cambios; no hace falta commit."
+          else
+            git commit -m "Manifest ${VERSION}: sha256 y tamaño reales de la release"
+            git push origin main
+          fi
 
       - name: Publish release data
         run: |
@@ -107,5 +138,5 @@ jobs:
             echo "- sha256: ${{ steps.asset.outputs.sha256 }}"
             echo "- sizeBytes: ${{ steps.asset.outputs.size }}"
             echo ""
-            echo "Actualiza version.json con estos valores y despliega Vercel."
+            echo "version.json generado y publicado automáticamente (commit + push a main; Vercel despliega el manifiesto)."
           } >> "$GITHUB_STEP_SUMMARY"

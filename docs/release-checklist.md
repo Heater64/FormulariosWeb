@@ -19,6 +19,8 @@
 - [ ] Revisar que `android/version-code.properties` tenga un `versionCode` mayor que el de la release anterior.
 - [ ] Ejecutar `npm run version:sync`.
 - [ ] Confirmar que `android/app/build.gradle` lee `package.json.version` y `android/version-code.properties`, sin valores manuales de versión.
+- [ ] Escribir las novedades en `release-notes.md` (una por línea empezando por `- ` o `* `; comentarios `#` y prosa ignorados).
+- [ ] Revisar `minimumVersion`/`minimumVersionCode`/`mandatory` en `version.json` (el workflow los conserva y publica tal cual).
 
 ## C. Verificación antes de APK
 
@@ -49,35 +51,27 @@
 
 ## E. GitHub Release
 
-- [ ] Crear tag `vX.Y.Z`.
-- [ ] Crear GitHub Release.
-- [ ] Subir exactamente una APK release firmada.
+- [ ] Ejecutar **Actions → Android Release → Run workflow** desde la rama `main`.
+- [ ] Confirmar que el workflow crea la GitHub Release con la APK firmada y las notas de `release-notes.md`.
 - [ ] Confirmar que la URL pública devuelve la APK y no una página HTML.
-- [ ] Copiar URL, SHA-256 y tamaño sin modificar caracteres.
-- [ ] Añadir notas de release legibles.
+- [ ] Confirmar que el workflow genera `version.json` y lo publica con commit + push.
+- [ ] Conservar el resumen del workflow (versión, versionCode, sha256, tamaño).
 
-## F. `version.json`
+## F. `version.json` (automatizado)
 
-- [ ] Actualizar `version` a `X.Y.Z`.
-- [ ] Actualizar `versionCode` al entero creciente.
-- [ ] Revisar `minimumVersion` y `minimumVersionCode`.
-- [ ] Decidir `mandatory`; usar `true` solo cuando la APK ya esté publicada y probada.
-- [ ] Actualizar `apkUrl` al asset exacto de GitHub.
-- [ ] Actualizar `releaseUrl` al tag correcto.
-- [ ] Actualizar `releaseNotes`.
-- [ ] Actualizar `sizeBytes`.
-- [ ] Actualizar `sha256` en minúsculas.
-- [ ] Actualizar `publishedAt` en ISO 8601 UTC.
-- [ ] Validar que no haya URLs HTTP, hosts desconocidos o campos con tipos incorrectos.
+- [ ] Confirmar que el workflow lo generó con la versión, versionCode, sha256 y tamaño reales de la release.
+- [ ] Confirmar que conservó `minimumVersion`/`minimumVersionCode`/`mandatory` del archivo commiteado.
+- [ ] Confirmar que el commit "Manifest X.Y.Z" llegó a `main` (Vercel se despliega con ese push).
+- [ ] Confirmar que no hay URLs HTTP, hosts desconocidos o campos con tipos incorrectos (el script valida antes de escribir).
 
 ## G. Vercel
 
-- [ ] Desplegar a Producción, no Preview.
+- [ ] Confirmar el despliegue automático del push "Manifest X.Y.Z" (Producción, no Preview).
 - [ ] Abrir `https://TU-DOMINIO/version.json` sin autenticación.
 - [ ] Confirmar HTTP 200.
 - [ ] Confirmar `Content-Type: application/json`.
 - [ ] Confirmar `Cache-Control` sin caché prolongada.
-- [ ] Confirmar que la respuesta contiene el nuevo `version` y `versionCode`.
+- [ ] Confirmar que la respuesta contiene el nuevo `version`, `versionCode` y `sha256`.
 - [ ] Confirmar que `apkUrl` devuelve el asset esperado.
 
 ## H. Pruebas de actualización

@@ -18,7 +18,7 @@ Distribuir FormsBiblicos como app Android fuera de Google Play sin servidor prop
 5. **Instalación Android:** plugin local `UpdateInstaller`, registrado en `MainActivity`, descarga por streaming a `cacheDir/updates`, valida HTTPS/hosts de GitHub, tamaño, respuesta, extensión, firma ZIP/APK y SHA-256 opcional, usa `FileProvider` con URI `content://` y abre el instalador oficial. Nunca se usa `file://`, `eval()` ni instalación silenciosa.
 6. **Producto web:** la landing pública no incluye manifest, Service Worker ni instalación web. La app Android contiene su interfaz localmente en `dist/`.
 7. **UX:** `UpdateDialog` será reutilizable, accesible y no bloqueante para actualizaciones opcionales. La actualización obligatoria no tendrá acción “Más tarde” y persistirá hasta que el usuario actualice o corrija el error.
-8. **Release workflow:** se añadirá CI para tests/build y workflow manual/opcional de APK/Release sin secretos falsos. La publicación de `version.json` seguirá requiriendo actualizar la URL y el checksum reales del asset.
+8. **Release workflow:** se añadirá CI para tests/build y workflow manual/opcional de APK/Release sin secretos falsos. `version.json` se genera y publica automáticamente al terminar la release: `scripts/generate-version-manifest.mjs` + `release-notes.md` + commit/push en el workflow.
 
 ## Contrato `version.json`
 ```json
