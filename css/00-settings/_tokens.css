@@ -1,46 +1,48 @@
 :root {
+  /* ── Palette ── */
   --color-acento: #2563EB;
   --color-acento-hover: #1D4ED8;
-  --color-acento-soft: #DBEAFE;
+  --color-acento-soft: #EFF6FF;
   --color-texto-acento: #FFFFFF;
-  --color-texto: #0F172A;
-  --color-texto-secundario: #64748B;
-  --color-texto-terciario: #64748B;
-  --color-fondo: #FFFFFF;
-  --color-fondo-alt: #F1F5F9;
+  --color-texto: #1C1917;
+  --color-texto-secundario: #78716C;
+  --color-texto-terciario: #A8A29E;
+  --color-fondo: #FAFAF9;
+  --color-fondo-alt: #F5F5F4;
   --color-fondo-tarjeta: #FFFFFF;
-  --color-borde: #CBD5E1;
+  --color-borde: #E7E5E4;
   --color-borde-foco: #2563EB;
-  --color-exito: #047857;
-  --color-exito-soft: #D1FAE5;
+  --color-exito: #15803D;
+  --color-exito-soft: #DCFCE7;
   --color-error: #B91C1C;
   --color-error-soft: #FEE2E2;
   --color-error-hover: #DC2626;
-  --color-aviso: #F59E0B;
+  --color-aviso: #D97706;
   --color-aviso-soft: #FEF3C7;
-  --color-info: #3B82F6;
-  --color-info-soft: #DBEAFE;
+  --color-info: #0369A1;
+  --color-info-soft: #E0F2FE;
   --color-acento-fuerte: #1E40AF;
-  --color-acento-soft-hover: #BFDBFE;
-  /* Colores canónicos de testamento — invariantes al tema (semántica AT/NT, no decorativos) */
+  --color-acento-soft-hover: #DBEAFE;
+  /* Colores canónicos de testamento — invariantes al tema */
   --color-testamento-at: #8B4513;
   --color-testamento-nt: #2563EB;
-  /* Color neutro medio para bandas/secciones tipo header dentro de cards */
-  --color-seccion-banda: #555;
-  /* Texto blanco legible sobre fondo de banda sección (invariante al tema: bajo contraste deliberado) */
+  /* Color neutro medio para bandas/secciones */
+  --color-seccion-banda: #57534E;
   --color-seccion-texto: #fff;
   --color-naranja: #C2410C;
   --color-naranja-soft: #FFEDD5;
-  /* Tinte del shimmer (efecto "highlight" en skeletons) por tema.
-     Light: blanco semi-transparente sobre fondo gris claro.
-     Dark:  blanco aún más tenue para no quemar el dark mode. */
   --color-shimmer: rgba(255, 255, 255, 0.35);
   --color-superficie-modal: rgba(0,0,0,0.32);
   --color-vidrio: rgba(255,255,255,0.72);
   --color-vidrio-borde: rgba(255,255,255,0.6);
   --desenfoque-vidrio: saturate(180%) blur(20px);
-  --fuente-base: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, sans-serif;
+
+  /* ── Typography ── */
+  --fuente-display: "Newsreader", Georgia, "Times New Roman", serif;
+  --fuente-base: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --fuente-mono: "SF Mono", ui-monospace, "Fira Code", "Cascadia Code", monospace;
+
+  /* ── Type scale ── */
   --texto-xs: 0.75rem;
   --texto-sm: 0.875rem;
   --texto-base: 1rem;
@@ -56,6 +58,8 @@
   --texto-altura-linea-titulo: 1.2;
   --texto-altura-linea-cuerpo: 1.6;
   --lectura-max-ancho: 72ch;
+
+  /* ── Spacing ── */
   --espaciado-xxs: 6px;
   --espaciado-xs: 10px;
   --espaciado-sm: 14px;
@@ -64,43 +68,49 @@
   --espaciado-xl: 36px;
   --espaciado-2xl: 52px;
   --espaciado-3xl: 72px;
-  --radio-sm: 10px;
-  --radio-md: 16px;
-  --radio-lg: 22px;
-  --radio-xl: 30px;
-  --radio-2xl: 40px;
+
+  /* ── Radii — tighter, less AI-rounded ── */
+  --radio-sm: 6px;
+  --radio-md: 10px;
+  --radio-lg: 14px;
+  --radio-xl: 18px;
+  --radio-2xl: 22px;
   --radio-pill: 999px;
-  --radio-pill: 999px;
+
   /* ── Design System: unified tokens ── */
-  --card-radius: var(--radio-xl);
+  --card-radius: var(--radio-lg);
   --card-padding: var(--espaciado-lg);
   --card-padding-sm: var(--espaciado-md);
   --card-shadow: var(--sombra-sm);
-  --card-shadow-hover: var(--sombra-lg);
+  --card-shadow-hover: var(--sombra-md);
   --card-border: 1px solid var(--color-borde);
   --card-bg: var(--color-fondo-tarjeta);
-  --card-transition: transform var(--transicion-normal), box-shadow var(--transicion-normal), border-color var(--transicion-normal);
-  --card-hover-lift: translateY(-3px);
-  --btn-radius: var(--radio-lg);
-  --btn-radius-sm: var(--radio-md);
+  --card-transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
+  --card-hover-lift: translateY(-1px);
+  --btn-radius: var(--radio-md);
+  --btn-radius-sm: var(--radio-sm);
   --btn-padding: var(--espaciado-sm) var(--espaciado-xl);
   --btn-padding-sm: var(--espaciado-xs) var(--espaciado-lg);
   --focus-ring: 0 0 0 3px var(--color-acento-soft);
   --section-gap: var(--espaciado-md);
   --section-gap-lg: var(--espaciado-lg);
-  --sombra-sm: 0 1px 2px rgba(15,23,42,0.04), 0 1px 3px rgba(15,23,42,0.06);
-  --sombra-md: 0 6px 16px -4px rgba(15,23,42,0.10), 0 2px 6px -2px rgba(15,23,42,0.06);
-  --sombra-lg: 0 18px 40px -8px rgba(15,23,42,0.16), 0 8px 16px -6px rgba(15,23,42,0.08);
-  --sombra-xl: 0 30px 60px -12px rgba(15,23,42,0.22), 0 12px 24px -8px rgba(15,23,42,0.10);
-  --sombra-nav: 0 -1px 0 rgba(15,23,42,0.04), 0 -8px 24px -16px rgba(15,23,42,0.25);
+
+  /* ── Shadows — flat, grounded ── */
+  --sombra-sm: 0 1px 2px rgba(28,25,23,0.04);
+  --sombra-md: 0 2px 8px -2px rgba(28,25,23,0.08);
+  --sombra-lg: 0 8px 24px -6px rgba(28,25,23,0.10);
+  --sombra-xl: 0 16px 48px -12px rgba(28,25,23,0.14);
+  --sombra-nav: 0 -1px 0 rgba(28,25,23,0.06);
+
+  /* ── Motion ── */
   --easing-apple: cubic-bezier(0.32, 0.72, 0, 1);
   --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
   --easing-entrada: cubic-bezier(0, 0, 0.2, 1);
   --easing-salida: cubic-bezier(0.4, 0, 1, 1);
   --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transicion-rapida: 240ms var(--easing-apple);
-  --transicion-normal: 380ms var(--easing-apple);
-  --transicion-lenta: 640ms var(--easing-apple);
+  --transicion-rapida: 200ms var(--easing-smooth);
+  --transicion-normal: 320ms var(--easing-smooth);
+  --transicion-lenta: 560ms var(--easing-smooth);
   --toque-minimo: 48px;
 }
 
@@ -119,8 +129,8 @@
     --color-fondo-alt: #F0F0F0;
     --color-fondo-tarjeta: #FFFFFF;
     --color-borde: #000000;
-    --color-acento: #0033CC;
-    --color-acento-soft: #CCDDFF;
+    --color-acento: #1D4ED8;
+    --color-acento-soft: #BFDBFE;
     --color-exito: #006600;
     --color-error: #CC0000;
     --color-aviso: #996600;
@@ -138,8 +148,8 @@
     --color-fondo-alt: #0A0A0A;
     --color-fondo-tarjeta: #1A1A1A;
     --color-borde: #FFFFFF;
-    --color-acento: #88BBFF;
-    --color-acento-soft: #002244;
+    --color-acento: #60A5FA;
+    --color-acento-soft: #1E3A5F;
     --color-texto-acento: #000000;
     --color-exito: #66FF66;
     --color-error: #FF6666;
@@ -153,56 +163,54 @@
 /* ===== THEME: Dark ===== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-texto: #FFFFFF;
-    --color-shimmer: rgba(255, 255, 255, 0.10);
-    --color-texto-secundario: #94A3B8;
-    /* Terciario legible en dark (WCAG AA): #64748B daba 3.07:1 sobre la
-       tarjeta (#1E293B) — fallaba AA. #8494AE: 4.76:1 sobre tarjeta y
-       5.80:1 sobre fondo, manteniendo la jerarquía (más apagado que el
-       secundario #94A3B8). */
-    --color-texto-terciario: #8494AE;
-    --color-fondo: #0F172A;
-    --color-fondo-alt: #1E293B;
-    --color-fondo-tarjeta: #1E293B;
-    --color-borde: #334155;
+    --color-texto: #FAFAF9;
+    --color-shimmer: rgba(255, 255, 255, 0.06);
+    --color-texto-secundario: #A8A29E;
+    --color-texto-terciario: #78716C;
+    --color-fondo: #0C0A09;
+    --color-fondo-alt: #1C1917;
+    --color-fondo-tarjeta: #1C1917;
+    --color-borde: #292524;
+    --color-acento: #60A5FA;
+    --color-acento-hover: #3B82F6;
     --color-acento-soft: #1E3A5F;
+    --color-acento-soft-hover: #1E40AF;
     --color-exito-soft: #064E3B;
     --color-error-soft: #7F1D1D;
     --color-aviso-soft: #78350F;
-    --color-vidrio: rgba(30,41,59,0.66);
-    --color-vidrio-borde: rgba(255,255,255,0.12);
-    --sombra-sm: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4);
-    --sombra-md: 0 6px 16px -4px rgba(0,0,0,0.45), 0 2px 6px -2px rgba(0,0,0,0.35);
-    --sombra-lg: 0 18px 40px -8px rgba(0,0,0,0.55), 0 8px 16px -6px rgba(0,0,0,0.4);
-    --sombra-xl: 0 30px 60px -12px rgba(0,0,0,0.6), 0 12px 24px -8px rgba(0,0,0,0.45);
-    --sombra-nav: 0 -1px 0 rgba(0,0,0,0.3), 0 -8px 24px -16px rgba(0,0,0,0.5);
+    --color-vidrio: rgba(28,25,23,0.66);
+    --color-vidrio-borde: rgba(255,255,255,0.08);
+    --sombra-sm: 0 1px 2px rgba(0,0,0,0.2);
+    --sombra-md: 0 2px 8px -2px rgba(0,0,0,0.3);
+    --sombra-lg: 0 8px 24px -6px rgba(0,0,0,0.4);
+    --sombra-xl: 0 16px 48px -12px rgba(0,0,0,0.5);
+    --sombra-nav: 0 -1px 0 rgba(0,0,0,0.2);
   }
 }
 
 :root[data-theme="dark"] {
-  --color-texto: #FFFFFF;
-  --color-shimmer: rgba(255, 255, 255, 0.10);
-  --color-texto-secundario: #94A3B8;
-  /* Terciario legible en dark (WCAG AA): #64748B daba 3.07:1 sobre la
-     tarjeta (#1E293B) — fallaba AA. #8494AE: 4.76:1 sobre tarjeta y
-     5.80:1 sobre fondo, manteniendo la jerarquía (más apagado que el
-     secundario #94A3B8). */
-  --color-texto-terciario: #8494AE;
-  --color-fondo: #0F172A;
-  --color-fondo-alt: #1E293B;
-  --color-fondo-tarjeta: #1E293B;
-  --color-borde: #334155;
+  --color-texto: #FAFAF9;
+  --color-shimmer: rgba(255, 255, 255, 0.06);
+  --color-texto-secundario: #A8A29E;
+  --color-texto-terciario: #78716C;
+  --color-fondo: #0C0A09;
+  --color-fondo-alt: #1C1917;
+  --color-fondo-tarjeta: #1C1917;
+  --color-borde: #292524;
+  --color-acento: #60A5FA;
+  --color-acento-hover: #3B82F6;
   --color-acento-soft: #1E3A5F;
+  --color-acento-soft-hover: #1E40AF;
   --color-exito-soft: #064E3B;
   --color-error-soft: #7F1D1D;
   --color-aviso-soft: #78350F;
-  --color-vidrio: rgba(30,41,59,0.66);
-  --color-vidrio-borde: rgba(255,255,255,0.12);
-  --sombra-sm: 0 1px 2px rgba(0,0,0,0.3), 0 1px 3px rgba(0,0,0,0.4);
-  --sombra-md: 0 6px 16px -4px rgba(0,0,0,0.45), 0 2px 6px -2px rgba(0,0,0,0.35);
-  --sombra-lg: 0 18px 40px -8px rgba(0,0,0,0.55), 0 8px 16px -6px rgba(0,0,0,0.4);
-  --sombra-xl: 0 30px 60px -12px rgba(0,0,0,0.6), 0 12px 24px -8px rgba(0,0,0,0.45);
-  --sombra-nav: 0 -1px 0 rgba(0,0,0,0.3), 0 -8px 24px -16px rgba(0,0,0,0.5);
+  --color-vidrio: rgba(28,25,23,0.66);
+  --color-vidrio-borde: rgba(255,255,255,0.08);
+  --sombra-sm: 0 1px 2px rgba(0,0,0,0.2);
+  --sombra-md: 0 2px 8px -2px rgba(0,0,0,0.3);
+  --sombra-lg: 0 8px 24px -6px rgba(0,0,0,0.4);
+  --sombra-xl: 0 16px 48px -12px rgba(0,0,0,0.5);
+  --sombra-nav: 0 -1px 0 rgba(0,0,0,0.2);
 }
 
 /* ===== HIGH CONTRAST: Light ===== */
@@ -214,8 +222,8 @@
   --color-fondo-alt: #F0F0F0;
   --color-fondo-tarjeta: #FFFFFF;
   --color-borde: #000000;
-  --color-acento: #0033CC;
-  --color-acento-soft: #CCDDFF;
+  --color-acento: #1D4ED8;
+  --color-acento-soft: #BFDBFE;
   --color-exito: #006600;
   --color-error: #CC0000;
   --color-aviso: #996600;
@@ -232,8 +240,8 @@
   --color-fondo-alt: #0A0A0A;
   --color-fondo-tarjeta: #1A1A1A;
   --color-borde: #FFFFFF;
-  --color-acento: #88BBFF;
-  --color-acento-soft: #002244;
+  --color-acento: #60A5FA;
+  --color-acento-soft: #1E3A5F;
   --color-texto-acento: #000000;
   --color-exito: #66FF66;
   --color-error: #FF6666;
@@ -253,8 +261,8 @@
     --color-fondo-alt: #0A0A0A;
     --color-fondo-tarjeta: #1A1A1A;
     --color-borde: #FFFFFF;
-    --color-acento: #88BBFF;
-    --color-acento-soft: #002244;
+    --color-acento: #60A5FA;
+    --color-acento-soft: #1E3A5F;
     --color-texto-acento: #000000;
     --color-exito: #66FF66;
     --color-error: #FF6666;

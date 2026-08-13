@@ -406,13 +406,30 @@
       const nav = document.getElementById('barra-navegacion');
       if (!nav) return;
       const usuario = store.obtener('usuario');
-      if (!usuario) { 
-        nav.innerHTML = ''; 
-        nav.style.display = 'none'; 
-        return; 
+      if (!usuario) {
+        nav.innerHTML = '';
+        nav.style.display = 'none';
+        // Sin sesión (p. ej. la pantalla de login) la sidebar no se dibuja:
+        // el contenido debe ocupar toda la pantalla sin el margen lateral.
+        document.body.classList.add('fb-sin-nav');
+        return;
       }
       nav.style.display = '';
-      nav.setAttribute('role', 'tablist');
+      document.body.classList.remove('fb-sin-nav');
+
+      const E = (v) => window.helpers.escapeHtml(v == null ? '' : String(v));
+
+      // Marca del centro (nombre configurado por el propietario), desde la
+      // caché local para no depender de red en cada render.
+      let marcaNombre = 'FormsBiblicos';
+      try {
+        const cache = localStorage.getItem('fb_marca');
+        if (cache) {
+          const c = JSON.parse(cache);
+          if (c.marca_nombre) marcaNombre = c.marca_nombre;
+        }
+      } catch (e) { /* caché corrupta: usar nombre por defecto */ }
+
       const items = [
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
         { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
@@ -428,20 +445,62 @@
       if (itemActivo) {
         try { localStorage.setItem("fb_nav_activo", itemActivo.ruta); } catch (e) {}
       }
-      nav.innerHTML = items.map(i => `
-        <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
-          <span>${window.Iconos.render(i.icono)}</span>
-          <span>${i.texto}</span>
-        </a>
-      `).join('');
-      window.Iconos.actualizar();      nav.querySelectorAll('[data-nav]').forEach(el => {
-        el.addEventListener('click', e => { 
-          e.preventDefault(); 
-          router.navegar(el.getAttribute('href').replace('#!', '')); 
+
+      // Identidad del usuario para el pie de la sidebar (solo escritorio)
+      const nombre = usuario.nombre_completo || usuario.username || 'Usuario';
+      const inicial = (nombre || '?').charAt(0).toUpperCase();
+      const rol = (usuario.rol || '').trim().toLowerCase();
+      const rolEtiqueta = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor', usuario: 'Alumno' }[rol] || rol;
+      // Evita duplicar "Propietario / Propietario" cuando el nombre coincide
+      // con el rol: en ese caso se muestra el @username como línea secundaria.
+      const secundario = rolEtiqueta && rolEtiqueta.toLowerCase() !== nombre.toLowerCase()
+        ? rolEtiqueta
+        : (usuario.username ? '@' + usuario.username : rolEtiqueta);
+      const avatarHtml = usuario.foto_perfil
+        ? `<img class="barra-nav-inferior__avatar-foto" src="${E(usuario.foto_perfil)}" alt="">`
+        : `<span class="barra-nav-inferior__avatar">${E(inicial)}</span>`;
+
+      nav.innerHTML = `
+        <div class="barra-nav-inferior__marca">
+          <span class="barra-nav-inferior__logo" aria-hidden="true">${window.Iconos.render('book-open')}</span>
+          <span class="barra-nav-inferior__marca-nombre">${E(marcaNombre)}</span>
+        </div>
+        <div class="barra-nav-inferior__items" role="tablist" aria-label="Navegación principal">
+          ${items.map(i => `
+            <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
+              <span class="barra-nav-inferior__icono">${window.Iconos.render(i.icono)}</span>
+              <span class="barra-nav-inferior__texto">${E(i.texto)}</span>
+            </a>
+          `).join('')}
+        </div>
+        <div class="barra-nav-inferior__usuario">
+          <a class="barra-nav-inferior__usuario-perfil" href="#!/perfil" data-nav aria-label="Ir a mi perfil">
+            ${avatarHtml}
+            <span class="barra-nav-inferior__usuario-info">
+              <span class="barra-nav-inferior__usuario-nombre">${E(nombre)}</span>
+              <span class="barra-nav-inferior__usuario-rol">${E(secundario)}</span>
+            </span>
+          </a>
+          <button class="barra-nav-inferior__salir" id="btnLogoutSidebar" type="button" aria-label="Cerrar sesión" title="Cerrar sesión">${window.Iconos.render('log-out')}</button>
+        </div>
+      `;
+
+      window.Iconos.actualizar();
+
+      nav.querySelectorAll('[data-nav]').forEach(el => {
+        el.addEventListener('click', e => {
+          e.preventDefault();
+          router.navegar(el.getAttribute('href').replace('#!', ''));
         });
       });
 
-
+      const btnSalir = nav.querySelector('#btnLogoutSidebar');
+      if (btnSalir) {
+        btnSalir.addEventListener('click', async () => {
+          const ok = await window.helpers.confirmar('¿Estás seguro de cerrar sesión?', { titulo: 'Cerrar sesión', textoConfirmar: 'Cerrar sesión' });
+          if (ok && window.authRepository) window.authRepository.cerrarSesion();
+        });
+      }
     },
 
     // La campana de notificaciones ya NO vive en la barra inferior: cada

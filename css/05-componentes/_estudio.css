@@ -5,11 +5,16 @@
 /* ── Cabecera de la sección ──────────────────────────────────────────── */
 .estudio-cabecera {
   display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  margin-bottom: var(--espaciado-lg);
+}
+
+.estudio-cabecera__fila {
+  display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
   gap: var(--espaciado-sm);
-  margin-bottom: var(--espaciado-lg);
 }
 
 .estudio-cabecera h2 {
@@ -17,18 +22,33 @@
   align-items: center;
   gap: var(--espaciado-sm);
   margin: 0;
+  min-width: 0;
   font-size: var(--texto-xl);
   line-height: var(--texto-altura-linea-titulo);
 }
 
+.estudio-cabecera__titulo-texto {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
 .estudio-cabecera h2 svg {
   color: var(--color-acento);
+  flex-shrink: 0;
+}
+
+.estudio-cabecera__sub {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-terciario);
 }
 
 .estudio-cabecera__derecha {
   display: inline-flex;
   align-items: center;
   gap: var(--espaciado-xs);
+  flex-shrink: 0;
 }
 
 .estudio-usuario {
@@ -164,31 +184,57 @@
 
 /* ── Cabeceras colapsables Antiguo / Nuevo Testamento ────────────────── */
 .estudio-testamento {
+  position: relative;
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--espaciado-sm);
   padding: var(--espaciado-sm) var(--espaciado-md);
-  margin-bottom: var(--espaciado-md);
+  padding-left: calc(var(--espaciado-md) + 4px);
   background: var(--color-fondo-alt);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-lg);
   cursor: pointer;
   user-select: none;
   -webkit-tap-highlight-color: transparent;
+  overflow: hidden;
   transition: border-color var(--transicion-rapida),
               background var(--transicion-rapida);
 }
+
+/* Barra de color del testamento en el borde izquierdo */
+.estudio-testamento::before {
+  content: '';
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 4px;
+}
+
+.estudio-testamento--at::before { background: var(--color-acento); }
+.estudio-testamento--nt::before { background: var(--color-acento); }
 
 .estudio-testamento:hover {
   border-color: var(--color-acento-soft);
   background: var(--color-acento-soft);
 }
 
+.estudio-testamento__titulo {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+}
+
 .estudio-testamento h3 {
   margin: 0;
   font-size: var(--texto-base);
   font-weight: 700;
+}
+
+.estudio-testamento__count {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
 }
 
 .estudio-testamento__icono {
@@ -206,6 +252,82 @@
   transform: rotate(-90deg);
 }
 
+/* ── Lista de libros: pila en móvil, grid en pantallas amplias ───────── */
+.estudio-lista {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaciado-sm);
+}
+
+@media (min-width: 700px) {
+  .estudio-lista {
+    grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+  }
+}
+
+/* ── Cabecera del libro (vista de capítulos) ─────────────────────────── */
+.capitulos-cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-md);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+}
+
+.capitulos-cabecera__icono {
+  flex-shrink: 0;
+  display: grid;
+  place-items: center;
+  width: 48px;
+  height: 48px;
+  border-radius: var(--radio-lg);
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+}
+
+.capitulos-cabecera__icono svg {
+  width: 24px;
+  height: 24px;
+}
+
+.capitulos-cabecera__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xxs);
+}
+
+.capitulos-cabecera h2 {
+  margin: 0;
+  font-size: var(--texto-xl);
+  line-height: var(--texto-altura-linea-titulo);
+}
+
+.capitulos-cabecera__meta {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.capitulos-cabecera__barra {
+  width: 100%;
+  height: 8px;
+  border-radius: var(--radio-pill);
+  background: var(--color-borde);
+  overflow: hidden;
+  margin-top: var(--espaciado-xxs);
+}
+
+.capitulos-cabecera__barra--lleno {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  background: linear-gradient(90deg, var(--color-acento), #60A5FA);
+  transition: width var(--transicion-normal) var(--easing-apple);
+}
+
 @media (max-width: 480px) {
   .estudio-continuar {
     gap: var(--espaciado-sm);
@@ -214,5 +336,22 @@
     width: 40px;
     height: 40px;
   }
-
+  .estudio-cabecera__sub {
+    font-size: var(--texto-xs);
+  }
+  .capitulos-cabecera {
+    padding: var(--espaciado-sm);
+    gap: var(--espaciado-sm);
+  }
+  .capitulos-cabecera__icono {
+    width: 40px;
+    height: 40px;
+  }
+  .capitulos-cabecera__icono svg {
+    width: 20px;
+    height: 20px;
+  }
+  .capitulos-cabecera h2 {
+    font-size: var(--texto-lg);
+  }
 }

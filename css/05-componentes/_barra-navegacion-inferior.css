@@ -14,11 +14,24 @@
   background: var(--color-vidrio);
   -webkit-backdrop-filter: var(--desenfoque-vidrio);
   backdrop-filter: var(--desenfoque-vidrio);
-  border-top: 1px solid var(--color-vidrio-borde);
-  box-shadow: 0 -1px 0 rgba(15, 23, 42, 0.06), 0 -8px 24px -16px rgba(15, 23, 42, 0.28);
+  border-top: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-nav);
   padding: var(--espaciado-xs) var(--espaciado-xs) max(var(--espaciado-sm), env(safe-area-inset-bottom));
   min-height: calc(52px + env(safe-area-inset-bottom));
-  /* Sin transiciones en el contenedor: solo los items se animan */
+}
+
+/* Marca y pie de usuario solo existen en la sidebar de escritorio */
+.barra-nav-inferior__marca,
+.barra-nav-inferior__usuario {
+  display: none;
+}
+
+/* Lista de items (envoltorio): en móvil reparte los 5 items en fila */
+.barra-nav-inferior__items {
+  flex: 1 1 0;
+  display: flex;
+  justify-content: space-around;
+  align-items: stretch;
 }
 
 .barra-nav-inferior__item {
@@ -36,10 +49,17 @@
   line-height: 1;
   font-weight: 500;
   letter-spacing: 0.01em;
-  border-radius: var(--radio-lg);
+  border-radius: var(--radio-md);
   -webkit-tap-highlight-color: transparent;
   text-decoration: none;
-  transition: color var(--transicion-rapida) var(--easing-apple);
+  transition: color var(--transicion-rapida) var(--easing-apple),
+              background-color var(--transicion-rapida) var(--easing-apple);
+}
+
+.barra-nav-inferior__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .barra-nav-inferior__item svg {
@@ -56,7 +76,7 @@
 }
 
 .barra-nav-inferior__item--activo svg {
-  transform: scale(1.08);
+  transform: scale(1.06);
 }
 
 /* --- Item destacado (Estudio): centrado y un poco más grande --- */
@@ -69,19 +89,19 @@
   height: 26px;
 }
 
-/* --- Tap feedback (escala sutil para confirmar toque) --- */
+/* --- Tap feedback --- */
 .barra-nav-inferior__item:active {
-  transform: scale(0.92);
+  transform: scale(0.94);
 }
 
-/* --- Hover solo en dispositivos con puntero real (no touch) --- */
+/* --- Hover solo en dispositivos con puntero real --- */
 @media (hover: hover) {
   .barra-nav-inferior__item:hover {
     color: var(--color-texto-secundario);
   }
 }
 
-/* --- Breakpoint móvil: comprime padding/mínimo sin perder legibilidad --- */
+/* --- Breakpoint móvil --- */
 @media (max-width: 480px) {
   .barra-nav-inferior {
     padding: var(--espaciado-2xs) var(--espaciado-2xs) max(var(--espaciado-xs), env(safe-area-inset-bottom));
@@ -107,8 +127,6 @@
   .barra-nav-inferior__item {
     padding: 3px 1px;
     min-width: 40px;
-    /* Legibilidad mínima (WCAG 1.4.4): 11px es el piso; si no cabe, la etiqueta
-       se trunca con ellipsis en lugar de encoger el texto. */
     font-size: 11px;
     white-space: nowrap;
     overflow: hidden;
@@ -120,7 +138,7 @@
   }
 }
 
-/* --- Reduced motion: respeta preferencia del sistema (WCAG 2.3.3) --- */
+/* --- Reduced motion --- */
 @media (prefers-reduced-motion: reduce) {
   .barra-nav-inferior__item,
   .barra-nav-inferior__item svg,
@@ -135,13 +153,8 @@
 }
 
 /* ════════════════════════════════════════════════════════════
-   EXPANDED (desktop ≥1024px): la bottom bar pasa a rail lateral.
-   Una barra inferior estirada a 1920px con 5 ítems separados es
-   "móvil gigante" — en pantallas anchas las apps nativas usan una
-   barra lateral (rail). Misma estructura DOM, mismo estado activo:
-   solo cambia la geometría (columna fija a la izquierda) y el
-   contenido se desplaza. La campana (notif-barra) también se
-   alinea en fila dentro del rail.
+   SIDEBAR (desktop ≥1024px): la bottom bar pasa a rail lateral
+   con marca arriba, navegación y usuario al pie.
    ════════════════════════════════════════════════════════════ */
 @media (min-width: 1024px) {
   .barra-nav-inferior {
@@ -153,15 +166,61 @@
     flex-direction: column;
     align-items: stretch;
     justify-content: flex-start;
-    gap: var(--espaciado-2xs);
     border-top: none;
-    border-right: 1px solid var(--color-vidrio-borde);
+    border-right: 1px solid var(--color-borde);
     box-shadow: none;
-    padding: calc(env(safe-area-inset-top) + var(--espaciado-lg)) var(--espaciado-sm) calc(env(safe-area-inset-bottom) + var(--espaciado-md));
+    background: var(--color-fondo-alt);
+    -webkit-backdrop-filter: none;
+    backdrop-filter: none;
+    padding: calc(env(safe-area-inset-top) + var(--espaciado-lg)) var(--espaciado-md) calc(env(safe-area-inset-bottom) + var(--espaciado-md));
     min-height: 100dvh;
   }
 
+  /* --- Marca (arriba) --- */
+  .barra-nav-inferior__marca {
+    display: flex;
+    align-items: center;
+    gap: var(--espaciado-sm);
+    padding: 0 var(--espaciado-xs);
+    margin-bottom: var(--espaciado-lg);
+  }
+  .barra-nav-inferior__logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    flex: 0 0 auto;
+    border-radius: var(--radio-md);
+    background: var(--color-acento);
+    color: var(--color-texto-acento);
+  }
+  .barra-nav-inferior__logo svg {
+    width: 20px;
+    height: 20px;
+  }
+  .barra-nav-inferior__marca-nombre {
+    font-family: var(--fuente-display);
+    font-size: var(--texto-lg);
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.2;
+    color: var(--color-texto);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+
+  /* --- Items (columna) --- */
+  .barra-nav-inferior__items {
+    flex: 0 0 auto;
+    flex-direction: column;
+    justify-content: flex-start;
+    gap: var(--espaciado-2xs);
+  }
+
   .barra-nav-inferior__item {
+    position: relative;
     flex: 0 0 auto;
     flex-direction: row;
     align-items: center;
@@ -169,23 +228,148 @@
     gap: var(--espaciado-sm);
     min-width: 0;
     width: 100%;
-    padding: var(--espaciado-sm) var(--espaciado-md);
+    padding: var(--espaciado-xs) var(--espaciado-sm);
     border-radius: var(--radio-md);
     text-align: left;
+    font-size: var(--texto-sm);
   }
 
   .barra-nav-inferior__item--centro {
     flex: 0 0 auto;
   }
 
-  .barra-nav-inferior__item svg {
+  .barra-nav-inferior__icono {
+    flex: 0 0 auto;
+    width: 24px;
+  }
+
+  .barra-nav-inferior__item svg,
+  .barra-nav-inferior__item--centro svg {
     width: 22px;
     height: 22px;
   }
 
-  .barra-nav-inferior__item--centro svg {
-    width: 22px;
-    height: 22px;
+  /* Estado activo: tinte suave + texto acento + barrita lateral */
+  .barra-nav-inferior__item--activo {
+    background: var(--color-acento-soft);
+    color: var(--color-acento);
+    font-weight: 600;
+  }
+  .barra-nav-inferior__item--activo::before {
+    content: '';
+    position: absolute;
+    left: -10px;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+    border-radius: var(--radio-pill);
+    background: var(--color-acento);
+  }
+  .barra-nav-inferior__item--activo svg {
+    transform: none;
+  }
+
+  @media (hover: hover) {
+    .barra-nav-inferior__item:hover {
+      background: var(--color-fondo-tarjeta);
+      color: var(--color-texto-secundario);
+    }
+    .barra-nav-inferior__item--activo:hover {
+      background: var(--color-acento-soft-hover);
+      color: var(--color-acento);
+    }
+  }
+
+  /* --- Usuario (pie, anclado abajo) --- */
+  .barra-nav-inferior__usuario {
+    display: flex;
+    align-items: center;
+    gap: var(--espaciado-sm);
+    margin-top: auto;
+    padding-top: var(--espaciado-md);
+    border-top: 1px solid var(--color-borde);
+  }
+  .barra-nav-inferior__usuario-perfil {
+    flex: 1 1 auto;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    gap: var(--espaciado-sm);
+    padding: var(--espaciado-2xs);
+    border-radius: var(--radio-md);
+    text-decoration: none;
+    color: inherit;
+  }
+  .barra-nav-inferior__avatar,
+  .barra-nav-inferior__avatar-foto {
+    flex: 0 0 auto;
+    width: 36px;
+    height: 36px;
+    border-radius: var(--radio-pill);
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-acento-soft);
+    color: var(--color-acento);
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    overflow: hidden;
+  }
+  .barra-nav-inferior__avatar-foto {
+    object-fit: cover;
+  }
+  .barra-nav-inferior__usuario-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+    gap: 1px;
+  }
+  .barra-nav-inferior__usuario-nombre {
+    font-size: var(--texto-sm);
+    font-weight: 600;
+    line-height: 1.2;
+    color: var(--color-texto);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .barra-nav-inferior__usuario-rol {
+    font-size: var(--texto-xs);
+    color: var(--color-texto-terciario);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .barra-nav-inferior__salir {
+    flex: 0 0 auto;
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    border: none;
+    border-radius: var(--radio-md);
+    background: transparent;
+    color: var(--color-texto-terciario);
+    cursor: pointer;
+    transition: color var(--transicion-rapida) var(--easing-apple),
+                background-color var(--transicion-rapida) var(--easing-apple);
+  }
+  .barra-nav-inferior__salir svg {
+    width: 20px;
+    height: 20px;
+  }
+  .barra-nav-inferior__salir:hover {
+    background: var(--color-error-soft);
+    color: var(--color-error);
+  }
+
+  /* Foco de teclado visible en toda la sidebar */
+  .barra-nav-inferior__item:focus-visible,
+  .barra-nav-inferior__usuario-perfil:focus-visible,
+  .barra-nav-inferior__salir:focus-visible {
+    outline: 2px solid var(--color-borde-foco);
+    outline-offset: 2px;
   }
 
   /* La campana integrada se alinea con el resto del rail */
@@ -209,10 +393,15 @@
   #app-root {
     margin-left: 240px;
   }
+
+  /* Sin sesión (p. ej. pantalla de login): la sidebar no se dibuja y el
+     contenido ocupa toda la pantalla, centrado sin margen lateral. */
+  body.fb-sin-nav #app-root {
+    margin-left: 0;
+  }
 }
 
-/* Medium (tablet 768–1023px): bottom bar clásica, pero el contenido
-   no se estira más allá del ancho de lectura. */
+/* Medium (tablet 768–1023px) */
 @media (min-width: 768px) and (max-width: 1023px) {
   .o-contenedor {
     max-width: 720px;

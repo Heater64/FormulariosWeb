@@ -48,9 +48,15 @@ describe('updateService.validateManifest', () => {
     expect(result.value.releaseNotes).toEqual(['Nueva funcionalidad']);
   });
 
-  test('acepta el version.json inicial real del proyecto', () => {
+  test('el version.json real es un manifiesto web (APK en pausa), no un manifiesto de APK', () => {
     const actual = JSON.parse(readFileSync(join(rootDir, 'version.json'), 'utf8'));
-    expect(window.updateService.validateManifest(actual).ok).toBe(true);
+    // Campos que la landing sigue usando:
+    expect(actual.version).toMatch(/^\d+\.\d+\.\d+$/);
+    expect(Array.isArray(actual.releaseNotes)).toBe(true);
+    // Campos de APK retirados mientras la APK está pausada:
+    expect(actual).not.toHaveProperty('apkUrl');
+    expect(actual).not.toHaveProperty('sha256');
+    expect(actual).not.toHaveProperty('versionCode');
   });
 
   test('rechaza JSON corrupto o campos obligatorios ausentes', () => {

@@ -1,14 +1,16 @@
 :root {
-  --texto-xxs: clamp(0.6rem, 0.6rem + 0.1vw, 0.65rem);
+  /* ── Type scale ── */
+  --texto-xxs: clamp(0.6rem, 0.58rem + 0.1vw, 0.65rem);
   --texto-xs: clamp(0.69rem, 0.66rem + 0.15vw, 0.75rem);
-  --texto-md: clamp(0.9rem, 0.88rem + 0.12vw, 0.95rem);
-  --texto-sm: clamp(0.8rem, 0.78rem + 0.12vw, 0.875rem);
-  --texto-base: clamp(0.94rem, 0.92rem + 0.1vw, 1rem);
+  --texto-sm: clamp(0.8rem, 0.77rem + 0.15vw, 0.875rem);
+  --texto-base: clamp(0.94rem, 0.91rem + 0.15vw, 1rem);
   --texto-lg: clamp(1.06rem, 1.02rem + 0.2vw, 1.125rem);
   --texto-xl: clamp(1.19rem, 1.12rem + 0.35vw, 1.25rem);
   --texto-2xl: clamp(1.44rem, 1.32rem + 0.6vw, 1.5rem);
   --texto-3xl: clamp(1.8rem, 1.6rem + 1vw, 1.875rem);
   --texto-4xl: clamp(2.1rem, 1.8rem + 1.6vw, 2.25rem);
+
+  /* ── Line heights ── */
   --altura-linea-titulo: 1.2;
   --altura-linea-cuerpo: 1.6;
   --altura-linea-lectura: 1.8;

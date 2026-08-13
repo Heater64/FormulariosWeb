@@ -262,13 +262,10 @@ describe('orden de scripts en el build (dist/index.html)', () => {
     ? 'dist/index.html no existe (ejecuta npm run build)'
     : false;
 
-  test('capacitor.js aparece ANTES que update-installer.js en el documento', { skip }, () => {
+  test('el build ya no carga update-installer.js (APK en pausa)', { skip }, () => {
     const html = readFileSync(distIndex, 'utf8');
-    const idxCapacitor = html.indexOf('js/vendor/capacitor.js');
-    const idxInstaller = html.indexOf('js/componentes/update-installer.js');
-    expect(idxCapacitor).toBeGreaterThanOrEqual(0);
-    expect(idxInstaller).toBeGreaterThan(0);
-    expect(idxCapacitor).toBeLessThan(idxInstaller);
+    expect(html.indexOf('js/vendor/capacitor.js')).toBeGreaterThanOrEqual(0);
+    expect(html).not.toContain('js/componentes/update-installer.js');
   });
 
   test('el runtime va dentro del <head> como primer script defer', { skip }, () => {
@@ -279,11 +276,9 @@ describe('orden de scripts en el build (dist/index.html)', () => {
     expect(capPos).toBeLessThan(headClose);
   });
 
-  test('el build inyecta una URL de manifiesto HTTPS absoluta', { skip }, () => {
+  test('el build inyecta la versión para la UI, sin exigir URL de actualización de APK', { skip }, () => {
     const html = readFileSync(distIndex, 'utf8');
-    const match = html.match(/window\.__FB_UPDATE_MANIFEST_URL__="([^"]+)"/);
-    expect(match).toBeTruthy();
-    const url = new URL(match[1]);
-    expect(url.protocol).toBe('https:');
+    expect(html).toContain('__FB_APP_VERSION__');
+    expect(html).not.toMatch(/__FB_UPDATE_MANIFEST_URL__="https?:\/\//);
   });
 });

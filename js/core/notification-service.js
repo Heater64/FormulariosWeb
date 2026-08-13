@@ -220,15 +220,6 @@ class NotificationService {
         } catch (e) { return [p.adminId]; }
       }
     });
-    r('recordatorio.repasos', {
-      categoria: 'estudio', prioridad: 'media',
-      titulo: () => 'Hoy tienes',
-      cuerpo: (p) => `${p.cantidad || 0} versículo${p.cantidad === 1 ? '' : 's'} pendiente${p.cantidad === 1 ? '' : 's'} de repaso.`,
-      url: () => '/memorizacion',
-      icono: 'brain',
-      nativo: false, toast: true, sonido: true,
-      acciones: ['ver']
-    });
     r('recordatorio.corregir', {
       categoria: 'examenes', prioridad: 'media',
       titulo: () => 'Exámenes por corregir',
@@ -829,7 +820,9 @@ class NotificationService {
 
   /**
    * Genera recordatorios con datos REALES del usuario (una vez al día):
-   * repasos pendientes, entregas por corregir, etc. No son genéricos.
+   * entregas por corregir, etc. No son genéricos. Los repasos de
+   * memorización NO generan aviso (solo notifican eventos reales:
+   * exámenes, desafíos, grupos, logros…).
    */
   async generarRecordatorios() {
     const usuario = this._usuario();
@@ -837,14 +830,6 @@ class NotificationService {
     const hoy = new Date().toISOString().slice(0, 10);
     const clave = (k) => `fb_rec_${k}_${usuario.id}_${hoy}`;
     try {
-      // Repasos de memorización pendientes
-      if (!localStorage.getItem(clave('repasos')) && window.memorizacionRepository) {
-        const pendientes = await window.memorizacionRepository.tarjetasPendientes(usuario.id);
-        if (pendientes && pendientes.length) {
-          localStorage.setItem(clave('repasos'), '1');
-          this.emitir('recordatorio.repasos', { cantidad: pendientes.length });
-        }
-      }
       // Entregas de examen sin corregir (solo profesores con grupo)
       const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
       if (!localStorage.getItem(clave('corregir')) && esProfesor && usuario.grupo_id && window.examenesRepository) {

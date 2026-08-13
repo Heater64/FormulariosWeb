@@ -1,22 +1,9 @@
 {
   "schemaVersion": 1,
   "version": "1.0.12",
-  "versionCode": 12,
-  "minimumVersion": "1.0.4",
-  "minimumVersionCode": 4,
-  "mandatory": true,
-  "apkUrl": "https://github.com/Heater64/FormulariosWeb/releases/download/v1.0.12/formsbiblicos.apk",
-  "releaseUrl": "https://github.com/Heater64/FormulariosWeb/releases/tag/v1.0.12",
   "releaseNotes": [
-    "Corregida la actualización en Android: la descarga ya no falla con error genérico si la suscripción al progreso falla, y el error real ahora se muestra con su código en el diagnóstico",
-    "Más robustez en el plugin nativo: reintento de errores transitorios de red y registro detallado para diagnóstico",
-    "La barra de navegación inferior ya no se oculta al hacer scroll",
-    "Nueva campana de notificaciones en la cabecera",
-    "Navegación más fluida entre vistas",
-    "Mejoras de seguridad en la web (cabeceras HTTP)",
-    "Mejor gestión del foco en memorización y desafíos"
+    "FormsBiblicos vuelve a ser una aplicación web instalable (PWA)",
+    "La distribución como APK de Android queda en pausa por ahora (ver README)"
   ],
-  "sizeBytes": 5168432,
-  "sha256": "51828cf0a2be85019c75d493102995f008262bc6e55f4fba68683105ce75fcea",
-  "publishedAt": "2026-08-09T13:13:12.679Z"
+  "publishedAt": "2026-08-13T00:00:00.000Z"
 }

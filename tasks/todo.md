@@ -1,5 +1,7 @@
 # Tareas: actualizaciones FormsBiblicos
 
+> ⚠️ **PAUSADO.** La APK de Android está en pausa (ver `README.md`). Estas tareas quedan pendientes para retomarla en el futuro.
+
 - [ ] Definir `package.json.version` y el archivo Android independiente como fuentes de versión; añadir bump scripts.
   - Aceptación: patch/minor/major actualizan SemVer y aumentan siempre el `versionCode` de Android sin añadir campos no estándar a package.json.
   - Verificar: tests del script y revisión de `package.json`.

@@ -22,10 +22,12 @@
 }
 
 .tarjeta-capitulo__referencia {
+  font-family: var(--fuente-display);
   font-size: var(--texto-lg);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-texto);
   margin-bottom: var(--espaciado-xxs);
+  letter-spacing: -0.005em;
 }
 
 .tarjeta-capitulo__progreso {
@@ -38,8 +40,7 @@
 }
 
 .tarjeta-capitulo--completado {
-  border-color: var(--color-exito);
-  border-left: 4px solid var(--color-exito);
+  border-left: 3px solid var(--color-exito);
 }
 
 .tarjeta-capitulo--completado .tarjeta-capitulo__referencia::after {
@@ -50,7 +51,7 @@
 }
 
 .tarjeta-capitulo--en-progreso {
-  border-left: 4px solid var(--color-acento);
+  border-left: 3px solid var(--color-acento);
 }
 
 @media (max-width: 480px) {
@@ -66,14 +67,14 @@
   }
   .tarjeta-capitulo--completado,
   .tarjeta-capitulo--en-progreso {
-    border-left-width: 3px;
+    border-left-width: 2px;
   }
 }
 
 @media (max-width: 360px) {
   .tarjeta-capitulo {
     padding: var(--espaciado-sm);
-    border-radius: var(--radio-lg);
+    border-radius: var(--radio-md);
   }
   .tarjeta-capitulo__referencia {
     font-size: var(--texto-sm);

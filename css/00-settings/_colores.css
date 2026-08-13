@@ -1,7 +1,9 @@
 :root {
+  /* ── Blue palette (Tailwind blue) ── */
   --color-azul-50: #EFF6FF;
   --color-azul-100: #DBEAFE;
   --color-azul-200: #BFDBFE;
+  --color-azul-300: #93C5FD;
   --color-azul-500: #3B82F6;
   --color-azul-700: #1D4ED8;
   --color-verde-50: #F0FDF4;
@@ -27,15 +29,15 @@
   --color-naranja-500: #F97316;
   --color-naranja-600: #EA580C;
   --color-naranja-700: #C2410C;
-  --color-azul-300: #93C5FD;
-  --color-gris-50: #F8FAFC;
-  --color-gris-100: #F1F5F9;
-  --color-gris-200: #CBD5E1;
-  --color-gris-300: #CBD5E1;
-  --color-gris-400: #94A3B8;
-  --color-gris-500: #64748B;
-  --color-gris-600: #475569;
-  --color-gris-700: #334155;
-  --color-gris-800: #1E293B;
-  --color-gris-900: #0F172A;
+  /* ── Warm grays (stone, not slate) ── */
+  --color-gris-50: #FAFAF9;
+  --color-gris-100: #F5F5F4;
+  --color-gris-200: #E7E5E4;
+  --color-gris-300: #D6D3D1;
+  --color-gris-400: #A8A29E;
+  --color-gris-500: #78716C;
+  --color-gris-600: #57534E;
+  --color-gris-700: #44403C;
+  --color-gris-800: #292524;
+  --color-gris-900: #1C1917;
 }

@@ -1,5 +1,7 @@
 # Actualizaciones de FormsBiblicos
 
+> ⚠️ **PAUSADO.** La APK de Android y su sistema de actualizaciones están en pausa (ver `README.md`). Esta documentación queda aquí para cuando se retome; no se usa en el flujo actual (PWA).
+
 ## 1. Arquitectura
 
 FormsBiblicos tiene una web pública y una aplicación Android independiente:

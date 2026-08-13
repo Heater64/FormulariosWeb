@@ -50,13 +50,16 @@
           }
         }
         raiz.innerHTML = `
-          <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+          <div class="o-contenedor o-contenedor--ancho o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
             <div class="estudio-cabecera">
-              <h2>${window.Iconos.render('book-open')} Estudio Guiado <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button></h2>
-              <div class="estudio-cabecera__derecha">
-                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
-                <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${window.helpers.escapeHtml(usuario.foto_perfil)}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
+              <div class="estudio-cabecera__fila">
+                <h2>${window.Iconos.render('book-open')} <span class="estudio-cabecera__titulo-texto">Estudio Guiado</span> <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button></h2>
+                <div class="estudio-cabecera__derecha">
+                  ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+                  <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${window.helpers.escapeHtml(usuario.foto_perfil)}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
+                </div>
               </div>
+              <p class="estudio-cabecera__sub">Lee la Biblia capítulo a capítulo con preguntas de repaso.</p>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
               <div class="estudio-continuar__icono">${window.Iconos.render('book-open')}</div>
@@ -67,20 +70,26 @@
               </div>
               <span class="estudio-continuar__flecha">${window.Iconos.render('chevron-right')}</span>
             </div>` : ''}
-            <div class="o-pila">
-              <div class="estudio-testamento" id="toggleAT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaAT">
-                <h3>Antiguo Testamento</h3>
+            <section class="o-pila o-pila--sm">
+              <div class="estudio-testamento estudio-testamento--at" id="toggleAT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaAT">
+                <div class="estudio-testamento__titulo">
+                  <h3>Antiguo Testamento</h3>
+                  <span class="estudio-testamento__count">${antiguos.length} libros</span>
+                </div>
                 <span class="estudio-testamento__icono" id="iconAT">${window.Iconos.render('chevron-down')}</span>
               </div>
-              <div id="listaAT" class="o-pila"></div>
-            </div>
-            <div class="o-pila">
-              <div class="estudio-testamento" id="toggleNT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaNT">
-                <h3>Nuevo Testamento</h3>
+              <div id="listaAT" class="estudio-lista"></div>
+            </section>
+            <section class="o-pila o-pila--sm">
+              <div class="estudio-testamento estudio-testamento--nt" id="toggleNT" role="button" tabindex="0" aria-expanded="true" aria-controls="listaNT">
+                <div class="estudio-testamento__titulo">
+                  <h3>Nuevo Testamento</h3>
+                  <span class="estudio-testamento__count">${nuevos.length} libros</span>
+                </div>
                 <span class="estudio-testamento__icono" id="iconNT">${window.Iconos.render('chevron-down')}</span>
               </div>
-              <div id="listaNT" class="o-pila"></div>
-            </div>
+              <div id="listaNT" class="estudio-lista"></div>
+            </section>
           </div>`;
         if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
         if (siguienteLibro) {
@@ -97,11 +106,11 @@
           const esCompletado = pct === 100;
           const esVacio = pct === 0;
           const iconoLibro = esCompletado ? window.Iconos.render('check-circle') : window.Iconos.render('book-open');
-          return `<div class="tarjeta-libro${esCompletado ? ' tarjeta-libro--completado' : ''}${esVacio ? ' tarjeta-libro--vacio' : ''}" data-libro="${l.id}" style="cursor:pointer" title="Estudiar ${l.nombre}: progreso ${pct}%" role="button" tabindex="0">
+          return `<div class="tarjeta-libro${esCompletado ? ' tarjeta-libro--completado' : ''}${esVacio ? ' tarjeta-libro--vacio' : ''}" data-libro="${l.id}" role="button" tabindex="0" aria-label="Estudiar ${l.nombre}: ${leidos} de ${l.num_capitulos} capítulos leídos" title="Estudiar ${l.nombre}: progreso ${pct}%">
             <span class="tarjeta-libro__icono">${iconoLibro}</span>
             <div class="tarjeta-libro__info">
               <span class="tarjeta-libro__nombre">${l.nombre}</span>
-              <span class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos</span>
+              <span class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos · ${pct}%</span>
               <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
             </div>
             <span class="tarjeta-libro__flecha">${window.Iconos.render('chevron-right')}</span>

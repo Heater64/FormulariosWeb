@@ -7,19 +7,19 @@
   font-size: var(--texto-sm);
   letter-spacing: 0.01em;
   min-height: var(--toque-minimo);
-  box-shadow: 0 1px 2px rgba(37,99,235,0.25), 0 6px 16px -6px rgba(37,99,235,0.55);
+  box-shadow: var(--sombra-sm);
   transition: transform var(--transicion-rapida), background var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
 .btn-primario:hover {
   background: var(--color-acento-hover);
-  box-shadow: 0 2px 4px rgba(37,99,235,0.3), 0 10px 24px -6px rgba(37,99,235,0.6);
+  box-shadow: var(--sombra-md);
   transform: translateY(-1px);
 }
 
 .btn-primario:active {
-  transform: scale(0.96);
-  box-shadow: 0 1px 2px rgba(37,99,235,0.3);
+  transform: scale(0.97);
+  box-shadow: none;
 }
 
 .btn-primario--disabled,

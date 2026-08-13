@@ -1,16 +1,4 @@
-/* ===== PERFIL - Hero (avatar + nombre fuera de tarjeta) ===== */
-
-/* Animación del halo del hero (usado por .perfil-hero::before) */
-@keyframes perfilGlow {
-  0% { opacity: 0.5; transform: translateX(-50%) scale(0.95); }
-  100% { opacity: 1; transform: translateX(-50%) scale(1.08); }
-}
-
-.perfil-avatar--lg {
-  width: 100px;
-  height: 100px;
-  font-size: 2.8rem;
-}
+/* ===== PERFIL - Hero (identidad: avatar + nombre + stats) ===== */
 
 .perfil-avatar {
   width: 88px;
@@ -50,19 +38,6 @@
   inset: 0;
   opacity: 0;
   cursor: pointer;
-}
-
-.perfil-nombre-fila {
-  display: flex;
-  align-items: center;
-  gap: var(--espaciado-xxs);
-  justify-content: center;
-}
-
-.perfil-nombre-fila h2,
-.perfil-nombre-fila h3 {
-  margin: 0;
-  font-size: var(--texto-xl);
 }
 
 .perfil-btn-editar {
@@ -293,6 +268,7 @@
   align-items: center;
   gap: var(--espaciado-sm);
   width: 100%;
+  margin-bottom: var(--espaciado-md);
   padding: var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
@@ -1122,59 +1098,79 @@
   cursor: pointer;
 }
 
-/* ===== HERO (avatar, username, rol, acciones) ===== */
+/* ===== HERO (identidad: avatar + nombre + stats) ===== */
 
-/* Hero estático: la foto se mantiene siempre grande, sin contraerse
-   en una barra al hacer scroll. */
 .perfil-hero {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  padding: var(--espaciado-xl) var(--espaciado-md) var(--espaciado-lg);
-  gap: var(--espaciado-md);
-  margin-bottom: var(--espaciado-sm);
   position: relative;
-}
-
-.perfil-hero::before {
-  content: '';
-  position: absolute;
-  top: -60px;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 240px;
-  height: 240px;
-  border-radius: 50%;
-  background: radial-gradient(circle, var(--color-acento-soft) 0%, transparent 70%);
-  pointer-events: none;
-  z-index: 0;
-  animation: perfilGlow 5s ease-in-out infinite alternate;
-}
-
-
-.perfil-hero__info {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 6px;
+  gap: var(--espaciado-lg);
+  padding: var(--espaciado-xl);
+  margin-bottom: var(--espaciado-sm);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  overflow: hidden;
+}
+
+/* Fondo ambiental: halo de acento + degradado suave */
+.perfil-hero__fondo {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 180% at 14% 0%, var(--color-acento-soft) 0%, transparent 52%),
+    linear-gradient(180deg, transparent 55%, var(--color-fondo-alt) 100%);
+  opacity: 0.5;
+  pointer-events: none;
+}
+
+/* Campana anclada arriba a la derecha */
+.perfil-hero__campana {
+  position: absolute;
+  top: var(--espaciado-sm);
+  right: var(--espaciado-sm);
+  z-index: 2;
+}
+
+.perfil-hero__avatar {
   position: relative;
   z-index: 1;
-  width: 100%;
-  max-width: 360px;
+  flex-shrink: 0;
 }
 
-/* Avatar azul clarito simple */
 .perfil-avatar--hero {
-  background: #DBEAFE;
-  color: #3B82F6;
-  border: 3px solid var(--color-fondo);
-  box-shadow: 0 0 0 3px #BFDBFE, var(--sombra-md);
-  transition: box-shadow var(--transicion-rapida);
+  width: 120px;
+  height: 120px;
+  font-size: 3.4rem;
 }
 
-.perfil-avatar--hero:hover {
-  box-shadow: 0 0 0 4px #93C5FD, var(--sombra-lg);
+.perfil-hero__identidad {
+  position: relative;
+  z-index: 1;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--espaciado-xxs);
+}
+
+.perfil-hero__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.perfil-hero__nombre {
+  margin: 0;
+  font-family: var(--fuente-display);
+  font-size: var(--texto-3xl);
+  font-weight: 600;
+  line-height: 1.1;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+  overflow-wrap: break-word;
 }
 
 .perfil-username {
@@ -1184,15 +1180,46 @@
   letter-spacing: 0.01em;
 }
 
-/* Botones de acción del hero (efecto cristal) */
+.perfil-hero__bio {
+  margin: var(--espaciado-xxs) 0 0;
+  font-size: var(--texto-sm);
+  line-height: 1.55;
+  color: var(--color-texto-secundario);
+  max-width: 52ch;
+}
+
+.perfil-hero__stats {
+  display: flex;
+  gap: var(--espaciado-lg);
+  margin-top: var(--espaciado-sm);
+  padding-top: var(--espaciado-sm);
+  border-top: 1px solid var(--color-borde);
+}
+
+.perfil-hero__stat {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.perfil-hero__stat-valor {
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  color: var(--color-texto);
+  line-height: 1.2;
+}
+
+.perfil-hero__stat-label {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 500;
+}
+
 .perfil-hero__acciones {
   display: flex;
   flex-wrap: wrap;
-  justify-content: center;
   gap: var(--espaciado-xs);
-  margin-top: var(--espaciado-md);
-  width: 100%;
-  max-width: 360px;
+  margin-top: var(--espaciado-sm);
 }
 
 .perfil-hero__btn {
@@ -1201,19 +1228,16 @@
   justify-content: center;
   gap: 8px;
   min-height: var(--toque-minimo);
-  width: 100%;
   padding: var(--espaciado-xs) var(--espaciado-lg);
   border-radius: var(--radio-pill);
-  background: var(--color-vidrio);
-  border: 1px solid var(--color-vidrio-borde);
-  backdrop-filter: var(--desenfoque-vidrio);
-  -webkit-backdrop-filter: var(--desenfoque-vidrio);
-  color: var(--color-texto);
+  background: var(--color-acento);
+  border: 1px solid var(--color-acento);
+  color: var(--color-texto-acento);
   font: inherit;
   font-size: var(--texto-sm);
   font-weight: 600;
   cursor: pointer;
-  transition: transform var(--transicion-rapida), background var(--transicion-rapida), border-color var(--transicion-rapida), color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  transition: transform var(--transicion-rapida), background var(--transicion-rapida), border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
 .perfil-hero__btn svg {
@@ -1223,14 +1247,43 @@
 
 .perfil-hero__btn:hover {
   transform: translateY(-1px);
-  background: var(--color-acento);
-  border-color: var(--color-acento);
-  color: var(--color-texto-acento);
+  background: var(--color-acento-hover);
+  border-color: var(--color-acento-hover);
   box-shadow: var(--sombra-md);
 }
 
 .perfil-hero__btn:active {
   transform: translateY(0) scale(0.98);
+}
+
+/* Hero apilado y centrado en móvil */
+@media (max-width: 719px) {
+  .perfil-hero {
+    flex-direction: column;
+    text-align: center;
+    gap: var(--espaciado-md);
+    padding: var(--espaciado-lg) var(--espaciado-md);
+  }
+  .perfil-hero__identidad {
+    align-items: center;
+  }
+  .perfil-avatar--hero {
+    width: 96px;
+    height: 96px;
+    font-size: 2.6rem;
+  }
+  .perfil-hero__bio {
+    max-width: 100%;
+  }
+  .perfil-hero__stats {
+    justify-content: center;
+  }
+  .perfil-hero__acciones {
+    justify-content: center;
+  }
+  .perfil-hero__btn {
+    width: 100%;
+  }
 }
 
 /* ===== Filas de navegación dentro de tarjetas (estilo Ajustes) ===== */
@@ -1426,9 +1479,6 @@
   .perfil-seccion__icono {
     width: 24px;
     height: 24px;
-  }
-  .perfil-nombre-fila h3 {
-    font-size: var(--texto-lg);
   }
   .perfil-boton-seccion__icono {
     width: 32px;

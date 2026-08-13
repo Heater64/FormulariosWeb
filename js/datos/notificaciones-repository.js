@@ -69,6 +69,8 @@
     if (!sb() || !usuarioId) return [];
     try {
       let q = sb().from('notificaciones').select('*').eq('usuario_id', usuarioId);
+      // El recordatorio diario de repaso se retiró: no se genera ni se muestra.
+      q = q.neq('tipo', 'recordatorio.repasos');
       if (soloNuevas && await _v2()) q = q.eq('estado', 'nueva');
       else if (soloNuevas) q = q.eq('leida', false);
       if (categoria) q = q.eq('categoria', categoria);
@@ -84,7 +86,8 @@
       const { count } = await sb().from('notificaciones')
         .select('id', { count: 'exact', head: true })
         .eq('usuario_id', usuarioId)
-        .eq('leida', false);
+        .eq('leida', false)
+        .neq('tipo', 'recordatorio.repasos');
       return count || 0;
     } catch (e) { return 0; }
   }
@@ -101,7 +104,8 @@
             .select('id', { count: 'exact', head: true })
             .eq('usuario_id', usuarioId)
             .eq('leida', false)
-            .eq('categoria', c);
+            .eq('categoria', c)
+            .neq('tipo', 'recordatorio.repasos');
           return [c, count || 0];
         } catch (e) { return [c, 0]; }
       }));

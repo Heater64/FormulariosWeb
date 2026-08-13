@@ -1,5 +1,5 @@
 /* ============================================================
-   _splash.css - Splash Screen personalizada
+   _splash.css - Splash Screen
    ============================================================ */
 
 .splash-screen {
@@ -24,63 +24,65 @@
 
 /* ===== LOGO ===== */
 .splash-screen__logo {
-  width: 96px;
-  height: 96px;
-  border-radius: var(--radio-2xl);
-  background: linear-gradient(135deg, var(--color-acento), var(--color-acento-hover));
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radio-xl);
+  background: var(--color-acento);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 0 0 4px var(--color-acento-soft), var(--sombra-lg);
+  box-shadow: var(--sombra-md);
   animation: splash-logo-pop var(--transicion-lenta) forwards;
   opacity: 0;
   transform: scale(0.8);
 }
 
 .splash-screen__logo svg {
-  width: 48px;
-  height: 48px;
+  width: 40px;
+  height: 40px;
   stroke: var(--color-texto-acento);
-  stroke-width: 2;
+  stroke-width: 1.75;
   fill: none;
 }
 
 /* ===== TEXTO ===== */
 .splash-screen__title {
+  font-family: var(--fuente-display);
   font-size: var(--texto-2xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-texto);
   margin: 0;
+  letter-spacing: -0.01em;
   animation: splash-text-in var(--transicion-normal) 0.2s forwards;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(12px);
 }
 
 .splash-screen__subtitle {
-  font-size: var(--texto-base);
+  font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
-  margin: -8px 0 0;
+  margin: -6px 0 0;
   animation: splash-text-in var(--transicion-normal) 0.3s forwards;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(12px);
 }
 
 /* ===== PROGRESS BAR ===== */
 .splash-screen__progress {
-  width: min(280px, 70vw);
-  height: 4px;
+  width: min(240px, 60vw);
+  height: 3px;
   background: var(--color-fondo-alt);
   border-radius: var(--radio-pill);
   overflow: hidden;
   animation: splash-text-in var(--transicion-normal) 0.4s forwards;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(12px);
 }
 
 .splash-screen__bar {
   width: 0%;
   height: 100%;
-  background: linear-gradient(90deg, var(--color-acento), var(--color-acento-hover));
+  background: var(--color-acento);
   border-radius: var(--radio-pill);
   animation: splash-progress var(--transicion-lenta) forwards;
 }
@@ -92,7 +94,7 @@
   margin: 0;
   animation: splash-text-in var(--transicion-normal) 0.5s forwards;
   opacity: 0;
-  transform: translateY(16px);
+  transform: translateY(12px);
   min-height: 1.5em;
   transition: opacity var(--transicion-rapida);
 }
@@ -101,14 +103,11 @@
 @keyframes splash-logo-pop {
   0% {
     opacity: 0;
-    transform: scale(0.8) rotate(-8deg);
-  }
-  60% {
-    transform: scale(1.08) rotate(2deg);
+    transform: scale(0.85);
   }
   100% {
     opacity: 1;
-    transform: scale(1) rotate(0deg);
+    transform: scale(1);
   }
 }
 
@@ -132,12 +131,12 @@
 /* ===== DARK MODE ===== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) .splash-screen__logo {
-    box-shadow: 0 0 0 4px var(--color-acento-soft-hover), var(--sombra-lg);
+    box-shadow: var(--sombra-md);
   }
 }
 
 :root[data-theme="dark"] .splash-screen__logo {
-  box-shadow: 0 0 0 4px var(--color-acento-soft-hover), var(--sombra-lg);
+  box-shadow: var(--sombra-md);
 }
 
 /* ===== REDUCED MOTION ===== */
@@ -151,12 +150,12 @@
     opacity: 1;
     transform: none;
   }
-  
+
   .splash-screen__bar {
     animation: none !important;
     width: 100%;
   }
-  
+
   .splash-screen--loaded {
     transition: none !important;
   }
@@ -165,39 +164,39 @@
 /* ===== RESPONSIVE ===== */
 @media (max-width: 480px) {
   .splash-screen__logo {
-    width: 72px;
-    height: 72px;
+    width: 64px;
+    height: 64px;
   }
-  
+
   .splash-screen__logo svg {
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
   }
-  
+
   .splash-screen__title {
     font-size: var(--texto-xl);
   }
-  
+
   .splash-screen__subtitle {
     font-size: var(--texto-sm);
   }
-  
+
   .splash-screen__progress {
-    width: min(200px, 60vw);
+    width: min(180px, 50vw);
   }
 }
 
 @media (max-width: 360px) {
   .splash-screen__logo {
-    width: 60px;
-    height: 60px;
+    width: 56px;
+    height: 56px;
   }
-  
+
   .splash-screen__logo svg {
-    width: 30px;
-    height: 30px;
+    width: 28px;
+    height: 28px;
   }
-  
+
   .splash-screen__title {
     font-size: var(--texto-lg);
   }

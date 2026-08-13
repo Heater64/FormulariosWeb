@@ -90,7 +90,7 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <!-- TÍTULO -->
-          <h2 class="u-texto-2xl u-fw-800" style="margin:0">${window.Iconos.render('graduation-cap')} Notas</h2>
+          <h2 class="u-texto-2xl" style="margin:0">${window.Iconos.render('graduation-cap')} Notas</h2>
 
           <!-- BOTONES BAJO EL TÍTULO -->
           <div class="o-flecha o-flecha--wrap" style="gap:var(--espaciado-xs)">
@@ -762,7 +762,7 @@
 </style></head>
 <body>
   ${secciones.map(sec => sec.sinExamenes
-    ? `<h1>${window.helpers.escapeHtml(sec.titulo)}</h1><p style="color:#999">Sin exámenes</p>`
+    ? `<h1>${window.helpers.escapeHtml(sec.titulo)}</h1><p style="color:var(--color-texto-terciario)">Sin exámenes</p>`
     : `<h1>${window.helpers.escapeHtml(sec.titulo)}</h1>
   <table><thead><tr>${sec.cabeceras.map(c => `<th>${window.helpers.escapeHtml(c)}</th>`).join('')}</tr></thead>
   <tbody>${sec.rows.join('')}</tbody></table>`

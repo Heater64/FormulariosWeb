@@ -14,7 +14,7 @@
       <span class="brand-mark" aria-hidden="true">✦</span>
       <span>FormsBiblicos</span>
     </a>
-    <a class="header-link" href="#descarga">Descargar app</a>
+    <a class="header-link" href="/app">Entrar</a>
   </header>
 
   <main>
@@ -23,19 +23,15 @@
         <p class="eyebrow">Estudio bíblico con propósito</p>
         <h1 id="hero-title">Aprende, memoriza y progresa.</h1>
         <p class="hero-lead">FormsBiblicos reúne lectura guiada, repetición espaciada, exámenes y seguimiento del progreso para grupos de estudio.</p>
-        <div class="hero-actions" id="descarga">
-          <a class="button button-primary" id="downloadButton" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk">
-            Descargar aplicación Android
-          </a>
-          <a class="button button-secondary" id="browserButton" href="/app">
-            Usar en el navegador
-          </a>
+        <div class="hero-actions">
+          <a class="button button-primary" id="browserButton" href="/app">Entrar ahora</a>
+          <a class="button button-secondary" href="#instalar">Cómo instalarla</a>
         </div>
-        <p class="device-message" id="deviceMessage" role="status">FormsBiblicos está disponible como aplicación Android y directamente en el navegador.</p>
+        <p class="device-message" id="deviceMessage" role="status">FormsBiblicos funciona directamente en el navegador y puedes instalarla como aplicación en tu móvil u ordenador.</p>
         <p class="device-version" id="deviceVersion"></p>
       </div>
       <div class="hero-card" aria-label="Resumen de funciones">
-        <div class="hero-card-top"><span class="status-dot"></span><span>FormsBiblicos Android</span></div>
+        <div class="hero-card-top"><span class="status-dot"></span><span>FormsBiblicos · Web</span></div>
         <div class="book-icon" aria-hidden="true">▤</div>
         <p class="hero-card-title">Tu estudio, siempre contigo.</p>
         <div class="progress-line"><span style="width:72%"></span></div>
@@ -53,26 +49,26 @@
       </div>
     </section>
 
-    <section class="download-panel" aria-labelledby="download-title">
+    <section class="download-panel" aria-labelledby="install-title" id="instalar">
       <div>
-        <p class="eyebrow">Aplicación oficial</p>
-        <h2 id="download-title">Una app Android completa, sin depender del navegador.</h2>
-        <p>La aplicación incluye su interfaz localmente y sincroniza tus datos de forma segura con Supabase. Descarga el archivo, ábrelo y sigue las instrucciones de instalación.</p>
-        <p class="browser-note">¿Prefieres no instalar nada? <a href="/app">Entra desde el navegador</a> — la misma cuenta y los mismos datos.</p>
+        <p class="eyebrow">Aplicación instalable</p>
+        <h2 id="install-title">Instálala como una app, sin tiendas.</h2>
+        <p>FormsBiblicos es una aplicación web progresiva (PWA): se abre desde el navegador y, si quieres, la añades a tu pantalla de inicio para usarla a pantalla completa como cualquier otra app.</p>
+        <p class="browser-note">¿Solo quieres probarla? <a href="/app">Entra desde el navegador</a> — la misma cuenta y los mismos datos.</p>
       </div>
       <div class="download-actions">
-        <a class="button button-primary" href="https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk" id="downloadButtonBottom">Descargar e instalar</a>
-        <a class="button button-secondary" href="/app">Usar en el navegador</a>
+        <a class="button button-primary" href="/app">Entrar ahora</a>
+        <a class="button button-secondary" href="#instalar">Ver cómo se instala</a>
       </div>
     </section>
 
-    <section class="features" aria-labelledby="install-title" id="instalacion">
+    <section class="features" aria-labelledby="steps-title">
       <p class="eyebrow">Instalación</p>
-      <h2 id="install-title">Tres pasos para empezar.</h2>
+      <h2 id="steps-title">En un minuto, sin descargar nada.</h2>
       <div class="feature-grid">
-        <article class="feature-card"><span class="feature-icon" aria-hidden="true">1</span><h3>Descarga la APK</h3><p>Pulsa el botón de descarga desde tu teléfono Android. El archivo se guardará en tus descargas.</p></article>
-        <article class="feature-card"><span class="feature-icon" aria-hidden="true">2</span><h3>Abre el archivo</h3><p>Ábrelo desde el aviso de descarga o desde tu gestor de archivos para iniciar la instalación.</p></article>
-        <article class="feature-card"><span class="feature-icon" aria-hidden="true">3</span><h3>Permite la instalación</h3><p>Si Android lo pide, activa “Permitir instalar aplicaciones desconocidas” y confirma la instalación.</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">1</span><h3>Android / Chrome / Edge</h3><p>Abre la app y pulsa «Instalar aplicación» en el menú del navegador, o «Añadir a pantalla de inicio».</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">2</span><h3>iPhone / iPad (Safari)</h3><p>Pulsa el botón Compartir y elige «Añadir a pantalla de inicio».</p></article>
+        <article class="feature-card"><span class="feature-icon" aria-hidden="true">3</span><h3>Ordenador</h3><p>En Chrome y Edge aparece el icono de instalación en la barra de direcciones. Se abre como una ventana propia.</p></article>
       </div>
     </section>
   </main>
@@ -83,45 +79,15 @@
 
   <script>
     (() => {
-      // Enlace por defecto (también con JavaScript desactivado): apunta a la
-      // release más reciente de GitHub. Al cargar se sustituye por la URL
-      // versionada concreta que sirve version.json, para que el móvil nunca
-      // descargue una APK antigua cacheada de una release anterior.
-      const FALLBACK_URL = 'https://github.com/Heater64/FormulariosWeb/releases/latest/download/formsbiblicos.apk';
-      const android = /Android/i.test(navigator.userAgent);
-      const message = document.getElementById('deviceMessage');
+      // Solo se muestra la versión publicada; no hay descarga de APK.
       const versionLine = document.getElementById('deviceVersion');
-      const buttons = [document.getElementById('downloadButton'), document.getElementById('downloadButtonBottom')];
-
-      async function aplicarVersion() {
-        try {
-          const respuesta = await fetch('./version.json', { cache: 'no-store' });
-          if (!respuesta.ok) return;
-          const manifiesto = await respuesta.json();
-          const url = typeof manifiesto.apkUrl === 'string' && /^https:\/\/github\.com\/[^\s]+\.apk$/.test(manifiesto.apkUrl)
-            ? manifiesto.apkUrl
-            : FALLBACK_URL;
-          const version = typeof manifiesto.version === 'string' ? manifiesto.version : null;
-          if (android) {
-            buttons.forEach((button) => { button.href = url; });
-          }
-          if (version && versionLine) {
-            versionLine.textContent = 'Versión actual: v' + version;
-          }
-        } catch (error) {
-          // Sin conexión o manifiesto inaccesible: se mantiene el enlace por defecto.
-        }
-      }
-
-      if (android) {
-        message.textContent = 'Estás en Android. Descarga la aplicación para la experiencia completa, o entra directamente desde el navegador.';
-      } else {
-        message.textContent = 'FormsBiblicos también funciona en el navegador: pulsa «Usar en el navegador» para entrar ahora. Si tienes un teléfono Android, puedes descargar la aplicación.';
-        buttons.forEach((button) => {
-          button.href = '#instalacion';
-        });
-      }
-      aplicarVersion();
+      fetch('./version.json', { cache: 'no-store' })
+        .then((respuesta) => (respuesta.ok ? respuesta.json() : null))
+        .then((manifiesto) => {
+          const version = manifiesto && typeof manifiesto.version === 'string' ? manifiesto.version : null;
+          if (version && versionLine) versionLine.textContent = 'Versión actual: v' + version;
+        })
+        .catch(() => {});
     })();
   </script>
 </body>

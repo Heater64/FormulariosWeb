@@ -4,6 +4,17 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-texto);
 }
 
+/* Display headings use the serif face — restrained, editorial */
+h1, h2 {
+  font-family: var(--fuente-display);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+}
+
+h3, h4, h5, h6 {
+  font-family: var(--fuente-base);
+}
+
 h1 { font-size: var(--texto-3xl); }
 h2 { font-size: var(--texto-2xl); }
 h3 { font-size: var(--texto-xl); }

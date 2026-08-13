@@ -1,81 +1,289 @@
 /* ===== LOGIN ===== */
 
+/* Variables locales para corregir contraste AA en tema oscuro sin alterar
+   los tokens globales (el resto de la app usa esos tokens con otros fondos). */
+:root {
+  --login-texto-acento: var(--color-texto-acento);
+  --login-error: var(--color-error);
+  --login-acento-ring: rgba(255, 255, 255, 0.3);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --login-texto-acento: #0C0A09;
+    --login-error: #FCA5A5;
+    --login-acento-ring: rgba(12, 10, 9, 0.28);
+  }
+  /* Sin degradado azul en el panel de marca en modo oscuro */
+  :root:not([data-theme="light"]) .login-marca::before { display: none; }
+}
+
+:root[data-theme="dark"] {
+  --login-texto-acento: #0C0A09;
+  --login-error: #FCA5A5;
+  --login-acento-ring: rgba(12, 10, 9, 0.28);
+}
+:root[data-theme="dark"] .login-marca::before { display: none; }
+
 .login-pantalla {
   min-height: 100dvh;
+  display: grid;
+  grid-template-columns: 1fr;
+  background: var(--color-fondo);
+}
+
+/* ===== Marca (panel lateral en escritorio, cabecera compacta en móvil) ===== */
+
+.login-marca {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--espaciado-xl) var(--espaciado-lg) var(--espaciado-lg);
+  background: var(--color-fondo);
+  overflow: hidden;
+  min-width: 0;
+}
+
+/* Halo suave azul en la parte superior, sutil y sin cajas anidadas */
+.login-marca::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(42rem 26rem at 50% -18%, var(--color-acento-soft) 0%, transparent 62%);
+  pointer-events: none;
+}
+
+.login-marca__interior {
+  position: relative;
+  width: 100%;
+  max-width: 440px;
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
-  padding: var(--espaciado-lg) var(--espaciado-md);
-  background: linear-gradient(180deg, var(--color-acento-soft) 0%, var(--color-fondo) 40%);
-}
-
-.login-hero {
   text-align: center;
-  margin-bottom: var(--espaciado-xl);
+  gap: var(--espaciado-sm);
 }
 
-.login-hero__icono {
-  font-size: 3rem;
-  color: var(--color-acento);
-  margin-bottom: var(--espaciado-sm);
+/* Núcleo centrado del panel de marca; el sello de datos queda al pie en escritorio */
+.login-marca__centro {
+  width: 100%;
   display: flex;
-  justify-content: center;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-sm);
 }
 
-.login-hero__titulo {
-  font-size: clamp(1.6rem, 5vw, 2.2rem);
-  font-weight: 800;
+.login-marca__datos {
+  display: none;
+}
+
+.login-marca__logo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.login-marca__logo-icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento);
+  color: var(--login-texto-acento);
+  flex-shrink: 0;
+}
+
+.login-marca__logo-icono .lucide { width: 20px; height: 20px; }
+
+.login-marca__logo-texto {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+}
+
+/* Titular de marca: es el hero de la pantalla, por encima del encabezado
+   del formulario; la segunda línea en cursiva da carácter editorial. */
+.login-marca__titulo {
+  display: block;
+  font-family: var(--fuente-display);
+  font-size: clamp(1.75rem, 7.5vw, 2.7rem);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.015em;
   color: var(--color-texto);
   margin: 0;
 }
 
-.login-hero__tagline {
+.login-marca__titulo em {
+  font-style: italic;
+  font-weight: 500;
+  letter-spacing: -0.005em;
+}
+
+.login-marca__tagline {
   font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
-  margin: var(--espaciado-xs) auto 0;
-  max-width: 320px;
+  line-height: 1.6;
+  max-width: 36ch;
+  margin: 0;
+}
+
+.login-marca__ventajas { display: none; }
+
+/* ===== Columna de contenido ===== */
+
+.login-contenido {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  padding: var(--espaciado-md) var(--espaciado-md) var(--espaciado-lg);
+  min-width: 0;
+}
+
+.login-contenido__caja {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-cabecera { margin-bottom: var(--espaciado-lg); }
+
+.login-cabecera__titulo {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+  margin: 0 0 var(--espaciado-xxs);
+}
+
+.login-cabecera__sub {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
   line-height: 1.5;
-  font-style: italic;
+  margin: 0;
 }
 
 /* ===== Formulario ===== */
 
 .login-formulario {
-  width: 100%;
-  max-width: 360px;
   display: flex;
   flex-direction: column;
   gap: var(--espaciado-sm);
 }
 
-.login-formulario input[type="text"],
-.login-formulario input[type="password"] {
+.login-campo {
+  display: flex;
+  flex-direction: column;
+}
+
+.login-campo__label {
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+  margin-bottom: var(--espaciado-xxs);
+}
+
+.login-campo__control {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.login-campo__control input {
+  flex: 1;
+  min-width: 0;
   width: 100%;
   padding: var(--espaciado-sm) var(--espaciado-md);
+  padding-left: calc(var(--espaciado-md) + 18px + var(--espaciado-xs));
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   background: var(--color-fondo-tarjeta);
   color: var(--color-texto);
   font: inherit;
-  font-size: var(--texto-sm);
-  transition: border-color var(--transicion-rapida);
+  /* 16px evita el zoom automático de iOS al enfocar el campo */
+  font-size: var(--texto-base);
+  min-height: var(--toque-minimo);
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
-.login-formulario input:focus {
+.login-campo__control input[type="password"] {
+  padding-right: 48px;
+}
+
+/* Placeholder legible (AA): igual al texto secundario del sistema */
+.login-campo__control input::placeholder {
+  color: var(--color-texto-secundario);
+  opacity: 1;
+}
+
+.login-campo__control input:focus {
   outline: none;
-  border-color: var(--color-acento);
+  border-color: var(--color-borde-foco);
   box-shadow: 0 0 0 3px var(--color-acento-soft);
 }
+
+.login-campo__icono {
+  position: absolute;
+  left: var(--espaciado-md);
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-texto-secundario);
+  pointer-events: none;
+  transition: color var(--transicion-rapida);
+}
+
+.login-campo__icono .lucide { width: 18px; height: 18px; }
+
+.login-campo__control:focus-within .login-campo__icono {
+  color: var(--color-acento);
+}
+
+/* Botón mostrar/ocultar contraseña (solapa el padding derecho del input) */
+.login-campo__ver {
+  flex-shrink: 0;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  margin-left: -48px;
+  padding: 0;
+  border-radius: var(--radio-sm);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-texto-terciario);
+  background: transparent;
+  transition: color var(--transicion-rapida), background var(--transicion-rapida);
+}
+
+.login-campo__ver:hover {
+  color: var(--color-texto);
+  background: var(--color-fondo-alt);
+}
+
+.login-campo__ver[aria-pressed="true"] { color: var(--color-acento); }
+
+.login-campo__ver .lucide { width: 18px; height: 18px; }
 
 .login-recordar {
   display: flex;
   align-items: center;
   gap: var(--espaciado-xs);
   font-size: var(--texto-sm);
+  font-weight: 500;
   color: var(--color-texto-secundario);
   cursor: pointer;
   user-select: none;
+  margin: 2px 0 0;
 }
 
 .login-recordar input[type="checkbox"] {
@@ -83,6 +291,7 @@
   height: 18px;
   accent-color: var(--color-acento);
   cursor: pointer;
+  flex-shrink: 0;
 }
 
 /* ===== Botón login ===== */
@@ -91,30 +300,40 @@
   width: 100%;
   padding: var(--espaciado-sm) var(--espaciado-md);
   background: var(--color-acento);
-  color: var(--color-texto-acento);
+  color: var(--login-texto-acento);
   border: none;
   border-radius: var(--radio-md);
   font: inherit;
-  font-size: var(--texto-sm);
+  font-size: var(--texto-base);
   font-weight: 700;
   cursor: pointer;
   display: flex;
   align-items: center;
   justify-content: center;
   gap: var(--espaciado-xs);
-  transition: background var(--transicion-rapida), transform var(--transicion-rapida);
+  transition: background var(--transicion-rapida), transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
   min-height: var(--toque-minimo);
 }
 
-.login-btn:hover { background: var(--color-acento-hover); }
+.login-btn:hover {
+  background: var(--color-acento-hover);
+  box-shadow: var(--sombra-md);
+}
+
+/* En oscuro el acento es azul claro: hover más claro para mantener AA con texto oscuro */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .login-btn:hover { background: #93C5FD; }
+}
+:root[data-theme="dark"] .login-btn:hover { background: #93C5FD; }
+
 .login-btn:active { transform: scale(0.98); }
 .login-btn:disabled { opacity: 0.6; cursor: not-allowed; }
 
 .login-btn__spinner {
   width: 18px;
   height: 18px;
-  border: 2px solid rgba(255,255,255,0.3);
-  border-top-color: var(--color-texto-acento);
+  border: 2px solid var(--login-acento-ring);
+  border-top-color: var(--login-texto-acento);
   border-radius: 50%;
   animation: loginGirar 0.7s linear infinite;
 }
@@ -131,9 +350,9 @@
   gap: var(--espaciado-xs);
   padding: var(--espaciado-xs) var(--espaciado-sm);
   background: var(--color-error-soft);
-  color: var(--color-error);
+  color: var(--login-error);
   border-radius: var(--radio-md);
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   font-weight: 500;
   animation: loginFadeIn var(--transicion-rapida);
 }
@@ -146,14 +365,12 @@
 /* ===== Credenciales demo ===== */
 
 .login-demo {
-  width: 100%;
-  max-width: 360px;
   margin-top: var(--espaciado-md);
 }
 
 .login-demo summary {
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
   cursor: pointer;
   user-select: none;
   text-align: center;
@@ -161,7 +378,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: var(--espaciado-xxs);
   transition: color var(--transicion-rapida);
 }
 
@@ -175,6 +392,9 @@
   background: var(--color-fondo-alt);
   border-radius: var(--radio-md);
   border: 1px solid var(--color-borde);
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
   animation: loginFadeIn var(--transicion-rapida);
 }
 
@@ -182,24 +402,27 @@
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: var(--texto-xs);
+  gap: var(--espaciado-sm);
+  font-size: var(--texto-sm);
 }
 
 .login-demo__usuario {
   font-family: var(--fuente-mono);
   color: var(--color-texto);
   font-weight: 600;
+  word-break: break-all;
 }
 
 .login-demo__copiar {
   background: none;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-sm);
-  padding: 4px 10px;
+  padding: 4px 12px;
   font: inherit;
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--color-acento);
   cursor: pointer;
+  flex-shrink: 0;
   transition: all var(--transicion-rapida);
 }
 
@@ -213,37 +436,374 @@
   border-color: var(--color-exito);
 }
 
-/* ===== Más información (expandible) ===== */
+/* ===== Enlace / disparador "Más información" (dentro del formulario) ===== */
 
-.login-info {
-  width: 100%;
-  max-width: 360px;
+.login-info-enlace {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
   margin-top: var(--espaciado-md);
+  padding: var(--espaciado-xs) var(--espaciado-lg);
+  min-height: 44px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-texto);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  text-decoration: none;
+  box-shadow: var(--sombra-sm);
+  transition: color var(--transicion-rapida), background var(--transicion-rapida), border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
 }
 
-.login-info summary {
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
-  cursor: pointer;
-  user-select: none;
-  text-align: center;
-  list-style: none;
+.login-info-enlace:hover {
+  color: var(--color-acento);
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+  box-shadow: var(--sombra-md);
+}
+
+.login-info-enlace:focus-visible {
+  outline: 2px solid var(--color-borde-foco);
+  outline-offset: 2px;
+}
+
+.login-info-enlace__icono {
+  display: inline-flex;
+  color: var(--color-acento);
+}
+
+.login-info-enlace__icono .lucide {
+  width: 18px;
+  height: 18px;
+}
+
+/* ===== Más información (sección integrada; acordeón en móvil) ===== */
+
+/* En móvil todo el bloque (título incluido) colapsa como acordeón hasta
+   pulsar el botón; en escritorio siempre está expandido. */
+.login-info {
+  scroll-margin-top: var(--espaciado-lg);
+}
+
+.login-info__interior {
+  /* Márgenes laterales del acordeón en móvil/tablet (en escritorio los
+     sustituye el padding amplio de la banda). */
+  padding: var(--espaciado-lg) var(--espaciado-md);
+}
+
+.login-info__cuerpo {
+  display: grid;
+  grid-template-rows: 0fr;
+  overflow: hidden;
+  min-height: 0;
+  transition: grid-template-rows var(--transicion-normal);
+}
+
+.login-info--abierto .login-info__cuerpo {
+  grid-template-rows: 1fr;
+}
+
+/* Único hijo de la fila colapsable: sin él el truco 0fr→1fr no funciona */
+.login-info__contenido {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.login-info__grid {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.login-info__cabecera { margin-bottom: var(--espaciado-lg); }
+
+.login-info__titulo {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+  margin: 0;
+}
+
+.login-info__lede {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.6;
+  margin: var(--espaciado-xs) 0 0;
+  max-width: 62ch;
+}
+
+/* ===== Galería: capturas reales de la app (carrusel navegable) ===== */
+
+.login-info__galeria {
+  max-width: 760px;
+  margin: 0 auto;
+}
+
+.login-info__galeria-viewport {
+  position: relative;
+  overflow: hidden;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  background: var(--color-fondo-alt);
+  box-shadow: var(--sombra-md);
+}
+
+.login-info__galeria-pista {
+  display: flex;
+  transition: transform var(--transicion-normal);
+}
+
+/* Cada captura es un botón clicable (abre el lightbox) */
+.login-info__tarjeta-boton {
+  flex: 0 0 100%;
+  min-width: 100%;
+  display: block;
+  padding: 0;
+  margin: 0;
+  border: 0;
+  background: none;
+  cursor: zoom-in;
+  position: relative;
+}
+
+.login-info__tarjeta-boton:focus-visible {
+  outline: 2px solid var(--color-borde-foco);
+  outline-offset: -2px;
+}
+
+.login-info__tarjeta-img {
+  width: 100%;
+  display: block;
+  aspect-ratio: 16 / 9;
+  object-fit: cover;
+  object-position: top;
+  transition: opacity var(--transicion-rapida);
+}
+
+/* Aviso sutil de ampliación al pasar el cursor */
+.login-info__tarjeta-boton::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(to top, rgba(12, 10, 9, 0.18), transparent 40%);
+  opacity: 0;
+  transition: opacity var(--transicion-rapida);
+  pointer-events: none;
+}
+
+.login-info__tarjeta-boton:hover::after { opacity: 1; }
+
+/* Flechas de navegación superpuestas a los lados de la imagen */
+.login-info__galeria-flecha {
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 2;
+  width: 44px;
+  height: 44px;
+  min-width: 44px;
+  min-height: 44px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid var(--color-borde);
+  background: var(--color-vidrio);
+  color: var(--color-texto);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  backdrop-filter: var(--desenfoque-vidrio);
+  transition: color var(--transicion-rapida), background var(--transicion-rapida), border-color var(--transicion-rapida);
+}
+
+.login-info__galeria-flecha--prev { left: var(--espaciado-xs); }
+.login-info__galeria-flecha--next { right: var(--espaciado-xs); }
+
+.login-info__galeria-flecha:hover {
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-acento);
+  border-color: var(--color-acento);
+}
+
+.login-info__galeria-flecha:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+
+.login-info__galeria-flecha:disabled:hover {
+  background: var(--color-vidrio);
+  color: var(--color-texto);
+  border-color: var(--color-borde);
+}
+
+/* Título y descripción de la captura activa, bajo el visor */
+.login-info__galeria-titulo {
+  font-size: var(--texto-base);
+  font-weight: 700;
+  color: var(--color-texto);
+  margin: var(--espaciado-sm) 0 2px;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+}
+
+.login-info__galeria-titulo .lucide {
+  color: var(--color-acento);
+}
+
+.login-info__galeria-desc {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+  margin: 0;
+  max-width: 56ch;
+}
+
+/* Controles: contador y puntos */
+.login-info__galeria-controles {
   display: flex;
   align-items: center;
   justify-content: center;
-  gap: 4px;
-  transition: color var(--transicion-rapida);
+  gap: var(--espaciado-md);
+  margin-top: var(--espaciado-sm);
 }
 
-.login-info summary:hover { color: var(--color-acento); }
-.login-info summary::-webkit-details-marker { display: none; }
+.login-info__galeria-contador {
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  font-variant-numeric: tabular-nums;
+  color: var(--color-texto-secundario);
+}
 
-.login-info__cuerpo {
-  margin-top: var(--espaciado-md);
+.login-info__galeria-puntos {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.login-info__galeria-punto {
+  width: 10px;
+  height: 10px;
+  min-width: 10px;
+  min-height: 10px;
+  padding: 0;
+  border-radius: var(--radio-pill);
+  background: var(--color-borde);
+  cursor: pointer;
+  transition: background var(--transicion-rapida), width var(--transicion-rapida);
+}
+
+.login-info__galeria-punto--activo {
+  background: var(--color-acento);
+  width: 26px;
+}
+
+/* ===== Lightbox: captura ampliada a pantalla completa ===== */
+
+.login-lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 400;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(12, 10, 9, 0.9);
+  opacity: 0;
+  visibility: hidden;
+  /* Al cerrar, la visibilidad se oculta al terminar el fade (transition
+     con delay); al abrir se muestra al instante para poder recibir el foco. */
+  transition: opacity var(--transicion-normal), visibility 0s linear var(--transicion-normal);
+  padding: var(--espaciado-lg);
+}
+
+.login-lightbox--abierto {
+  opacity: 1;
+  visibility: visible;
+  transition: opacity var(--transicion-normal), visibility 0s;
+}
+
+.login-lightbox__marco {
+  margin: 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  max-width: min(1200px, 92vw);
+}
+
+.login-lightbox__img {
+  max-width: 100%;
+  max-height: 78vh;
+  width: auto;
+  height: auto;
+  object-fit: contain;
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-tarjeta);
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+}
+
+.login-lightbox__pie {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
   gap: var(--espaciado-lg);
-  animation: loginFadeIn var(--transicion-rapida);
+  width: 100%;
+  max-width: 760px;
+  font-size: var(--texto-sm);
+  color: #F5F5F4;
+}
+
+.login-lightbox__pie strong { color: #FFFFFF; }
+
+.login-lightbox__cerrar,
+.login-lightbox__flecha {
+  position: absolute;
+  width: 48px;
+  height: 48px;
+  min-width: 48px;
+  min-height: 48px;
+  padding: 0;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  background: rgba(255, 255, 255, 0.12);
+  color: #FFFFFF;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background var(--transicion-rapida);
+}
+
+.login-lightbox__cerrar:hover,
+.login-lightbox__flecha:hover { background: rgba(255, 255, 255, 0.24); }
+
+.login-lightbox__cerrar:focus-visible,
+.login-lightbox__flecha:focus-visible {
+  outline: 2px solid #FFFFFF;
+  outline-offset: 2px;
+}
+
+.login-lightbox__cerrar {
+  top: var(--espaciado-md);
+  right: var(--espaciado-md);
+}
+
+.login-lightbox__flecha--prev { left: var(--espaciado-md); top: 50%; transform: translateY(-50%); }
+.login-lightbox__flecha--next { right: var(--espaciado-md); top: 50%; transform: translateY(-50%); }
+
+.login-lightbox__flecha:disabled { opacity: 0.35; cursor: default; }
+.login-lightbox__flecha:disabled:hover { background: rgba(255, 255, 255, 0.12); }
+
+.login-lightbox .lucide { width: 22px; height: 22px; }
+
+/* Bloqueo de scroll de fondo mientras el lightbox está abierto */
+.login-lightbox-activo {
+  overflow: hidden;
+}
+
+.login-info__grid {
+  display: grid;
+  gap: var(--espaciado-lg);
 }
 
 .login-info__seccion h3 {
@@ -257,7 +817,7 @@
 }
 
 .login-info__seccion p {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
   line-height: 1.6;
   margin: 0;
@@ -272,25 +832,27 @@
 .login-info__paso {
   text-align: center;
   padding: var(--espaciado-sm);
-  background: var(--color-fondo-alt);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
 }
 
 .login-info__paso-num {
+  font-family: var(--fuente-display);
   font-size: var(--texto-lg);
-  font-weight: 800;
+  font-weight: 700;
   color: var(--color-acento);
 }
 
 .login-info__paso-titulo {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   font-weight: 600;
   color: var(--color-texto);
   margin: 4px 0 2px;
 }
 
 .login-info__paso-desc {
-  font-size: 0.7rem;
+  font-size: var(--texto-xs);
   color: var(--color-texto-terciario);
   margin: 0;
 }
@@ -301,62 +863,85 @@
   gap: var(--espaciado-xs);
 }
 
+/* Acordeón animado por fila: cabecera siempre visible, respuesta colapsable */
 .login-info__faq-item {
+  display: grid;
+  grid-template-rows: auto 0fr;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   overflow: hidden;
+  transition: grid-template-rows var(--transicion-normal), border-color var(--transicion-rapida);
+}
+
+.login-info__faq-item--abierto {
+  grid-template-rows: auto 1fr;
+  border-color: var(--color-acento);
 }
 
 .login-info__faq-preg {
   width: 100%;
   padding: var(--espaciado-xs) var(--espaciado-sm);
-  background: var(--color-fondo);
+  background: var(--color-fondo-tarjeta);
   border: none;
   cursor: pointer;
   font: inherit;
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   font-weight: 600;
   color: var(--color-texto);
   text-align: left;
   display: flex;
   justify-content: space-between;
   align-items: center;
+  gap: var(--espaciado-xs);
+  transition: color var(--transicion-rapida), background var(--transicion-rapida);
 }
 
 .login-info__faq-preg:hover { background: var(--color-fondo-alt); }
 
-.login-info__faq-resp {
-  padding: 0 var(--espaciado-sm) var(--espaciado-sm);
-  font-size: var(--texto-xs);
-  color: var(--color-texto-secundario);
-  line-height: 1.5;
-  display: none;
+.login-info__faq-preg[aria-expanded="true"] { color: var(--color-acento); }
+
+.login-info__faq-preg .lucide {
+  transition: transform var(--transicion-normal);
 }
 
-.login-info__faq-resp--abierto { display: block; }
+.login-info__faq-preg[aria-expanded="true"] .lucide {
+  transform: rotate(180deg);
+}
+
+.login-info__faq-resp {
+  overflow: hidden;
+  min-height: 0;
+  padding: 0 var(--espaciado-sm);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+}
+
+.login-info__faq-item--abierto .login-info__faq-resp {
+  padding-bottom: var(--espaciado-sm);
+}
 
 .login-info__cuenta {
   text-align: center;
   padding: var(--espaciado-md);
-  background: var(--color-fondo-alt);
+  background: var(--color-fondo-tarjeta);
   border-radius: var(--radio-md);
   border: 1px dashed var(--color-borde);
 }
 
 .login-info__cuenta p {
-  font-size: var(--texto-xs);
+  font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
 }
 
 /* ===== Footer ===== */
 
 .login-footer {
-  margin-top: auto;
-  padding-top: var(--espaciado-2xl);
+  margin-top: var(--espaciado-2xl);
   text-align: center;
-  font-size: 0.7rem;
-  color: var(--color-texto-terciario);
-  line-height: 1.6;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  line-height: 1.7;
 }
 
 .login-footer a {
@@ -365,6 +950,33 @@
 }
 
 .login-footer a:hover { text-decoration: underline; }
+
+/* ===== Entrada orquestada (solo si no se prefiere menos movimiento) ===== */
+
+@media (prefers-reduced-motion: no-preference) {
+  @keyframes loginSube {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+
+  .login-marca__centro > * {
+    animation: loginSube 0.5s var(--easing-entrada) both;
+  }
+  .login-marca__centro > *:nth-child(1) { animation-delay: 0ms; }
+  .login-marca__centro > *:nth-child(2) { animation-delay: 70ms; }
+  .login-marca__centro > *:nth-child(3) { animation-delay: 140ms; }
+  .login-marca__centro > *:nth-child(4) { animation-delay: 210ms; }
+
+  .login-marca__datos {
+    animation: loginSube 0.5s var(--easing-entrada) both;
+    animation-delay: 280ms;
+  }
+
+  .login-contenido__caja {
+    animation: loginSube 0.5s var(--easing-entrada) both;
+    animation-delay: 140ms;
+  }
+}
 
 /* ===== Loading / Welcome overlays ===== */
 
@@ -435,8 +1047,9 @@
 }
 
 .login-welcome__nombre {
+  font-family: var(--fuente-display);
   font-size: var(--texto-xl);
-  font-weight: 700;
+  font-weight: 600;
   color: var(--color-texto);
   margin: 0;
 }
@@ -472,8 +1085,9 @@
 }
 
 .login-setup__titulo {
+  font-family: var(--fuente-display);
   font-size: var(--texto-xl);
-  font-weight: 800;
+  font-weight: 600;
   color: var(--color-texto);
   margin: 0 0 var(--espaciado-xs);
 }
@@ -539,11 +1153,141 @@
   color: var(--color-texto);
 }
 
+/* ===== Responsive ===== */
+
+/* Móvil y tablet: tarjeta alrededor del formulario para distinguirlo del fondo */
+@media (max-width: 879px) {
+  .login-contenido__caja {
+    background: var(--color-fondo-tarjeta);
+    border: 1px solid var(--color-borde);
+    border-radius: var(--radio-lg);
+    box-shadow: var(--sombra-md);
+    padding: var(--espaciado-lg);
+  }
+
+  .login-cabecera {
+    margin-bottom: var(--espaciado-lg);
+  }
+}
+
 @media (max-width: 480px) {
-  .login-pantalla {
-    padding: var(--espaciado-md) var(--espaciado-sm);
+  .login-marca {
+    padding: var(--espaciado-lg) var(--espaciado-sm) var(--espaciado-md);
+  }
+  .login-contenido {
+    padding: var(--espaciado-md) var(--espaciado-sm) var(--espaciado-lg);
+  }
+  .login-info__interior {
+    padding: var(--espaciado-lg) var(--espaciado-sm);
   }
   .login-info__pasos {
     grid-template-columns: 1fr;
   }
+}
+
+/* Escritorio: split en dos paneles (marca a la izquierda, formulario a la derecha)
+   y sección de información integrada a ancho completo debajo */
+@media (min-width: 880px) {
+  /* La primera pantalla es solo el split (marca + acceso): ocupa exactamente
+     el viewport y empuja la sección de información bajo el pliegue. */
+  .login-pantalla {
+    grid-template-columns: minmax(0, 5fr) minmax(0, 6fr);
+    grid-template-rows: minmax(100dvh, auto) auto;
+  }
+
+  .login-marca {
+    padding: var(--espaciado-3xl) var(--espaciado-2xl);
+    justify-content: center;
+    align-items: stretch;
+    border-inline-end: 1px solid var(--color-borde);
+  }
+
+  .login-marca::before {
+    background: radial-gradient(46rem 30rem at 12% -8%, var(--color-acento-soft) 0%, transparent 60%);
+  }
+
+  .login-marca__interior {
+    flex: 1;
+    align-items: stretch;
+    text-align: left;
+    max-width: 440px;
+  }
+
+  .login-marca__centro {
+    flex: 1;
+    justify-content: center;
+    align-items: flex-start;
+  }
+
+.login-marca__datos {
+  display: block;
+  margin-top: auto;
+  font-family: var(--fuente-mono);
+  font-size: var(--texto-xs);
+  font-weight: 500;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+  .login-marca__titulo { font-size: clamp(1.75rem, 4.5vw, 2.6rem); }
+
+  .login-marca__tagline { max-width: 40ch; }
+
+  .login-marca__ventajas {
+    display: flex;
+    flex-direction: column;
+    gap: var(--espaciado-sm);
+    margin-top: var(--espaciado-lg);
+    padding-top: var(--espaciado-lg);
+    border-top: 1px solid var(--color-borde);
+  }
+
+  .login-marca__ventajas li {
+    display: flex;
+    align-items: center;
+    gap: var(--espaciado-xs);
+    font-size: var(--texto-sm);
+    color: var(--color-texto-secundario);
+  }
+
+  .login-marca__ventajas li .lucide {
+    width: 18px;
+    height: 18px;
+    color: var(--color-acento);
+    flex-shrink: 0;
+  }
+
+  .login-contenido {
+    padding: var(--espaciado-2xl) var(--espaciado-xl);
+  }
+
+  /* El botón no despliega en la columna: lleva a la sección inferior */
+  .login-info {
+    grid-column: 1 / -1;
+  }
+
+  .login-info__cuerpo {
+    grid-template-rows: 1fr;
+  }
+
+  .login-info__interior {
+    max-width: 1040px;
+    margin: 0 auto;
+    padding: var(--espaciado-3xl) var(--espaciado-2xl);
+    border-top: 1px solid var(--color-borde);
+  }
+
+  .login-info__titulo {
+    font-size: var(--texto-3xl);
+  }
+
+  /* Secciones apiladas una debajo de la otra (sin columnas) */
+  .login-info__grid {
+    grid-template-columns: 1fr;
+    gap: var(--espaciado-xl);
+  }
+
+
+}
 }

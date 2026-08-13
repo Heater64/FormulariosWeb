@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="color-scheme" content="light dark">
+  <title>Sin conexión — FormsBiblicos</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      --fondo: #FAFAF9;
+      --texto: #1C1917;
+      --texto-sec: #78716C;
+      --acento: #2563EB;
+      --borde: #E7E5E4;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --fondo: #0C0A09;
+        --texto: #FAFAF9;
+        --texto-sec: #A8A29E;
+        --acento: #60A5FA;
+        --borde: #292524;
+      }
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      min-height: 100dvh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      -webkit-font-smoothing: antialiased;
+    }
+    .card {
+      max-width: 360px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 14px;
+    }
+    .icono {
+      width: 56px;
+      height: 56px;
+      border-radius: 16px;
+      background: var(--acento);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .icono svg { width: 28px; height: 28px; color: #fff; }
+    h1 { font-size: 1.4rem; font-weight: 700; }
+    p { color: var(--texto-sec); line-height: 1.6; font-size: 0.95rem; }
+    button {
+      margin-top: 6px;
+      padding: 12px 22px;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      background: transparent;
+      color: var(--acento);
+      font: inherit;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:hover { background: rgba(37, 99, 235, 0.08); }
+  </style>
+</head>
+<body>
+  <main class="card">
+    <div class="icono" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+    </div>
+    <h1>Sin conexión</h1>
+    <p>Parece que no tienes internet. FormsBiblicos necesita conexión para sincronizar tu progreso con tu grupo de estudio.</p>
+    <button type="button" onclick="window.location.reload()">Reintentar</button>
+  </main>
+</body>
+</html>

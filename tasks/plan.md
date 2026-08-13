@@ -1,5 +1,7 @@
 # Plan de implementación: actualizaciones manuales de FormsBiblicos
 
+> ⚠️ **PAUSADO.** La APK de Android está en pausa (ver `README.md`). Este plan queda como referencia para retomarla en el futuro.
+
 ## Objetivo
 Distribuir FormsBiblicos como app Android fuera de Google Play sin servidor propio: Capacitor empaqueta la interfaz en `dist/`, consulta un `version.json` público de Vercel, descarga solo APKs de GitHub Releases, verifica SHA-256 y abre el instalador oficial mediante un plugin nativo local. Vercel sirve una landing pública separada; no existe producto web instalable.
 

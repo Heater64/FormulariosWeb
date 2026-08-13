@@ -33,3 +33,5 @@ out/
 
 # Herramientas locales
 .freebuff/
+.vercel
+playwright-mcp/

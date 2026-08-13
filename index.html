@@ -11,9 +11,20 @@
   <meta name="theme-color" content="#FFFFFF">
   <meta name="color-scheme" content="light dark">
 
+  <!-- PWA: instalable como aplicación (manifest + service worker) -->
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
+  <link rel="apple-touch-icon" href="assets/iconos/180x180.png">
+  <link rel="manifest" href="/manifest.json">
+
   <!-- Preconexiones: abre sockets antes de que se pidan los recursos externos -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 
   <!-- ============================================================
        Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
@@ -175,6 +186,7 @@
   <link rel="stylesheet" href="css/05-componentes/_grupos.css">
   <link rel="stylesheet" href="css/05-componentes/_desafios.css">
   <link rel="stylesheet" href="css/05-componentes/_notificaciones.css">
+  <link rel="stylesheet" href="css/05-componentes/_pwa-install.css">
 
   <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -218,10 +230,6 @@
        que supabase-client.js y cualquier vista -->
   <script src="js/config/entorno.js" defer></script>
 
-  <!-- JS: Actualizaciones de APK/Capacitor -->
-  <script src="js/services/update-service.js" defer></script>
-  <script src="js/componentes/update-installer.js" defer></script>
-  <script src="js/componentes/update-dialog.js" defer></script>
   <!-- Campana de notificaciones de cabecera (sustituye al item de la barra inferior) -->
   <script src="js/componentes/campana-notificaciones.js" defer></script>
 
@@ -279,6 +287,7 @@
   <!-- JS: Components -->
   <script src="js/componentes/editor-huecos.js" defer></script>
   <script src="js/componentes/profile-editor.js" defer></script>
+  <script src="js/componentes/pwa-install.js" defer></script>
 
   <!-- JS: Views (las pesadas se cargan bajo demanda desde el router) -->
   <script src="js/vistas/vista-login.js" defer></script>
@@ -315,9 +324,12 @@
   </script>
 
   <!-- JS: Teclado → ocultar la barra inferior mientras se escribe (el teclado
-       virtual tapa la parte inferior; la barra reaparece al desenfocar). -->
+       virtual tapa la parte inferior; la barra reaparece al desenfocar).
+       Solo aplica en pantallas estrechas (barra inferior): en escritorio la
+       navegación es una sidebar fija a la izquierda y no hay teclado virtual. -->
   <script>
     document.addEventListener('focusin', (e) => {
+      if (window.innerWidth >= 1024) return;
       if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
         if (window.navigationManager) window.navigationManager.ocultarPorTeclado(true);
       }
@@ -327,6 +339,17 @@
         if (window.navigationManager) window.navigationManager.ocultarPorTeclado(false);
       }
     }, true);
+  </script>
+
+  <!-- PWA: registra el service worker. En producción (https) activa la
+       instalación y el modo offline; en desarrollo local (http) se omite
+       para no interferir con el HMR de Vite. -->
+  <script>
+    if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
+      window.addEventListener('load', () => {
+        navigator.serviceWorker.register('./sw.js').catch(() => {});
+      });
+    }
   </script>
 </head>
 <body>

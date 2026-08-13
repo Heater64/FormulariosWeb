@@ -24,13 +24,14 @@
           <div class="o-contenedor o-pila o-pila--lg u-app-shell">
             <div class="o-flecha o-flecha--between u-mb-2">
               <button class="btn-secundario" onclick="router.navegar('/estudio')">${window.Iconos.render('arrow-left')}</button>
-              <span class="u-fs-xs u-color-texto-terciario">${leidos}/${total} leídos</span>
+              <span class="u-fs-xs u-color-texto-terciario">${libro.testamento === 'antiguo' ? 'Antiguo Testamento' : 'Nuevo Testamento'}</span>
             </div>
-            <div class="u-texto-centrado o-pila u-flex-center">
-              <div class="u-icono-circular u-icono-circular--md">${window.Iconos.render('book-open')}</div>
-              <h2 class="u-mt-2">${libro.nombre}</h2>
-              <div style="width:100%;height:8px;border-radius:var(--radio-pill);background:var(--color-borde);overflow:hidden;margin-top:var(--espaciado-sm)">
-                <div style="width:${pct}%;height:100%;background:var(--color-acento);border-radius:var(--radio-pill);transition:width var(--transicion-normal)"></div>
+            <div class="capitulos-cabecera">
+              <div class="capitulos-cabecera__icono">${window.Iconos.render('book-open')}</div>
+              <div class="capitulos-cabecera__info">
+                <h2>${libro.nombre}</h2>
+                <p class="capitulos-cabecera__meta">${leidos} de ${total} capítulos leídos · ${pct}%</p>
+                <div class="capitulos-cabecera__barra"><div class="capitulos-cabecera__barra--lleno" style="width:${pct}%"></div></div>
               </div>
             </div>
             <button class="btn-primario u-btn-full" id="btnEmpezar" style="min-height:52px;font-size:var(--texto-lg)">

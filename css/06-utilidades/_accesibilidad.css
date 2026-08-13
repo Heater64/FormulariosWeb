@@ -140,10 +140,9 @@ body.navegacion-raton .foco-visible {
   grid-template-columns: 1fr;
 }
 
-/* Nav bar items */
-:root[data-lg="true"] .barra-nav-inferior a {
-  font-size: 9px;
-}
+/* Nav bar items: el tamaño de letra lo fijan los tokens (--texto-xxs en la
+   barra inferior, --texto-sm en la sidebar de escritorio), que ya escalan
+   con data-lg. No se fuerza un px fijo para no encoger la sidebar. */
 
 /* Switch / toggle */
 :root[data-lg="true"] .switch {

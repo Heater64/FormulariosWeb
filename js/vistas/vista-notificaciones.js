@@ -36,11 +36,15 @@
       if (!usuario) { router.navegar('/login'); return; }
 
       raiz.innerHTML = `
-        <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+        <div class="o-contenedor o-contenedor--ancho" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <div class="notif-centro__cabecera">
             <button class="btn-icono" data-volver aria-label="Volver">${I('arrow-left')}</button>
             <h1 class="notif-centro__titulo">Notificaciones</h1>
+            <div class="notif-centro__acciones">
+              <button class="btn-secundario u-fs-xs" id="btnMarcarTodas" title="Marcar todas como leídas">${I('check')} <span>Marcar leídas</span></button>
+            </div>
           </div>
+          <div class="notif-filtros" id="notifFiltros" role="tablist" aria-label="Filtrar notificaciones"></div>
           <div id="notifLista" aria-live="polite"></div>
         </div>`;
 
@@ -48,10 +52,17 @@
 
       raiz.querySelector('[data-volver]').onclick = () => router.irAtras();
 
-      // Sincronizar con el servicio (store + realtime + polling)
-      this._desuscribir = store.suscribir('notificaciones', () => this._renderLista(raiz));
+      const btnMarcar = raiz.querySelector('#btnMarcarTodas');
+      if (btnMarcar) btnMarcar.onclick = async () => {
+        btnMarcar.disabled = true;
+        if (window.notificationService) await window.notificationService.marcarTodasVistas();
+        btnMarcar.disabled = false;
+      };
 
-      this._renderLista(raiz);
+      // Sincronizar con el servicio (store + realtime + polling)
+      this._desuscribir = store.suscribir('notificaciones', () => this._render(raiz));
+
+      this._render(raiz);
 
       // Refrescar datos al entrar
       if (window.notificationService) window.notificationService.refrescar();
@@ -68,9 +79,44 @@
       return (st && st.items) ? st : { items: [], noLeidas: 0, porCategoria: {}, cargando: false, error: null };
     },
 
-    // Pendientes = todo lo que no está archivado
+    // Pendientes = todo lo que no está archivado, respetando el filtro activo
     _filtrar(items) {
-      return (items || []).filter(f => f.estado !== 'archivada');
+      const base = (items || []).filter(f => f.estado !== 'archivada');
+      const filtro = this._filtro || 'todas';
+      if (filtro === 'todas') return base;
+      if (filtro === 'no_leidas') return base.filter(f => f.estado === 'nueva');
+      return base.filter(f => f.categoria === filtro);
+    },
+
+    _filtrosDisponibles(items) {
+      const cats = new Set();
+      (items || []).forEach(f => { if (f.categoria && f.estado !== 'archivada') cats.add(f.categoria); });
+      return ['todas', 'no_leidas', ...Array.from(cats)];
+    },
+
+    _render(raiz) {
+      this._renderFiltros(raiz);
+      this._renderLista(raiz);
+    },
+
+    _renderFiltros(raiz) {
+      const cont = raiz.querySelector('#notifFiltros');
+      if (!cont) return;
+      const st = this._estadoStore();
+      const cats = CATEGORIAS();
+      const disponibles = this._filtrosDisponibles(st.items);
+      const filtro = this._filtro || 'todas';
+      const etiqueta = (f) => f === 'todas' ? 'Todas' : (f === 'no_leidas' ? 'No leídas' : ((cats[f] && cats[f].etiqueta) || f));
+      cont.innerHTML = disponibles.map(f =>
+        `<button class="notif-filtro${filtro === f ? ' notif-filtro--activo' : ''}" data-filtro="${E(f)}" role="tab" aria-selected="${filtro === f}">${E(etiqueta(f))}</button>`
+      ).join('');
+      cont.querySelectorAll('[data-filtro]').forEach(btn => {
+        btn.onclick = () => {
+          this._filtro = btn.dataset.filtro;
+          this._renderFiltros(raiz);
+          this._renderLista(raiz);
+        };
+      });
     },
 
     _renderLista(raiz) {

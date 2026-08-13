@@ -3,11 +3,11 @@
   const I = (n) => window.Iconos.render(n);
   const E = (h) => window.helpers.escapeHtml(h);
 
-  function fechaLarga(iso) {
+  function fechaCorta(iso) {
     if (!iso) return '—';
     const d = new Date(iso);
-    const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
-    return d.getDate() + ' de ' + meses[d.getMonth()] + ' de ' + d.getFullYear();
+    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
+    return meses[d.getMonth()] + ' ' + d.getFullYear();
   }
 
   function _recortarSimple(file, cb) {
@@ -110,46 +110,42 @@
       const descripcion = (prefs.descripcion || prefs.frase || '').trim();
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-pila o-pila--lg" style="padding-top:0;padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+        <div class="o-contenedor o-pila o-pila--lg perfil-root" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
 
-          <!-- HERO (se contrae al hacer scroll) -->
-          <div class="perfil-hero" id="perfilHero">
-            <div class="perfil-avatar perfil-avatar--lg perfil-avatar--hero" id="avatarPerfil" title="Cambiar foto de perfil">
-              <span id="avatarLetra">${E(usuario.nombre_completo.charAt(0).toUpperCase())}</span>
-              <input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil">
-            </div>
-            <div class="perfil-hero__info">
-              <div class="perfil-nombre-fila">
-                <h2 id="nombrePerfil">${E(usuario.nombre_completo)}</h2>
-                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
-              </div>
-              <span class="perfil-username">@${E(usuario.username)}</span>
-              <span class="perfil-rol-badge perfil-rol-badge--${rol}">${rolBonito(usuario.rol)}</span>
-              <div class="perfil-hero__acciones">
-                <button class="perfil-hero__btn" id="btnEditarPerfil" aria-label="Editar perfil">${I('user')} <span class="perfil-hero__btn-texto">Editar perfil</span></button>
+          <!-- HERO -->
+          <header class="perfil-hero">
+            <div class="perfil-hero__fondo" aria-hidden="true"></div>
+            ${window.campanaNotificaciones ? `<div class="perfil-hero__campana">${window.campanaNotificaciones.renderCampana()}</div>` : ''}
+            <div class="perfil-hero__avatar">
+              <div class="perfil-avatar perfil-avatar--hero" id="avatarPerfil" title="Cambiar foto de perfil">
+                <span id="avatarLetra">${E(usuario.nombre_completo.charAt(0).toUpperCase())}</span>
+                <input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil">
               </div>
             </div>
-          </div>
-
-          <div class="o-pila o-pila--md">
-
-            <!-- CUENTA -->
-            <section class="perfil-seccion">
-              <div class="perfil-seccion__cabecera">
-                <div class="perfil-seccion__icono">${I('user')}</div>
-                <div>
-                  <h4 class="perfil-seccion__titulo">Cuenta</h4>
-                  <p class="perfil-seccion__desc">Información básica de tu cuenta</p>
+            <div class="perfil-hero__identidad">
+              <div class="perfil-hero__meta">
+                <span class="perfil-rol-badge perfil-rol-badge--${rol}">${rolBonito(usuario.rol)}</span>
+              </div>
+              <h1 class="perfil-hero__nombre" id="nombrePerfil">${E(usuario.nombre_completo)}</h1>
+              <p class="perfil-username">@${E(usuario.username)}</p>
+              ${descripcion ? `<p class="perfil-hero__bio">${E(descripcion)}</p>` : ''}
+              <div class="perfil-hero__stats">
+                <div class="perfil-hero__stat">
+                  <span class="perfil-hero__stat-valor">${E(fechaCorta(usuario.creado_en))}</span>
+                  <span class="perfil-hero__stat-label">Miembro desde</span>
+                </div>
+                <div class="perfil-hero__stat">
+                  <span class="perfil-hero__stat-valor" id="perfilGruposResumen">Cargando…</span>
+                  <span class="perfil-hero__stat-label">Grupos</span>
                 </div>
               </div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Usuario</span><span class="perfil-fila__valor">@${E(usuario.username)}</span></div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Rol</span><span class="perfil-fila__valor">${rolBonito(usuario.rol)}</span></div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Miembro desde</span><span class="perfil-fila__valor">${fechaLarga(usuario.creado_en)}</span></div>
-              <div class="perfil-fila">
-                <span class="perfil-fila__label">Descripción</span>
-                <span class="perfil-fila__valor" style="font-weight:400;white-space:normal;max-width:70%">${descripcion ? E(descripcion) : 'Sin descripción.'}</span>
+              <div class="perfil-hero__acciones">
+                <button class="perfil-hero__btn" id="btnEditarPerfil">${I('user')} <span>Editar perfil</span></button>
               </div>
-            </section>
+            </div>
+          </header>
+
+          <div class="o-pila o-pila--md">
 
             <!-- CONFIGURACIÓN -->
             <section class="perfil-seccion">
@@ -169,16 +165,16 @@
               </div>
             </section>
 
-            <!-- GRUPOS (resumen compacto) -->
+            <!-- GRUPOS -->
             <section class="perfil-seccion">
               <div class="perfil-seccion__cabecera">
                 <div class="perfil-seccion__icono">${I('users')}</div>
                 <div>
                   <h4 class="perfil-seccion__titulo">Grupos</h4>
-                  <p class="perfil-seccion__desc" id="perfilGruposResumen">Cargando...</p>
+                  <p class="perfil-seccion__desc">Tu clase y los grupos a los que perteneces</p>
                 </div>
               </div>
-              <a class="btn-secundario perfil-btn-full" href="#!/grupos">${I('layout')} Ver todos</a>
+              <a class="btn-secundario perfil-btn-full" href="#!/grupos">${I('layout')} Ver todos los grupos</a>
             </section>
 
             <!-- SUGERENCIAS -->
@@ -206,7 +202,7 @@
               <div class="o-pila" id="listaMisSugerencias" style="gap:var(--espaciado-xs);margin-top:var(--espaciado-sm)"></div>
             </section>
 
-            <!-- PANELES ESPECIALES (acceso rápido unificado) -->
+            <!-- PANEL DE ADMINISTRACIÓN (acceso rápido) -->
             ${esAdmin ? `
             <a class="perfil-boton-seccion" id="btnAdmin" href="#!/admin">
               <div class="perfil-boton-seccion__icono">${I('settings')}</div>
@@ -217,7 +213,7 @@
               <span class="perfil-boton-seccion__flecha">${I('chevron-right')}</span>
             </a>` : ''}
 
-            <!-- CERRAR SESIÓN -->
+            <!-- SESIÓN -->
             <section class="perfil-seccion">
               <div class="perfil-seccion__cabecera">
                 <div class="perfil-seccion__icono">${I('log-out')}</div>
@@ -229,7 +225,7 @@
               <button class="perfil-btn-cerrar" id="btnLogout">${I('log-out')} Cerrar sesión</button>
             </section>
 
-            <!-- INFORMACIÓN (compacta) -->
+            <!-- INFORMACIÓN -->
             <section class="perfil-seccion">
               <div class="perfil-info-card">
                 <div class="perfil-info-card__texto">
@@ -237,7 +233,6 @@
                   <p class="perfil-info-card__version">Versión ${E(versionActual)}</p>
                 </div>
                 <div class="o-flecha" style="gap:var(--espaciado-xxs);justify-content:flex-end;flex-wrap:wrap">
-                  <button class="btn-secundario u-fs-xs" id="btnBuscarActualizacion">Buscar actualizaciones</button>
                   <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
                 </div>
               </div>
@@ -290,12 +285,8 @@
       raiz.querySelector('#btnEditarPerfil').onclick = editarPerfil;
       if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
 
-      // Más información y actualización manual
+      // Más información
       raiz.querySelector('#btnMasInfo').onclick = () => router.navegar('/perfil/acerca/que-es');
-      raiz.querySelector('#btnBuscarActualizacion').onclick = () => {
-        if (window.updateDialog) window.updateDialog.comprobar({ manual: true });
-        else window.helpers.mostrarAlerta('El servicio de actualizaciones todavía se está iniciando.', 'info');
-      };
 
       // Cerrar sesión (ahora en el perfil principal, debajo del panel de administración)
       raiz.querySelector('#btnLogout').onclick = async () => {
@@ -371,7 +362,7 @@
         const n = ids.size;
         resumen.textContent = n
           ? (n + ' grupo' + (n !== 1 ? 's' : ''))
-          : 'No perteneces a ningún grupo todavía';
+          : 'Sin grupos';
       };
       cargarGrupos();
 
@@ -607,7 +598,7 @@
           </div>
           ${filaToggle('notif_desafios', 'sword', 'Desafíos', 'Invitaciones y resultados de desafíos')}
           ${filaToggle('notif_examenes', 'clipboard-check', 'Exámenes', 'Publicación, entregas y correcciones')}
-          ${filaToggle('notif_estudio', 'book-open', 'Estudio', 'Repasos y recordatorios de estudio')}
+          ${filaToggle('notif_estudio', 'book-open', 'Estudio', 'Capítulos completados y nuevos mazos')}
           ${filaToggle('notif_grupos', 'users', 'Grupos', 'Invitaciones y novedades de tu grupo')}
           ${filaToggle('notif_logros', 'trophy', 'Logros', 'Logros desbloqueados')}
           ${filaToggle('notif_sistema', 'settings', 'Sistema', 'Actualizaciones y avisos de la plataforma')}
@@ -856,7 +847,7 @@
             <div class="o-pila" style="gap:var(--espaciado-xxs);margin-top:var(--espaciado-sm)">
               <div class="perfil-fila"><span class="perfil-fila__label">Objetivo</span><span class="perfil-fila__valor" style="font-weight:400;max-width:70%">Estudio bíblico sistemático</span></div>
               <div class="perfil-fila"><span class="perfil-fila__label">Versión</span><span class="perfil-fila__valor">${E(versionActual)}</span></div>
-              <div class="perfil-fila"><span class="perfil-fila__label">Plataforma</span><span class="perfil-fila__valor">Android (Capacitor)</span></div>
+              <div class="perfil-fila"><span class="perfil-fila__label">Plataforma</span><span class="perfil-fila__valor">Web (PWA)</span></div>
               <div class="perfil-fila"><span class="perfil-fila__label">Tecnologías</span><span class="perfil-fila__valor" style="font-weight:400;max-width:70%">HTML, CSS, JS, Supabase</span></div>
             </div>
           </div>`,

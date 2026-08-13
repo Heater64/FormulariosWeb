@@ -1,5 +1,7 @@
 # Checklist de release FormsBiblicos
 
+> ⚠️ **PAUSADO.** La release de APK de Android está en pausa (ver `README.md`). Esta checklist queda para cuando se retome.
+
 ## A. Preparación
 
 - [ ] Confirmar que la release no mezcla Preview con Producción.

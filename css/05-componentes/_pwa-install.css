@@ -1,0 +1,200 @@
+/* ============================================================
+   Modal de instalación PWA (pwa-install)
+   Reutiliza la base .modal-overlay/.modal del sistema; aquí solo
+   la identidad visual: medallón, título display, beneficios y pasos.
+   ============================================================ */
+.pwa-install-overlay {
+  z-index: 2200; /* por encima del resto de modales */
+}
+
+.pwa-install {
+  position: relative;
+  max-width: 440px;
+  text-align: center;
+}
+
+.pwa-install__cerrar {
+  position: absolute;
+  top: var(--espaciado-sm);
+  right: var(--espaciado-sm);
+  width: var(--toque-minimo);
+  height: var(--toque-minimo);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+}
+
+.pwa-install__cerrar:hover,
+.pwa-install__cerrar:focus-visible {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto);
+}
+
+.pwa-install__cerrar svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Medallón: el gesto distintivo del modal */
+.pwa-install__medallon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto var(--espaciado-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 20px;
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  box-shadow: var(--sombra-sm);
+}
+
+.pwa-install__medallon svg {
+  width: 30px;
+  height: 30px;
+}
+
+.pwa-install__titulo {
+  margin: 0 0 var(--espaciado-xs);
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: var(--texto-peso-semibold);
+  line-height: var(--texto-altura-linea-titulo);
+  letter-spacing: -0.01em;
+}
+
+.pwa-install__lede {
+  margin: 0 0 var(--espaciado-md);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  line-height: var(--texto-altura-linea-cuerpo);
+}
+
+/* Beneficios (con beforeinstallprompt) */
+.pwa-install__beneficios {
+  list-style: none;
+  margin: 0 0 var(--espaciado-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  text-align: left;
+}
+
+.pwa-install__beneficios li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+}
+
+.pwa-install__beneficios li > svg {
+  flex: none;
+  width: 20px;
+  height: 20px;
+  margin-top: 2px;
+  color: var(--color-acento);
+}
+
+.pwa-install__beneficios strong {
+  display: block;
+  font-size: var(--texto-base);
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto);
+}
+
+.pwa-install__beneficios span {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: var(--texto-altura-linea-cuerpo);
+}
+
+/* Pasos (iOS: Añadir a pantalla de inicio) */
+.pwa-install__pasos {
+  list-style: none;
+  margin: 0 0 var(--espaciado-lg);
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  text-align: left;
+}
+
+.pwa-install__pasos li {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+}
+
+.pwa-install__paso-icono {
+  flex: none;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radio-sm);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+}
+
+.pwa-install__paso-icono svg {
+  width: 16px;
+  height: 16px;
+}
+
+.pwa-install__pasos strong {
+  display: block;
+  font-size: var(--texto-base);
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto);
+}
+
+.pwa-install__pasos li > div > span {
+  display: block;
+  margin-top: 2px;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: var(--texto-altura-linea-cuerpo);
+}
+
+/* Acciones */
+.pwa-install__acciones {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-lg);
+}
+
+.pwa-install__acciones button {
+  min-height: var(--toque-minimo);
+}
+
+.pwa-install__nota {
+  margin: var(--espaciado-md) 0 0;
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+}
+
+@media (max-width: 480px) {
+  .pwa-install__acciones {
+    flex-direction: column-reverse;
+  }
+
+  .pwa-install__acciones button {
+    width: 100%;
+    justify-content: center;
+  }
+}
