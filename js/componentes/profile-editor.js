@@ -6,11 +6,14 @@
   window.ProfileEditor = {
     abrir(usuario, opciones = {}) {
       const { onGuardar, onEliminar } = opciones;
+      // Drawer lateral: usa su propio backdrop (z-index 99). El modal-overlay
+      // global (z-index 200) taparía el panel (z-index 100) e interceptaría
+      // todos los clics, haciendo que el editor parezca "no responder".
       const backdrop = document.createElement('div');
-      backdrop.className = 'modal-overlay';
+      backdrop.className = 'admin-user-detail__backdrop';
       
       const panel = document.createElement('div');
-      panel.className = 'modal admin-user-detail';
+      panel.className = 'admin-user-detail';
       
       let tabActiva = 'general';
       const TABS = [
@@ -69,10 +72,12 @@
         panel.querySelector('#btnCloseEditor').onclick = (e) => { e.stopPropagation(); cerrar(); };
         panel.querySelector('#btnSaveUser').onclick = async (e) => {
           e.stopPropagation();
+          const passInput = panel.querySelector('#editPassword');
           const datos = {
             nombre_completo: panel.querySelector('#editNombre').value,
             username: panel.querySelector('#editUsername').value,
-            password: panel.querySelector('#editPassword').value
+            // La pestaña General no tiene campo de contraseña: tolerarlo.
+            password: passInput ? passInput.value : ''
           };
           if (onGuardar) await onGuardar(datos);
           cerrar();

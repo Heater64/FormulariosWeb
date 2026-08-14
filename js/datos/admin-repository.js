@@ -18,14 +18,28 @@
       return window.authRepository ? window.authRepository.COLUMNAS_PERFIL
         : 'id, username, nombre_completo, rol, activo, grupo_id, foto_perfil, preferencias, ultimo_acceso, creado_en';
     },
-    async listarUsuarios() {
+    async listarUsuarios(actor) {
       if (!sb()) return [];
-      const { data } = await sb().from('perfiles').select(this._columnasPerfil()).order('creado_en', { ascending: false });
+      const usuario = actor || window.store?.obtener?.('usuario');
+      if (usuario?.rol === 'admin') {
+        const { data, error } = await sb().rpc('admin_listar_usuarios_clase');
+        if (error) throw new Error(_traducir(error));
+        return data || [];
+      }
+      const { data, error } = await sb().from('perfiles').select(this._columnasPerfil()).order('creado_en', { ascending: false });
+      if (error) throw new Error(_traducir(error));
       return data || [];
     },
-    async listarGrupos() {
+    async listarGrupos(actor) {
       if (!sb()) return [];
-      const { data } = await sb().from('grupos').select('*, perfiles!admin_id(nombre_completo, username)');
+      const usuario = actor || window.store?.obtener?.('usuario');
+      if (usuario?.rol === 'admin') {
+        const { data, error } = await sb().rpc('admin_listar_grupos_clase');
+        if (error) throw new Error(_traducir(error));
+        return data || [];
+      }
+      const { data, error } = await sb().from('grupos').select('*, perfiles!admin_id(nombre_completo, username)');
+      if (error) throw new Error(_traducir(error));
       return data || [];
     },
     async crearGrupo(nombre, adminId) {
@@ -75,8 +89,19 @@
     },
     // FASE 2 (028): el panel envía SIEMPRE el grupo_id actual (o null si se le
     // quiere desasignar la clase), según el contrato de admin_actualizar_usuario.
+    // p_username NO-NULL dispara la sincronización del email sintético en
+    // auth.users (índice único case-insensitive). Si el username no cambió,
+    // enviarlo tal cual provoca 'Ese nombre de usuario ya existe' al re-guardar
+    // (colisión de email con otra fila de auth.users). Se normaliza a null
+    // cuando coincide con el actual: sin cambio → sin sincronización.
     async actualizarUsuario(usuarioId, { nombre_completo, username, rol, grupo_id, password }) {
       if (!sb()) return;
+      if (username != null) {
+        try {
+          const { data: actual } = await sb().from('perfiles').select('username').eq('id', usuarioId).single();
+          if (actual && actual.username === username) username = null;
+        } catch (e) { /* si no se puede leer, se envía tal cual */ }
+      }
       const { error } = await sb().rpc('admin_actualizar_usuario', {
         p_usuario_id: usuarioId,
         p_nombre_completo: nombre_completo != null ? nombre_completo : null,
@@ -90,9 +115,16 @@
         if (error) throw new Error(_traducir(error));
       }
     },
-    async listarExamenes() {
+    async listarExamenes(actor) {
       if (!sb()) return [];
-      const { data } = await sb().from('examenes_personalizados').select('*, perfiles!creado_por(nombre_completo), grupos(nombre)').order('creado_en', { ascending: false });
+      const usuario = actor || window.store?.obtener?.('usuario');
+      if (usuario?.rol === 'admin') {
+        const { data, error } = await sb().rpc('admin_listar_examenes_clase');
+        if (error) throw new Error(_traducir(error));
+        return data || [];
+      }
+      const { data, error } = await sb().from('examenes_personalizados').select('*, perfiles!creado_por(nombre_completo), grupos(nombre)').order('creado_en', { ascending: false });
+      if (error) throw new Error(_traducir(error));
       return data || [];
     },
     async obtenerAuditoria() {
@@ -104,8 +136,14 @@
       if (!sb()) throw new Error('Sin conexión');
       await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });
     },
-    async statsGenerales() {
+    async statsGenerales(actor) {
       if (!sb()) return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0, porRol: {} };
+      const usuario = actor || window.store?.obtener?.('usuario');
+      if (usuario?.rol === 'admin') {
+        const { data, error } = await sb().rpc('admin_stats_clase');
+        if (error) throw new Error(_traducir(error));
+        return data || { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0, porRol: {} };
+      }
       try {
         const [usuarios, examenes, progreso, tarjetas, roles] = await Promise.all([
           sb().from('perfiles').select('id', { count: 'exact', head: true }),
@@ -142,9 +180,13 @@
         if (error) if (error) throw new Error(_traducir(error));
       }
     },
-    async exportarUsuariosCSV() {
+    async exportarUsuariosCSV(actor) {
       if (!sb()) return '';
-      const { data } = await sb().from('perfiles').select('nombre_completo, username, rol, activo, grupo_id, creado_en').order('creado_en', { ascending: false });
+      const usuario = actor || window.store?.obtener?.('usuario');
+      const { data, error } = usuario?.rol === 'admin'
+        ? await sb().rpc('admin_listar_usuarios_clase')
+        : await sb().from('perfiles').select('nombre_completo, username, rol, activo, grupo_id, creado_en').order('creado_en', { ascending: false });
+      if (error) throw new Error(_traducir(error));
       if (!data) return '';
       const cabeceras = 'Nombre,Username,Rol,Activo,Grupo,Creado';
       const filas = data.map(u =>
@@ -221,7 +263,7 @@
         tema: ex.tema || '',
         profesor: ex.profesor || '',
         color: ex.color || '#2563EB',
-        icono: ex.icono || '📘',
+        icono: ex.icono || '',
         portada: ex.portada || '',
         config: ex.config || {}
       }).select().single();
@@ -365,7 +407,7 @@
       const primera = lineas[0].split(',').map(c => c.replace(/^"|"$/g, '').trim().toLowerCase());
       const tieneCabecera = /nombre|username|usuario|password|contrase|rol|grupo/.test(primera.join(' '));
       const filas = tieneCabecera ? lineas.slice(1) : lineas;
-      const grupos = await this.listarGrupos();
+      const grupos = await this.listarGrupos(window.store?.obtener?.('usuario'));
       const creados = [];
       const errores = [];
       for (const fila of filas) {

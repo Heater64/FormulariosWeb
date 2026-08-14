@@ -65,26 +65,26 @@ async function navegar(page, ruta) {
   }
   log(true, 'Migración 024 aplicada en Supabase');
 
-  // ── 1. Directorio de grupos ──
+  // ── 1. Mis clases (home estilo Classroom) ──
   await navegar(pageCreador, '/grupos');
-  log(await esperarSelector(pageCreador, '.grupos-cabecera__titulo'), 'Pantalla de Grupos (directorio) se muestra');
-  log(await esperarSelector(pageCreador, '.grupos-buscar, .grupos-directorio, .empty-state', 10000), 'Buscador + directorio o estado vacío visible');
-  const numGrupos = await pageCreador.locator('.grupos-directorio__card').count();
-  log(numGrupos >= 0, `Directorio carga sin errores (${numGrupos} grupos)`);
+  log(await esperarSelector(pageCreador, '.grupos-cabecera__titulo'), 'Pantalla de Mis clases se muestra');
+  log(await esperarSelector(pageCreador, '.grupos-clase-card, .grupos-directorio, .empty-state', 10000), 'Tarjetas de clase o estado vacío visible');
+  const numGrupos = await pageCreador.locator('.grupos-clase-card').count();
+  log(numGrupos >= 0, `Mis clases cargan sin errores (${numGrupos} clases)`);
 
-  // ── 2. Entrar en un grupo y ver miembros ──
-  const tarjeta = pageCreador.locator('.grupos-directorio__card').first();
+  // ── 2. Entrar en una clase y ver miembros ──
+  const tarjeta = pageCreador.locator('.grupos-clase-card').first();
   if (await tarjeta.count()) {
     await tarjeta.click();
-    log(await esperarSelector(pageCreador, '#listaMiembros .grupos-miembro', 12000), 'Detalle del grupo: lista de miembros visible');
-    const numMiembros = await pageCreador.locator('#listaMiembros .grupos-miembro').count();
+    log(await esperarSelector(pageCreador, '.grupos-seccion .grupos-miembro', 12000), 'Detalle de la clase: lista de miembros visible');
+    const numMiembros = await pageCreador.locator('.grupos-seccion .grupos-miembro').count();
     log(numMiembros > 0, `Miembros listados (${numMiembros})`);
 
     // ── 3. Perfil rápido ──
     // Elegir un miembro que NO sea el propio usuario
     const yo = await pageCreador.evaluate(() => (store.obtener('usuario') || {}).id);
     let miembroSel = null;
-    const fichas = pageCreador.locator('#listaMiembros .grupos-miembro');
+    const fichas = pageCreador.locator('.grupos-seccion .grupos-miembro');
     for (let i = 0; i < (await fichas.count()); i++) {
       const id = await fichas.nth(i).getAttribute('data-miembro');
       if (id !== yo) { miembroSel = id; break; }

@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>Privacidad — FormsBiblicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="description" content="Política de privacidad de FormsBiblicos, la plataforma de estudio bíblico guiado.">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="FormsBiblicos">
+<meta property="og:title" content="Política de privacidad — FormsBiblicos">
+<meta property="og:description" content="Cómo tratamos tus datos en FormsBiblicos.">
+<meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
+<meta property="og:locale" content="es_ES">
+<meta name="twitter:card" content="summary_large_image">
+<script>
+  (function () {
+    try {
+      var raw = localStorage.getItem('fb_preferencias');
+      var p = null;
+      try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
+      var tema = (p && p.tema) || localStorage.getItem('fb_tema');
+      if (tema === 'claro') tema = 'light';
+      else if (tema === 'oscuro') tema = 'dark';
+      document.documentElement.setAttribute('data-theme', tema === 'dark' ? 'dark' : 'light');
+    } catch (e) {}
+  })();
+</script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root {
+    --accento: #2563EB; --texto: #1C1917; --texto-sec: #78716C; --texto-ter: #A8A29E;
+    --fondo: #FAFAF9; --fondo-alt: #F5F5F4; --tarjeta: #FFFFFF; --borde: #E7E5E4;
+    --fuente-display: "Newsreader", Georgia, serif; --fuente-body: "Inter", sans-serif;
+    --md: 18px; --lg: 26px; --xl: 36px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) { --texto: #FAFAF9; --texto-sec: #A8A29E; --texto-ter: #78716C; --fondo: #0C0A09; --fondo-alt: #1C1917; --tarjeta: #1C1917; --borde: #292524; --accento: #60A5FA; }
+  }
+  html { font-size: 16px; }
+  body { font-family: var(--fuente-body); background: var(--fondo); color: var(--texto); line-height: 1.7; }
+  .page { max-width: 680px; margin: 0 auto; padding: var(--xl) var(--md) 80px; }
+  a { color: var(--accento); text-decoration: none; }
+  a:hover { text-decoration: underline; }
+  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--texto-sec); margin-bottom: var(--lg); }
+  .back:hover { color: var(--texto); text-decoration: none; }
+  h1 { font-family: var(--fuente-display); font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 600; margin-bottom: var(--xs); letter-spacing: -0.02em; }
+  .fecha { font-size: 13px; color: var(--texto-ter); margin-bottom: var(--xl); }
+  h2 { font-family: var(--fuente-display); font-size: 1.2rem; font-weight: 600; margin: var(--lg) 0 var(--xs); }
+  p, li { font-size: 15px; color: var(--texto-sec); margin-bottom: var(--md); }
+  ul { padding-left: 20px; margin-bottom: var(--md); }
+  li { margin-bottom: 8px; }
+</style>
+</head>
+<body>
+<div class="page">
+  <a href="login.html" class="back">
+    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
+    Volver
+  </a>
+  <h1>Política de Privacidad</h1>
+  <p class="fecha">Última actualización: 14 de agosto de 2026</p>
+
+  <h2>1. Información que recopilamos</h2>
+  <p>FormsBiblicos recopila únicamente la información necesaria para el funcionamiento de la plataforma:</p>
+  <ul>
+    <li><strong>Datos de cuenta:</strong> nombre de usuario, correo electrónico y contraseña (almacenada de forma segura).</li>
+    <li><strong>Datos de uso:</strong> progreso de lectura, versículos memorizados, resultados de exámenes y actividad dentro de la plataforma.</li>
+    <li><strong>Datos del grupo:</strong> pertenencia a grupos de estudio y interacciones con otros miembros.</li>
+  </ul>
+
+  <h2>2. Cómo usamos tu información</h2>
+  <ul>
+    <li>Para proporcionar y mejorar el servicio de estudio bíblico.</li>
+    <li>Para sincronizar tu progreso entre dispositivos.</li>
+    <li>Para enviar notificaciones relevantes a tu estudio (solo si las activas).</li>
+    <li>Para comunicarnos contigo sobre actualizaciones del servicio.</li>
+  </ul>
+
+  <h2>3. Compartir información</h2>
+  <p>No vendemos ni compartimos tu información personal con terceros, excepto:</p>
+  <ul>
+    <li>Con los miembros de tu grupo de estudio (solo información de progreso compartido).</li>
+    <li>Cuando lo requiera la ley.</li>
+  </ul>
+
+  <h2>4. Seguridad</h2>
+  <p>Utilizamos Supabase como proveedor de infraestructura, que incluye encriptación en tránsito y en reposo, autenticación JWT y políticas de seguridad a nivel de fila (RLS).</p>
+
+  <h2>5. Tus derechos</h2>
+  <p>Puedes acceder, actualizar o eliminar tu cuenta en cualquier momento desde la configuración de tu perfil. Para solicitudes específicas, contáctanos.</p>
+
+  <h2>6. Cambios en esta política</h2>
+  <p>Podemos actualizar esta política periódicamente. Te notificaremos de cambios significativos a través de la plataforma.</p>
+
+  <p style="margin-top: var(--xl); padding-top: var(--md); border-top: 1px solid var(--borde);">
+    ¿Preguntas? <a href="contacto.html">Contáctanos</a>
+  </p>
+</div>
+</body>
+</html>

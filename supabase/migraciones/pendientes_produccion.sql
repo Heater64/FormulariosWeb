@@ -393,6 +393,101 @@ ON storage.objects FOR SELECT
 USING (bucket_id = 'avatars');
 
 -- ============================================================================
+-- MIGRACIÓN 040 — Clases estilo Classroom (instituciones + código de clase)
+-- ============================================================================
+-- Nueva tabla `instituciones` (cada organización con su admin), columnas
+-- `grupos.institucion_id` y `grupos.codigo` (código de clase único para
+-- unirse, como el de Google Classroom), RLS y RPC `unirse_con_codigo`.
+-- Ver: supabase/migraciones/040_clases_instituciones.sql
+
+CREATE TABLE IF NOT EXISTS public.instituciones (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  nombre TEXT NOT NULL,
+  descripcion TEXT DEFAULT '',
+  admin_id UUID REFERENCES public.perfiles(id) ON DELETE SET NULL,
+  creado_en TIMESTAMPTZ DEFAULT NOW()
+);
+
+CREATE INDEX IF NOT EXISTS idx_instituciones_admin ON public.instituciones(admin_id);
+
+ALTER TABLE public.grupos ADD COLUMN IF NOT EXISTS institucion_id UUID REFERENCES public.instituciones(id) ON DELETE SET NULL;
+ALTER TABLE public.grupos ADD COLUMN IF NOT EXISTS codigo TEXT;
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_grupos_codigo ON public.grupos(codigo) WHERE codigo IS NOT NULL;
+
+DO $$
+DECLARE
+  r RECORD;
+  v_codigo TEXT;
+  v_intentos INTEGER;
+  v_alfabeto TEXT := 'ABCDEFGHJKMNPQRSTUVWXYZ23456789';
+BEGIN
+  FOR r IN SELECT id FROM public.grupos WHERE codigo IS NULL LOOP
+    v_intentos := 0;
+    LOOP
+      v_intentos := v_intentos + 1;
+      v_codigo := '';
+      FOR i IN 1..6 LOOP
+        v_codigo := v_codigo || substr(v_alfabeto, 1 + floor(random() * 32)::int, 1);
+      END LOOP;
+      EXIT WHEN v_intentos > 20 OR NOT EXISTS (
+        SELECT 1 FROM public.grupos WHERE codigo = v_codigo
+      );
+    END LOOP;
+    UPDATE public.grupos SET codigo = v_codigo WHERE id = r.id;
+  END LOOP;
+END $$;
+
+ALTER TABLE public.instituciones ENABLE ROW LEVEL SECURITY;
+
+DROP POLICY IF EXISTS "instituciones_select" ON public.instituciones;
+CREATE POLICY "instituciones_select"
+  ON public.instituciones FOR SELECT TO authenticated USING (true);
+
+DROP POLICY IF EXISTS "instituciones_insert" ON public.instituciones;
+CREATE POLICY "instituciones_insert"
+  ON public.instituciones FOR INSERT TO authenticated
+  WITH CHECK (admin_id = auth.uid() OR public.es_owner());
+
+DROP POLICY IF EXISTS "instituciones_update" ON public.instituciones;
+CREATE POLICY "instituciones_update"
+  ON public.instituciones FOR UPDATE TO authenticated
+  USING (admin_id = auth.uid() OR public.es_owner())
+  WITH CHECK (admin_id = auth.uid() OR public.es_owner());
+
+DROP POLICY IF EXISTS "instituciones_delete" ON public.instituciones;
+CREATE POLICY "instituciones_delete"
+  ON public.instituciones FOR DELETE TO authenticated
+  USING (admin_id = auth.uid() OR public.es_owner());
+
+GRANT SELECT, INSERT, UPDATE, DELETE ON public.instituciones TO authenticated;
+
+CREATE OR REPLACE FUNCTION public.unirse_con_codigo(p_codigo TEXT)
+RETURNS UUID AS $$
+DECLARE
+  v_grupo_id UUID;
+BEGIN
+  SELECT g.id INTO v_grupo_id
+  FROM public.grupos g
+  WHERE g.codigo = upper(btrim(p_codigo));
+
+  IF v_grupo_id IS NULL THEN
+    RAISE EXCEPTION 'Código de clase no válido';
+  END IF;
+
+  INSERT INTO public.miembros_grupo (grupo_id, usuario_id, rol_en_grupo)
+  VALUES (v_grupo_id, auth.uid(), 'miembro')
+  ON CONFLICT (grupo_id, usuario_id) DO NOTHING;
+
+  RETURN v_grupo_id;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER SET search_path = public, pg_temp;
+
+GRANT EXECUTE ON FUNCTION public.unirse_con_codigo(TEXT) TO authenticated, anon;
+
+SELECT '✅ Migración 040 aplicada: clases + instituciones + código' AS mensaje;
+
+-- ============================================================================
 -- ============================================================================
 -- VERIFICACIÓN OPCIONAL (descomenta para comprobar que todo quedó aplicado):
 -- ============================================================================

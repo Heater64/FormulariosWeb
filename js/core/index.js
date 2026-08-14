@@ -1,44 +1,52 @@
 (function() {
   'use strict';
-  
+
+  // El login es una página standalone fuera del SPA. En desarrollo la app vive
+  // en la raíz (login.html junto al index) y en producción en /app/ (el login
+  // está en la raíz del sitio). Redirige según dónde se sirva la app.
+  function irAlLogin() {
+    const enApp = window.location.pathname.startsWith('/app');
+    window.location.href = enApp ? '../' : 'login.html';
+  }
+
   const APP = {
     async init() {
       // Aplicar preferencias primero
       if (window.preferencias) window.preferencias.aplicar();
-      
+    
       // Controlar splash screen
       this._controlarSplash();
-      
+    
       // Push nativas Android: instalar las escuchas lo antes posible para
       // capturar la apertura por notificación en arranque en frío. Si ya hay
       // sesión restaurada, registra el token; si no, lo hará tras el login.
       if (window.pushNotificationService) await window.pushNotificationService.iniciar();
-      
+    
       // Recuperar sesión (async: valida el JWT de Supabase Auth, 028)
       await this._recuperarSesion();
-      
+    
       // Tras restaurar la sesión, completar el registro push si quedó
       // pendiente (el arranque en frío puede haber llegado sin usuario).
       if (window.pushNotificationService) await window.pushNotificationService.iniciar();
 
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
-      
+    
       // Inicializar rutas
       this._inicializarRutas();
-      
+    
       // Renderizar barra de navegación
       this._renderizarBarraNavegacion();
-      
+    
       // Aplicar preferencias del usuario
       this._aplicarPreferencias();
-      
+    
       // Iniciar sincronización local pendiente
       if (window.colaSync) {
         this.splashEstado('Sincronizando...');
         window.colaSync.iniciar();
       }
-      
+    
       // Verificar sesión
       this._verificarSesion();
 
@@ -64,14 +72,14 @@
       window.eventBus.suscribir('auth:login', async (payload) => {
         const usuario = payload.usuario || payload;
         const recordar = payload.recordar !== false;
-        
+      
         if (!usuario.foto_perfil) {
           try {
             const prev = JSON.parse(localStorage.getItem('fb_usuario'));
             if (prev?.foto_perfil) usuario.foto_perfil = prev.foto_perfil;
           } catch (e) {}
         }
-        
+      
         if (recordar) {
           localStorage.setItem('fb_usuario', JSON.stringify(usuario));
           localStorage.setItem('fb_recordar_sesion', 'true');
@@ -80,7 +88,7 @@
           localStorage.removeItem('fb_recordar_sesion');
           sessionStorage.setItem('fb_usuario', JSON.stringify(usuario));
         }
-        
+      
         this._renderizarBarraNavegacion();
 
         // Marca del centro: configuracion ya no es legible sin sesión (028)
@@ -90,7 +98,7 @@
         // cambio de ruta del usuario durante el arranque sea sobrescrito.
         const esPrimeraVez = !localStorage.getItem('fb_setup_completado') &&
           (!usuario.preferencias || (usuario.preferencias.tema !== null && !usuario.preferencias.tema));
-                            
+                          
         if (esPrimeraVez) {
           router.reemplazar('/estudio');
           setTimeout(() => this._mostrarSetupInicial(usuario), 400);
@@ -115,12 +123,9 @@
         localStorage.removeItem('fb_recordar_sesion');
         sessionStorage.removeItem('fb_usuario');
         if (window.preferencias) window.preferencias.aplicar();
-        this._renderizarBarraNavegacion();
         if (window.notificationService) window.notificationService.detener();
-        // Push nativas: limpiar temporizadores y token local (los tokens de
-        // Supabase ya se desactivaron en authRepository.cerrarSesion).
         if (window.pushNotificationService) window.pushNotificationService.detener();
-        router.reemplazar('/login');
+        irAlLogin();
       });
 
       window.eventBus.suscribir('route:change', () => {
@@ -310,11 +315,12 @@
       const usuario = store.obtener('usuario');
       const ruta = router.pathActual();
       const esLogin = ruta === '/login' || ruta === '/';
-      if (!usuario && !esLogin) { 
-        router.reemplazar('/login'); 
-        return; 
+      if (!usuario) {
+        // Sin sesión: fuera del SPA, al login standalone.
+        irAlLogin();
+        return;
       }
-      if (usuario && esLogin) {
+      if (esLogin) {
         if (window._loginUI) {
           const loading = window._loginUI.crearLoading('Cargando tu progreso...');
           setTimeout(() => { 
@@ -565,10 +571,11 @@
       router.registrar('/', { 
         montar: () => { 
           const u = store.obtener('usuario'); 
-          u ? router.reemplazar('/estudio') : router.reemplazar('/login'); 
+          u ? router.reemplazar('/estudio') : irAlLogin();
         } 
       });
-      router.registrar('/login', window.vistaLogin);
+      // El login del SPA se eliminó: #!/login redirige al standalone.
+      router.registrar('/login', { montar: () => irAlLogin() });
       router.registrar('/estudio', window.vistaEstudio);
       router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
       router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
@@ -659,10 +666,10 @@
   // ============================================================
   // Inicializar la aplicación
   // ============================================================
-  
+
   document.addEventListener('DOMContentLoaded', () => {
     APP.init();
   });
-  
+
   window.appShell = APP;
 })();

@@ -7,17 +7,21 @@
   const TR = (iso) => window.adminComunes.tiempoRelativo(iso);
   const TRP = (iso) => window.adminComunes.tiempoRelativoPreciso(iso);
 
-  /* Pestañas del nivel Admin (Gestión del centro) */
+  /* El admin responsable solo gestiona su clase. */
   const TABS_ADMIN = [
+    { id: 'centro', icono: 'command', texto: 'Mi clase' },
+    { id: 'usuarios', icono: 'users', texto: 'Usuarios' },
+    { id: 'examenes', icono: 'file-text', texto: 'Exámenes' }
+  ];
+
+  /* El owner concentra toda la administración global, incluida la gestión
+     que no debe exponerse a responsables de clase. */
+  const TABS_OWNER = [
     { id: 'centro', icono: 'command', texto: 'Centro' },
     { id: 'usuarios', icono: 'users', texto: 'Usuarios' },
     { id: 'grupos', icono: 'layout', texto: 'Grupos' },
     { id: 'examenes', icono: 'file-text', texto: 'Exámenes' },
-    { id: 'memorizacion', icono: 'brain', texto: 'Memorización' }
-  ];
-
-  /* Pestañas del nivel Owner (Administración general) */
-  const TABS_OWNER = [
+    { id: 'memorizacion', icono: 'brain', texto: 'Memorización' },
     { id: 'sugerencias', icono: 'message-square', texto: 'Sugerencias' },
     { id: 'auditoria', icono: 'clipboard-list', texto: 'Auditoría' },
     { id: 'admins', icono: 'shield', texto: 'Administradores' },
@@ -113,17 +117,31 @@
       this._inicioSesion = Date.now();
       try {
         const esOwner = ((usuario.rol || '').toString().trim().toLowerCase()) === 'owner';
-        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias] = await Promise.all([
-          window.adminRepository.listarUsuarios(),
-          window.adminRepository.listarGrupos(),
-          window.adminRepository.listarExamenes(),
-          window.adminRepository.statsGenerales(),
-          window.adminRepository.obtenerAuditoria(),
-          window.adminRepository.obtenerResumenExamenes(),
-          window.adminRepository.listarBackups(),
-          window.adminRepository.listarConfiguracion(),
-          esOwner && window.sugerenciasRepository ? window.sugerenciasRepository.listarTodas() : Promise.resolve([])
-        ]);
+        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias] = await Promise.all(
+          esOwner
+            ? [
+                window.adminRepository.listarUsuarios(usuario),
+                window.adminRepository.listarGrupos(usuario),
+                window.adminRepository.listarExamenes(usuario),
+                window.adminRepository.statsGenerales(usuario),
+                window.adminRepository.obtenerAuditoria(),
+                window.adminRepository.obtenerResumenExamenes(),
+                window.adminRepository.listarBackups(),
+                window.adminRepository.listarConfiguracion(),
+                window.sugerenciasRepository ? window.sugerenciasRepository.listarTodas() : Promise.resolve([])
+              ]
+            : [
+                window.adminRepository.listarUsuarios(usuario),
+                window.adminRepository.listarGrupos(usuario),
+                window.adminRepository.listarExamenes(usuario),
+                window.adminRepository.statsGenerales(usuario),
+                Promise.resolve([]),
+                window.adminRepository.obtenerResumenExamenes(),
+                Promise.resolve([]),
+                Promise.resolve({}),
+                Promise.resolve([])
+              ]
+        );
 
         // Admins solo ven datos de su grupo. El owner ve todo.
         let usuarios = usuariosRaw, grupos = gruposRaw, examenes = examenesRaw;
@@ -141,7 +159,7 @@
           }
         }
         this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, usuario };
-        this._nivelActivo = 'admin';
+        this._nivelActivo = esOwner ? 'owner' : 'admin';
         this._tabActivo = 'centro';
         // Deep link desde Memorización: /admin?tab=memorizacion&mazo=ID abre la gestión del mazo
         const q = contextoVista && contextoVista.query;
@@ -149,8 +167,9 @@
         const tabQ = qVal('tab');
         if (tabQ) {
           this._tabActivo = tabQ;
+          if (esOwner) this._nivelActivo = 'owner';
           const mazoQ = qVal('mazo');
-          if (mazoQ && this._tabActivo === 'memorizacion') this._mazoDeepLink = mazoQ;
+          if (mazoQ && this._tabActivo === 'memorizacion' && esOwner) this._mazoDeepLink = mazoQ;
         }
         this._pagUsuarios = 1;
         this._porPagina = 50;
@@ -190,12 +209,15 @@
     _renderizar(raiz) {
       const esOwner = this._esOwner();
       const tabs = this._nivelActivo === 'owner' ? TABS_OWNER : TABS_ADMIN;
-      if (!tabs.some(t => t.id === this._tabActivo)) this._tabActivo = this._nivelActivo === 'owner' ? 'sugerencias' : 'centro';
+      if (!tabs.some(t => t.id === this._tabActivo)) this._tabActivo = 'centro';
       const config = this._datos.config || {};
       const marca = { nombre: config.marca_nombre || '', logo: config.marca_logo || '' };
+      const descripcionPanel = esOwner
+        ? 'Gestiona toda la plataforma: usuarios, clases, exámenes, contenido y sistema.'
+        : 'Gestiona únicamente los usuarios y exámenes de tu clase.';
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg admin-panel" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          ${window.adminComunes.cabeceraPanel('Centro de Administración', 'Gestiona usuarios, grupos, exámenes y la configuración de tu centro.', 'vistaPanelAdmin', marca)}
+          ${window.adminComunes.cabeceraPanel('Centro de Administración', descripcionPanel, 'vistaPanelAdmin', marca)}
           ${esOwner ? this._renderNivelSwitch() : ''}
           <div class="admin-tabs" role="tablist" aria-label="Secciones">${tabs.map(t => `
             <button class="admin-tab${this._tabActivo === t.id ? ' admin-tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${this._tabActivo === t.id}">${I(t.icono)} ${t.texto}</button>`
@@ -206,7 +228,7 @@
       raiz.querySelectorAll('[data-nivel]').forEach(btn => {
         btn.onclick = () => {
           this._nivelActivo = btn.dataset.nivel;
-          this._tabActivo = this._nivelActivo === 'owner' ? 'sugerencias' : 'centro';
+          this._tabActivo = 'centro';
           this._renderizar(raiz);
         };
       });
@@ -215,9 +237,13 @@
     },
 
     _renderTabContent(raiz) {
-      const { usuarios, grupos, examenes, usuario } = this._datos;
-      if (this._nivelActivo === 'owner') {
+      const { usuarios, grupos, examenes, usuario } = this._datos;      if (this._nivelActivo === 'owner') {
         switch (this._tabActivo) {
+          case 'centro': return this._renderCentro();
+          case 'usuarios': return this._renderUsuarios(usuarios, usuario);
+          case 'grupos': return this._renderGrupos(grupos, examenes, usuarios);
+          case 'examenes': return this._renderExamenes(examenes);
+          case 'memorizacion': return this._renderMemorizacion();
           case 'sugerencias': return this._renderSugerencias();
           case 'auditoria': return this._renderAuditoria();
           case 'admins': return this._renderAdmins(usuarios, usuario);
@@ -230,9 +256,7 @@
       switch (this._tabActivo) {
         case 'centro': return this._renderCentro();
         case 'usuarios': return this._renderUsuarios(usuarios, usuario);
-        case 'grupos': return this._renderGrupos(grupos, examenes, usuarios);
         case 'examenes': return this._renderExamenes(examenes);
-        case 'memorizacion': return this._renderMemorizacion();
         default: return '';
       }
     },
@@ -242,6 +266,7 @@
     // ==================================================================
     _renderCentro() {
       const { usuarios, grupos, examenes, stats } = this._datos;
+      const esOwner = this._esOwner();
       const { porRol } = stats;
       const resumenEx = this._datos.resumenExamenes || {};
 
@@ -269,7 +294,7 @@
       if (inactivos.length) pendientes.push(tarea('aviso', 'user-x', `${inactivos.length} usuario${inactivos.length !== 1 ? 's' : ''} pendiente${inactivos.length !== 1 ? 's' : ''} de activar`, 'Usuarios sin acceso a la plataforma', { tab: 'usuarios', rol: 'todos', grupo: 'todos', estado: 'inactivos' }));
       if (profesoresSinGrupo.length) pendientes.push(tarea('info', 'book-open', `${profesoresSinGrupo.length} profesor${profesoresSinGrupo.length !== 1 ? 'es' : ''} sin grupo`, 'Sin asignación a una clase', { tab: 'usuarios', rol: 'editor', grupo: 'sin-grupo', estado: 'todos' }));
       if (sinPublicar.length) pendientes.push(tarea('info', 'file-text', `${sinPublicar.length} examen${sinPublicar.length !== 1 ? 'es' : ''} sin publicar`, 'Quedaron en borrador', { tab: 'examenes', estado: 'borrador' }));
-      if (gruposSinExamenes.length) pendientes.push(tarea('info', 'layout', `${gruposSinExamenes.length} grupo${gruposSinExamenes.length !== 1 ? 's' : ''} sin exámenes`, 'Clases aún sin evaluaciones', { tab: 'grupos' }));
+      if (this._esOwner() && gruposSinExamenes.length) pendientes.push(tarea('info', 'layout', `${gruposSinExamenes.length} grupo${gruposSinExamenes.length !== 1 ? 's' : ''} sin exámenes`, 'Clases aún sin evaluaciones', { tab: 'grupos' }));
       if (alumnosSinGrupo.length) pendientes.push(tarea('aviso', 'user', `${alumnosSinGrupo.length} alumno${alumnosSinGrupo.length !== 1 ? 's' : ''} sin grupo`, 'Sin asignación a una clase', { tab: 'usuarios', rol: 'usuario', grupo: 'sin-grupo', estado: 'todos' }));
 
       const tareasHtml = pendientes.length === 0
@@ -305,7 +330,7 @@
             ${stat('user-check', activos, 'Usuarios activos', 'admin-stat--ok')}
             ${stat('wifi', online, 'En línea ahora', 'admin-stat--ok')}
             ${stat('user-x', bloqueados, 'Bloqueados', 'admin-stat--error')}
-            ${stat('layout', grupos.length, 'Grupos')}
+            ${stat('layout', grupos.length, esOwner ? 'Grupos' : 'Clase')}
             ${stat('check-circle', publicados, 'Exámenes publicados', 'admin-stat--ok')}
             ${stat('graduation-cap', alumnos, 'Alumnos')}
             ${stat('book-open', profesores, 'Profesores')}
@@ -351,9 +376,12 @@
             { id: 'importar-mazo', icono: 'upload', texto: 'Importar mazo' }
         ]}
       ];
+      const herramientasVisibles = this._esOwner()
+        ? herramientas
+        : herramientas.filter(h => h.id === 'usuarios' || h.id === 'examenes');
       const herramientasHtml = `
         <div class="admin-herramientas">
-          ${herramientas.map(h => `
+          ${herramientasVisibles.map(h => `
             <div class="admin-herramienta admin-herramienta--${h.color}" data-herramienta-tab="${h.id}" role="button" tabindex="0" aria-label="Abrir ${h.titulo}">
               <div class="admin-herramienta__cabecera">
                 <span class="admin-herramienta__icono">${I(h.icono)}</span>
@@ -371,7 +399,7 @@
 
       return `
         <div class="admin-centro">
-          ${window.adminComunes.seccion({ icono: 'bar-chart-2', iconoClase: 'admin-seccion__icono--acento', titulo: 'Vista General del Centro', desc: 'Estado actual de tu centro de estudios', contenido: vistaGeneralHtml })}
+          ${window.adminComunes.seccion({ icono: 'bar-chart-2', iconoClase: 'admin-seccion__icono--acento', titulo: esOwner ? 'Vista General del Centro' : 'Vista General de tu Clase', desc: esOwner ? 'Estado actual de toda la plataforma' : 'Estado actual de tu clase', contenido: vistaGeneralHtml })}
           ${window.adminComunes.seccion({ icono: 'list-todo', iconoClase: pendientes.length ? 'admin-seccion__icono--aviso' : 'admin-seccion__icono--exito', titulo: 'Tareas Pendientes', desc: 'Alertas y acciones que requieren tu atención', contador: pendientes.length ? String(pendientes.length) : '', contenido: tareasHtml })}
           ${window.adminComunes.seccion({ icono: 'zap', iconoClase: 'admin-seccion__icono--acento', titulo: 'Acceso a Herramientas', desc: 'Toca una tarjeta para abrir su lista completa', contenido: herramientasHtml })}
         </div>`;
@@ -636,6 +664,12 @@
     },
 
     _renderExamenFicha(ex, r) {
+      const autor = ex.perfiles?.nombre_completo
+        || this._datos.usuarios.find(u => u.id === ex.creado_por)?.nombre_completo
+        || 'Autor desconocido';
+      const grupo = ex.grupos?.nombre
+        || this._datos.grupos.find(g => g.id === ex.grupo_id)?.nombre
+        || 'Sin grupo';
       const numPreguntas = Array.isArray(ex.preguntas) ? ex.preguntas.length : 0;
       const notaMedia = r && r.media != null ? r.media.toFixed(1) : '—';
       const pendientes = r ? r.pendientes : 0;
@@ -645,7 +679,7 @@
           <div class="admin-examen-card__cabecera">
             <div class="admin-examen-card__info">
               <p class="admin-examen-card__titulo">${E(ex.icono || '') || I('file-text')} ${E(ex.titulo)}</p>
-              <p class="admin-examen-card__meta">${I('user')} ${E(ex.perfiles?.nombre_completo || 'Autor desconocido')} · ${I('layout')} ${E(ex.grupos?.nombre || 'Sin grupo')}</p>
+              <p class="admin-examen-card__meta">${I('user')} ${E(autor)} · ${I('layout')} ${E(grupo)}</p>
             </div>
             ${window.adminComunes.estadoBadge(ex.estado)}
           </div>
@@ -1111,7 +1145,7 @@
       // Tareas pendientes y alertas → navegar con filtros
       const aplicarAccion = (accion) => {
         if (!accion) return;
-        this._nivelActivo = 'admin';
+        this._nivelActivo = this._esOwner() ? 'owner' : 'admin';
         if (accion.tab === 'examenes') {
           this._filtroExamenEstado = accion.estado || 'todos';
           this._tabActivo = 'examenes';
@@ -1166,18 +1200,18 @@
           } else if (accion === 'crear-grupo') {
             await this._crearGrupoForm(raiz);
           } else if (accion === 'ver-grupos') {
-            this._nivelActivo = 'admin'; this._tabActivo = 'grupos'; this._renderizar(raiz);
+            this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'grupos'; this._renderizar(raiz);
           } else if (accion === 'ver-examenes') {
-            this._nivelActivo = 'admin'; this._tabActivo = 'examenes'; this._filtroExamenEstado = 'todos'; this._renderizar(raiz);
+            this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'examenes'; this._filtroExamenEstado = 'todos'; this._renderizar(raiz);
           } else if (accion === 'crear-examen') {
             window.adminComunes.irSpa('/editor/nuevo');
           } else if (accion === 'ver-publicados' || accion === 'ver-borradores') {
-            this._nivelActivo = 'admin'; this._tabActivo = 'examenes';
+            this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'examenes';
             this._filtroExamenEstado = accion === 'ver-publicados' ? 'publicado' : 'borrador';
             this._renderizar(raiz);
           } else if (accion === 'crear-mazo') {
             await this._cargarMemorizacion();
-            this._nivelActivo = 'admin'; this._tabActivo = 'memorizacion';
+            this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'memorizacion';
             this._renderizar(raiz);
             await this._formMazoMem(null, raiz);
           } else if (accion === 'sembrar-mazos') {
@@ -1669,7 +1703,7 @@
 
       r.querySelector('#btnExportCSV')?.addEventListener('click', async () => {
         try {
-          const csv = await window.adminRepository.exportarUsuariosCSV();
+          const csv = await window.adminRepository.exportarUsuariosCSV(usuario);
           window.adminComunes.descargarCSVTexto('usuarios.csv', csv);
         } catch { window.helpers.mostrarAlerta('Error al exportar', 'error'); }
       });
@@ -1685,7 +1719,7 @@
         const resumen = await window.memorizacionRepository.sembrarMazos(usuario.id);
         window.helpers.mostrarAlerta(`Sembrados ${resumen.mazos} mazos y ${resumen.tarjetas} tarjetas. ${resumen.omitidos.length ? 'Omitidos: ' + resumen.omitidos.join(', ') : ''}`, 'exito');
         await this._cargarMemorizacion();
-        this._nivelActivo = 'admin'; this._tabActivo = 'memorizacion';
+        this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'memorizacion';
         this._renderizar(raiz);
       } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
     },
@@ -1698,7 +1732,7 @@
         const res = await window.memorizacionRepository.importarMazo(usuario.id, archivo.texto);
         window.helpers.mostrarAlerta(`Mazo "${res.mazo.nombre}" importado con ${res.tarjetas} tarjetas.`, 'exito');
         await this._cargarMemorizacion();
-        this._nivelActivo = 'admin'; this._tabActivo = 'memorizacion';
+        this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'memorizacion';
         this._renderizar(raiz);
       } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
     },
@@ -1729,7 +1763,7 @@
         }
         await window.adminRepository.registrarAuditoria('memorizacion:mazo', `${mazo ? 'Editado' : 'Creado'} mazo "${datos.nombre.trim()}"`, usuario.id).catch(() => {});
         await this._cargarMemorizacion();
-        this._nivelActivo = 'admin'; this._tabActivo = 'memorizacion';
+        this._nivelActivo = this._esOwner() ? 'owner' : 'admin'; this._tabActivo = 'memorizacion';
         this._renderizar(raiz || document.querySelector('#app-root') || document.body);
       } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
     },

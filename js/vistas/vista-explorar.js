@@ -13,14 +13,20 @@
     { id: 'general', icono: 'compass', texto: 'General' },
     { id: 'reyes', icono: 'crown', texto: 'Reyes' },
     { id: 'personajes', icono: 'users', texto: 'Personajes' },
-    { id: 'mas', icono: 'grid', texto: 'Más' }
+    { id: 'mas', icono: 'grid', texto: 'Más', _desktopOculta: true },
+    { id: 'genealogia', icono: 'git-branch', texto: 'Genealogía', _soloDesktop: true },
+    { id: 'lugares', icono: 'map-pin', texto: 'Lugares', _soloDesktop: true },
+    { id: 'objetos', icono: 'gem', texto: 'Objetos', _soloDesktop: true },
+    { id: 'milagros', icono: 'sparkles', texto: 'Milagros', _soloDesktop: true },
+    { id: 'parabolas', icono: 'book-open', texto: 'Parábolas', _soloDesktop: true },
+    { id: 'profecias', icono: 'target', texto: 'Profecías', _soloDesktop: true },
+    { id: 'curiosidades', icono: 'lightbulb', texto: 'Curiosidades', _soloDesktop: true }
   ];
 
   const CATS_MAS = [
     { id: 'genealogia', icono: 'git-branch', texto: 'Genealogía', desc: 'Desde Adán hasta Jesús' },
     { id: 'lugares', icono: 'map-pin', texto: 'Lugares', desc: 'Geografía bíblica' },
     { id: 'objetos', icono: 'gem', texto: 'Objetos', desc: 'Artefactos sagrados' },
-    { id: 'cronologia', icono: 'clock', texto: 'Cronología', desc: 'Línea del tiempo' },
     { id: 'milagros', icono: 'sparkles', texto: 'Milagros', desc: 'Obras sobrenaturales' },
     { id: 'parabolas', icono: 'book-open', texto: 'Parábolas', desc: 'Enseñanzas de Jesús' },
     { id: 'profecias', icono: 'target', texto: 'Profecías', desc: 'Anuncios y cumplimientos' },
@@ -34,7 +40,7 @@
   async function _cargarDatos() {
     const cache = window._explorarCache;
     if (cache) { _datos = cache; return; }
-    const archivos = ['reyes', 'genealogia', 'curiosidades', 'personajes', 'lugares', 'objetos', 'cronologia', 'milagros', 'parabolas', 'profecias'];
+    const archivos = ['reyes', 'genealogia', 'curiosidades', 'personajes', 'lugares', 'objetos', 'milagros', 'parabolas', 'profecias'];
     const resultados = await Promise.all(archivos.map(a => fetch(`data/${a}.json`).then(r => r.json()).catch(() => [])));
     _datos = {};
     archivos.forEach((a, i) => _datos[a] = resultados[i]);
@@ -54,7 +60,7 @@
   }
 
   function _vacio(msg) {
-    return `<div class="explorar__vacio"><span class="explorar__vacio-icono">${I('search')}</span><p>${_esc(msg)}</p></div>`;
+    return `<div class="empty-state"><div class="empty-state__icono">${I('search')}</div><p class="empty-state__descripcion">${_esc(msg)}</p></div>`;
   }
 
   /* Chips de referencias */
@@ -71,7 +77,7 @@
           <span class="explorar-general__icono">${I('compass')}</span>
           <div>
             <h3 class="explorar-general__titulo">Explorar la Biblia</h3>
-            <p class="explorar-general__desc">Un recurso de consulta para profundizar en el conocimiento de las Escrituras. Aquí encontrarás información detallada sobre reyes, personajes, lugares, objetos, cronología y mucho más.</p>
+            <p class="explorar-general__desc">Un recurso de consulta para profundizar en el conocimiento de las Escrituras. Aquí encontrarás información detallada sobre reyes, personajes, lugares, objetos y mucho más.</p>
           </div>
         </div>
         <div class="explorar-general__fuente">
@@ -100,7 +106,7 @@
             <span class="explorar-general__tab-icono">${I('grid')}</span>
             <div>
               <h4>Más</h4>
-              <p>Explora genealogía, lugares, objetos, cronología, milagros, parábolas, profecías y curiosidades.</p>
+              <p>Explora genealogía, lugares, objetos, milagros, parábolas, profecías y curiosidades.</p>
             </div>
           </div>
         </div>
@@ -132,6 +138,8 @@
         reyes: (g.reyes || []).filter(r => _coincide(r, ['nombre', 'reinado', 'etiqueta', 'detalle']) || String(g.periodo || '').toLowerCase().includes(q))
       })).filter(g => (g.reyes || []).length > 0);
     }
+    // ponytail: preview — solo Saúl y David
+    grupos = grupos.map(g => ({ ...g, reyes: (g.reyes || []).filter(r => /^(saúl|saul|david)$/i.test(r.nombre)) })).filter(g => (g.reyes || []).length > 0);
     const total = grupos.reduce((n, g) => n + (g.reyes || []).length, 0);
     if (!total) return _vacio('No se encontraron reyes.');
 
@@ -178,11 +186,13 @@
   /* ===== PERSONAJES (expandable cards, same pattern) ===== */
   function _renderPersonajes() {
     const data = _filtrar(_datos.personajes || [], ['nombre', 'epoca', 'detalle']);
-    if (!data.length) return _vacio('No se encontraron personajes.');
+    // ponytail: preview — solo Abraham y Moisés
+    const preview = data.filter(p => /^(abraham|moisés|moises)$/i.test(p.nombre));
+    if (!preview.length) return _vacio('No se encontraron personajes.');
 
     return `
       <div class="explorar__grid">
-        ${data.map(p => `
+        ${preview.map(p => `
           <div class="explorar__card explorar__card--expandible" data-expandible role="button" tabindex="0" aria-expanded="false">
             <div class="explorar__card-header">
               <div class="explorar__card-icon">${I('user')}</div>
@@ -254,10 +264,11 @@
   function _renderLugaresMas() {
     const data = _filtrar(_datos.lugares || [], ['nombre', 'region', 'detalle']);
     if (!data.length) return _vacio('No se encontraron lugares.');
+    const preview = data.slice(0, 1);
     return `
       <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
-        ${data.map(l => `
+        ${preview.map(l => `
           <div class="explorar__card">
             <div class="explorar__card-header">
               <div class="explorar__card-icon">${I('map-pin')}</div>
@@ -281,10 +292,11 @@
   function _renderObjetosMas() {
     const data = _filtrar(_datos.objetos || [], ['nombre', 'epoca', 'detalle']);
     if (!data.length) return _vacio('No se encontraron objetos.');
+    const preview = data.slice(0, 1);
     return `
       <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
-        ${data.map(o => `
+        ${preview.map(o => `
           <div class="explorar__card">
             <div class="explorar__card-header">
               <div class="explorar__card-icon">${I('gem')}</div>
@@ -300,34 +312,16 @@
       </div>`;
   }
 
-  function _renderCronologiaMas() {
-    const data = _filtrar(_datos.cronologia || [], ['evento', 'periodo', 'detalle']);
-    if (!data.length) return _vacio('No se encontraron eventos.');
-    return `
-      <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
-      <div class="explorar__timeline">
-        ${data.map(e => `
-          <div class="explorar__timeline-item">
-            <div class="explorar__timeline-dot"></div>
-            <div class="explorar__timeline-periodo">${_esc(e.periodo)}</div>
-            <div class="explorar__timeline-nombre">${_esc(e.evento)}</div>
-            <div class="explorar__timeline-detalle">${_esc(e.detalle)}</div>
-            ${_refChips(e.refs)}
-          </div>
-        `).join('')}
-      </div>`;
-  }
-
   function _renderMilagrosMas() {
     const data = _datos.milagros || {};
     const sections = [];
     if (data.antiguo_testamento) {
       const items = _filtrar(data.antiguo_testamento, ['nombre', 'detalle']);
-      if (items.length) sections.push({ titulo: 'Antiguo Testamento', items });
+      if (items.length) sections.push({ titulo: 'Antiguo Testamento', items: items.slice(0, 1) });
     }
     if (data.nuevo_testamento) {
       const items = _filtrar(data.nuevo_testamento, ['nombre', 'detalle']);
-      if (items.length) sections.push({ titulo: 'Nuevo Testamento', items });
+      if (items.length) sections.push({ titulo: 'Nuevo Testamento', items: items.slice(0, 1) });
     }
     if (!sections.length) return _vacio('No se encontraron milagros.');
     return `
@@ -357,10 +351,11 @@
   function _renderParabolasMas() {
     const data = _filtrar(_datos.parabolas || [], ['nombre', 'tema', 'detalle', 'leccion']);
     if (!data.length) return _vacio('No se encontraron parábolas.');
+    const preview = data.slice(0, 1);
     return `
       <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
       <div class="explorar__grid">
-        ${data.map(p => `
+        ${preview.map(p => `
           <div class="explorar__card">
             <div class="explorar__card-header">
               <div class="explorar__card-icon">${I('book-open')}</div>
@@ -384,17 +379,13 @@
   function _renderProfeciasMas() {
     const data = _datos.profecias || {};
     const sections = [];
-    if (data.mesianicas) {
-      const items = _filtrar(data.mesianicas, ['nombre', 'detalle']);
-      if (items.length) sections.push({ titulo: 'Profecías mesiánicas', items });
-    }
     if (data.cumplidas) {
       const items = _filtrar(data.cumplidas, ['nombre', 'detalle']);
-      if (items.length) sections.push({ titulo: 'Cumplidas', items });
+      if (items.length) sections.push({ titulo: 'Cumplidas', items: items.slice(0, 1) });
     }
     if (data.futuras) {
       const items = _filtrar(data.futuras, ['nombre', 'detalle']);
-      if (items.length) sections.push({ titulo: 'Futuras', items });
+      if (items.length) sections.push({ titulo: 'Futuras', items: items.slice(0, 1) });
     }
     if (!sections.length) return _vacio('No se encontraron profecías.');
     return `
@@ -423,41 +414,42 @@
   function _renderCuriosidadesMas() {
     const data = _datos.curiosidades || [];
     if (!data.length) return _vacio('No hay datos curiosos.');
+    // ponytail: preview — solo el versículo más corto
+    let shortest = null;
+    data.forEach(cat => {
+      (cat.items || []).forEach(item => {
+        if (item.texto && (!shortest || item.texto.length < shortest.texto.length)) {
+          shortest = { ...item, _emoji: cat.emoji || '✨', _categoria: cat.categoria };
+        }
+      });
+    });
+    if (!shortest) return _vacio('No hay datos curiosos.');
     return `
       <button class="explorar__back-btn" data-volver="mas">${I('arrow-left')} Volver a Más</button>
-      ${data.map((cat, i) => {
-        const items = _filtrar(cat.items || [], ['titulo', 'texto', 'ref']);
-        if (!items.length) return '';
-        return `
-          <section class="explorar__seccion" id="curiosidad-mas-${i}">
-            <h4 class="explorar__seccion-titulo">
-              <span class="curiosidades-seccion__emoji">${_esc(cat.emoji || '✨')}</span>
-              ${_esc(cat.categoria)}
-              <span class="explorar__seccion-count">${items.length}</span>
-            </h4>
-            <div class="explorar__grid">
-              ${items.map(item => `
-                <div class="explorar__card">
-                  <div class="explorar__card-header">
-                    <span class="curiosidades-item__emoji">${_esc(cat.emoji || '✨')}</span>
-                    <div class="explorar__card-head-body">
-                      <div class="explorar__card-titulo">${_esc(item.titulo)}</div>
-                    </div>
-                  </div>
-                  <p class="explorar__card-desc">${_esc(item.texto)}</p>
-                  ${_refChips(item.ref)}
-                </div>
-              `).join('')}
+      <section class="explorar__seccion">
+        <h4 class="explorar__seccion-titulo">
+          <span class="curiosidades-seccion__emoji">${_esc(shortest._emoji)}</span>
+          ${_esc(shortest._categoria)}
+        </h4>
+        <div class="explorar__grid">
+          <div class="explorar__card">
+            <div class="explorar__card-header">
+              <span class="curiosidades-item__emoji">${_esc(shortest._emoji)}</span>
+              <div class="explorar__card-head-body">
+                <div class="explorar__card-titulo">${_esc(shortest.titulo)}</div>
+              </div>
             </div>
-          </section>`;
-      }).join('')}`;
+            <p class="explorar__card-desc">${_esc(shortest.texto)}</p>
+            ${_refChips(shortest.ref)}
+          </div>
+        </div>
+      </section>`;
   }
 
   const MAS_RENDERERS = {
     genealogia: _renderGenealogia,
     lugares: _renderLugaresMas,
     objetos: _renderObjetosMas,
-    cronologia: _renderCronologiaMas,
     milagros: _renderMilagrosMas,
     parabolas: _renderParabolasMas,
     profecias: _renderProfeciasMas,
@@ -567,11 +559,13 @@
             <input type="search" id="explorarSearch" placeholder="Buscar en ${_esc(pestanaActual.texto)}..." value="${_esc(_busqueda)}" aria-label="Buscar en ${_esc(pestanaActual.texto)}">
           </div>` : ''}
           <div class="explorar__tabs-bar" id="explorarTabsBar" role="tablist" aria-label="Categorías">
-            ${TABS.map(t => `
-              <button class="explorar__tab${t.id === _pestana ? ' explorar__tab--activo' : ''}" data-tab="${t.id}" role="tab" aria-selected="${t.id === _pestana}">
-                ${I(t.icono)} ${_esc(t.texto)}
-              </button>
-            `).join('')}
+            ${TABS.map(t => {
+              const cls = ['explorar__tab'];
+              if (t.id === _pestana) cls.push('explorar__tab--activo');
+              if (t._soloDesktop) cls.push('explorar__tab--desktop');
+              if (t._desktopOculta) cls.push('explorar__tab--mobile-only');
+              return `<button class="${cls.join(' ')}" data-tab="${t.id}" role="tab" aria-selected="${t.id === _pestana}">${I(t.icono)} ${_esc(t.texto)}</button>`;
+            }).join('')}
           </div>
           <div id="explorarContent" class="explorar__contenido">${esSkeleton ? _skeletonHTML() : ''}</div>
         </div>`;
@@ -583,8 +577,9 @@
           _pestana = btn.dataset.tab;
           _busqueda = '';
           this._renderizar(raiz);
-          const content = raiz.querySelector('#explorarContent');
-          if (content && window.animaciones) window.animaciones.animar(content, 'anim-tab', 180);
+          // Fijar el tab activo en la barra
+          const activo = raiz.querySelector('.explorar__tab--activo');
+          if (activo) activo.scrollIntoView({ inline: 'center', block: 'nearest', behavior: 'smooth' });
         });
       });
 

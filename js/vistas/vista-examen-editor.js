@@ -73,7 +73,7 @@
         tema: '',
         profesor: usuario.nombre_completo || usuario.username || 'Profesor',
         color: '#2563EB', // Color predeterminado (azul de la web)
-        icono: '📘',
+        icono: '',
         portada: '',
         // Configuración por defecto (Google Forms Ampliado)
         config: {
@@ -181,7 +181,7 @@
             <div class="editor-header-bar__inner">
               <div class="editor-header-bar__titulo-wrap">
                 <button class="editor-header-bar__volver-btn" id="btnEditorVolver" title="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
-                <h2 class="editor-header-bar__titulo" id="cabeceraTituloExamen">${examen.icono || '📘'} ${window.helpers.escapeHtml(examen.titulo)}</h2>
+                <h2 class="editor-header-bar__titulo" id="cabeceraTituloExamen">${window.helpers.escapeHtml(examen.titulo)}</h2>
               </div>
               <div class="editor-header-bar__acciones">
                 <span id="saveIndicator" style="font-size:var(--texto-xs);color:var(--color-texto-terciario);margin-right:var(--espaciado-xs)">${window.Iconos.render('check')} Guardado</span>
@@ -372,7 +372,7 @@
       contenedor.querySelector('#infoTitulo').addEventListener('input', (e) => {
         examen.titulo = e.target.value || 'Examen sin título';
         const cabeceraTitulo = document.getElementById('cabeceraTituloExamen');
-        if (cabeceraTitulo) cabeceraTitulo.innerHTML = `${examen.icono || '📘'} ${window.helpers.escapeHtml(examen.titulo)}`;
+        if (cabeceraTitulo) cabeceraTitulo.innerHTML = `${window.helpers.escapeHtml(examen.titulo)}`;
       });
     },
 
@@ -1297,7 +1297,7 @@
           tema: examen.tema ? examen.tema.trim() : '',
           profesor: examen.profesor ? examen.profesor.trim() : '',
           color: examen.color || '#2563EB',
-          icono: examen.icono || '📘',
+          icono: examen.icono || '',
           portada: examen.portada || '',
           preguntas: JSON.stringify(examen.preguntas),
           config: JSON.stringify(examen.config),

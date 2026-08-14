@@ -1,7 +1,7 @@
 (function() {
   'use strict';
   const CLAVE = 'fb_preferencias';
-  const DEFAULTS = { tema: null, alto_contraste: false, letra_grande: false };
+  const DEFAULTS = { tema: 'light', alto_contraste: false, letra_grande: false };
 
   function leer() {
     try {
@@ -9,6 +9,7 @@
       if (!raw) return { ...DEFAULTS };
       const p = JSON.parse(raw);
       let tema = p.tema;
+      if (tema === undefined) tema = 'light'; // Sin elección guardada → claro por defecto
       if (tema === 'claro') tema = 'light';
       else if (tema === 'oscuro') tema = 'dark';
       return {

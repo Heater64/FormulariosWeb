@@ -263,7 +263,7 @@
             <div class="examen-card__header">
               <div class="examen-card__info">
                 <h3 class="examen-card__titulo">
-                  ${ex.icono || '📘'} ${_esc(ex.titulo)}
+                  ${_esc(ex.titulo)}
                   <span class="examen-card__badge ${badge.clase}">${I(badge.icono)} ${badge.texto}</span>
                 </h3>
                 ${ex.descripcion ? `<p class="examen-card__desc">${_esc(ex.descripcion)}</p>` : ''}
@@ -434,8 +434,8 @@
     },
 
     _compartir(examenId, titulo) {
-      const base = (window.location.origin + window.location.pathname).replace(/index\.html$/, '');
-      const url = base + '#!/tomar/' + examenId;
+      // /o/examen/:id?t=… → tarjeta Open Graph con el título (api/og.js)
+      const url = window.location.origin + '/o/examen/' + encodeURIComponent(examenId) + '?t=' + encodeURIComponent(titulo || 'Examen');
       const mensaje = '📝 ' + (titulo || 'Examen') + '\n\nRealiza tu examen aquí:\n' + url;
       const waUrl = 'https://wa.me/?text=' + encodeURIComponent(mensaje);
       if (navigator.clipboard && navigator.clipboard.writeText) {

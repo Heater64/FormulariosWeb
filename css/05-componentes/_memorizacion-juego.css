@@ -66,10 +66,10 @@
   flex-direction: column;
   gap: var(--espaciado-sm);
   padding: var(--espaciado-lg);
-  border-radius: 24px;
+  border-radius: var(--radio-2xl);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
+  box-shadow: var(--sombra-sm);
   cursor: pointer;
   overflow: hidden;
   transition: transform var(--transicion-normal), box-shadow var(--transicion-normal);
@@ -104,7 +104,7 @@
   justify-content: center;
   width: 52px;
   height: 52px;
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 14%, white);
   color: var(--mazo-color, var(--color-acento));
   flex-shrink: 0;
@@ -165,7 +165,7 @@
   width: 100%;
   padding: 14px;
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   background: var(--mazo-color, var(--color-acento));
   color: var(--color-texto-acento, #fff);
   font-size: var(--texto-base);
@@ -196,7 +196,7 @@
   padding: var(--espaciado-xl) var(--espaciado-lg);
   text-align: center;
   border: 2px dashed var(--color-borde);
-  border-radius: 24px;
+  border-radius: var(--radio-2xl);
 }
 
 .mem-juego-vacio__icono {
@@ -223,7 +223,7 @@
   gap: var(--espaciado-sm);
   text-align: center;
   padding: var(--espaciado-xl) var(--espaciado-lg);
-  border-radius: 24px;
+  border-radius: var(--radio-2xl);
   background: linear-gradient(160deg, color-mix(in srgb, var(--mazo-color, var(--color-acento)) 12%, var(--color-fondo-tarjeta)), var(--color-fondo-tarjeta));
   border: 1px solid var(--color-borde);
 }
@@ -234,7 +234,7 @@
   justify-content: center;
   width: 72px;
   height: 72px;
-  border-radius: 22px;
+  border-radius: var(--radio-2xl);
   background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 16%, white);
   color: var(--mazo-color, var(--color-acento));
 }
@@ -257,7 +257,7 @@
   align-items: center;
   gap: 2px;
   padding: var(--espaciado-sm);
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
 }
@@ -283,7 +283,7 @@
   max-width: 420px;
   padding: 18px;
   border: none;
-  border-radius: 18px;
+  border-radius: var(--radio-xl);
   background: var(--mazo-color, var(--color-acento));
   color: var(--color-texto-acento, #fff);
   font-size: var(--texto-lg);
@@ -343,23 +343,16 @@
   flex-direction: column;
   gap: var(--espaciado-md);
   padding: var(--espaciado-lg);
-  border-radius: 24px;
+  border-radius: var(--radio-lg);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  box-shadow: 0 2px 8px rgba(15, 23, 42, 0.05);
-  animation: mem-entra 0.35s cubic-bezier(0.22, 1, 0.36, 1);
+  box-shadow: var(--sombra-sm);
+  animation: mem-entra 0.35s var(--easing-entrada);
 }
 
 @keyframes mem-entra {
-  from { opacity: 0; transform: translateY(14px); }
+  from { opacity: 0; transform: translateY(8px); }
   to { opacity: 1; transform: translateY(0); }
-}
-
-.mem-juego-tarjeta--salida {
-  animation: mem-sale 0.25s ease-in forwards;
-}
-@keyframes mem-sale {
-  to { opacity: 0; transform: translateY(-10px) scale(0.98); }
 }
 
 .mem-juego-tipo {
@@ -411,7 +404,7 @@
   align-items: center;
   gap: var(--espaciado-sm);
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   border: 2px solid var(--color-borde);
   background: var(--color-fondo-tarjeta);
   font-size: var(--texto-base);
@@ -428,19 +421,19 @@
 
 .mem-juego-opcion--sel {
   border-color: var(--color-acento);
-  background: var(--color-acento-soft, var(--color-acento));
+  background: var(--color-acento-soft);
   color: var(--color-acento);
 }
 
 .mem-juego-opcion--ok {
   border-color: var(--color-exito);
-  background: var(--color-exito-soft, var(--color-verde-50));
+  background: var(--color-exito-soft);
   color: var(--color-exito);
 }
 
 .mem-juego-opcion--ko {
   border-color: var(--color-error);
-  background: var(--color-error-soft, var(--color-rojo-50));
+  background: var(--color-error-soft);
   color: var(--color-error);
   animation: mem-sacudida 0.4s;
 }
@@ -491,7 +484,7 @@
   border: none;
   border-bottom: 3px solid var(--color-acento);
   background: var(--color-acento-soft, var(--color-fondo-alt));
-  border-radius: 8px 8px 0 0;
+  border-radius: var(--radio-md) var(--radio-md) 0 0;
   font: inherit;
   font-size: var(--texto-base);
   text-align: center;
@@ -499,8 +492,8 @@
   color: var(--color-texto);
 }
 
-.mem-juego-hueco--ok { border-bottom-color: var(--color-exito); color: var(--color-exito); background: var(--color-exito-soft, var(--color-verde-50)); }
-.mem-juego-hueco--ko { border-bottom-color: var(--color-error); color: var(--color-error); background: var(--color-error-soft, var(--color-rojo-50)); }
+.mem-juego-hueco--ok { border-bottom-color: var(--color-exito); color: var(--color-exito); background: var(--color-exito-soft); }
+.mem-juego-hueco--ko { border-bottom-color: var(--color-error); color: var(--color-error); background: var(--color-error-soft); }
 
 /* Ordenar palabras */
 .mem-juego-ordenar {
@@ -518,7 +511,7 @@
 
 .mem-juego-palabra {
   padding: 10px 16px;
-  border-radius: 14px;
+  border-radius: var(--radio-lg);
   border: 2px solid var(--color-borde);
   background: var(--color-fondo-tarjeta);
   font-size: var(--texto-base);
@@ -529,7 +522,6 @@
 }
 
 .mem-juego-palabra:hover { border-color: var(--color-acento); transform: translateY(-1px); }
-.mem-juego-palabra--usada { opacity: 0.25; cursor: default; transform: none; }
 
 .mem-juego-frase {
   display: flex;
@@ -537,7 +529,7 @@
   gap: 6px;
   min-height: 52px;
   padding: var(--espaciado-sm);
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   border: 2px dashed var(--color-borde);
   align-items: center;
   justify-content: center;
@@ -545,7 +537,7 @@
 
 .mem-juego-frase__palabra {
   padding: 8px 14px;
-  border-radius: 12px;
+  border-radius: var(--radio-lg);
   background: var(--color-acento);
   color: var(--color-texto-acento);
   font-size: var(--texto-base);
@@ -578,7 +570,7 @@
 
 .mem-juego-rel-item {
   padding: 12px 14px;
-  border-radius: 14px;
+  border-radius: var(--radio-lg);
   border: 2px solid var(--color-borde);
   background: var(--color-fondo-tarjeta);
   font-size: var(--texto-sm);
@@ -593,9 +585,9 @@
 }
 
 .mem-juego-rel-item:hover { border-color: var(--color-acento); }
-.mem-juego-rel-item--sel { border-color: var(--color-acento); background: var(--color-acento-soft, var(--color-acento)); color: var(--color-acento); }
-.mem-juego-rel-item--ok { border-color: var(--color-exito); background: var(--color-exito-soft, var(--color-verde-50)); color: var(--color-exito); }
-.mem-juego-rel-item--ko { border-color: var(--color-error); background: var(--color-error-soft, var(--color-rojo-50)); color: var(--color-error); }
+.mem-juego-rel-item--sel { border-color: var(--color-acento); background: var(--color-acento-soft); color: var(--color-acento); }
+.mem-juego-rel-item--ok { border-color: var(--color-exito); background: var(--color-exito-soft); color: var(--color-exito); }
+.mem-juego-rel-item--ko { border-color: var(--color-error); background: var(--color-error-soft); color: var(--color-error); }
 .mem-juego-rel-item--disabled { opacity: 0.4; cursor: default; }
 
 /* Respuesta escrita */
@@ -608,7 +600,7 @@
 .mem-juego-input {
   width: 100%;
   padding: 16px;
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   border: 2px solid var(--color-borde);
   background: var(--color-fondo);
   font: inherit;
@@ -641,7 +633,7 @@
 .mem-juego-pista svg { width: 14px; height: 14px; }
 .mem-juego-pista__box {
   padding: var(--espaciado-sm);
-  border-radius: 12px;
+  border-radius: var(--radio-lg);
   background: var(--color-fondo-alt);
   font-size: var(--texto-sm);
   font-style: italic;
@@ -658,7 +650,7 @@
   width: 100%;
   padding: 16px;
   border: none;
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   background: var(--color-exito);
   color: var(--color-texto-acento);
   font-size: var(--texto-lg);
@@ -678,17 +670,17 @@
   flex-direction: column;
   gap: var(--espaciado-sm);
   padding: var(--espaciado-md);
-  border-radius: 16px;
+  border-radius: var(--radio-xl);
   animation: mem-entra 0.3s cubic-bezier(0.22, 1, 0.36, 1);
 }
 
 .mem-juego-feedback--ok {
-  background: var(--color-exito-soft, var(--color-verde-50));
+  background: var(--color-exito-soft);
   border: 1px solid var(--color-exito);
 }
 
 .mem-juego-feedback--ko {
-  background: var(--color-error-soft, var(--color-rojo-50));
+  background: var(--color-error-soft);
   border: 1px solid var(--color-error);
 }
 
@@ -749,9 +741,8 @@
 .mem-juego-fin__icono svg { width: 64px; height: 64px; }
 
 @keyframes mem-caida {
-  0% { transform: translateY(-30px) scale(0.4); opacity: 0; }
-  60% { transform: translateY(6px) scale(1.1); }
-  100% { transform: translateY(0) scale(1); opacity: 1; }
+  0% { transform: translateY(-20px); opacity: 0; }
+  100% { transform: translateY(0); opacity: 1; }
 }
 
 .mem-juego-fin h2 { margin: 0; font-size: var(--texto-2xl); }
@@ -772,7 +763,7 @@
   align-items: center;
   gap: 4px;
   padding: var(--espaciado-md);
-  border-radius: 18px;
+  border-radius: var(--radio-xl);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
 }
@@ -829,22 +820,6 @@
   background: var(--nivel-color, var(--color-fondo-alt));
   color: var(--color-texto-secundario);
 }
-
-/* Indicador de progreso por tarjeta en el mazo */
-.mem-juego-puntos {
-  display: flex;
-  gap: 3px;
-  align-items: center;
-}
-
-.mem-juego-punto {
-  width: 8px;
-  height: 8px;
-  border-radius: 50%;
-  background: var(--color-fondo-alt);
-}
-
-.mem-juego-punto--activo { background: var(--mazo-color, var(--color-acento)); }
 
 @media (max-width: 480px) {
   .mem-juego-detalle__stats { grid-template-columns: repeat(3, 1fr); gap: var(--espaciado-xs); }

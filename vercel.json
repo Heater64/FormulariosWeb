@@ -1,6 +1,12 @@
 {
   "buildCommand": "npm run build:public",
   "outputDirectory": "dist-public",
+  "rewrites": [
+    {
+      "source": "/o/:tipo/:id",
+      "destination": "/api/og"
+    }
+  ],
   "headers": [
     {
       "source": "/version.json",

@@ -1404,6 +1404,19 @@
   color: var(--color-texto-secundario);
 }
 
+.perfil-texto-legal ul {
+  margin: 0 0 var(--espaciado-sm);
+  padding-left: 1.25em;
+  display: grid;
+  gap: var(--espaciado-xxs);
+}
+
+.perfil-texto-legal li {
+  font-size: var(--texto-sm);
+  line-height: 1.7;
+  color: var(--color-texto-secundario);
+}
+
 .perfil-texto-legal a {
   color: var(--color-acento);
 }

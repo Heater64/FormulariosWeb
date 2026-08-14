@@ -11,6 +11,22 @@
   <meta name="theme-color" content="#FFFFFF">
   <meta name="color-scheme" content="light dark">
 
+  <!-- Open Graph / Twitter: cómo se ve la web al compartir -->
+  <meta name="description" content="FormsBiblicos: estudio bíblico guiado capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta property="og:type" content="website">
+  <meta property="og:site_name" content="FormsBiblicos">
+  <meta property="og:title" content="FormsBiblicos — Estudio bíblico guiado">
+  <meta property="og:description" content="Estudia la Biblia capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
+  <meta property="og:image:width" content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:image:alt" content="FormsBiblicos — Estudio bíblico guiado">
+  <meta property="og:locale" content="es_ES">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="twitter:title" content="FormsBiblicos — Estudio bíblico guiado">
+  <meta name="twitter:description" content="Estudia la Biblia capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta name="twitter:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
+
   <!-- PWA: instalable como aplicación (manifest + service worker) -->
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
@@ -44,7 +60,7 @@
         var raw = localStorage.getItem('fb_preferencias');
         var p = null;
         try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-        var tema = (p && p.tema) || localStorage.getItem('fb_tema');
+        var tema = (p && p.tema) || localStorage.getItem('fb_tema') || 'light';
         if (tema === 'claro') tema = 'light';
         else if (tema === 'oscuro') tema = 'dark';
         var root = document.documentElement;
@@ -290,7 +306,6 @@
   <script src="js/componentes/pwa-install.js" defer></script>
 
   <!-- JS: Views (las pesadas se cargan bajo demanda desde el router) -->
-  <script src="js/vistas/vista-login.js" defer></script>
   <script src="js/vistas/vista-estudio.js" defer></script>
   <script src="js/vistas/vista-capitulos.js" defer></script>
   <script src="js/vistas/vista-sesion-estudio.js" defer></script>

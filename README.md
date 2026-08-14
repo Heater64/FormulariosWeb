@@ -31,6 +31,22 @@ Estos archivos **siguen en el repo pero ya no se cargan ni se usan**:
 4. Volver a poner la sección de descarga de APK en `public-site/index.html`.
 5. Ejecutar `.github/workflows/release-android.yml` cuando esté listo.
 
+## Sistema de Clases (estilo Classroom)
+
+- **Instituciones** (`instituciones`): cada organización (iglesia, colegio, seminario) tiene su propio `admin_id`. Solo el owner puede crearlas y administrarlas desde `Grupos → Nueva institución`; los admins solo ven la institución de su clase.
+- **Clases** (`grupos`): pertenecen a una institución (`institucion_id`) y tienen un **código de clase único** (`codigo`, 6 caracteres sin ambiguos). El profesor lo ve en el banner del detalle (botón copiar).
+- **Unirse**: se acabó el directorio abierto — se entra con el **código** (RPC `unirse_con_codigo`, SECURITY DEFINER, el código no se expone por RLS).
+- **Home "Mis clases"**: tarjetas estilo Classroom agrupadas por institución; `Grupos → Unirme con código` para unirse.
+- **Requisito**: migración `040_clases_instituciones.sql` (incluida en `pendientes_produccion.sql`). Sin aplicarla, el home funciona en modo degradado (clases sin institución ni código) y las acciones muestran un aviso claro.
+
+## Administración por alcance
+
+- El usuario `owner` es el único propietario global y puede gestionar usuarios, clases, exámenes, memorización, auditoría, marca, notificaciones, backups y configuración.
+- Un `admin` siempre debe tener una clase en `perfiles.grupo_id`. Su panel solo muestra esa clase, sus alumnos/profesores y sus exámenes.
+- El panel de admin no incluye memorización, auditoría, backups, configuración de backend ni métricas globales. Las RPC `admin_*_clase` y las migraciones `041_alcance_panel_admin.sql` y `042_fix_creacion_usuarios_auth.sql` refuerzan el alcance y la creación de cuentas también en Supabase, no solo en la interfaz.
+- Los admins pueden crear y editar alumnos/profesores de su clase, suspenderlos o eliminarlos. No pueden crear admins, mover usuarios a otra clase, crear clases ni ver usuarios de otras clases.
+- Tras el reinicio de producción de agosto de 2026 se conservó únicamente `owner`; las notificaciones, exámenes, intentos y cuentas antiguas fueron limpiados. Las cuatro clases existentes se conservaron para que el owner pueda reasignarlas.
+
 ## Versionado (sigue activo)
 
 La versión vive en `package.json` (SemVer). Para subirla **de vez en cuando** (no en cada push):
@@ -57,14 +73,13 @@ Al subir la versión, actualiza también `CACHE_VERSION` en `sw.js` para que los
 3. O usa la página de login directa: `paginas/login.html`
 4. Para probar la instalación PWA: despliega en https (p. ej. Vercel con `npm run build:public`) y usa "Instalar aplicación" del navegador.
 
-### Usuarios de Prueba
+### Cuenta de producción conservada
 
 | Usuario | Contraseña | Rol |
 |---------|-----------|-----|
 | `owner` | `owner123` | Owner |
-| `admin1` | `admin123` | Admin |
-| `editor1` | `editor123` | Editor |
-| `alumno` | `alumno123` | Usuario |
+
+Las cuentas de prueba anteriores (`admin1`, `editor1`, `alumno`, etc.) fueron eliminadas durante el reinicio de producción. El owner debe crear nuevos responsables y asignarlos a una clase desde el panel global.
 
 ## Configuración de Supabase
 

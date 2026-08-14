@@ -3,13 +3,6 @@
   const I = (n) => window.Iconos.render(n);
   const E = (h) => window.helpers.escapeHtml(h);
 
-  function fechaCorta(iso) {
-    if (!iso) return '—';
-    const d = new Date(iso);
-    const meses = ['Ene','Feb','Mar','Abr','May','Jun','Jul','Ago','Sep','Oct','Nov','Dic'];
-    return meses[d.getMonth()] + ' ' + d.getFullYear();
-  }
-
   function _recortarSimple(file, cb) {
     const reader = new FileReader();
     reader.onload = (ev) => {
@@ -106,8 +99,8 @@
       const rol = (usuario.rol || '').trim().toLowerCase();
       const esAdmin = rol === 'admin' || rol === 'owner';
       const prefs = usuario.preferencias || {};
-      const versionActual = window.__FB_APP_VERSION__?.version || '—';
       const descripcion = (prefs.descripcion || prefs.frase || '').trim();
+      const versionActual = window.__FB_APP_VERSION__?.version || '—';
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg perfil-root" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
@@ -115,7 +108,6 @@
           <!-- HERO -->
           <header class="perfil-hero">
             <div class="perfil-hero__fondo" aria-hidden="true"></div>
-            ${window.campanaNotificaciones ? `<div class="perfil-hero__campana">${window.campanaNotificaciones.renderCampana()}</div>` : ''}
             <div class="perfil-hero__avatar">
               <div class="perfil-avatar perfil-avatar--hero" id="avatarPerfil" title="Cambiar foto de perfil">
                 <span id="avatarLetra">${E(usuario.nombre_completo.charAt(0).toUpperCase())}</span>
@@ -127,18 +119,7 @@
                 <span class="perfil-rol-badge perfil-rol-badge--${rol}">${rolBonito(usuario.rol)}</span>
               </div>
               <h1 class="perfil-hero__nombre" id="nombrePerfil">${E(usuario.nombre_completo)}</h1>
-              <p class="perfil-username">@${E(usuario.username)}</p>
               ${descripcion ? `<p class="perfil-hero__bio">${E(descripcion)}</p>` : ''}
-              <div class="perfil-hero__stats">
-                <div class="perfil-hero__stat">
-                  <span class="perfil-hero__stat-valor">${E(fechaCorta(usuario.creado_en))}</span>
-                  <span class="perfil-hero__stat-label">Miembro desde</span>
-                </div>
-                <div class="perfil-hero__stat">
-                  <span class="perfil-hero__stat-valor" id="perfilGruposResumen">Cargando…</span>
-                  <span class="perfil-hero__stat-label">Grupos</span>
-                </div>
-              </div>
               <div class="perfil-hero__acciones">
                 <button class="perfil-hero__btn" id="btnEditarPerfil">${I('user')} <span>Editar perfil</span></button>
               </div>
@@ -234,6 +215,7 @@
                 </div>
                 <div class="o-flecha" style="gap:var(--espaciado-xxs);justify-content:flex-end;flex-wrap:wrap">
                   <button class="btn-secundario u-fs-xs" id="btnMasInfo">Más información</button>
+                  ${!window.pwaInstall?.yaInstalada() ? `<button class="btn-secundario u-fs-xs" id="btnDescargarPWA">${I('download')} Descargar app</button>` : ''}
                 </div>
               </div>
               <div class="o-pila" style="gap:var(--espaciado-xxs);margin-top:var(--espaciado-xs)">
@@ -279,14 +261,19 @@
           localStorage.setItem('fb_usuario', JSON.stringify(usuario));
           try { await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefs) }).eq('id', usuario.id); } catch (e) {}
           window.helpers.mostrarAlerta('Perfil actualizado.', 'exito');
-          router.navegar('/perfil');
+          // Navegar a la misma ruta no dispara hashchange: forzar re-render
+          // para que la cabecera (nombre/descripción) se actualice al momento.
+          if (router.pathActual() === '/perfil') this.montar(raiz, {});
+          else router.navegar('/perfil');
         } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
       };
       raiz.querySelector('#btnEditarPerfil').onclick = editarPerfil;
-      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
 
       // Más información
       raiz.querySelector('#btnMasInfo').onclick = () => router.navegar('/perfil/acerca/que-es');
+
+      // Descargar PWA
+      raiz.querySelector('#btnDescargarPWA')?.addEventListener('click', () => window.pwaInstall?.mostrar());
 
       // Cerrar sesión (ahora en el perfil principal, debajo del panel de administración)
       raiz.querySelector('#btnLogout').onclick = async () => {
@@ -344,27 +331,6 @@
         else _recortarSimple(file, alElegir);
       }
       raiz.querySelector('#inputFotoPerfil').onchange = onFotoChange;
-
-      // Resumen de grupos: combina la clase (grupo_id), las membresías de
-      // miembros_grupo y los grupos donde el usuario es administrador.
-      const cargarGrupos = async () => {
-        const resumen = raiz.querySelector('#perfilGruposResumen');
-        if (!resumen || !window.gruposRepository) return;
-        const [clase, membresias, administrados] = await Promise.all([
-          window.gruposRepository.obtenerMiClase(usuario),
-          window.gruposRepository.misMembresias(usuario.id),
-          window.gruposRepository.gruposAdminDe(usuario.id)
-        ]);
-        const ids = new Set();
-        if (clase && clase.grupo) ids.add(clase.grupo.id);
-        (membresias || []).forEach(g => { if (g && g.id) ids.add(g.id); });
-        (administrados || []).forEach(g => { if (g && g.id) ids.add(g.id); });
-        const n = ids.size;
-        resumen.textContent = n
-          ? (n + ' grupo' + (n !== 1 ? 's' : ''))
-          : 'Sin grupos';
-      };
-      cargarGrupos();
 
       // Sugerencias
       this._bindSugerencias(raiz, usuario);
@@ -854,31 +820,67 @@
         terminos: `
           <div class="perfil-seccion">
             <h4 class="perfil-seccion__titulo" style="margin-bottom:var(--espaciado-sm)">Términos de uso</h4>
+            <p class="u-fs-xxs u-color-texto-terciario" style="margin-bottom:var(--espaciado-md)">Última actualización: 14 de agosto de 2026</p>
             <div class="perfil-texto-legal">
-              <h5>1. Uso de la plataforma</h5>
-              <p>FormsBiblicos es una herramienta educativa de estudio bíblico. Al usarla aceptas hacerlo con fines personales y educativos, sin interferir en el funcionamiento del servicio ni acceder a datos de otros usuarios sin autorización.</p>
-              <h5>2. Cuentas</h5>
-              <p>Las cuentas son creadas por un administrador de tu grupo. Eres responsable de mantener la confidencialidad de tu contraseña y de toda actividad realizada con tu cuenta.</p>
-              <h5>3. Contenido</h5>
-              <p>Los textos bíblicos, preguntas y materiales del servicio están destinados al estudio. El contenido que tú o tu grupo generen (exámenes, notas, sugerencias) pertenece a vuestro grupo y se gestiona según los permisos de cada rol.</p>
-              <h5>4. Disponibilidad</h5>
-              <p>El servicio se ofrece "tal cual". Puede sufrir interrupciones por mantenimiento o causas ajenas a nuestro control, y podemos modificar o retirar funciones cuando sea necesario.</p>
+              <h5>1. Aceptación de los términos</h5>
+              <p>Al usar FormsBiblicos, aceptas estos términos de uso. Si no estás de acuerdo, no utilices la plataforma.</p>
+              <h5>2. Descripción del servicio</h5>
+              <p>FormsBiblicos es una plataforma de estudio bíblico que ofrece lectura guiada, memorización con repetición espaciada y exámenes personalizados para grupos de estudio.</p>
+              <h5>3. Cuenta de usuario</h5>
+              <ul>
+                <li>Eres responsable de mantener la confidencialidad de tu contraseña.</li>
+                <li>Debes notificarnos inmediatamente sobre cualquier uso no autorizado.</li>
+                <li>Un solo usuario por cuenta; no se permite el uso compartido.</li>
+              </ul>
+              <h5>4. Uso aceptable</h5>
+              <p>Te comprometes a:</p>
+              <ul>
+                <li>Usar la plataforma solo para fines de estudio bíblico personal y grupal.</li>
+                <li>No intentar acceder a cuentas de otros usuarios.</li>
+                <li>No usar la plataforma para fines comerciales no autorizados.</li>
+                <li>Respetar a otros miembros de la comunidad.</li>
+              </ul>
+              <h5>5. Propiedad intelectual</h5>
+              <p>El contenido bíblico está basado en textos públicos. El diseño, código y funcionalidades de la plataforma son propiedad de FormsBiblicos.</p>
+              <h5>6. Limitación de responsabilidad</h5>
+              <p>FormsBiblicos se proporciona "tal cual" sin garantías de ningún tipo. No nos hacemos responsables por pérdidas de datos, interrupciones del servicio o el uso que hagas de la información bíblica.</p>
+              <h5>7. Terminación</h5>
+              <p>Podemos suspender o cancelar tu acceso si violas estos términos. Puedes eliminar tu cuenta en cualquier momento desde tu perfil.</p>
+              <h5>8. Cambios en los términos</h5>
+              <p>Nos reservamos el derecho de actualizar estos términos. El uso continuado de la plataforma tras los cambios implica aceptación.</p>
             </div>
           </div>`,
         privacidad: `
           <div class="perfil-seccion">
             <h4 class="perfil-seccion__titulo" style="margin-bottom:var(--espaciado-sm)">Política de privacidad</h4>
+            <p class="u-fs-xxs u-color-texto-terciario" style="margin-bottom:var(--espaciado-md)">Última actualización: 14 de agosto de 2026</p>
             <div class="perfil-texto-legal">
-              <h5>1. Datos que tratamos</h5>
-              <p>Nombre, username, correo electrónico (si lo facilita tu administrador), rol, grupo, foto de perfil y el progreso de estudio (lecturas, tarjetas, repasos, exámenes, logros).</p>
-              <h5>2. Finalidad</h5>
-              <p>Tus datos se usan exclusivamente para darte acceso a la plataforma, gestionar tu grupo y mostrar tu progreso. No se venden ni se comparten con terceros con fines publicitarios.</p>
-              <h5>3. Almacenamiento</h5>
-              <p>Los datos se guardan de forma segura en nuestro proveedor de base de datos (Supabase). Las fotos de perfil se almacenan localmente en tu dispositivo.</p>
-              <h5>4. Tus derechos</h5>
-              <p>Puedes eliminar todos tus datos de estudio desde Configuración → Seguridad → Zona de peligro. Para eliminar la cuenta, contacta con el administrador o propietario de tu grupo.</p>
-              <h5>5. Cambios</h5>
-              <p>Esta política puede actualizarse. Los cambios se publicarán en esta misma página.</p>
+              <h5>1. Información que recopilamos</h5>
+              <p>FormsBiblicos recopila únicamente la información necesaria para el funcionamiento de la plataforma:</p>
+              <ul>
+                <li><strong>Datos de cuenta:</strong> nombre de usuario, correo electrónico y contraseña (almacenada de forma segura).</li>
+                <li><strong>Datos de uso:</strong> progreso de lectura, versículos memorizados, resultados de exámenes y actividad dentro de la plataforma.</li>
+                <li><strong>Datos del grupo:</strong> pertenencia a grupos de estudio e interacciones con otros miembros.</li>
+              </ul>
+              <h5>2. Cómo usamos tu información</h5>
+              <ul>
+                <li>Para proporcionar y mejorar el servicio de estudio bíblico.</li>
+                <li>Para sincronizar tu progreso entre dispositivos.</li>
+                <li>Para enviar notificaciones relevantes a tu estudio (solo si las activas).</li>
+                <li>Para comunicarnos contigo sobre actualizaciones del servicio.</li>
+              </ul>
+              <h5>3. Compartir información</h5>
+              <p>No vendemos ni compartimos tu información personal con terceros, excepto:</p>
+              <ul>
+                <li>Con los miembros de tu grupo de estudio (solo información de progreso compartido).</li>
+                <li>Cuando lo requiera la ley.</li>
+              </ul>
+              <h5>4. Seguridad</h5>
+              <p>Utilizamos Supabase como proveedor de infraestructura, que incluye encriptación en tránsito y en reposo, autenticación JWT y políticas de seguridad a nivel de fila (RLS).</p>
+              <h5>5. Tus derechos</h5>
+              <p>Puedes acceder, actualizar o eliminar tu cuenta en cualquier momento desde la configuración de tu perfil. Para solicitudes específicas, contáctanos.</p>
+              <h5>6. Cambios en esta política</h5>
+              <p>Podemos actualizar esta política periódicamente. Te notificaremos de cambios significativos a través de la plataforma.</p>
             </div>
           </div>`,
         licencias: `

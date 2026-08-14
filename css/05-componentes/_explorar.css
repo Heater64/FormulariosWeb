@@ -735,28 +735,6 @@
   margin-top: var(--espaciado-xxs);
 }
 
-/* ===== Empty state ===== */
-
-.explorar__vacio {
-  text-align: center;
-  padding: var(--espaciado-2xl) var(--espaciado-md);
-  color: var(--color-texto-terciario);
-}
-
-.explorar__vacio-icono {
-  font-size: 2.5rem;
-  margin-bottom: var(--espaciado-sm);
-  display: flex;
-  justify-content: center;
-  opacity: 0.5;
-}
-
-.explorar__vacio p {
-  font-size: var(--texto-sm);
-  color: var(--color-texto-terciario);
-  margin: 0;
-}
-
 /* ===== Curiosidades (rediseño) ===== */
 
 .curiosidades-hero {
@@ -1387,6 +1365,16 @@
 }
 
 /* ===== Responsive ===== */
+
+/* Tabs adaptativas: sub-categorías solo en desktop, "Más" solo en móvil */
+.explorar__tab--desktop { display: none; }
+.explorar__tab--mobile-only { display: inline-flex; }
+
+@media (min-width: 768px) {
+  .explorar__tab--desktop { display: inline-flex; }
+  .explorar__tab--mobile-only { display: none; }
+  .explorar__back-btn { display: none; }
+}
 
 @media (max-width: 480px) {
   .explorar__grid {

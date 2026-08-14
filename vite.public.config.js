@@ -14,12 +14,15 @@ export default defineConfig({
     emptyOutDir: true
   },
   plugins: [{
-    name: 'copy-public-version-manifest',
+    name: 'copy-public-static',
     closeBundle() {
-      const source = join(rootDir, 'version.json');
-      if (!existsSync(source)) return;
       mkdirSync(outputDir, { recursive: true });
-      copyFileSync(source, join(outputDir, 'version.json'));
+      const source = join(rootDir, 'version.json');
+      if (existsSync(source)) copyFileSync(source, join(outputDir, 'version.json'));
+      // Imagen Open Graph: también se copia a dist/ por publicDir en el build
+      // de la app (vite.config.js), así que existe en la raíz y en /app/.
+      const og = join(rootDir, 'public', 'og-1200x630.png');
+      if (existsSync(og)) copyFileSync(og, join(outputDir, 'og-1200x630.png'));
     }
   }]
 });

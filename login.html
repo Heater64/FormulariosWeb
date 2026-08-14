@@ -46,12 +46,12 @@
   })();
 </script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-<script src="../js/config/entorno.js" defer></script>
-<script src="../js/core/store.js" defer></script>
-<script src="../js/core/eventBus.js" defer></script>
-<script src="../js/core/errores.js" defer></script>
-<script src="../js/datos/supabase-client.js" defer></script>
-<script src="../js/datos/auth-repository.js" defer></script>
+<script src="js/config/entorno.js" defer></script>
+<script src="js/core/store.js" defer></script>
+<script src="js/core/eventBus.js" defer></script>
+<script src="js/core/errores.js" defer></script>
+<script src="js/datos/supabase-client.js" defer></script>
+<script src="js/datos/auth-repository.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -518,6 +518,211 @@
 
   .footer__links { display: flex; gap: var(--md); }
 
+  /* ── MODAL "MÁS INFORMACIÓN" ── */
+  .modal-overlay {
+    position: fixed; inset: 0; z-index: 200;
+    background: rgba(28,25,23,0.6); backdrop-filter: blur(8px);
+    display: flex; align-items: flex-end; justify-content: center;
+    opacity: 0; visibility: hidden; transition: all var(--normal);
+    padding: 0;
+  }
+  @media (min-width: 768px) {
+    .modal-overlay { align-items: center; padding: var(--md); }
+  }
+
+  .modal-overlay.abierto { opacity: 1; visibility: visible; }
+
+  .modal {
+    background: var(--tarjeta);
+    border: 1px solid var(--borde);
+    border-radius: var(--radio-xl) var(--radio-xl) 0 0;
+    box-shadow: var(--sombra-lg);
+    width: 100%; max-height: 90vh; overflow-y: auto;
+    transform: translateY(100%);
+    transition: transform 400ms var(--ease-spring);
+    -webkit-overflow-scrolling: touch;
+  }
+  @media (min-width: 768px) {
+    .modal {
+      border-radius: var(--radio-xl);
+      max-width: 560px; max-height: 85vh;
+      transform: translateY(24px) scale(0.96);
+    }
+  }
+
+  .modal-overlay.abierto .modal { transform: translateY(0) scale(1); }
+
+  .modal__header {
+    display: flex; align-items: flex-start; justify-content: space-between;
+    padding: var(--md) var(--md) 0;
+    position: sticky; top: 0; background: var(--tarjeta); z-index: 1;
+  }
+  @media (min-width: 768px) {
+    .modal__header { padding: var(--lg) var(--lg) 0; }
+  }
+
+  .modal__titulo {
+    font-family: var(--fuente-display); font-size: 1.3rem;
+    font-weight: 600; line-height: 1.25;
+  }
+  @media (min-width: 768px) {
+    .modal__titulo { font-size: 1.5rem; }
+  }
+
+  .modal__cerrar {
+    width: 36px; height: 36px; border-radius: 50%;
+    background: var(--fondo-alt); border: 1px solid var(--borde);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; color: var(--texto-sec); transition: all var(--fast);
+    flex-shrink: 0; margin-left: var(--sm);
+  }
+  .modal__cerrar:hover {
+    background: var(--error-soft); color: var(--error); border-color: var(--error);
+    transform: rotate(90deg);
+  }
+  .modal__cerrar svg { width: 18px; height: 18px; }
+
+  .modal__imagen {
+    width: 100%; aspect-ratio: 16/9; background: var(--fondo-alt);
+    display: flex; align-items: center; justify-content: center;
+    margin-top: var(--sm); position: relative; overflow: hidden;
+  }
+  @media (min-width: 768px) {
+    .modal__imagen { margin-top: var(--md); }
+  }
+
+  .modal__imagen::before {
+    content: ''; position: absolute; inset: 0;
+    background-image: radial-gradient(circle at 30% 70%, currentColor 1px, transparent 1px);
+    background-size: 20px 20px; opacity: 0.05;
+  }
+
+  .modal__imagen svg { width: 56px; height: 56px; opacity: 0.35; position: relative; }
+  @media (min-width: 768px) {
+    .modal__imagen svg { width: 64px; height: 64px; }
+  }
+
+  .modal__cuerpo { padding: var(--md); }
+  @media (min-width: 768px) {
+    .modal__cuerpo { padding: var(--lg); }
+  }
+
+  .modal__etiqueta {
+    display: inline-flex; align-items: center; gap: 5px;
+    font-size: var(--xxs); font-weight: 600; text-transform: uppercase;
+    letter-spacing: 0.06em; margin-bottom: var(--xs);
+  }
+
+  .modal__desc {
+    font-size: var(--sm); color: var(--texto-sec); line-height: 1.7;
+    margin-bottom: var(--md);
+  }
+
+  .modal__lista { list-style: none; margin-bottom: var(--lg); }
+
+  .modal__lista li {
+    display: flex; align-items: flex-start; gap: var(--xs);
+    padding: 7px 0; font-size: var(--sm); color: var(--texto-sec);
+    border-bottom: 1px solid var(--borde);
+  }
+  .modal__lista li:last-child { border-bottom: none; }
+
+  .modal__lista li svg { width: 18px; height: 18px; flex-shrink: 0; margin-top: 2px; }
+
+  .modal__footer {
+    display: flex; gap: var(--xs); padding: 0 var(--md) var(--md);
+    padding-bottom: calc(var(--md) + var(--safe-bottom));
+  }
+  @media (min-width: 768px) {
+    .modal__footer { padding: 0 var(--lg) var(--lg); }
+  }
+
+  .modal__btn-sec {
+    flex: 1; padding: var(--xs) var(--md);
+    background: var(--fondo-alt); color: var(--texto);
+    border: 1px solid var(--borde); border-radius: var(--radio-md);
+    font: inherit; font-size: var(--sm); font-weight: 600;
+    cursor: pointer; transition: all var(--fast); min-height: var(--toque);
+  }
+  .modal__btn-sec:hover { background: var(--borde); }
+
+  .modal__btn-pri {
+    flex: 1; padding: var(--xs) var(--md);
+    background: var(--accento); color: #fff;
+    border: none; border-radius: var(--radio-md);
+    font: inherit; font-size: var(--sm); font-weight: 600;
+    cursor: pointer; transition: all var(--fast); min-height: var(--toque);
+  }
+  .modal__btn-pri:hover {
+    background: var(--accento-hover); transform: translateY(-1px);
+    box-shadow: 0 4px 12px var(--acento-glow);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .modal__btn-pri:hover { background: #93C5FD; color: #0C0A09; }
+  }
+  :root[data-theme="dark"] .modal__btn-pri:hover { background: #93C5FD; color: #0C0A09; }
+
+  /* ── MODAL LOGIN ── */
+  .modal-login { max-width: 100%; }
+  @media (min-width: 768px) {
+    .modal-login { max-width: 420px; }
+  }
+
+  .modal-login .campo {
+    display: flex; flex-direction: column; margin-bottom: var(--sm);
+  }
+
+  .modal-login .campo__label {
+    font-size: var(--sm); font-weight: 600; margin-bottom: var(--xxs);
+  }
+
+  .modal-login .campo__input {
+    width: 100%; padding: var(--sm) var(--md);
+    border: 1.5px solid var(--borde); border-radius: var(--radio-md);
+    background: var(--fondo); color: var(--texto);
+    font: inherit; font-size: 16px; /* evita zoom en iOS */
+    min-height: var(--toque);
+    transition: border-color var(--fast), box-shadow var(--fast);
+  }
+  .modal-login .campo__input::placeholder { color: var(--texto-ter); }
+  .modal-login .campo__input:focus {
+    outline: none; border-color: var(--accento);
+    box-shadow: 0 0 0 3px var(--acento-glow);
+  }
+
+  .modal-login .error-msg {
+    display: none; align-items: center; gap: var(--xs);
+    padding: var(--xs) var(--sm); background: var(--error-soft);
+    color: var(--error); border-radius: var(--radio-md);
+    font-size: var(--sm); font-weight: 500;
+    margin-bottom: var(--sm);
+    animation: shake 0.4s var(--ease);
+  }
+  .modal-login .error-msg.visible { display: flex; }
+
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    20%, 60% { transform: translateX(-4px); }
+    40%, 80% { transform: translateX(4px); }
+  }
+
+  .btn-login-submit {
+    width: 100%; padding: var(--sm) var(--md);
+    background: var(--accento); color: #fff; border: none;
+    border-radius: var(--radio-md); font: inherit; font-size: var(--sm);
+    font-weight: 700; cursor: pointer; min-height: var(--toque);
+    transition: all var(--fast);
+    box-shadow: 0 2px 8px var(--acento-glow);
+  }
+  .btn-login-submit:hover {
+    background: var(--accento-hover); transform: translateY(-1px);
+    box-shadow: 0 4px 16px var(--acento-glow);
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
+  }
+  :root[data-theme="dark"] .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
+
   /* ── ENTRADAS ORQUESTADAS ── */
   @keyframes fadeSlideUp {
     from { opacity: 0; transform: translateY(16px); }
@@ -568,6 +773,39 @@
   .faq__item:nth-child(4) { animation-delay: 250ms; }
   .faq__item:nth-child(5) { animation-delay: 300ms; }
 
+  /* ── PWA BANNER ── */
+  .pwa-banner {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 150;
+    background: var(--tarjeta); border-top: 1px solid var(--borde);
+    box-shadow: 0 -4px 20px rgba(28,25,23,0.12);
+    padding: var(--md) var(--md) calc(var(--md) + var(--safe-bottom));
+    display: none;
+  }
+  .pwa-banner.visible { display: block; animation: fadeSlideUp 0.4s var(--ease) both; }
+  .pwa-banner__inner {
+    max-width: 480px; margin: 0 auto;
+    display: flex; align-items: center; gap: var(--md);
+  }
+  .pwa-banner__icono {
+    width: 44px; height: 44px; border-radius: var(--radio-md);
+    background: var(--accento-soft); color: var(--accento);
+    display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+  }
+  .pwa-banner__icono svg { width: 22px; height: 22px; }
+  .pwa-banner__texto { flex: 1; }
+  .pwa-banner__titulo { font-size: var(--sm); font-weight: 600; margin-bottom: 2px; }
+  .pwa-banner__desc { font-size: var(--xs); color: var(--texto-sec); line-height: 1.4; }
+  .pwa-banner__acciones { display: flex; gap: var(--xs); margin-top: var(--xs); }
+  .pwa-banner__btn {
+    padding: 8px 16px; border-radius: var(--radio-md);
+    font: inherit; font-size: var(--xs); font-weight: 600;
+    cursor: pointer; transition: all var(--fast); min-height: 36px; border: none;
+  }
+  .pwa-banner__btn--sec { background: var(--fondo-alt); color: var(--texto); border: 1px solid var(--borde); }
+  .pwa-banner__btn--sec:hover { background: var(--borde); }
+  .pwa-banner__btn--pri { background: var(--accento); color: #fff; }
+  .pwa-banner__btn--pri:hover { background: var(--accento-hover); }
+
   /* ── FOCUS VISIBLE ── */
   *:focus-visible {
     outline: 2px solid var(--accento);
@@ -612,14 +850,14 @@
 
 <!-- HEADER -->
 <header class="header">
-  <a href="/" class="header__logo" aria-label="FormsBiblicos - Inicio">
+  <a href="#" class="header__logo" aria-label="FormsBiblicos - Inicio">
     <span class="header__icono">
       <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
     </span>
     <span class="header__texto">FormsBiblicos</span>
   </a>
   <nav class="header__nav" aria-label="Navegación principal">
-    <button class="btn-login-nav" onclick="scrollToLogin()">Iniciar sesión</button>
+    <button class="btn-login-nav" onclick="abrirModalLogin()">Iniciar sesión</button>
   </nav>
 </header>
 
@@ -640,7 +878,7 @@
 </section>
 
 <!-- FORMULARIO LOGIN -->
-<section class="login-section" id="login">
+<section class="login-section">
   <div class="login-card">
     <div class="login-card__icono">
       <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
@@ -726,7 +964,7 @@
     </details>
 
     <details class="faq__item">
-      <summary class="faq__pregunta">¿Necesito una cuenta?</summary>
+      <summary class="faq__pregunta">¿Necesitas una cuenta?</summary>
       <p class="faq__respuesta">Contacta con un administrador de tu grupo de estudio para que te cree una.</p>
     </details>
   </div>
@@ -742,11 +980,282 @@
   </div>
 </footer>
 
+<!-- PWA INSTALL BANNER -->
+<div class="pwa-banner" id="pwaBanner">
+  <div class="pwa-banner__inner">
+    <div class="pwa-banner__icono">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+    </div>
+    <div class="pwa-banner__texto">
+      <p class="pwa-banner__titulo">Instala FormsBiblicos</p>
+      <p class="pwa-banner__desc">Accede directo desde tu pantalla de inicio.</p>
+      <div class="pwa-banner__acciones">
+        <button class="pwa-banner__btn pwa-banner__btn--sec" id="pwaLater">Más tarde</button>
+        <button class="pwa-banner__btn pwa-banner__btn--pri" id="pwaInstall">Descargar</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL "MÁS TARDE" PWA -->
+<div class="modal-overlay" id="pwaLaterOverlay" role="dialog" aria-modal="true" aria-labelledby="pwaLaterTitulo">
+  <div class="modal" style="max-width:420px">
+    <div class="modal__header">
+      <h3 class="modal__titulo" id="pwaLaterTitulo">Instalar más tarde</h3>
+      <button class="modal__cerrar" onclick="cerrarPwaLater()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__cuerpo">
+      <p style="font-size:var(--sm);color:var(--texto-sec);line-height:1.6">
+        Puedes instalar FormsBiblicos desde tu <strong>perfil</strong> cuando quieras. Busca el botón «Descargar app» en la sección de Información.
+      </p>
+    </div>
+    <div class="modal__footer">
+      <button class="modal__btn-pri" onclick="cerrarPwaLater()" style="flex:1">Entendido</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL "MÁS INFORMACIÓN" -->
+<div class="modal-overlay" id="modalOverlay" role="dialog" aria-modal="true" aria-labelledby="modalTitulo">
+  <div class="modal">
+    <div class="modal__header">
+      <h3 class="modal__titulo" id="modalTitulo"></h3>
+      <button class="modal__cerrar" onclick="cerrarModal()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__imagen" id="modalImagen">
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+    </div>
+    <div class="modal__cuerpo">
+      <span class="modal__etiqueta" id="modalEtiqueta"></span>
+      <p class="modal__desc" id="modalDesc"></p>
+      <ul class="modal__lista" id="modalLista"></ul>
+    </div>
+    <div class="modal__footer">
+      <button class="modal__btn-sec" onclick="cerrarModal()">Cerrar</button>
+      <button class="modal__btn-pri" onclick="cerrarModal(); abrirModalLogin()">Iniciar sesión</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL LOGIN -->
+<div class="modal-overlay" id="loginOverlay" role="dialog" aria-modal="true" aria-labelledby="loginTitulo">
+  <div class="modal modal-login">
+    <div class="modal__header">
+      <h3 class="modal__titulo" id="loginTitulo">Iniciar sesión</h3>
+      <button class="modal__cerrar" onclick="cerrarModalLogin()" aria-label="Cerrar">
+        <svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 6 6 18"/><path d="m6 6 12 12"/></svg>
+      </button>
+    </div>
+    <div class="modal__cuerpo">
+      <p style="font-size: var(--sm); color: var(--texto-sec); margin-bottom: var(--md); line-height: 1.6;">Accede con la cuenta que te asignó tu grupo de estudio.</p>
+
+      <div class="error-msg" id="errorLogin">
+        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
+        <span id="errorLoginTexto"></span>
+      </div>
+
+      <form id="loginForm" novalidate>
+        <div class="campo">
+          <label class="campo__label" for="loginUserModal">Correo o usuario</label>
+          <input class="campo__input" type="text" id="loginUserModal" placeholder="tu@correo.com o usuario" autocomplete="username" required>
+        </div>
+        <div class="campo">
+          <label class="campo__label" for="loginPass">Contraseña</label>
+          <input class="campo__input" type="password" id="loginPass" placeholder="Tu contraseña" autocomplete="current-password" required>
+        </div>
+        <button type="submit" class="btn-login-submit">Iniciar sesión</button>
+      </form>
+
+      <p style="text-align:center; margin-top: var(--md); font-size: var(--xs); color: var(--texto-ter);">
+        ¿No tienes cuenta? <a href="#" style="color: var(--accento); text-decoration: none; font-weight: 500;">Contacta a tu grupo</a>
+      </p>
+    </div>
+  </div>
+</div>
+
 <script>
-  // ── Scroll suave al login ──
-  function scrollToLogin() {
-    document.getElementById('login').scrollIntoView({ behavior: 'smooth' });
+  // ── Datos de los modales ──
+  const datos = {
+    lectura: {
+      titulo: 'Lectura Guiada',
+      etiqueta: 'Lectura',
+      color: 'var(--accento)',
+      desc: 'Cada capítulo de la Biblia es una invitación a conocerte mejor. Nuestra herramienta de lectura guiada te acompaña con preguntas de reflexión que transforman una lectura superficial en una experiencia de transformación.',
+      lista: [
+        'Preguntas de reflexión por capítulo',
+        'Guías adaptadas a tu ritmo de lectura',
+        'Historial de progreso por libro',
+        'Notas personales y marcadores',
+        'Compatible con cualquier traducción'
+      ]
+    },
+    memorizacion: {
+      titulo: 'Memorización Espaciada',
+      etiqueta: 'Memorización',
+      color: '#D97706',
+      desc: 'La repetición espaciada es el método científico más efectivo para retener información a largo plazo. No se trata de leer más, sino de recordar lo que ya leíste.',
+      lista: [
+        'Sistema de repaso con intervalos inteligentes',
+        'Notificaciones para mantener la constancia',
+        'Estadísticas de retención por versículo',
+        'Desafíos diarios y semanales',
+        'Exporta tus versículos memorizados'
+      ]
+    },
+    examenes: {
+      titulo: 'Exámenes Personalizados',
+      etiqueta: 'Evaluación',
+      color: '#059669',
+      desc: 'Evalúa tu comprensión con preguntas que se adaptan a tu nivel. No compites con otros: compites contigo mismo, celebrando cada paso en tu caminar.',
+      lista: [
+        'Preguntas de opción múltiple y abiertas',
+        'Adaptativas según tu nivel de conocimiento',
+        'Retroalimentación inmediata con explicaciones',
+        'Historial de exámenes y tendencias',
+        'Certificados de progreso por libro'
+      ]
+    }
+  };
+
+  // ── Modal de información ──
+  const modalOverlay = document.getElementById('modalOverlay');
+  const modalTitulo = document.getElementById('modalTitulo');
+  const modalEtiqueta = document.getElementById('modalEtiqueta');
+  const modalDesc = document.getElementById('modalDesc');
+  const modalLista = document.getElementById('modalLista');
+
+  function abrirModal(clave) {
+    const d = datos[clave];
+    if (!d) return;
+    modalTitulo.textContent = d.titulo;
+    modalEtiqueta.textContent = d.etiqueta;
+    modalEtiqueta.style.color = d.color;
+    modalDesc.textContent = d.desc;
+
+    const checkColor = d.color;
+    modalLista.innerHTML = d.lista.map(item =>
+      `<li><svg xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="${checkColor}" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 6 9 17l-5-5"/></svg><span>${item}</span></li>`
+    ).join('');
+
+    modalOverlay.classList.add('abierto');
+    document.body.style.overflow = 'hidden';
   }
+
+  function cerrarModal() {
+    modalOverlay.classList.remove('abierto');
+    document.body.style.overflow = '';
+  }
+
+  // ── Modal login ──
+  const loginOverlay = document.getElementById('loginOverlay');
+  const loginForm = document.getElementById('loginForm');
+  const errorLogin = document.getElementById('errorLogin');
+  const errorLoginTexto = document.getElementById('errorLoginTexto');
+
+  function abrirModalLogin() {
+    loginOverlay.classList.add('abierto');
+    document.body.style.overflow = 'hidden';
+    setTimeout(() => document.getElementById('loginUserModal').focus(), 400);
+  }
+
+  function cerrarModalLogin() {
+    loginOverlay.classList.remove('abierto');
+    document.body.style.overflow = '';
+    errorLogin.classList.remove('visible');
+    loginForm.reset();
+  }
+
+  // ── Login modal ──
+  loginForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    errorLogin.classList.remove('visible');
+
+    const user = document.getElementById('loginUserModal').value.trim();
+    const pass = document.getElementById('loginPass').value;
+
+    if (!user) { mostrarErrorLogin('Ingresa tu correo o usuario.'); return; }
+    if (!pass) { mostrarErrorLogin('Ingresa tu contraseña.'); return; }
+    if (pass.length < 6) { mostrarErrorLogin('Mínimo 6 caracteres.'); return; }
+
+    const btn = loginForm.querySelector('button[type="submit"]');
+    btn.disabled = true; btn.textContent = 'Entrando…';
+    try {
+      await window.authRepository.iniciarSesion(user, pass, true);
+      // Persistir sesión: login.html no carga index.js (que registra auth:login),
+      // así que el store en memoria se pierde al navegar a index.html.
+      const u = store.obtener('usuario');
+      if (u) {
+        localStorage.setItem('fb_usuario', JSON.stringify(u));
+        localStorage.setItem('fb_recordar_sesion', 'true');
+      }
+      window.location.href = 'index.html';
+    } catch (err) {
+      mostrarErrorLogin(err.message || 'Error al iniciar sesión.');
+    } finally {
+      btn.disabled = false; btn.textContent = 'Iniciar sesión';
+    }
+  });
+
+  function mostrarErrorLogin(msg) {
+    errorLoginTexto.textContent = msg;
+    errorLogin.classList.remove('visible');
+    void errorLogin.offsetWidth;
+    errorLogin.classList.add('visible');
+  }
+
+  document.getElementById('loginUserModal').addEventListener('input', () => errorLogin.classList.remove('visible'));
+  document.getElementById('loginPass').addEventListener('input', () => errorLogin.classList.remove('visible'));
+
+  // ── Cerrar con Escape ──
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (loginOverlay.classList.contains('abierto')) cerrarModalLogin();
+      else if (modalOverlay.classList.contains('abierto')) cerrarModal();
+    }
+  });
+
+  // ── Cerrar al hacer clic fuera ──
+  modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) cerrarModal(); });
+  loginOverlay.addEventListener('click', (e) => { if (e.target === loginOverlay) cerrarModalLogin(); });
+
+  // ── Swipe down para cerrar modales en mobile ──
+  let touchStartY = 0;
+  let touchCurrentY = 0;
+  let isDragging = false;
+
+  document.querySelectorAll('.modal').forEach(modal => {
+    modal.addEventListener('touchstart', (e) => {
+      if (modal.scrollTop > 0) return;
+      touchStartY = e.touches[0].clientY;
+      isDragging = true;
+    }, { passive: true });
+
+    modal.addEventListener('touchmove', (e) => {
+      if (!isDragging) return;
+      touchCurrentY = e.touches[0].clientY;
+      const diff = touchCurrentY - touchStartY;
+      if (diff > 0) {
+        modal.style.transform = `translateY(${diff}px)`;
+      }
+    }, { passive: true });
+
+    modal.addEventListener('touchend', () => {
+      if (!isDragging) return;
+      isDragging = false;
+      const diff = touchCurrentY - touchStartY;
+      modal.style.transform = '';
+      if (diff > 100) {
+        if (modal.closest('#loginOverlay')) cerrarModalLogin();
+        else if (modal.closest('#modalOverlay')) cerrarModal();
+      }
+      touchStartY = 0;
+      touchCurrentY = 0;
+    }, { passive: true });
+  });
 
   // ── Login hero ──
   const loginFormHero = document.getElementById('loginFormHero');
@@ -768,14 +1277,14 @@
     btn.disabled = true; btn.textContent = 'Entrando…';
     try {
       await window.authRepository.iniciarSesion(user, pass, true);
-      // Persistir sesión: public-site no carga index.js (que registra auth:login),
-      // así que el store en memoria se pierde al navegar a /app/.
+      // Persistir sesión: login.html no carga index.js (que registra auth:login),
+      // así que el store en memoria se pierde al navegar a index.html.
       const u = store.obtener('usuario');
       if (u) {
         localStorage.setItem('fb_usuario', JSON.stringify(u));
         localStorage.setItem('fb_recordar_sesion', 'true');
       }
-      window.location.href = '/app/';
+      window.location.href = 'index.html';
     } catch (err) {
       mostrarErrorHero(err.message || 'Error al iniciar sesión.');
     } finally {
@@ -799,6 +1308,38 @@
       input.style.fontSize = '16px';
     });
   }
+
+  // ── PWA Install Banner ──
+  let deferredPrompt = null;
+  const pwaBanner = document.getElementById('pwaBanner');
+  const pwaLaterOverlay = document.getElementById('pwaLaterOverlay');
+
+  window.addEventListener('beforeinstallprompt', (e) => {
+    e.preventDefault();
+    deferredPrompt = e;
+    pwaBanner.classList.add('visible');
+  });
+
+  document.getElementById('pwaInstall').addEventListener('click', async () => {
+    if (!deferredPrompt) return;
+    deferredPrompt.prompt();
+    const { outcome } = await deferredPrompt.userChoice;
+    deferredPrompt = null;
+    pwaBanner.classList.remove('visible');
+  });
+
+  document.getElementById('pwaLater').addEventListener('click', () => {
+    pwaBanner.classList.remove('visible');
+    pwaLaterOverlay.classList.add('abierto');
+    document.body.style.overflow = 'hidden';
+  });
+
+  function cerrarPwaLater() {
+    pwaLaterOverlay.classList.remove('abierto');
+    document.body.style.overflow = '';
+  }
+
+  pwaLaterOverlay.addEventListener('click', (e) => { if (e.target === pwaLaterOverlay) cerrarPwaLater(); });
 </script>
 
 </body>

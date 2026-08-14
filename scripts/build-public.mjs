@@ -2,16 +2,15 @@
 // scripts/build-public.mjs — Despliegue público de Vercel (vercel.json)
 // ============================================================================
 // Produce dist-public/ con DOS productos:
-//   1. Landing (public-site → dist-public/) — presentación + descarga de la
-//      APK + botón "Usar en el navegador" que enlaza a /app.
+//   1. Login + landing (public-site → dist-public/) — página de login con
+//      auth real vía Supabase + secciones informativas.
 //   2. La aplicación web (vite build, base /app/) copiada en dist-public/app/
-//      para que el botón del navegador funcione: /app → login (y misma app
-//      que la APK, con la misma cuenta y datos de Supabase).
+//      para que tras el login funcione: /app → la app completa.
 //
 // Uso: npm run build:public   (buildCommand de vercel.json)
 // ============================================================================
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
 
@@ -32,27 +31,55 @@ function run(cmd, args, env = {}) {
   if (res.status !== 0) process.exit(res.status || 1);
 }
 
-// 1) Landing → dist-public/ (vite.public.config.js vacía el directorio)
-console.log('[build-public] 1/3 Landing…');
+// 1) Login + landing → dist-public/ (vite.public.config.js vacía el directorio)
+console.log('[build-public] 1/4 Login + landing…');
 run(process.execPath, [viteBin, 'build', '--config', 'vite.public.config.js']);
 
-// 2) App para navegador con base /app/ (la APK la compila el workflow de
-//    release con su propia base './'; aquí se sirve bajo /app en Vercel).
-//    VITE_UPDATE_MANIFEST_URL relativo a la raíz: en la web la comprobación
-//    automática de actualización está desactivada (solo Android); el botón
-//    manual de Perfil consulta version.json y muestra el diálogo si procede.
-console.log('[build-public] 2/3 App (base /app/)…');
+// 2) Copiar archivos estáticos necesarios para el login:
+//    - JS de auth (entorno, store, eventBus, errores, supabase-client, auth-repository)
+//    - Páginas legales (privacidad, terminos, contacto)
+console.log('[build-public] 2/4 Archivos estáticos…');
+const jsDirs = [
+  { src: join(root, 'js', 'config'), dest: join(distPublic, 'js', 'config') },
+  { src: join(root, 'js', 'core'), dest: join(distPublic, 'js', 'core') },
+  { src: join(root, 'js', 'datos'), dest: join(distPublic, 'js', 'datos') },
+];
+const jsFiles = [
+  join(root, 'js', 'config', 'entorno.js'),
+  join(root, 'js', 'core', 'store.js'),
+  join(root, 'js', 'core', 'eventBus.js'),
+  join(root, 'js', 'core', 'errores.js'),
+  join(root, 'js', 'datos', 'supabase-client.js'),
+  join(root, 'js', 'datos', 'auth-repository.js'),
+];
+for (const dir of jsDirs) {
+  mkdirSync(dir.dest, { recursive: true });
+}
+for (const file of jsFiles) {
+  if (existsSync(file)) {
+    const dest = file.replace(root, distPublic);
+    cpSync(file, dest);
+  }
+}
+
+// Copiar páginas legales
+const legalPages = ['privacidad.html', 'terminos.html', 'contacto.html'];
+for (const page of legalPages) {
+  const src = join(root, 'public-site', page);
+  if (existsSync(src)) cpSync(src, join(distPublic, page));
+}
+
+// 3) App para navegador con base /app/
+console.log('[build-public] 3/4 App (base /app/)…');
 run(process.execPath, [viteBin, 'build', '--base', '/app/'], {
   VITE_UPDATE_MANIFEST_URL: '/version.json',
-  // La web sirve el manifiesto en el mismo origen; el guard de vite.config.js
-  // (URL HTTPS absoluta) aplica solo al build de la APK (npm run build).
   FB_PUBLIC_BUILD: '1'
 });
 
-// 3) Copiar la app dentro del despliegue público
-console.log('[build-public] 3/3 Copiando dist → dist-public/app…');
+// 4) Copiar la app dentro del despliegue público
+console.log('[build-public] 4/4 Copiando dist → dist-public/app…');
 const destino = join(distPublic, 'app');
 rmSync(destino, { recursive: true, force: true });
 if (existsSync(distApp)) cpSync(distApp, destino, { recursive: true });
 
-console.log('[build-public] OK · landing en dist-public/ + app en dist-public/app/');
+console.log('[build-public] OK · login en dist-public/ + app en dist-public/app/');
