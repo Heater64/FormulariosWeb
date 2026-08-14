@@ -25,26 +25,7 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<script>
-  (function () {
-    try {
-      var raw = localStorage.getItem('fb_preferencias');
-      var p = null;
-      try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-      var tema = (p && p.tema) || localStorage.getItem('fb_tema') || 'light';
-      if (tema === 'claro') tema = 'light';
-      else if (tema === 'oscuro') tema = 'dark';
-      var root = document.documentElement;
-      if (tema === 'dark') {
-        root.setAttribute('data-theme', 'dark');
-        document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]').content = '#0C0A09';
-      } else if (tema === 'light') {
-        root.setAttribute('data-theme', 'light');
-        document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]').content = '#FAFAF9';
-      }
-    } catch (e) {}
-  })();
-</script>
+<script src="./theme.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
 <script src="../js/config/entorno.js" defer></script>
 <script src="../js/core/store.js" defer></script>
@@ -52,6 +33,7 @@
 <script src="../js/core/errores.js" defer></script>
 <script src="../js/datos/supabase-client.js" defer></script>
 <script src="../js/datos/auth-repository.js" defer></script>
+<script src="./login.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
 
@@ -619,7 +601,7 @@
     <span class="header__texto">FormsBiblicos</span>
   </a>
   <nav class="header__nav" aria-label="Navegación principal">
-    <button class="btn-login-nav" onclick="scrollToLogin()">Iniciar sesión</button>
+    <button class="btn-login-nav" type="button">Iniciar sesión</button>
   </nav>
 </header>
 
@@ -741,65 +723,6 @@
     <a href="contacto.html">Contacto</a>
   </div>
 </footer>
-
-<script>
-  // ── Scroll suave al login ──
-  function scrollToLogin() {
-    document.getElementById('login').scrollIntoView({ behavior: 'smooth' });
-  }
-
-  // ── Login hero ──
-  const loginFormHero = document.getElementById('loginFormHero');
-  const errorLoginHero = document.getElementById('errorLoginHero');
-  const errorLoginHeroTexto = document.getElementById('errorLoginHeroTexto');
-
-  loginFormHero.addEventListener('submit', async (e) => {
-    e.preventDefault();
-    errorLoginHero.classList.remove('visible');
-
-    const user = document.getElementById('loginUser').value.trim();
-    const pass = document.getElementById('loginPassHero').value;
-
-    if (!user) { mostrarErrorHero('Ingresa tu correo o usuario.'); return; }
-    if (!pass) { mostrarErrorHero('Ingresa tu contraseña.'); return; }
-    if (pass.length < 6) { mostrarErrorHero('Mínimo 6 caracteres.'); return; }
-
-    const btn = loginFormHero.querySelector('button[type="submit"]');
-    btn.disabled = true; btn.textContent = 'Entrando…';
-    try {
-      await window.authRepository.iniciarSesion(user, pass, true);
-      // Persistir sesión: public-site no carga index.js (que registra auth:login),
-      // así que el store en memoria se pierde al navegar a /app/.
-      const u = store.obtener('usuario');
-      if (u) {
-        localStorage.setItem('fb_usuario', JSON.stringify(u));
-        localStorage.setItem('fb_recordar_sesion', 'true');
-      }
-      window.location.href = '/app/';
-    } catch (err) {
-      mostrarErrorHero(err.message || 'Error al iniciar sesión.');
-    } finally {
-      btn.disabled = false; btn.textContent = 'Iniciar sesión';
-    }
-  });
-
-  function mostrarErrorHero(msg) {
-    errorLoginHeroTexto.textContent = msg;
-    errorLoginHero.classList.remove('visible');
-    void errorLoginHero.offsetWidth;
-    errorLoginHero.classList.add('visible');
-  }
-
-  document.getElementById('loginUser').addEventListener('input', () => errorLoginHero.classList.remove('visible'));
-  document.getElementById('loginPassHero').addEventListener('input', () => errorLoginHero.classList.remove('visible'));
-
-  // ── Prevenir zoom en inputs en iOS ──
-  if (/iPhone|iPad|iPod/.test(navigator.userAgent)) {
-    document.querySelectorAll('input[type="email"], input[type="password"], input[type="text"]').forEach(input => {
-      input.style.fontSize = '16px';
-    });
-  }
-</script>
 
 </body>
 </html>

@@ -19,6 +19,10 @@ export default defineConfig({
       mkdirSync(outputDir, { recursive: true });
       const source = join(rootDir, 'version.json');
       if (existsSync(source)) copyFileSync(source, join(outputDir, 'version.json'));
+      for (const file of ['theme.js', 'login.js']) {
+        const publicSource = join(rootDir, 'public-site', file);
+        if (existsSync(publicSource)) copyFileSync(publicSource, join(outputDir, file));
+      }
       // Imagen Open Graph: también se copia a dist/ por publicDir en el build
       // de la app (vite.config.js), así que existe en la raíz y en /app/.
       const og = join(rootDir, 'public', 'og-1200x630.png');

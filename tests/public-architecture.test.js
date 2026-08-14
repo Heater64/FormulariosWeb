@@ -3,6 +3,8 @@ import { readFileSync, existsSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const publicHtml = read('public-site/index.html');
+const publicLoginJs = read('public-site/login.js');
+const publicThemeJs = read('public-site/theme.js');
 const appHtml = read('index.html');
 const manifest = JSON.parse(read('public/manifest.json'));
 const sw = read('public/sw.js');
@@ -27,7 +29,15 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
   test('la landing pública ya no ofrece descarga de APK', () => {
     expect(publicHtml).not.toMatch(/\.apk/i);
     expect(publicHtml).not.toContain('Descargar aplicación Android');
-    expect(publicHtml).toContain('/app');
+    expect(publicLoginJs).toContain("window.location.href = '/app/'");
+  });
+
+  test('la landing cumple la CSP sin handlers inline', () => {
+    expect(publicHtml).not.toContain('<script>');
+    expect(publicHtml).not.toContain('onclick=');
+    expect(publicHtml).not.toContain('onsubmit=');
+    expect(publicHtml).toContain('./login.js');
+    expect(publicThemeJs).toContain('localStorage');
   });
 
   test('el manifiesto referencia iconos existentes', () => {
