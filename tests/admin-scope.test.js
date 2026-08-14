@@ -39,6 +39,14 @@ describe('alcance del panel de administración', () => {
     expect(auth).toContain('INSERT INTO auth.identities');
     expect(auth).not.toMatch(/v_uid\s*:=\s*auth\.admin_create_user/);
   });
+
+  test('la migración de emails Auth evita el dominio reservado .local', () => {
+    const sql = readFileSync(join(root, 'supabase/migraciones/043_auth_email_valido.sql'), 'utf8');
+    expect(sql).toContain('@accounts.formsbiblicos.com');
+    expect(sql).toContain('UPDATE auth.users');
+    expect(sql).toContain('UPDATE auth.identities');
+    expect(sql).not.toContain("v_email := v_base || '@formsbiblicos.local'");
+  });
 });
 
 describe('adminRepository consultas acotadas', () => {

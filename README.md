@@ -45,6 +45,7 @@ Estos archivos **siguen en el repo pero ya no se cargan ni se usan**:
 - Un `admin` siempre debe tener una clase en `perfiles.grupo_id`. Su panel solo muestra esa clase, sus alumnos/profesores y sus exámenes.
 - El panel de admin no incluye memorización, auditoría, backups, configuración de backend ni métricas globales. Las RPC `admin_*_clase` y las migraciones `041_alcance_panel_admin.sql` y `042_fix_creacion_usuarios_auth.sql` refuerzan el alcance y la creación de cuentas también en Supabase, no solo en la interfaz.
 - Los admins pueden crear y editar alumnos/profesores de su clase, suspenderlos o eliminarlos. No pueden crear admins, mover usuarios a otra clase, crear clases ni ver usuarios de otras clases.
+- Las cuentas creadas por el panel usan emails internos en `accounts.formsbiblicos.com` (no se muestran al usuario); la migración `043_auth_email_valido.sql` evita el dominio reservado `.local` que GoTrue no acepta de forma fiable.
 - Tras el reinicio de producción de agosto de 2026 se conservó únicamente `owner`; las notificaciones, exámenes, intentos y cuentas antiguas fueron limpiados. Las cuatro clases existentes se conservaron para que el owner pueda reasignarlas.
 
 ## Versionado (sigue activo)
