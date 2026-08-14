@@ -251,6 +251,26 @@ class NotificationService {
       acciones: [],
       destinatarios: (p) => p.destinatarios || null
     });
+    r('grupo.solicitud', {
+      categoria: 'grupos', prioridad: 'alta',
+      titulo: (p) => `Solicitud de ${p.usuario || 'un alumno'}`,
+      cuerpo: (p) => `Quiere unirse a «${p.grupo || 'tu clase'}». Revisa las solicitudes.`,
+      url: (p) => `/grupos/${p.grupoId}`,
+      icono: 'user-plus',
+      nativo: true, toast: true, sonido: true,
+      acciones: ['ver'],
+      destinatarios: (p) => p.destinatarios || null
+    });
+    r('grupo.aviso', {
+      categoria: 'grupos', prioridad: 'media',
+      titulo: (p) => `Nuevo aviso en ${p.grupo || 'tu clase'}`,
+      cuerpo: (p) => (p.autor ? `${p.autor}: ` : '') + (p.contenido || ''),
+      url: (p) => `/grupos/${p.grupoId}`,
+      icono: 'megaphone',
+      nativo: false, toast: true, sonido: false,
+      acciones: ['ver'],
+      destinatarios: (p) => p.destinatarios || null
+    });
 
     // ── Logros y sistema ────────────────────────────────────
     r('logro.desbloqueado', {
@@ -590,6 +610,12 @@ class NotificationService {
       cfg.respetarPrefs = false;
       cfg.prioridad = 'critica';
       cfg.requireInteraction = true;
+    } else if (f.tipo === 'solicitud_clase') {
+      cfg.respetarPrefs = false;
+      cfg.prioridad = 'alta';
+      cfg.acciones = ['ver'].map(a => ({ id: a, ...(ACCIONES[a] || {}) }));
+    } else if (f.tipo === 'grupo' && f.datos && f.datos.grupo_id) {
+      cfg.acciones = ['ver'].map(a => ({ id: a, ...(ACCIONES[a] || {}) }));
     }
     return cfg;
   }
@@ -599,6 +625,7 @@ class NotificationService {
     if (f.tipo === 'desafio' && d.desafio_id) return '/desafio/' + d.desafio_id;
     if ((f.tipo === 'examen_publicado' || f.tipo === 'examen_corregido') && d.examen_id) return '/tomar/' + d.examen_id;
     if (f.tipo === 'examen_entregado' && d.examen_id) return '/corregir/' + d.examen_id;
+    if ((f.tipo === 'solicitud_clase' || f.tipo === 'grupo') && d.grupo_id) return '/grupos/' + d.grupo_id;
     if (f.tipo === 'mazo_nuevo' && d.mazo_id) return '/memorizacion';
     if (f.tipo === 'recordatorio') return '/memorizacion';
     return d.url || null;

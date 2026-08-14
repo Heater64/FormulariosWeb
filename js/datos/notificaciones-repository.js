@@ -18,6 +18,7 @@
     desafio:            { categoria: 'desafios', prioridad: 'alta' },
     desafio_aceptado:   { categoria: 'desafios', prioridad: 'media' },
     grupo:              { categoria: 'grupos',   prioridad: 'media' },
+    solicitud_clase:    { categoria: 'grupos',   prioridad: 'alta', icono: 'user-plus' },
     info:               { categoria: 'sistema',  prioridad: 'baja' },
     examen_publicado:   { categoria: 'examenes', prioridad: 'alta' },
     examen_entregado:   { categoria: 'examenes', prioridad: 'alta' },

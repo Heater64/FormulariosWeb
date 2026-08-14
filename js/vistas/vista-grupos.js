@@ -472,9 +472,15 @@
           <nav class="grupos-tabs" role="tablist" aria-label="Secciones de la clase">
             <button class="grupos-tabs__tab is-activo" role="tab" aria-selected="true" data-tab="personas">${I('users')} Personas</button>
             <button class="grupos-tabs__tab" role="tab" aria-selected="false" data-tab="avisos">${I('megaphone')} Avisos</button>
+            <button class="grupos-tabs__tab" role="tab" aria-selected="false" data-tab="trabajo">${I('clipboard-check')} Trabajo</button>
             <button class="grupos-tabs__tab" role="tab" aria-selected="false" data-tab="stats">${I('bar-chart-3')} Estadísticas</button>
           </nav>
           <div id="gruposTabContenido"></div>` : ''}
+
+          ${soyMiembro && miembros.length > 1 ? `
+          <div class="grupos-desafio-clase">
+            <button class="btn-secundario" id="btnDesafiarClase">${I('sword')} Desafiar a toda la clase</button>
+          </div>` : ''}
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
@@ -552,6 +558,17 @@
       });
       if (soyMiembro) this._renderTab(raiz, grupo, usuario, 'personas');
 
+      // Desafiar a toda la clase
+      const btnDesafiarClase = raiz.querySelector('#btnDesafiarClase');
+      if (btnDesafiarClase) btnDesafiarClase.onclick = async () => {
+        const otros = miembros.filter(m => m.id !== usuario.id);
+        if (!otros.length) { window.helpers.mostrarAlerta('No hay otros miembros en la clase.', 'info'); return; }
+        btnDesafiarClase.disabled = true;
+        try { await this._flujoDesafio(otros); }
+        catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        finally { btnDesafiarClase.disabled = false; }
+      };
+
       this._miembrosActuales = miembros;
     },
 
@@ -592,6 +609,7 @@
       cont.innerHTML = '<div class="skeleton-stack" aria-hidden="true"><div class="skel" style="height:90px;border-radius:var(--card-radius)"></div></div>';
       if (nombre === 'personas') this._tabPersonas(cont, grupo, usuario);
       else if (nombre === 'avisos') this._tabAvisos(cont, grupo, usuario);
+      else if (nombre === 'trabajo') this._tabTrabajo(cont, grupo, usuario);
       else if (nombre === 'stats') this._tabEstadisticas(cont, grupo, usuario);
     },
 
@@ -741,6 +759,29 @@
             <p class="grupos-aviso__contenido">${E(a.contenido)}</p>
           </div>
         </article>`;
+    },
+
+    async _tabTrabajo(cont, grupo, usuario) {
+      const esResponsable = ['admin', 'editor', 'owner'].includes(usuario.rol)
+        || (this._miembros || []).some(m => m.id === usuario.id && ['admin', 'editor', 'ayudante'].includes(m.rol_en_grupo));
+      const [sueltos, evaluaciones] = await Promise.all([
+        window.examenesRepository.listarExamenesSueltos(grupo.id).catch(() => []),
+        window.examenesRepository.listarEvaluaciones(grupo.id).catch(() => [])
+      ]);
+      const exs = [...sueltos, ...evaluaciones.flatMap(ev => (ev.examenes || []))].filter(Boolean);
+      cont.innerHTML = exs.length ? `
+        <div class="o-pila" style="gap:var(--espaciado-xs)">
+          ${exs.map(x => `
+            <div class="grupos-trabajo-item">
+              <span class="grupos-trabajo-item__icono">${I('clipboard-check')}</span>
+              <div class="grupos-trabajo-item__info">
+                <p class="grupos-trabajo-item__titulo">${E(x.titulo || 'Examen')}</p>
+                <p class="grupos-trabajo-item__sub">${E(x.asignatura || '')}${esResponsable ? ` · ${x.intentos || 0} entrega${x.intentos === 1 ? '' : 's'}` : ''}</p>
+              </div>
+              <a class="btn-secundario u-fs-xs" href="#!/tomar/${encodeURIComponent(x.id)}">${I('eye')} Ver</a>
+            </div>`).join('')}
+        </div>` : `<p class="u-color-texto-terciario u-fs-sm">Aún no hay exámenes en esta clase.</p>`;
+      if (window.Iconos) window.Iconos.actualizar();
     },
 
     async _tabEstadisticas(cont, grupo, usuario) {

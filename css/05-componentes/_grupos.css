@@ -1215,6 +1215,34 @@
 .grupos-aviso__borrar { margin-left: auto; }
 .grupos-aviso__contenido { margin: 4px 0 0; white-space: pre-wrap; }
 
+/* Desafío a toda la clase */
+.grupos-desafio-clase {
+  display: flex;
+  justify-content: flex-end;
+  margin-top: var(--espaciado-sm);
+}
+.grupos-desafio-clase .btn-secundario {
+  justify-content: center;
+}
+
+/* Trabajo de la clase (exámenes) */
+.grupos-trabajo-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  background: var(--color-superficie);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm);
+}
+.grupos-trabajo-item__icono {
+  color: var(--color-acento);
+  flex-shrink: 0;
+}
+.grupos-trabajo-item__info { flex: 1; min-width: 0; }
+.grupos-trabajo-item__titulo { margin: 0; font-weight: 600; }
+.grupos-trabajo-item__sub { margin: 2px 0 0; font-size: var(--fuente-xs); color: var(--color-texto-secundario); }
+
 /* Estadísticas de la clase */
 .grupos-stats-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--espaciado-sm); }
 @media (min-width: 640px) { .grupos-stats-grid { grid-template-columns: repeat(3, 1fr); } }
