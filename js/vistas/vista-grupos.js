@@ -407,16 +407,7 @@
       const gradiente = grupo.instituciones && grupo.instituciones.id ? gradienteDe(grupo.instituciones.id) : gradienteDe(grupo.id);
       const instNombre = (grupo.instituciones && grupo.instituciones.nombre) || 'Sin institución';
 
-      // Agrupar por rol
-      const profesores = miembros.filter(m => ['admin', 'editor'].includes(m.rol_en_grupo));
-      const alumnos = miembros.filter(m => !['admin', 'editor'].includes(m.rol_en_grupo));
-      const grupoRol = (titulo, lista, icono) => lista.length ? `
-        <div class="grupos-rolgrupo">
-          <h4 class="grupos-rolgrupo__titulo">${I(icono)} ${titulo} <span>${lista.length}</span></h4>
-          <div class="grupos-miembros">
-            ${lista.map(m => this._fichaMiembro(m, usuario, esOwner)).join('')}
-          </div>
-        </div>` : '';
+      const esResponsable = soyProfesor || ['admin', 'owner'].includes(usuario.rol);
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg grupos" style="padding-top:var(--espaciado-md);padding-bottom:calc(110px + env(safe-area-inset-bottom))">
@@ -434,7 +425,7 @@
               <h2 class="grupos-clase-banner__nombre">${E(grupo.nombre)}</h2>
               <p class="grupos-clase-banner__inst">${E(instNombre)}${grupo.descripcion ? ` · ${E(grupo.descripcion.slice(0, 70))}` : ''}</p>
             </div>
-            ${(soyProfesor || ['admin', 'owner'].includes(usuario.rol)) && grupo.codigo ? `
+            ${esResponsable && grupo.codigo ? `
             <button class="grupos-clase-banner__codigo" id="btnCopiarCodigo" aria-label="Copiar código de la clase" title="Copiar código">
               <span>Código</span>
               <strong>${E(grupo.codigo)}</strong>
@@ -450,28 +441,16 @@
           <div class="grupos-entrar">
             <p>${I('key')} Aún no formas parte de esta clase.</p>
             <button class="btn-primario" id="btnIrCodigo" style="justify-content:center">${I('key')} Unirme con código</button>
+            <button class="btn-secundario" id="btnSolicitarIngreso" style="justify-content:center">${I('user-plus')} Solicitar ingreso</button>
           </div>` : ''}
-
-          <section class="grupos-seccion">
-            <div class="grupos-seccion__cabecera">
-              <div class="grupos-seccion__icono">${I('users')}</div>
-              <div>
-                <h3 class="grupos-seccion__titulo">Miembros</h3>
-                <p class="grupos-seccion__desc">Toca un miembro para ver su perfil o desafiarlo</p>
-              </div>
-              ${soyMiembro && miembros.length > 1 ? `
-              <button class="btn-secundario u-fs-xs" id="btnSeleccionarTodos">${I('check-square')} Seleccionar</button>` : ''}
-            </div>
-            ${grupoRol('Profesores', profesores, 'graduation-cap')}
-            ${grupoRol('Alumnos', alumnos, 'users')}
-            ${miembros.length === 0 ? '<p class="u-color-texto-terciario u-fs-sm">Todavía no hay miembros. Comparte el código de la clase para que se unan.</p>' : ''}
-          </section>
 
           ${soyMiembro ? `
-          <div class="grupos-desafio-bar" id="desafioBar" hidden>
-            <span id="desafioBarTexto">0 seleccionados</span>
-            <button class="btn-primario" id="btnDesafiarSeleccion">${I('sword')} Desafiar</button>
-          </div>` : ''}
+          <nav class="grupos-tabs" role="tablist" aria-label="Secciones de la clase">
+            <button class="grupos-tabs__tab is-activo" role="tab" aria-selected="true" data-tab="personas">${I('users')} Personas</button>
+            <button class="grupos-tabs__tab" role="tab" aria-selected="false" data-tab="avisos">${I('megaphone')} Avisos</button>
+            <button class="grupos-tabs__tab" role="tab" aria-selected="false" data-tab="stats">${I('bar-chart-3')} Estadísticas</button>
+          </nav>
+          <div id="gruposTabContenido"></div>` : ''}
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
@@ -515,57 +494,39 @@
         }
       };
 
-      // Seleccionar todos / modo selección (aplica a ambos grupos: profesores y alumnos)
-      const btnSel = raiz.querySelector('#btnSeleccionarTodos');
-      if (btnSel) btnSel.onclick = () => {
-        const listas = [...raiz.querySelectorAll('.grupos-miembros')];
-        const activo = listas.length ? !listas[0].classList.contains('grupos-miembros--seleccion') : false;
-        listas.forEach(l => l.classList.toggle('grupos-miembros--seleccion', activo));
-        this._seleccion.clear();
-        if (activo) miembros.forEach(m => { if (m.id !== usuario.id) this._seleccion.add(m.id); });
-        this._actualizarSeleccion(raiz);
-        btnSel.textContent = activo ? 'Quitar selección' : 'Seleccionar';
+      // No-miembro: solicitar ingreso (lo aprueba el admin de la clase en Personas)
+      const btnSolicitar = raiz.querySelector('#btnSolicitarIngreso');
+      if (btnSolicitar) btnSolicitar.onclick = async () => {
+        btnSolicitar.disabled = true;
+        try {
+          const res = await window.gruposRepository.solicitarIngreso(grupo.id);
+          const resultado = res && res.resultado;
+          if (resultado === 'unido') {
+            window.helpers.mostrarAlerta('¡Bienvenido a tu nueva clase!', 'exito');
+            this._montarGrupo(raiz, grupo.id);
+          } else {
+            window.helpers.mostrarAlerta('Solicitud enviada. Espera a que un responsable la apruebe.', 'exito');
+            btnSolicitar.textContent = 'Solicitud enviada';
+          }
+        } catch (e) {
+          btnSolicitar.disabled = false;
+          const msg = (e && e.message) || '';
+          window.helpers.mostrarAlerta(/ya eres miembro/i.test(msg) ? 'Ya formas parte de esta clase.' : 'Error: ' + msg, 'error');
+          if (/ya eres miembro/i.test(msg)) this._montarGrupo(raiz, grupo.id);
+        }
       };
 
-      // Perfil rápido de cada miembro
-      raiz.querySelectorAll('[data-miembro]').forEach(el => {
-        el.onclick = (e) => {
-          if (e.target.closest('.grupos-miembro__check')) return;
-          if (e.target.closest('.grupos-miembro__editar')) return;
-          if (el.closest('.grupos-miembros--seleccion')) return;
-          const m = miembros.find(x => x.id === el.dataset.miembro);
-          if (m) this._perfilRapido(m);
+      // Pestañas: Personas · Avisos · Estadísticas
+      raiz.querySelectorAll('.grupos-tabs__tab').forEach(btn => {
+        btn.onclick = () => {
+          raiz.querySelectorAll('.grupos-tabs__tab').forEach(b => {
+            b.classList.toggle('is-activo', b === btn);
+            b.setAttribute('aria-selected', String(b === btn));
+          });
+          this._renderTab(raiz, grupo, usuario, btn.dataset.tab);
         };
       });
-
-      // Owner: editar alumno (cambiar de grupo / eliminar / dejar sin grupo)
-      raiz.querySelectorAll('[data-editar-miembro]').forEach(btn => {
-        btn.onclick = async (e) => {
-          e.stopPropagation();
-          const m = miembros.find(x => x.id === btn.dataset.editarMiembro);
-          if (m) this._gestionarAlumno(m, grupo, raiz);
-        };
-      });
-
-      // Checkboxes de selección
-      raiz.querySelectorAll('.grupos-miembro__check input').forEach(cb => {
-        cb.onchange = () => {
-          if (cb.checked) this._seleccion.add(cb.dataset.id);
-          else this._seleccion.delete(cb.dataset.id);
-          this._actualizarSeleccion(raiz);
-        };
-      });
-
-      // Barra de desafío masivo
-      const btnDesafiar = raiz.querySelector('#btnDesafiarSeleccion');
-      if (btnDesafiar) btnDesafiar.onclick = async () => {
-        const elegidos = miembros.filter(m => this._seleccion.has(m.id));
-        if (!elegidos.length) return;
-        btnDesafiar.disabled = true;
-        try { await this._flujoDesafio(elegidos); }
-        catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
-        finally { btnDesafiar.disabled = false; }
-      };
+      if (soyMiembro) this._renderTab(raiz, grupo, usuario, 'personas');
 
       this._miembrosActuales = miembros;
     },
@@ -595,23 +556,241 @@
           ${badge}
           ${editar}
           ${online ? `<span class="grupos-miembro__online" title="En línea"></span>` : ''}
-          <label class="grupos-miembro__check" aria-label="Seleccionar a ${E(m.nombre_completo || m.username)}">
-            <input type="checkbox" data-id="${m.id}" ${esYo ? 'disabled' : ''}>
-          </label>
         </div>`;
     },
 
-    _actualizarSeleccion(raiz) {
-      raiz.querySelectorAll('.grupos-miembro__check input').forEach(cb => {
-        cb.checked = this._seleccion.has(cb.dataset.id);
+    /* ══════════════════════════════════════════════════════════
+       PESTAÑAS DEL DETALLE: Personas · Avisos · Estadísticas
+       ══════════════════════════════════════════════════════════ */
+    _renderTab(raiz, grupo, usuario, nombre) {
+      const cont = raiz.querySelector('#gruposTabContenido');
+      if (!cont) return;
+      cont.innerHTML = '<div class="skeleton-stack" aria-hidden="true"><div class="skel" style="height:90px;border-radius:var(--card-radius)"></div></div>';
+      if (nombre === 'personas') this._tabPersonas(cont, grupo, usuario);
+      else if (nombre === 'avisos') this._tabAvisos(cont, grupo, usuario);
+      else if (nombre === 'stats') this._tabEstadisticas(cont, grupo, usuario);
+    },
+
+    async _tabPersonas(cont, grupo, usuario) {
+      // Las solicitudes SOLO las aprueba el admin de la clase (o el owner)
+      const esAdmin = usuario.rol === 'owner'
+        || (this._miembros || []).some(m => m.id === usuario.id && m.rol_en_grupo === 'admin');
+      const [miembros, solicitudes] = await Promise.all([
+        window.gruposRepository.obtenerMiembrosDe(grupo.id),
+        esAdmin ? window.gruposRepository.solicitudesDeClase(grupo.id) : []
+      ]);
+      const profesores = miembros.filter(m => ['admin', 'editor', 'ayudante'].includes(m.rol_en_grupo));
+      const alumnos = miembros.filter(m => !['admin', 'editor', 'ayudante'].includes(m.rol_en_grupo));
+      const grupoRol = (titulo, lista, icono) => lista.length ? `
+        <div class="grupos-rolgrupo">
+          <h4 class="grupos-rolgrupo__titulo">${I(icono)} ${titulo} <span>${lista.length}</span></h4>
+          <div class="grupos-miembros">${lista.map(m => this._fichaMiembro(m, usuario, this._esOwner)).join('')}</div>
+        </div>` : '';
+
+      const solicitudesHtml = solicitudes.length ? `
+        <section class="grupos-seccion">
+          <div class="grupos-seccion__cabecera">
+            <div class="grupos-seccion__icono">${I('user-plus')}</div>
+            <div><h3 class="grupos-seccion__titulo">Solicitudes de ingreso</h3>
+            <p class="grupos-seccion__desc">${solicitudes.length} espera${solicitudes.length !== 1 ? 'n' : ''} tu aprobación</p></div>
+          </div>
+          <div class="o-pila" style="gap:var(--espaciado-xs)">
+            ${solicitudes.map(s => `
+              <div class="grupos-solicitud" data-solicitud="${s.id}">
+                <div class="grupos-miembro__avatar">${avatarHtml(s.perfiles)}</div>
+                <div class="grupos-solicitud__info">
+                  <p class="grupos-solicitud__nombre">${E(s.perfiles.nombre_completo || s.perfiles.username)}</p>
+                  <p class="grupos-solicitud__username">@${E(s.perfiles.username)} · quiere unirse</p>
+                </div>
+                <div class="grupos-solicitud__acciones">
+                  <button class="btn-primario u-fs-xs" data-solicitud-accion="aceptar">${I('check')} Aprobar</button>
+                  <button class="btn-secundario u-fs-xs" data-solicitud-accion="rechazar">${I('x')} Rechazar</button>
+                </div>
+              </div>`).join('')}
+          </div>
+        </section>` : '';
+
+      cont.innerHTML = `
+        ${solicitudesHtml}
+        ${grupoRol('Profesores', profesores, 'graduation-cap')}
+        ${grupoRol('Alumnos', alumnos, 'users')}
+        ${miembros.length === 0 ? '<p class="u-color-texto-terciario u-fs-sm">Todavía no hay miembros. Comparte el código de la clase para que se unan.</p>' : ''}`;
+      if (window.Iconos) window.Iconos.actualizar();
+
+      cont.querySelectorAll('[data-solicitud-accion]').forEach(btn => {
+        btn.onclick = async () => {
+          const card = btn.closest('[data-solicitud]');
+          const s = solicitudes.find(x => x.id === card.dataset.solicitud);
+          if (!s) return;
+          btn.disabled = true;
+          try {
+            await window.gruposRepository.resolverSolicitud(s.id, btn.dataset.solicitudAccion === 'aceptar');
+            window.helpers.mostrarAlerta(btn.dataset.solicitudAccion === 'aceptar'
+              ? `${s.perfiles.nombre_completo || s.perfiles.username} ahora es miembro.` : 'Solicitud rechazada.', 'exito');
+            this._tabPersonas(cont, grupo, usuario);
+          } catch (e) { btn.disabled = false; window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        };
       });
-      const bar = raiz.querySelector('#desafioBar');
-      const texto = raiz.querySelector('#desafioBarTexto');
-      if (bar && texto) {
-        const n = this._seleccion.size;
-        bar.hidden = n === 0;
-        texto.textContent = `${n} seleccionado${n !== 1 ? 's' : ''}`;
+
+      // Perfil rápido de cada miembro
+      cont.querySelectorAll('[data-miembro]').forEach(el => {
+        el.onclick = (e) => {
+          if (e.target.closest('.grupos-miembro__editar')) return;
+          const m = miembros.find(x => x.id === el.dataset.miembro);
+          if (m) this._perfilRapido(m);
+        };
+      });
+      // Owner: editar alumno (cambiar de grupo / eliminar / dejar sin grupo)
+      cont.querySelectorAll('[data-editar-miembro]').forEach(btn => {
+        btn.onclick = async (e) => {
+          e.stopPropagation();
+          const m = miembros.find(x => x.id === btn.dataset.editarMiembro);
+          if (m) this._gestionarAlumno(m, grupo, document.getElementById('app-root'));
+        };
+      });
+    },
+
+    async _tabAvisos(cont, grupo, usuario) {
+      const esResponsable = ['admin', 'editor', 'owner'].includes(usuario.rol)
+        || (this._miembros || []).some(m => m.id === usuario.id && ['admin', 'editor', 'ayudante'].includes(m.rol_en_grupo));
+      const avisos = await window.gruposRepository.listarAvisos(grupo.id);
+      cont.innerHTML = `
+        ${esResponsable ? `
+        <form class="grupos-aviso-form" id="avisoForm">
+          <div class="grupos-aviso-form__avatar">${avatarHtml(usuario)}</div>
+          <div class="grupos-aviso-form__caja">
+            <textarea id="avisoTexto" rows="2" maxlength="2000" placeholder="Anuncia algo a la clase…" aria-label="Contenido del aviso"></textarea>
+            <div class="grupos-aviso-form__pie">
+              <span class="u-fs-xxs u-color-texto-terciario" id="avisoContador">0/2000</span>
+              <button class="btn-primario u-fs-xs" type="submit" id="avisoEnviar">${I('send')} Publicar</button>
+            </div>
+          </div>
+        </form>` : ''}
+        <div class="o-pila" style="gap:var(--espaciado-sm)" id="avisosLista">
+          ${avisos.length ? avisos.map(a => this._tarjetaAviso(a, usuario, esResponsable)).join('') : '<p class="u-color-texto-terciario u-fs-sm">Aún no hay avisos en esta clase.</p>'}
+        </div>`;
+      if (window.Iconos) window.Iconos.actualizar();
+
+      const form = cont.querySelector('#avisoForm');
+      if (form) {
+        const texto = cont.querySelector('#avisoTexto');
+        const contador = cont.querySelector('#avisoContador');
+        texto.addEventListener('input', () => { if (contador) contador.textContent = `${texto.value.length}/2000`; });
+        form.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          const contenido = texto.value.trim();
+          if (!contenido) { window.helpers.mostrarAlerta('Escribe el contenido del aviso.', 'advertencia'); return; }
+          const btn = cont.querySelector('#avisoEnviar');
+          btn.disabled = true;
+          try {
+            await window.gruposRepository.crearAviso(grupo.id, contenido);
+            window.helpers.mostrarAlerta('Aviso publicado.', 'exito');
+            this._tabAvisos(cont, grupo, usuario);
+          } catch (err) { btn.disabled = false; window.helpers.mostrarAlerta('Error: ' + err.message, 'error'); }
+        });
       }
+
+      cont.querySelectorAll('[data-eliminar-aviso]').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await window.helpers.confirmar('¿Eliminar este aviso?', { titulo: 'Eliminar aviso', textoConfirmar: 'Eliminar' });
+          if (!ok) return;
+          try {
+            await window.gruposRepository.eliminarAviso(btn.dataset.eliminarAviso);
+            this._tabAvisos(cont, grupo, usuario);
+          } catch (err) { window.helpers.mostrarAlerta('Error: ' + err.message, 'error'); }
+        };
+      });
+    },
+
+    _tarjetaAviso(a, usuario, esResponsable) {
+      const autor = (a.perfiles && a.perfiles[0]) || a.perfiles || {};
+      const puedeBorrar = esResponsable || autor.id === usuario.id;
+      return `
+        <article class="grupos-aviso">
+          <div class="grupos-miembro__avatar">${avatarHtml(autor)}</div>
+          <div class="grupos-aviso__cuerpo">
+            <div class="grupos-aviso__meta">
+              <strong>${E(autor.nombre_completo || autor.username)}</strong>
+              <span>${E(window.helpers.formatearFecha(a.creado_en))}</span>
+              ${puedeBorrar ? `<button class="grupos-aviso__borrar" data-eliminar-aviso="${a.id}" aria-label="Eliminar aviso">${I('trash-2')}</button>` : ''}
+            </div>
+            <p class="grupos-aviso__contenido">${E(a.contenido)}</p>
+          </div>
+        </article>`;
+    },
+
+    async _tabEstadisticas(cont, grupo, usuario) {
+      const [stats, progreso, actividad] = await Promise.all([
+        window.gruposRepository.estadisticasClase(grupo.id),
+        window.gruposRepository.progresoMiembros(grupo.id),
+        window.gruposRepository.actividadClase(grupo.id, 15)
+      ]);
+      const s = stats || {};
+      const tarjeta = (icono, etiqueta, valor) => `
+        <div class="grupos-stats-card">
+          <span class="grupos-stats-card__icono">${I(icono)}</span>
+          <p class="grupos-stats-card__valor">${valor}</p>
+          <p class="grupos-stats-card__etiqueta">${etiqueta}</p>
+        </div>`;
+      const progresoHtml = progreso.length ? `
+        <div class="grupos-stats-seccion">
+          <h4 class="grupos-rolgrupo__titulo">${I('book-open')} Progreso de estudio</h4>
+          <div class="grupos-progreso-lista">
+            ${progreso.map(p => `
+              <div class="grupos-progreso-item">
+                <span class="grupos-miembro__avatar">${avatarHtml(p)}</span>
+                <div class="grupos-progreso-item__info">
+                  <p class="grupos-progreso-item__nombre">${E(p.nombre_completo || p.username)}</p>
+                  <div class="grupos-progreso-item__barra"><span style="width:${Math.min(100, Math.round((p.capitulos_estudiados || 0) / 50 * 100))}%"></span></div>
+                </div>
+                <strong class="grupos-progreso-item__num">${p.capitulos_estudiados || 0}</strong>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+      const actividadHtml = actividad.length ? `
+        <div class="grupos-stats-seccion">
+          <h4 class="grupos-rolgrupo__titulo">${I('activity')} Actividad reciente</h4>
+          <div class="o-pila" style="gap:var(--espaciado-xs)">
+            ${actividad.map(a => `
+              <div class="grupos-actividad">
+                <span class="grupos-actividad__icono">${I(this._iconoActividad(a.tipo))}</span>
+                <p class="grupos-actividad__texto">${E(this._textoActividad(a))}</p>
+                <span class="grupos-actividad__fecha">${E(window.helpers.formatearFecha(a.creado_en))}</span>
+              </div>`).join('')}
+          </div>
+        </div>` : '';
+      cont.innerHTML = `
+        <div class="grupos-stats-grid">
+          ${tarjeta('users', 'Miembros', s.miembros ?? '—')}
+          ${tarjeta('graduation-cap', 'Profesores', s.profesores ?? '—')}
+          ${tarjeta('clipboard-check', 'Exámenes', s.examenes ?? '—')}
+          ${tarjeta('megaphone', 'Avisos', s.avisos ?? '—')}
+          ${tarjeta('user-plus', 'Solicitudes pendientes', s.solicitudes_pendientes ?? '—')}
+          ${tarjeta('zap', 'Activos (7 días)', s.activos_7d ?? '—')}
+        </div>
+        ${progresoHtml}
+        ${actividadHtml}`;
+      if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    _iconoActividad(tipo) {
+      if (tipo === 'solicitud_ingreso') return 'user-plus';
+      if (tipo === 'solicitud_aceptada') return 'user-check';
+      if (tipo === 'solicitud_rechazada') return 'user-x';
+      if (tipo === 'aviso_creado') return 'megaphone';
+      if (tipo === 'ingreso_codigo') return 'log-in';
+      return 'activity';
+    },
+
+    _textoActividad(a) {
+      const p = (a.perfiles && a.perfiles[0]) || a.perfiles || {};
+      const actor = (p.nombre_completo || p.username) || 'Alguien';
+      if (a.tipo === 'solicitud_ingreso') return `${actor} solicitó unirse a la clase`;
+      if (a.tipo === 'solicitud_aceptada') return `Solicitud de ${actor} aprobada`;
+      if (a.tipo === 'solicitud_rechazada') return `Solicitud de ${actor} rechazada`;
+      if (a.tipo === 'aviso_creado') return `${actor} publicó un aviso`;
+      if (a.tipo === 'ingreso_codigo') return `${actor} se unió con el código`;
+      return `${actor} · ${a.tipo}`;
     },
 
     /* ══════════════════════════════════════════════════════════
