@@ -1195,6 +1195,10 @@
 .grupos-solicitud__nombre { font-weight: 600; margin: 0; }
 .grupos-solicitud__username { font-size: var(--fuente-xs); color: var(--color-texto-terciario); margin: 0; }
 .grupos-solicitud__acciones { display: flex; gap: 6px; }
+.grupos-solicitud__estado { display: inline-flex; align-items: center; gap: 4px;
+  font-size: var(--fuente-xs); font-weight: 600; color: var(--color-advertencia);
+  background: var(--color-advertencia-soft); border-radius: var(--radio-pill);
+  padding: 4px 10px; white-space: nowrap; }
 
 /* Avisos (muro de la clase) */
 .grupos-aviso-form { display: flex; gap: var(--espaciado-sm); align-items: flex-start;

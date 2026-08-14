@@ -88,10 +88,11 @@
       const btnInst = raiz.querySelector('#btnCrearInstitucion');
       if (btnInst) btnInst.onclick = () => this._modalNuevaInstitucion(raiz);
 
-      const [clases, invitaciones, instituciones] = await Promise.all([
+      const [clases, invitaciones, instituciones, misSolicitudes] = await Promise.all([
         window.gruposRepository.listarMisClases(usuario.id),
         window.desafiosRepository.misInvitaciones(usuario.id),
-        window.gruposRepository.listarInstituciones(usuario.id)
+        window.gruposRepository.listarInstituciones(usuario.id),
+        window.gruposRepository.misSolicitudes(usuario.id)
       ]);
       const cont = raiz.querySelector('#gruposContenido');
       if (!cont) return;
@@ -176,6 +177,28 @@
           </div>
         </section>` : '';
 
+      const pendientes = (misSolicitudes || []).filter(s => s.estado === 'pendiente');
+      const solicitudesHtml = pendientes.length ? `
+        <section class="grupos-seccion">
+          <div class="grupos-seccion__cabecera">
+            <div class="grupos-seccion__icono">${I('clock')}</div>
+            <div>
+              <h3 class="grupos-seccion__titulo">Tus solicitudes de ingreso</h3>
+              <p class="grupos-seccion__desc">Estás esperando aprobación en ${pendientes.length} clase${pendientes.length !== 1 ? 's' : ''}</p>
+            </div>
+          </div>
+          <div class="o-pila" style="gap:var(--espaciado-xs)">
+            ${pendientes.map(s => `
+              <div class="grupos-solicitud">
+                <div class="grupos-solicitud__info">
+                  <p class="grupos-solicitud__nombre">${E((s.grupos && s.grupos.nombre) || 'Clase')}</p>
+                  <p class="grupos-solicitud__username">Pendiente de aprobación</p>
+                </div>
+                <span class="grupos-solicitud__estado">${I('clock')} En espera</span>
+              </div>`).join('')}
+          </div>
+        </section>` : '';
+
       const sinClases = (clases || []).length === 0 && !invitaciones.length;
       const contenidoClases = (porInstitucion.size || sinInstitucion.length)
         ? `${[...porInstitucion.entries()].map(seccionInstitucion).join('')}${clasesSinInst}`
@@ -186,6 +209,7 @@
             : '');
 
       cont.innerHTML = `
+        ${solicitudesHtml}
         ${invitacionesHtml}
         ${contenidoClases}
         ${otrasInstituciones}`;
@@ -256,7 +280,7 @@
           </div>
           <div class="grupos-clase-card__cuerpo">
             <div class="grupos-clase-card__meta">
-              <span>${I('users')} ${g.num_miembros} miembro${g.num_miembros !== 1 ? 's' : ''}</span>
+              <span>${I('users')} ${g.num_miembros}</span>
               ${esProfesor ? `<span class="grupos-clase-card__rol">${I('graduation-cap')} Profesor</span>` : ''}
             </div>
             ${admin && g.codigo ? `
