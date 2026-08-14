@@ -339,46 +339,156 @@
         .eq('grupo_id', grupoId).eq('usuario_id', usuarioId); } catch (e) {}
     },
 
-    // Miembros de un grupo concreto. Combina dos fuentes para que el
-    // recuento coincida con el directorio:
-    //   1. perfiles.grupo_id (la "clase" principal, asignada por el admin)
-    //   2. miembros_grupo (uniones hechas desde el directorio público)
-    // Devuelve [{ ...perfil, rol_en_grupo }] sin duplicados.
+    // Miembros de una clase con la membresía UNIFICADA: solo miembros_grupo
+    // (la migración 044 backfillea perfiles.grupo_id → miembros_grupo, así
+    // que no hay que combinar dos fuentes).
+    // Devuelve [{ ...perfil, rol_en_grupo, es_principal, miembro_desde }].
     async obtenerMiembrosDe(grupoId) {
       if (!sb() || !grupoId) return [];
       try {
-        const [porGrupoId, rolesRes] = await Promise.all([
-          sb().from('perfiles')
-            .select('id, nombre_completo, username, rol, foto_perfil, creado_en, ultimo_acceso, grupo_id')
-            .eq('grupo_id', grupoId),
-          sb().from('miembros_grupo')
-            .select('usuario_id, rol_en_grupo')
-            .eq('grupo_id', grupoId)
-        ]);
-        const rolesMap = {};
-        (rolesRes.data || []).forEach(r => { if (r && r.usuario_id) rolesMap[r.usuario_id] = r.rol_en_grupo; });
-
-        const idsMiembros = (rolesRes.data || []).map(r => r.usuario_id).filter(Boolean);
-        let porMembresia = [];
-        if (idsMiembros.length) {
-          const r2 = await sb().from('perfiles')
-            .select('id, nombre_completo, username, rol, foto_perfil, creado_en, ultimo_acceso, grupo_id')
-            .in('id', idsMiembros);
-          if (!r2.error) porMembresia = r2.data || [];
-        }
-
-        // Unir sin duplicados (prioridad: grupo_id primero)
-        const vistos = new Set();
-        const lista = [];
-        [...(porGrupoId.data || []), ...porMembresia].forEach(m => {
-          if (m && m.id && !vistos.has(m.id)) {
-            vistos.add(m.id);
-            lista.push({ ...m, rol_en_grupo: rolesMap[m.id] || rolGrupoDesdeRol(m.rol) });
-          }
-        });
-        return lista.sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || ''));
+        const { data } = await sb().from('miembros_grupo')
+          .select('usuario_id, rol_en_grupo, es_principal, creado_en, perfiles!usuario_id(id, nombre_completo, username, rol, foto_perfil, ultimo_acceso, grupo_id)')
+          .eq('grupo_id', grupoId);
+        return (data || []).map(m => ({
+          ...(m.perfiles || {}),
+          rol_en_grupo: m.rol_en_grupo,
+          es_principal: !!m.es_principal,
+          miembro_desde: m.creado_en
+        })).sort((a, b) => (a.nombre_completo || '').localeCompare(b.nombre_completo || ''));
       } catch (e) {
         console.warn('[Grupos] No se pudieron obtener miembros:', e.message);
+        return [];
+      }
+    },
+
+    // ── Solicitudes de admisión ────────────────────────────────
+
+    // Solicitar ingreso a una clase. El owner entra directo (la RPC devuelve
+    // { resultado: 'unido' }); el resto crea una solicitud pendiente de
+    // aprobación del admin de la clase ({ resultado: 'solicitud' }).
+    async solicitarIngreso(grupoId) {
+      if (!sb() || !grupoId) throw new Error('Faltan datos');
+      const { data, error } = await sb().rpc('solicitar_ingreso', { p_grupo_id: grupoId });
+      if (error) throw error;
+      return data;
+    },
+
+    // Solicitudes propias (para "Tus solicitudes de ingreso" en el home).
+    async misSolicitudes(usuarioId) {
+      if (!sb() || !usuarioId) return [];
+      try {
+        const { data } = await sb().from('solicitudes_grupo')
+          .select('*, grupos!grupo_id(nombre)')
+          .eq('usuario_id', usuarioId)
+          .order('creado_en', { ascending: false });
+        return data || [];
+      } catch (e) {
+        console.warn('[Grupos] No se pudieron listar tus solicitudes:', e.message);
+        return [];
+      }
+    },
+
+    // Solicitudes PENDIENTES de una clase (solo las ve el admin/owner).
+    async solicitudesDeClase(grupoId) {
+      if (!sb() || !grupoId) return [];
+      try {
+        const { data } = await sb().from('solicitudes_grupo')
+          .select('*, perfiles!usuario_id(id, nombre_completo, username, foto_perfil, creado_en)')
+          .eq('grupo_id', grupoId)
+          .eq('estado', 'pendiente')
+          .order('creado_en');
+        return data || [];
+      } catch (e) {
+        console.warn('[Grupos] No se pudieron listar solicitudes:', e.message);
+        return [];
+      }
+    },
+
+    // Aprobar/rechazar una solicitud (RPC; solo admin de la clase u owner).
+    async resolverSolicitud(solicitudId, aceptar) {
+      if (!sb() || !solicitudId) throw new Error('Faltan datos');
+      const { data, error } = await sb().rpc('resolver_solicitud', {
+        p_solicitud_id: solicitudId,
+        p_aceptar: !!aceptar
+      });
+      if (error) throw error;
+      return !!data;
+    },
+
+    // ── Avisos de clase ────────────────────────────────────────
+
+    // Avisos del muro de la clase (con el autor), más recientes primero.
+    async listarAvisos(grupoId, limite = 50) {
+      if (!sb() || !grupoId) return [];
+      try {
+        const { data } = await sb().from('avisos_grupo')
+          .select('*, perfiles!autor_id(id, nombre_completo, username, foto_perfil)')
+          .eq('grupo_id', grupoId)
+          .order('creado_en', { ascending: false })
+          .limit(limite);
+        return data || [];
+      } catch (e) {
+        console.warn('[Grupos] No se pudieron listar avisos:', e.message);
+        return [];
+      }
+    },
+
+    async crearAviso(grupoId, contenido) {
+      if (!sb() || !grupoId) throw new Error('Faltan datos');
+      const { data, error } = await sb().rpc('crear_aviso', {
+        p_grupo_id: grupoId,
+        p_contenido: String(contenido || '').trim()
+      });
+      if (error) throw error;
+      return data;
+    },
+
+    async eliminarAviso(avisoId) {
+      if (!sb() || !avisoId) return false;
+      const { data, error } = await sb().rpc('eliminar_aviso', { p_aviso_id: avisoId });
+      if (error) throw error;
+      return !!data;
+    },
+
+    // ── Estadísticas, progreso y actividad de la clase ─────────
+
+    async estadisticasClase(grupoId) {
+      if (!sb() || !grupoId) return null;
+      try {
+        const { data, error } = await sb().rpc('estadisticas_clase', { p_grupo_id: grupoId });
+        if (error) throw error;
+        return data;
+      } catch (e) {
+        console.warn('[Grupos] No se pudieron obtener estadísticas:', e.message);
+        return null;
+      }
+    },
+
+    // Progreso de estudio por miembro (capítulos completados).
+    async progresoMiembros(grupoId) {
+      if (!sb() || !grupoId) return [];
+      try {
+        const { data, error } = await sb().rpc('progreso_miembros', { p_grupo_id: grupoId });
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        console.warn('[Grupos] No se pudo obtener el progreso:', e.message);
+        return [];
+      }
+    },
+
+    // Historial de actividad de la clase (ingresos, solicitudes, avisos).
+    async actividadClase(grupoId, limite = 20) {
+      if (!sb() || !grupoId) return [];
+      try {
+        const { data } = await sb().from('actividad_grupo')
+          .select('*, perfiles!actor_id(id, nombre_completo, username)')
+          .eq('grupo_id', grupoId)
+          .order('creado_en', { ascending: false })
+          .limit(limite);
+        return data || [];
+      } catch (e) {
+        console.warn('[Grupos] No se pudo listar la actividad:', e.message);
         return [];
       }
     }

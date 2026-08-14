@@ -122,17 +122,18 @@ describe('gruposRepository.unirseConCodigo', () => {
     cargarRepositorio();
   });
 
-  test('llama al RPC unirse_con_codigo y devuelve el id de la clase', async () => {
+  test('llama al RPC unirse_con_codigo y devuelve el resultado JSONB', async () => {
     const sb = crearSupabase({});
     sb.rpc = async (nombre, args) => {
       sb.llamadas.push({ op: 'rpc', rpc: nombre, args });
-      return { data: 'g1', error: null };
+      return { data: { resultado: 'solicitud', grupo_id: 'g1' }, error: null };
     };
     global.window.supabaseClient = sb;
 
     const resultado = await global.window.gruposRepository.unirseConCodigo(' abc123 ');
 
-    expect(resultado).toBe('g1');
+    expect(resultado.resultado).toBe('solicitud');
+    expect(resultado.grupo_id).toBe('g1');
     const llamada = sb.llamadas.find(l => l.op === 'rpc');
     expect(llamada.rpc).toBe('unirse_con_codigo');
     expect(llamada.args.p_codigo).toBe('abc123');
