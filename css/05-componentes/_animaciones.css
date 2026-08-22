@@ -63,19 +63,35 @@
 }
 
 /* ---- CAMBIO DE VISTA EN ROUTER (salida + entrada) ---- */
+/* Adelante: nuevo contenido entra desde la derecha */
 @keyframes anim-vista-entrar {
-  from { opacity: 0; transform: translateY(12px); }
-  to   { opacity: 1; transform: translateY(0); }
+  from { opacity: 0; transform: translateX(24px); }
+  to   { opacity: 1; transform: translateX(0); }
 }
 @keyframes anim-vista-salir {
-  from { opacity: 1; transform: translateY(0); }
-  to   { opacity: 0; transform: translateY(-8px); }
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(-16px); }
+}
+/* Atrás: nuevo contenido entra desde la izquierda */
+@keyframes anim-vista-entrar-atras {
+  from { opacity: 0; transform: translateX(-24px); }
+  to   { opacity: 1; transform: translateX(0); }
+}
+@keyframes anim-vista-salir-atras {
+  from { opacity: 1; transform: translateX(0); }
+  to   { opacity: 0; transform: translateX(24px); }
 }
 .app-transicion-entrada {
   animation: anim-vista-entrar 240ms var(--easing-apple) both;
 }
 .app-transicion-salida {
   animation: anim-vista-salir 150ms var(--easing-apple) both;
+}
+.app-transicion-entrada-atras {
+  animation: anim-vista-entrar-atras 240ms var(--easing-apple) both;
+}
+.app-transicion-salida-atras {
+  animation: anim-vista-salir-atras 150ms var(--easing-apple) both;
 }
 
 /* ---- REDUCED MOTION: respetar preferencia ---- */
@@ -88,7 +104,9 @@
   .anim-pregunta-salir,
   .anim-flash-exito,
   .app-transicion-entrada,
-  .app-transicion-salida {
+  .app-transicion-salida,
+  .app-transicion-entrada-atras,
+  .app-transicion-salida-atras {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;

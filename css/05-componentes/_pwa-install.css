@@ -63,7 +63,7 @@
   margin: 0 0 var(--espaciado-xs);
   font-family: var(--fuente-display);
   font-size: var(--texto-2xl);
-  font-weight: var(--texto-peso-semibold);
+  font-weight: 800;
   line-height: var(--texto-altura-linea-titulo);
   letter-spacing: -0.01em;
 }

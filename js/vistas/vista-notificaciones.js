@@ -37,10 +37,14 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor o-contenedor--ancho" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <div class="notif-centro__cabecera">
-            <button class="btn-icono" data-volver aria-label="Volver">${I('arrow-left')}</button>
-            <h1 class="notif-centro__titulo">Notificaciones</h1>
-            <div class="notif-centro__acciones">
+          <div class="notif-centro__cabecera vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono" data-volver aria-label="Volver">${I('arrow-left')}</button>
+              <div>
+                <h1 class="notif-centro__titulo">${I('bell')} Notificaciones <button class="info-ayuda" data-guia="notificaciones" aria-label="Guía de Notificaciones">i</button></h1>
+              </div>
+            </div>
+            <div class="notif-centro__acciones vista-cabecera__acciones">
               <button class="btn-secundario u-fs-xs" id="btnMarcarTodas" title="Marcar todas como leídas">${I('check')} <span>Marcar leídas</span></button>
             </div>
           </div>
@@ -49,6 +53,9 @@
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
+      window.helpers.registrarGuias(raiz, {
+        notificaciones: ['Notificaciones', 'Aquí aparecen los avisos de desafíos, clases, exámenes y actividad de estudio.', 'Puedes filtrar los avisos y marcarlos como leídos desde esta pantalla.']
+      });
 
       raiz.querySelector('[data-volver]').onclick = () => router.irAtras();
 

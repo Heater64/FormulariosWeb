@@ -45,7 +45,7 @@
   display: block;
   width: 100%;
   height: 340px;
-  background: #FFFFFF;
+  background: var(--color-fondo-dibujo, #FFFFFF);
   cursor: crosshair;
 }
 

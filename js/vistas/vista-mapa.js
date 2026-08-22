@@ -17,8 +17,14 @@
       const nuevos = libros.filter(l => l.testamento === 'nuevo');
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-          <h2>${window.Iconos.render('map')} Mapa Bíblico</h2>
-          <p class="u-fs-sm u-color-texto-secundario u-mb-3">Visualiza tu progreso a través de toda la Biblia</p>
+          <header class="vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <h1>${window.Iconos.render('map')} Mapa Bíblico <button class="info-ayuda" data-guia="mapa" aria-label="Guía del Mapa Bíblico">i</button></h1>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
+          </header>
           <div class="o-pila" id="mapaAT">
             <h4 class="u-color-texto-secundario mapa__titulo-seccion mapa__titulo-seccion--at">Antiguo Testamento</h4>
             <div class="o-grid-tarjetas">${antiguos.map(l => this._renderLibro(l, progreso)).join('')}</div>
@@ -28,6 +34,11 @@
             <div class="o-grid-tarjetas">${nuevos.map(l => this._renderLibro(l, progreso)).join('')}</div>
           </div>
         </div>`;
+      if (window.Iconos) window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        mapa: ['Mapa Bíblico', 'El mapa resume cuánto has leído de cada libro y te permite entrar directamente en un capítulo.', 'Pulsa un libro para comenzar desde su primer capítulo.']
+      });
       raiz.querySelectorAll('[data-libro-id]').forEach(el => {
         el.addEventListener('click', () => router.navegar(`/estudio/sesion/${el.dataset.libroId}/1`));
       });

@@ -35,7 +35,14 @@
 
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-            <h2>${I('bar-chart-2')} Mi progreso</h2>
+            <header class="vista-cabecera">
+              <div class="vista-cabecera__principal">
+                <h1>${I('bar-chart-2')} Mi progreso <button class="info-ayuda" data-guia="progreso" aria-label="Guía de Mi progreso">i</button></h1>
+              </div>
+              <div class="vista-cabecera__acciones">
+                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+              </div>
+            </header>
 
             <div class="o-grid-tarjetas o-grid-tarjetas--estadisticas" style="grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:var(--espaciado-sm)">
               <div class="tarjeta-estadistica">
@@ -96,6 +103,10 @@
           </div>`;
 
         window.Iconos.actualizar();
+        if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+        window.helpers.registrarGuias(raiz, {
+          progreso: ['Mi progreso', 'Consulta tu racha, capítulos leídos, repasos de memoria y resultados de exámenes en un solo lugar.', 'Usa estos datos para decidir qué estudiar o repasar a continuación.']
+        });
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error al cargar progreso: ${e.message}</p></div>`;
       }

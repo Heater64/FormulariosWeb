@@ -42,7 +42,8 @@
         };
         raiz.addEventListener('click', this._onClickRaiz);
       } catch (e) {
-        raiz.innerHTML = `<div class="o-contenedor o-pila u-mt-4 u-texto-centrado"><h2 style="color:var(--color-acento);display:flex;justify-content:center">${window.Iconos.render('book-open')}</h2><p class="u-color-texto-secundario">Capítulo no disponible</p><button class="btn-primario" onclick="router.navegar('/estudio')">← Volver</button></div>`;
+        raiz.innerHTML = `<div class="o-contenedor o-pila u-mt-4 u-texto-centrado"><h2 style="color:var(--color-acento);display:flex;justify-content:center">${window.Iconos.render('book-open')}</h2><p class="u-color-texto-secundario">Capítulo no disponible</p><button class="btn-primario" id="btnErrorEstudioVolver">← Volver</button></div>`;
+        raiz.querySelector('#btnErrorEstudioVolver')?.addEventListener('click', () => router.navegar('/estudio'));
       }
     },
 

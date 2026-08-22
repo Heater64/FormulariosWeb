@@ -1,44 +1,73 @@
 /* ════════════════════════════════════════════════════════════
-   MEMORIZACIÓN — Modo juego (estilo Duolingo · Apple · Material 3)
-   Mobile first. Nada debe parecer un examen: se siente como un
-   juego educativo profesional.
+   MEMORIZACIÓN — Home estilo Gizmo (app de flashcards moderna)
+   Mobile first. Mazos que parecen tarjetas de colección:
+   banner de gradiente, icono grande, anillo de progreso y
+   chip de pendientes. Nada parece un examen.
    ════════════════════════════════════════════════════════════ */
 
-/* ── HOME: grid de mazos ───────────────────────────────────── */
+/* ── HOME ─────────────────────────────────────────────────── */
 .mem-juego-home {
   display: flex;
   flex-direction: column;
-  gap: var(--espaciado-md);
+  gap: var(--espaciado-lg);
   padding-top: var(--espaciado-lg);
   padding-bottom: calc(100px + env(safe-area-inset-bottom));
 }
 
-.mem-juego-cabecera {
+/* En escritorio el home usa el ancho amplio para que las tarjetas
+   Gizmo respiren (3 columnas grandes en lugar de 4 apretadas). */
+@media (min-width: 1024px) {
+  .mem-juego-home { max-width: 1120px; }
+}
+
+/* Cabecera */
+.mem-gizmo-cabecera {
   display: flex;
-  align-items: center;
+  align-items: flex-end;
   justify-content: space-between;
   gap: var(--espaciado-sm);
   flex-wrap: wrap;
 }
 
-.mem-juego-cabecera h2 {
+.mem-gizmo-cabecera h2 {
   display: flex;
   align-items: center;
   gap: var(--espaciado-xs);
   margin: 0;
+  font-size: var(--texto-3xl);
+  line-height: 1.08;
+  letter-spacing: 0;
 }
 
-.mem-juego-racha {
+
+.mem-gizmo-cabecera__acciones {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+}
+
+.mem-gizmo-chip {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: var(--espaciado-xs) var(--espaciado-md);
+  padding: 8px 14px;
   border-radius: var(--radio-pill);
-  background: var(--color-naranja-soft, var(--color-fondo-alt));
-  color: var(--color-naranja);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  color: var(--color-texto-secundario);
   font-weight: 700;
   font-size: var(--texto-sm);
+  box-shadow: var(--sombra-sm);
 }
+
+.mem-gizmo-chip--hoy {
+  background: var(--color-naranja-soft, var(--color-fondo-alt));
+  border-color: transparent;
+  color: var(--color-naranja);
+}
+
+.mem-gizmo-chip svg { width: 16px; height: 16px; }
 
 .mem-juego-sub {
   font-size: var(--texto-sm);
@@ -46,145 +75,388 @@
   margin: 0;
 }
 
-/* Tarjeta de mazo (Duolingo: color de fondo por mazo) */
-.mem-juego-grid {
+/* Resumen de métricas */
+.mem-gizmo-resumen {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--espaciado-sm);
+}
+
+.mem-gizmo-metrica {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  padding: var(--espaciado-md) var(--espaciado-xs);
+  border-radius: var(--radio-xl);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  box-shadow: var(--sombra-sm);
+}
+
+.mem-gizmo-metrica__valor {
+  font-size: var(--texto-xl);
+  font-weight: 800;
+  color: var(--color-acento);
+  line-height: 1.1;
+}
+
+.mem-gizmo-metrica__label {
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-texto-terciario);
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+}
+
+@media (max-width: 560px) {
+  .mem-gizmo-resumen { grid-template-columns: repeat(2, 1fr); }
+}
+
+/* Herramientas de administración (solo admin/owner) */
+.mem-gizmo-herramientas {
+  display: flex;
+  gap: var(--espaciado-sm);
+  flex-wrap: wrap;
+}
+
+.mem-gizmo-herramientas__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  border-radius: var(--radio-pill);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+  min-height: var(--toque-minimo);
+}
+
+.mem-gizmo-herramientas__btn:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.mem-gizmo-herramientas__btn svg { width: 16px; height: 16px; }
+
+/* Grid de mazos */
+.mem-gizmo-grid {
   display: grid;
   grid-template-columns: 1fr;
   gap: var(--espaciado-md);
 }
 
-@media (min-width: 560px) {
-  .mem-juego-grid { grid-template-columns: repeat(2, 1fr); }
+@media (min-width: 480px) {
+  .mem-gizmo-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (min-width: 960px) {
-  .mem-juego-grid { grid-template-columns: repeat(3, 1fr); }
+@media (min-width: 900px) {
+  .mem-gizmo-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1280px) {
+  .mem-gizmo-grid { grid-template-columns: repeat(3, 1fr); }
 }
 
+/* ── Tarjeta de mazo (estilo Gizmo) ─────────────────────── */
 .mem-juego-mazo {
   position: relative;
   display: flex;
   flex-direction: column;
-  gap: var(--espaciado-sm);
-  padding: var(--espaciado-lg);
-  border-radius: var(--radio-2xl);
   background: var(--color-fondo-tarjeta);
   border: 1px solid var(--color-borde);
-  box-shadow: var(--sombra-sm);
-  cursor: pointer;
+  border-radius: var(--radio-2xl);
   overflow: hidden;
+  box-shadow: var(--sombra-md);
   transition: transform var(--transicion-normal), box-shadow var(--transicion-normal);
-  text-align: left;
-  font: inherit;
+  cursor: pointer;
 }
 
 .mem-juego-mazo:hover {
-  transform: translateY(-3px);
-  box-shadow: var(--sombra-md);
+  transform: translateY(-4px);
+  box-shadow: var(--sombra-lg);
 }
 .mem-juego-mazo:active { transform: scale(0.98); }
 
-.mem-juego-mazo::before {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 6px;
-  background: var(--mazo-color, var(--color-acento));
-}
-
-.mem-juego-mazo__top {
+/* Banner con gradiente */
+.mem-gizmo-mazo__banner {
+  position: relative;
   display: flex;
-  align-items: flex-start;
-  justify-content: space-between;
-  gap: var(--espaciado-sm);
+  align-items: center;
+  justify-content: center;
+  height: 110px;
+  flex-shrink: 0;
+  background:
+    radial-gradient(120% 160% at 15% -20%, color-mix(in srgb, var(--mazo-color) 55%, white) 0%, transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--mazo-color) 82%, white) 0%, color-mix(in srgb, var(--mazo-color) 72%, black) 100%);
 }
 
-.mem-juego-mazo__icono {
+.mem-gizmo-mazo__icono {
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  width: 52px;
-  height: 52px;
-  border-radius: var(--radio-xl);
-  background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 14%, white);
-  color: var(--mazo-color, var(--color-acento));
-  flex-shrink: 0;
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radio-2xl);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  box-shadow: 0 8px 20px -6px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
 }
 
-.mem-juego-mazo__icono svg { width: 26px; height: 26px; }
+.mem-gizmo-mazo__icono svg { width: 30px; height: 30px; }
 
-.mem-juego-mazo__porcentaje {
-  font-size: var(--texto-xl);
-  font-weight: 800;
-  color: var(--mazo-color, var(--color-acento));
-  line-height: 1;
+/* Chip de pendientes sobre el banner */
+.mem-gizmo-mazo__due {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 4px 10px;
+  border-radius: var(--radio-pill);
+  background: rgba(0, 0, 0, 0.42);
+  color: #fff;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  backdrop-filter: blur(4px);
 }
 
-.mem-juego-mazo__nombre {
+.mem-gizmo-mazo__due svg { width: 13px; height: 13px; }
+
+/* Badge de completado */
+.mem-gizmo-mazo__done {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: var(--color-exito);
+  color: #fff;
+  box-shadow: 0 4px 10px -2px rgba(0, 0, 0, 0.3);
+}
+
+.mem-gizmo-mazo__done svg { width: 15px; height: 15px; }
+
+/* Cuerpo */
+.mem-gizmo-mazo__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-md) var(--espaciado-lg) var(--espaciado-sm);
+  flex: 1;
+}
+
+.mem-gizmo-mazo__nombre {
   font-size: var(--texto-lg);
   font-weight: 800;
+  letter-spacing: -0.01em;
   color: var(--color-texto);
   margin: 0;
 }
 
-.mem-juego-mazo__desc {
-  font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
+.mem-gizmo-mazo__desc {
+  font-size: var(--texto-xs);
   line-height: 1.45;
+  color: var(--color-texto-terciario);
   margin: 0;
-  flex: 1;
-}
-
-.mem-juego-mazo__barra {
-  height: 8px;
-  border-radius: var(--radio-pill);
-  background: var(--color-fondo-alt);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
   overflow: hidden;
 }
 
-.mem-juego-mazo__progreso {
-  height: 100%;
-  border-radius: var(--radio-pill);
-  background: var(--mazo-color, var(--color-acento));
-  transition: width 0.6s cubic-bezier(0.22, 1, 0.36, 1);
-}
-
-.mem-juego-mazo__stats {
+.mem-gizmo-mazo__fila {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--espaciado-xs);
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
+  gap: var(--espaciado-sm);
+  margin-top: var(--espaciado-xs);
 }
 
+.mem-gizmo-mazo__meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mem-gizmo-mazo__meta-item {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 600;
+}
+
+/* Anillo de progreso (SVG) */
+.mem-gizmo-mazo__anillo {
+  position: relative;
+  width: 46px;
+  height: 46px;
+  flex-shrink: 0;
+}
+
+.mem-gizmo-mazo__anillo svg {
+  width: 100%;
+  height: 100%;
+  transform: rotate(-90deg);
+}
+
+.mem-gizmo-mazo__anillo-bg {
+  fill: none;
+  stroke: var(--color-fondo-alt);
+  stroke-width: 5;
+}
+
+.mem-gizmo-mazo__anillo-fg {
+  fill: none;
+  stroke: var(--mazo-color, var(--color-acento));
+  stroke-width: 5;
+  stroke-linecap: round;
+  transition: stroke-dashoffset 0.6s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.mem-gizmo-mazo__anillo-pct {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 800;
+  color: var(--color-texto);
+}
+
+/* Botón Repasar: ancho automático dentro de los márgenes del artículo
+   (width:100% + margin-inline desbordaba el borde derecho de la tarjeta). */
 .mem-juego-mazo__btn {
-  display: inline-flex;
+  display: flex;
   align-items: center;
   justify-content: center;
   gap: 8px;
-  width: 100%;
-  padding: 14px;
+  width: auto;
+  padding: 12px;
   border: none;
-  border-radius: var(--radio-xl);
-  background: var(--mazo-color, var(--color-acento));
+  border-radius: var(--radio-lg);
+  background: var(--color-acento);
   color: var(--color-texto-acento, #fff);
   font-size: var(--texto-base);
-  font-weight: 800;
+  font-weight: 700;
   cursor: pointer;
   transition: transform var(--transicion-rapida), filter var(--transicion-rapida);
+  margin: auto var(--espaciado-lg) var(--espaciado-lg);
 }
 
 .mem-juego-mazo__btn:hover { transform: translateY(-1px); filter: brightness(1.05); }
 .mem-juego-mazo__btn:active { transform: scale(0.97); }
+.mem-juego-mazo__btn--completado { background: var(--color-exito); }
 
-.mem-juego-mazo__btn--completado {
-  background: var(--color-exito);
-  animation: mem-pulso-exito 1.2s ease-in-out infinite;
+/* ── Menu 3-puntitos ────────────────────────────────────── */
+.mem-juego-mazo__menu-wrap { position: relative; flex-shrink: 0; }
+
+.mem-juego-mazo__menu-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  border-radius: var(--radio-pill);
+  border: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+  transition: all var(--transicion-rapida);
 }
 
-@keyframes mem-pulso-exito {
-  0%, 100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.35); }
-  50% { box-shadow: 0 0 0 10px rgba(34, 197, 94, 0); }
+.mem-juego-mazo__menu-btn:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.mem-juego-mazo__menu {
+  display: none;
+  position: absolute;
+  right: 0;
+  top: 100%;
+  margin-top: 4px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  box-shadow: var(--sombra-lg);
+  min-width: 160px;
+  z-index: 50;
+  overflow: hidden;
+  animation: memMenuIn 150ms var(--easing-apple, ease);
+}
+
+@keyframes memMenuIn {
+  from { opacity: 0; transform: translateY(-4px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+.mem-juego-mazo__menu--abierto { display: block; }
+
+.mem-juego-mazo__menu-item {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  width: 100%;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font: inherit;
+  font-size: var(--texto-sm);
+  color: var(--color-texto);
+  text-align: left;
+  min-height: var(--toque-minimo);
+  transition: background var(--transicion-rapida);
+}
+
+.mem-juego-mazo__menu-item:hover { background: var(--color-fondo-alt); }
+.mem-juego-mazo__menu-item svg { width: 16px; height: 16px; flex-shrink: 0; color: var(--color-texto-terciario); }
+.mem-juego-mazo__menu-item--peligro { color: var(--color-error); }
+.mem-juego-mazo__menu-item--peligro svg { color: var(--color-error); }
+.mem-juego-mazo__menu-sep { margin: 0; border: none; border-top: 1px solid var(--color-borde); }
+
+/* Fila de título: nombre + menú ⋮ a la derecha (fuera del banner,
+   para que nunca se solapen con el icono ni con el chip de pendientes). */
+.mem-gizmo-mazo__titulo {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  min-width: 0;
+}
+
+.mem-gizmo-mazo__titulo .mem-juego-mazo__nombre {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.mem-gizmo-mazo__titulo .mem-juego-mazo__menu-wrap {
+  flex-shrink: 0;
+  margin-left: auto;
+}
+
+/* Kebab compacto en la fila de título (anula el toque mínimo global) */
+.mem-gizmo-mazo__titulo .mem-juego-mazo__menu-btn {
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  min-height: 40px;
 }
 
 /* ── Estado vacío ── */
@@ -235,8 +507,9 @@
   width: 72px;
   height: 72px;
   border-radius: var(--radio-2xl);
-  background: color-mix(in srgb, var(--mazo-color, var(--color-acento)) 16%, white);
-  color: var(--mazo-color, var(--color-acento));
+  background: linear-gradient(135deg, color-mix(in srgb, var(--mazo-color, var(--color-acento)) 82%, white) 0%, color-mix(in srgb, var(--mazo-color, var(--color-acento)) 72%, black) 100%);
+  color: #fff;
+  box-shadow: 0 10px 24px -8px color-mix(in srgb, var(--mazo-color, var(--color-acento)) 60%, transparent);
 }
 .mem-juego-detalle__icono svg { width: 36px; height: 36px; }
 
@@ -826,4 +1099,249 @@
   .mem-juego-relacionar { grid-template-columns: 1fr; }
   .mem-juego-fin__stats { grid-template-columns: repeat(2, 1fr); }
   .mem-juego-tarjeta__enunciado { font-size: var(--texto-lg); }
+}
+
+/* ════════════════════════════════════════════════════════════
+   GESTIONAR — gestión de mazos y tarjetas (pestaña de la home)
+   Mismo lenguaje visual que las tarjetas Gizmo de práctica.
+   ════════════════════════════════════════════════════════════ */
+
+/* Grid de mazos en gestión */
+.mem-gestion-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--espaciado-md);
+}
+
+@media (min-width: 480px) {
+  .mem-gestion-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (min-width: 900px) {
+  .mem-gestion-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (min-width: 1440px) {
+  .mem-gestion-grid { grid-template-columns: repeat(4, 1fr); }
+}
+
+/* ── Tarjeta de mazo en gestión ── */
+.mem-gestion-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-2xl);
+  box-shadow: var(--sombra-sm);
+  transition: transform var(--transicion-normal), box-shadow var(--transicion-normal);
+}
+
+.mem-gestion-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--sombra-md);
+}
+
+/* Franja de gradiente con el color del mazo */
+.mem-gestion-card__banner {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-md) var(--espaciado-lg);
+  flex-shrink: 0;
+  background:
+    radial-gradient(120% 160% at 15% -20%, color-mix(in srgb, var(--mazo-color) 55%, white) 0%, transparent 55%),
+    linear-gradient(135deg, color-mix(in srgb, var(--mazo-color) 82%, white) 0%, color-mix(in srgb, var(--mazo-color) 72%, black) 100%);
+}
+
+.mem-gestion-card__icono {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radio-lg);
+  background: rgba(255, 255, 255, 0.22);
+  color: #fff;
+  box-shadow: 0 6px 14px -4px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(2px);
+  flex-shrink: 0;
+}
+
+.mem-gestion-card__icono svg { width: 20px; height: 20px; }
+
+.mem-gestion-card__nombre {
+  margin: 0;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: #fff;
+  font-size: var(--texto-md);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.25);
+  flex: 1;
+}
+
+.mem-gestion-card__global {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: var(--radio-pill);
+  background: rgba(0, 0, 0, 0.32);
+  color: #fff;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  backdrop-filter: blur(4px);
+  flex-shrink: 0;
+}
+
+.mem-gestion-card__global svg { width: 12px; height: 12px; }
+
+/* Cuerpo */
+.mem-gestion-card__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-md) var(--espaciado-lg);
+  flex: 1;
+}
+
+.mem-gestion-card__desc {
+  margin: 0;
+  font-size: var(--texto-xs);
+  line-height: 1.45;
+  color: var(--color-texto-terciario);
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  min-height: 2.9em;
+}
+
+.mem-gestion-card__meta {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+}
+
+.mem-gestion-card__meta svg { width: 13px; height: 13px; color: var(--color-texto-terciario); }
+
+/* Acciones */
+.mem-gestion-card__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-top: 1px solid var(--color-borde);
+  background: var(--color-fondo);
+}
+
+.mem-gestion-card__acciones-grupo {
+  display: flex;
+  gap: 4px;
+}
+
+.mem-gestion-card__btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 14px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-texto-secundario);
+  font: inherit;
+  font-size: var(--texto-xs);
+  font-weight: 700;
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+}
+
+.mem-gestion-card__btn:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.mem-gestion-card__btn svg { width: 14px; height: 14px; }
+
+.mem-gestion-card__btn--peligro:hover {
+  border-color: var(--color-error);
+  color: var(--color-error);
+  background: var(--color-error-soft);
+}
+
+/* ── Fila de tarjeta (pregunta) en gestión ── */
+.mem-gestion-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.mem-gestion-fila:hover {
+  border-color: color-mix(in srgb, var(--color-acento) 45%, var(--color-borde));
+  box-shadow: var(--sombra-sm);
+}
+
+.mem-gestion-fila__tipo {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+}
+
+.mem-gestion-fila__tipo svg { width: 16px; height: 16px; }
+
+.mem-gestion-fila__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.mem-gestion-fila__texto {
+  margin: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.mem-gestion-fila__subtipo {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-weight: 600;
+}
+
+.mem-gestion-fila__acciones {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.mem-gestion-fila__acciones .btn-icono {
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radio-md);
 }

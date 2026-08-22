@@ -152,7 +152,7 @@
     transition: transform var(--fast) var(--ease-spring);
   }
   .header__logo:hover .header__icono { transform: scale(1.05); }
-  .header__icono svg { width: 18px; height: 18px; }
+  .header__icono-img { width: 78%; height: 78%; object-fit: contain; }
 
   .header__texto {
     font-family: var(--fuente-display); font-size: 1.15rem;
@@ -210,7 +210,7 @@
   .hero__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.8rem, 8vw, 3.8rem);
-    font-weight: 600; line-height: 1.08; letter-spacing: -0.02em;
+    font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
     margin-bottom: var(--sm);
   }
 
@@ -316,12 +316,12 @@
   @media (min-width: 768px) {
     .login-card__icono { width: 56px; height: 56px; margin-bottom: var(--lg); }
   }
-  .login-card__icono svg { width: 24px; height: 24px; }
+  .login-card__icono-img { width: 82%; height: 82%; object-fit: contain; }
 
   .login-card__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 4vw, 1.7rem);
-    font-weight: 600; letter-spacing: -0.01em;
+    font-weight: 800; letter-spacing: -0.01em;
     margin-bottom: var(--xxs); text-align: center;
   }
 
@@ -392,8 +392,10 @@
     box-shadow: none;
   }
   @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .login-card .btn-login-submit { color: #0C0A09; }
     :root:not([data-theme="light"]) .login-card .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
   }
+  :root[data-theme="dark"] .login-card .btn-login-submit { color: #0C0A09; }
   :root[data-theme="dark"] .login-card .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
 
   .login-card__footer {
@@ -423,7 +425,7 @@
   .como-funciona__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 5vw, 2rem);
-    font-weight: 600; text-align: center;
+    font-weight: 800; text-align: center;
     margin-bottom: var(--xl); letter-spacing: -0.02em;
   }
 
@@ -477,7 +479,7 @@
   .faq__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 5vw, 2rem);
-    font-weight: 600; text-align: center;
+    font-weight: 800; text-align: center;
     margin-bottom: var(--xl); letter-spacing: -0.02em;
   }
 
@@ -771,7 +773,6 @@
   .faq__item:nth-child(2) { animation-delay: 150ms; }
   .faq__item:nth-child(3) { animation-delay: 200ms; }
   .faq__item:nth-child(4) { animation-delay: 250ms; }
-  .faq__item:nth-child(5) { animation-delay: 300ms; }
 
   /* ── PWA BANNER ── */
   .pwa-banner {
@@ -791,7 +792,7 @@
     background: var(--accento-soft); color: var(--accento);
     display: flex; align-items: center; justify-content: center; flex-shrink: 0;
   }
-  .pwa-banner__icono svg { width: 22px; height: 22px; }
+  .pwa-banner__icono-img { width: 78%; height: 78%; object-fit: contain; }
   .pwa-banner__texto { flex: 1; }
   .pwa-banner__titulo { font-size: var(--sm); font-weight: 600; margin-bottom: 2px; }
   .pwa-banner__desc { font-size: var(--xs); color: var(--texto-sec); line-height: 1.4; }
@@ -852,7 +853,7 @@
 <header class="header">
   <a href="#" class="header__logo" aria-label="FormsBiblicos - Inicio">
     <span class="header__icono">
-      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <img src="assets/iconos/icono.svg" alt="" class="header__icono-img">
     </span>
     <span class="header__texto">FormsBiblicos</span>
   </a>
@@ -881,7 +882,7 @@
 <section class="login-section">
   <div class="login-card">
     <div class="login-card__icono">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <img src="assets/iconos/icono.svg" alt="" class="login-card__icono-img">
     </div>
     <h2 class="login-card__titulo">Iniciar sesión</h2>
     <p class="login-card__sub">Accede con tu cuenta de grupo de estudio.</p>
@@ -904,7 +905,9 @@
     </form>
 
     <p class="login-card__footer">
-      ¿No tienes cuenta? <a href="#">Contacta a tu grupo</a>
+      <a href="recuperar.html">He olvidado mi contraseña</a><br>
+      ¿No tienes cuenta? <a href="registro.html">Crea una cuenta institucional</a><br>
+      ¿Ya perteneces a un grupo? <a href="contacto.html">Contacta a tu administrador</a>
     </p>
   </div>
 </section>
@@ -950,7 +953,7 @@
 
     <details class="faq__item">
       <summary class="faq__pregunta">¿Necesito cuenta?</summary>
-      <p class="faq__respuesta">Sí. Un administrador de tu grupo debe crear tu cuenta con credenciales de acceso.</p>
+      <p class="faq__respuesta">Sí. Un administrador de tu grupo debe crear tu cuenta con credenciales de acceso. Contacta con él para que te la cree.</p>
     </details>
 
     <details class="faq__item">
@@ -962,11 +965,6 @@
       <summary class="faq__pregunta">¿Qué libros hay?</summary>
       <p class="faq__respuesta">Todos los libros del Antiguo y Nuevo Testamento, organizados por capítulos.</p>
     </details>
-
-    <details class="faq__item">
-      <summary class="faq__pregunta">¿Necesitas una cuenta?</summary>
-      <p class="faq__respuesta">Contacta con un administrador de tu grupo de estudio para que te cree una.</p>
-    </details>
   </div>
 </section>
 
@@ -976,6 +974,7 @@
   <div class="footer__links">
     <a href="privacidad.html">Privacidad</a>
     <a href="terminos.html">Términos</a>
+    <a href="licencias.html">Licencias</a>
     <a href="contacto.html">Contacto</a>
   </div>
 </footer>
@@ -984,7 +983,7 @@
 <div class="pwa-banner" id="pwaBanner">
   <div class="pwa-banner__inner">
     <div class="pwa-banner__icono">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+      <img src="assets/iconos/icono.svg" alt="" class="pwa-banner__icono-img">
     </div>
     <div class="pwa-banner__texto">
       <p class="pwa-banner__titulo">Instala FormsBiblicos</p>

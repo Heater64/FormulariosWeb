@@ -38,11 +38,11 @@
   // Calcula el fondo del tema actual (para theme-color del notch)
   function _bgActual(p) {
     var hc = p.alto_contraste;
-    if (p.tema === 'dark') return hc ? '#000000' : '#0F172A';
+    if (p.tema === 'dark') return hc ? '#000000' : '#0B1020';
     if (p.tema === 'light') return hc ? '#FFFFFF' : '#FFFFFF';
     // Auto: usar prefers-color-scheme del sistema
     var darkOS = window.matchMedia('(prefers-color-scheme: dark)').matches;
-    return darkOS ? (hc ? '#000000' : '#0F172A') : '#FFFFFF';
+    return darkOS ? (hc ? '#000000' : '#0B1020') : '#FFFFFF';
   }
 
   // Sincroniza meta theme-color y color-scheme con el tema actual

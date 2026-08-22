@@ -55,4 +55,12 @@
   };
 
   window.haptica = H;
+
+  // Feedback de toque global: vibración breve en elementos interactivos
+  // (antes vivía como script inline en index.html; la CSP de producción no
+  // permite inline). Se registra aquí, al cargar el módulo (defer).
+  document.addEventListener('click', (e) => {
+    if ('vibrate' in navigator && e.target.closest('button, a, [role="button"], .btn-primario, .btn-secundario'))
+      navigator.vibrate(8);
+  }, { passive: true });
 })();

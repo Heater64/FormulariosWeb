@@ -54,8 +54,17 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <h2 style="margin:0 0 var(--espaciado-xs);font-size:var(--texto-2xl);font-weight:800">Corregir: ${window.helpers.escapeHtml(examen.titulo)}</h2>
-          <button class="btn-secundario" id="btnVolver" style="font-size:var(--texto-xs);margin-bottom:var(--espaciado-lg)">${window.Iconos.render('arrow-left')} Volver</button>
+          <header class="vista-cabecera corregir-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono" id="btnVolver" aria-label="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
+              <div>
+                <h1>${window.Iconos.render('clipboard-check')} Corregir: ${window.helpers.escapeHtml(examen.titulo)} <button class="info-ayuda" data-guia="corregir" aria-label="Guía de corrección">i</button></h1>
+              </div>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
+          </header>
 
           <div class="corregir-progreso">
             <div class="corregir-progreso__barra"><div class="corregir-progreso__lleno" style="width:${pct}%"></div></div>
@@ -77,6 +86,10 @@
 
       this._conectarEventos(raiz);
       window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        corregir: ['Corrección', 'Revisa las respuestas de cada alumno y asigna las puntuaciones pendientes.', 'Abre un alumno para corregir sus respuestas y guarda los cambios al terminar.']
+      });
     },
 
     _tarjetaAlumno(int, preguntas) {

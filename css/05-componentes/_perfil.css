@@ -104,6 +104,48 @@
   font-size: var(--texto-xs);
 }
 
+/* ===== Centro personal de estudio ===== */
+.perfil-estudio-accesos {
+  margin-bottom: var(--espaciado-md);
+  padding: var(--card-padding);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.perfil-estudio-accesos__cabecera {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-sm);
+}
+
+.perfil-estudio-accesos__cabecera h2 {
+  margin: 0;
+  font-size: var(--texto-lg);
+}
+
+.perfil-estudio-accesos__cabecera p {
+  margin: 2px 0 0;
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-xs);
+}
+
+.perfil-estudio-accesos__grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--espaciado-xxs);
+}
+
+.perfil-estudio-accesos__grid .perfil-fila-nav {
+  background: var(--color-fondo);
+}
+
+.perfil-estudio-accesos__grid .perfil-fila-nav:hover {
+  background: var(--color-acento-soft);
+}
+
 /* ===== Secciones planas (sin tarjetas anidadas) ===== */
 
 .perfil-seccion {
@@ -1166,7 +1208,7 @@
   margin: 0;
   font-family: var(--fuente-display);
   font-size: var(--texto-3xl);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.1;
   letter-spacing: -0.01em;
   color: var(--color-texto);
@@ -1375,15 +1417,11 @@
 
 .perfil-subcabecera__titulo {
   margin: 0;
-  font-size: var(--texto-2xl);
-  line-height: 1.2;
+  font-size: var(--texto-3xl);
+  line-height: 1.08;
 }
 
-.perfil-subcabecera__sub {
-  margin: 2px 0 0;
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
-}
+.perfil-subcabecera__sub { display: none; }
 
 /* ===== Texto legal (términos, privacidad, licencias) ===== */
 
@@ -1426,6 +1464,12 @@
 @media (max-width: 480px) {
   .perfil-seccion {
     padding: var(--espaciado-md);
+  }
+  .perfil-estudio-accesos {
+    padding: var(--espaciado-md);
+  }
+  .perfil-estudio-accesos__grid {
+    grid-template-columns: 1fr;
   }
   .perfil-avatar {
     width: 72px;

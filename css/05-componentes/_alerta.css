@@ -30,7 +30,7 @@
 .alerta--error { background: var(--color-error); }
 .alerta--exito { background: var(--color-exito); }
 .alerta--info { background: var(--color-info); }
-.alerta--advertencia { background: var(--color-acento); }
+.alerta--advertencia { background: var(--color-acento); color: var(--color-texto-acento); }
 
 .alerta--salir {
   opacity: 0;

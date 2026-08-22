@@ -89,7 +89,7 @@
   height: 64px;
   border-radius: 50%;
   background: linear-gradient(145deg, var(--color-error-soft), var(--color-error));
-  color: #fff;
+  color: var(--color-texto-acento);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -337,7 +337,7 @@
 }
 
 .desafio-espera__eliminar svg { width: 12px; height: 12px; }
-.desafio-espera__eliminar:hover { background: var(--color-error); color: #fff; }
+.desafio-espera__eliminar:hover { background: var(--color-error); color: var(--color-texto-acento); }
 .desafio-espera__eliminar:disabled { opacity: 0.5; cursor: default; }
 
 /* ── CUENTA ATRÁS sincronizada ── */
@@ -504,7 +504,7 @@
   height: 56px;
   border-radius: 50%;
   background: linear-gradient(145deg, var(--color-exito), var(--color-exito-fuerte, #059669));
-  color: #fff;
+  color: var(--color-texto-acento);
   font-weight: 800;
   font-size: 1.4rem;
   display: flex;

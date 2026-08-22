@@ -125,9 +125,14 @@
 
       raiz.innerHTML = `
         <div class="notas-home">
-          <header class="notas-cabecera">
-            <h1 class="notas-cabecera__titulo">Notas</h1>
-            <button class="btn-icono notas-cabecera__papelera" id="btnPapelera" aria-label="Papelera" title="Papelera">${I('trash-2')}</button>
+          <header class="notas-cabecera vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <h1 class="notas-cabecera__titulo">${I('file-text')} Notas <button class="info-ayuda" data-guia="notas" aria-label="Guía de Notas">i</button></h1>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+              <button class="btn-icono notas-cabecera__papelera" id="btnPapelera" aria-label="Papelera" title="Papelera">${I('trash-2')}</button>
+            </div>
           </header>
 
           <div class="notas-buscar">
@@ -144,6 +149,10 @@
         </div>`;
 
       window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        notas: ['Notas', 'Conserva tus reflexiones y apuntes personales vinculados a tu estudio bíblico.', 'Crea una nota desde el botón + y usa la papelera para recuperar notas eliminadas.']
+      });
 
       raiz.querySelector('#btnPapelera').onclick = () => this._pintarPapelera(raiz);
       raiz.querySelector('#btnNueva').onclick = () => this._nuevaNota(raiz);
@@ -236,10 +245,16 @@
       this._limpiarEditor();
       raiz.innerHTML = `
         <div class="notas-home">
-          <header class="notas-cabecera">
-            <button class="btn-icono" id="btnVolverPapelera" aria-label="Volver a notas" title="Volver">${I('chevron-left')}</button>
-            <h1 class="notas-cabecera__titulo">Papelera</h1>
-            <span class="notas-cabecera__spacer"></span>
+          <header class="notas-cabecera vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono" id="btnVolverPapelera" aria-label="Volver a notas" title="Volver">${I('chevron-left')}</button>
+              <div>
+                <h1 class="notas-cabecera__titulo">${I('trash-2')} Papelera <button class="info-ayuda" data-guia="notas" aria-label="Guía de la Papelera">i</button></h1>
+              </div>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
           </header>
           <div class="notas-lista" id="listaPapelera">
             <div class="o-pila u-mt-3" style="align-items:center;gap:var(--espaciado-sm)"><span class="u-color-texto-terciario">Cargando…</span></div>
@@ -250,6 +265,10 @@
         try { this._notas = await window.notasRepository.listarPersonales(this._usuario.id); } catch (e) {}
         this._pintarHome(raiz, this._notas);
       };
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        notas: ['Papelera', 'Recupera o elimina definitivamente las notas que ya no necesitas.', 'Usa recuperar para devolver una nota a tu lista principal o eliminar para borrarla definitivamente.']
+      });
       raiz.querySelector('#btnVolverPapelera').onclick = volverHome;
       this._conectarGestoVolver(raiz, volverHome);
 
@@ -764,7 +783,7 @@
 <body>
   <h1>${E(nota.titulo || 'Sin título')}</h1>
   <div class="fecha">${nota.actualizado_en ? new Date(nota.actualizado_en).toLocaleString('es-ES') : ''}</div>
-  <div class="contenido">${nota.contenido || '<p></p>'}</div>
+  <div class="contenido">${window.sanitizacion ? window.sanitizacion.sanitizarHtml(nota.contenido || '') : (nota.contenido || '')}</div>
   <script>window.onload = () => { setTimeout(() => window.print(), 300); }<\/script>
 </body>
 </html>`);

@@ -100,7 +100,7 @@
               <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
             </div>
           </div>
-          <button class="btn-secundario admin-panel-cabecera__volver" onclick="window.${nombreVista}._volver()">${I('arrow-left')} Volver</button>
+          <button class="btn-secundario admin-panel-cabecera__volver" data-admin-volver>${I('arrow-left')} Volver</button>
         </header>`;
     },
 

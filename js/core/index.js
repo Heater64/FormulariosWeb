@@ -1,9 +1,10 @@
 (function() {
   'use strict';
 
-  // El login es una página standalone fuera del SPA. En desarrollo la app vive
-  // en la raíz (login.html junto al index) y en producción en /app/ (el login
-  // está en la raíz del sitio). Redirige según dónde se sirva la app.
+  // Sin sesión (arranque, logout, guardia): fuera de la SPA, al login normal.
+  // En producción la app vive en /app/ y el login normal es la landing de la
+  // raíz (su tarjeta de acceso). En desarrollo la app vive en la raíz y el
+  // login normal es login.html, junto a ella.
   function irAlLogin() {
     const enApp = window.location.pathname.startsWith('/app');
     window.location.href = enApp ? '../' : 'login.html';
@@ -316,7 +317,7 @@
       const ruta = router.pathActual();
       const esLogin = ruta === '/login' || ruta === '/';
       if (!usuario) {
-        // Sin sesión: fuera del SPA, al login standalone.
+        // Sin sesión: fuera del SPA, al login normal (landing / login.html).
         irAlLogin();
         return;
       }
@@ -468,7 +469,7 @@
 
       nav.innerHTML = `
         <div class="barra-nav-inferior__marca">
-          <span class="barra-nav-inferior__logo" aria-hidden="true">${window.Iconos.render('book-open')}</span>
+          <span class="barra-nav-inferior__logo" aria-hidden="true"><img src="assets/iconos/icono.svg" alt="" class="barra-nav-inferior__logo-img"></span>
           <span class="barra-nav-inferior__marca-nombre">${E(marcaNombre)}</span>
         </div>
         <div class="barra-nav-inferior__items" role="tablist" aria-label="Navegación principal">
@@ -574,9 +575,11 @@
           u ? router.reemplazar('/estudio') : irAlLogin();
         } 
       });
-      // El login del SPA se eliminó: #!/login redirige al standalone.
+      // /login ya no es una pantalla del SPA: cualquier navegación a esa ruta
+      // (logout, guardia, enlace antiguo guardado) redirige al login normal.
       router.registrar('/login', { montar: () => irAlLogin() });
       router.registrar('/estudio', window.vistaEstudio);
+      router.registrar('/agenda', this._vistaLazy(['./js/vistas/vista-agenda.js'], () => window.vistaAgenda));
       router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
       router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
       router.registrar('/leer/:libro/:capitulo', window.vistaSesionEstudio);

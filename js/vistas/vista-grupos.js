@@ -54,11 +54,15 @@
       const usuario = this._usuario;
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg grupos" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <div class="grupos-cabecera">
-            <button class="btn-icono grupos-cabecera__volver" id="btnVolverGrupos" aria-label="Volver al perfil">${I('arrow-left')}</button>
-            <div class="grupos-cabecera__texto">
-              <h1 class="grupos-cabecera__titulo">Mis clases</h1>
-              <p class="grupos-cabecera__sub">Únete con el código de tu clase y desafía a tu grupo</p>
+          <div class="grupos-cabecera vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono grupos-cabecera__volver" id="btnVolverGrupos" aria-label="Volver al perfil">${I('arrow-left')}</button>
+              <div class="grupos-cabecera__texto">
+                <h1 class="grupos-cabecera__titulo">${I('users')} Mis clases <button class="info-ayuda" data-guia="grupos" aria-label="Guía de Mis clases">i</button></h1>
+              </div>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
             </div>
           </div>
           <div class="grupos-acciones">
@@ -75,6 +79,10 @@
             </div>
           </div>
         </div>`;
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        grupos: ['Mis clases', 'Aquí puedes unirte a tus clases, consultar invitaciones y participar en desafíos de memorización con tu grupo.', 'Pide el código a tu profesor para unirte a una clase.']
+      });
       raiz.querySelector('#btnVolverGrupos').onclick = () => router.navegar('/perfil');
 
       // Unirse con código
@@ -435,11 +443,15 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg grupos" style="padding-top:var(--espaciado-md);padding-bottom:calc(110px + env(safe-area-inset-bottom))">
-          <div class="grupos-cabecera">
-            <button class="btn-icono grupos-cabecera__volver" id="btnVolverDirectorio" aria-label="Volver a mis clases">${I('arrow-left')}</button>
-            <div class="grupos-cabecera__texto">
-              <h1 class="grupos-cabecera__titulo">${E(grupo.nombre)}</h1>
-              <p class="grupos-cabecera__sub">${E(instNombre)} · ${miembros.length} miembro${miembros.length !== 1 ? 's' : ''}</p>
+          <div class="grupos-cabecera vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono grupos-cabecera__volver" id="btnVolverDirectorio" aria-label="Volver a mis clases">${I('arrow-left')}</button>
+              <div class="grupos-cabecera__texto">
+                <h1 class="grupos-cabecera__titulo">${I('users')} ${E(grupo.nombre)} <button class="info-ayuda" data-guia="clase" aria-label="Guía de esta clase">i</button></h1>
+              </div>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
             </div>
           </div>
 
@@ -484,6 +496,10 @@
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        clase: ['Clase', 'Consulta las personas, avisos, trabajo y estadísticas de esta clase desde las pestañas.', 'En Trabajo encontrarás los exámenes y actividades publicados por tu profesor.']
+      });
 
       raiz.querySelector('#btnVolverDirectorio').onclick = () => router.navegar('/grupos');
 

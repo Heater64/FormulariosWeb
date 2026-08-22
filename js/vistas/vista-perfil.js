@@ -28,10 +28,12 @@
     return map[rol] || rol;
   }
 
-  // Fila de navegación dentro de una tarjeta (estilo Ajustes)
-  function filaNav(icono, titulo, desc, href) {
+  // Fila de navegación dentro de una tarjeta (estilo Ajustes). Si externo es
+  // true el href se usa tal cual (p. ej. una página legal compartida con el
+  // login); si no, se trata de una ruta interna con hash (#!).
+  function filaNav(icono, titulo, desc, href, externo) {
     return `
-      <a class="perfil-fila-nav" href="#!${href}">
+      <a class="perfil-fila-nav" href="${externo ? href : `#!${href}`}">
         <span class="perfil-fila-nav__icono">${I(icono)}</span>
         <span class="perfil-fila-nav__texto">
           <span class="perfil-fila-nav__label">${E(titulo)}</span>
@@ -41,15 +43,30 @@
       </a>`;
   }
 
-  function subcabecera(titulo, sub) {
+  // Páginas legales COMPARTIDAS con el login (fuente única: public-site/).
+  // Se abren en la misma pestaña y llevan ?volver= para que su botón "Volver"
+  // regrese al perfil de la app (en dev la app vive en la raíz; en producción
+  // en /app/).
+  function legalHref(pagina) {
+    const enApp = location.pathname.startsWith('/app');
+    const base = enApp ? '../' : './';
+    const retorno = enApp ? '../app/#!/perfil' : './index.html#!/perfil';
+    return `${base}${pagina}.html?volver=${encodeURIComponent(retorno)}`;
+  }
+
+  function subcabecera(titulo, sub, guia = 'perfil-config', icono = 'settings') {
     return `
-      <div class="perfil-subcabecera">
-        <button class="btn-icono perfil-subcabecera__volver" data-volver aria-label="Volver al perfil">${I('arrow-left')}</button>
-        <div class="perfil-subcabecera__texto">
-          <h1 class="perfil-subcabecera__titulo">${E(titulo)}</h1>
-          ${sub ? `<p class="perfil-subcabecera__sub">${E(sub)}</p>` : ''}
+      <header class="perfil-subcabecera vista-cabecera">
+        <div class="vista-cabecera__principal">
+          <button class="btn-icono perfil-subcabecera__volver" data-volver aria-label="Volver al perfil">${I('arrow-left')}</button>
+          <div class="perfil-subcabecera__texto">
+            <h1 class="perfil-subcabecera__titulo">${I(icono)} ${E(titulo)} <button class="info-ayuda" data-guia="${guia}" aria-label="Guía de ${E(titulo)}">i</button></h1>
+          </div>
         </div>
-      </div>`;
+        <div class="vista-cabecera__acciones">
+          ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+        </div>
+      </header>`;
   }
 
   // Guarda una preferencia del usuario (store + localStorage + Supabase)
@@ -105,6 +122,15 @@
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg perfil-root" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
 
+          <header class="vista-cabecera perfil-cabecera">
+            <div class="vista-cabecera__principal">
+              <h1>${I('user')} Perfil <button class="info-ayuda" data-guia="perfil" aria-label="Guía de Perfil">i</button></h1>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
+          </header>
+
           <!-- HERO -->
           <header class="perfil-hero">
             <div class="perfil-hero__fondo" aria-hidden="true"></div>
@@ -126,6 +152,22 @@
             </div>
           </header>
 
+          <section class="perfil-estudio-accesos" aria-label="Tu estudio">
+            <div class="perfil-estudio-accesos__cabecera">
+              <div class="perfil-seccion__icono">${I('book-open')}</div>
+              <div>
+                <h2>Tu estudio</h2>
+                <p>Accede rápidamente a tus espacios de aprendizaje</p>
+              </div>
+            </div>
+            <div class="perfil-estudio-accesos__grid">
+              ${filaNav('book-open', 'Estudio Guiado', 'Continúa con la lectura bíblica', '/estudio')}
+              ${filaNav('calendar-days', 'Agenda de estudio', 'Organiza tu objetivo diario', '/agenda')}
+              ${filaNav('bar-chart-2', 'Mi progreso', 'Consulta tu avance y racha', '/progreso')}
+              ${filaNav('brain', 'Memorización', 'Practica tus tarjetas pendientes', '/memorizacion')}
+            </div>
+          </section>
+
           <div class="o-pila o-pila--md">
 
             <!-- CONFIGURACIÓN -->
@@ -142,6 +184,7 @@
                 ${filaNav('bell', 'Notificaciones', 'Avisos y sonidos de la app', '/perfil/config/notificaciones')}
                 ${filaNav('eye-off', 'Privacidad', 'Qué puede verse de tu perfil', '/perfil/config/privacidad')}
                 ${filaNav('database', 'Almacenamiento', 'Caché, datos temporales y sincronización', '/perfil/config/almacenamiento')}
+                ${filaNav('calendar-days', 'Agenda de estudio', 'Lectura, repasos y objetivo diario', '/agenda')}
                 ${filaNav('lock', 'Seguridad', 'Contraseña, sesión y zona de peligro', '/perfil/config/seguridad')}
               </div>
             </section>
@@ -219,15 +262,19 @@
                 </div>
               </div>
               <div class="o-pila" style="gap:var(--espaciado-xxs);margin-top:var(--espaciado-xs)">
-                ${filaNav('file-text', 'Términos de uso', 'Condiciones del servicio', '/perfil/acerca/terminos')}
-                ${filaNav('shield', 'Política de privacidad', 'Cómo tratamos tus datos', '/perfil/acerca/privacidad')}
-                ${filaNav('copyright', 'Licencias', 'Tecnologías y atribuciones', '/perfil/acerca/licencias')}
+                ${filaNav('file-text', 'Términos de uso', 'Condiciones del servicio', legalHref('terminos'), true)}
+                ${filaNav('shield', 'Política de privacidad', 'Cómo tratamos tus datos', legalHref('privacidad'), true)}
+                ${filaNav('copyright', 'Licencias', 'Tecnologías y atribuciones', legalHref('licencias'), true)}
               </div>
             </section>
           </div>
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        perfil: ['Perfil', 'Gestiona tu identidad, preferencias, grupos y accesos personales desde esta pantalla.', 'Usa Configuración para adaptar la app y Grupos para entrar a tus clases.']
+      });
 
       // Avatar con foto
       if (usuario.foto_perfil) {
@@ -412,6 +459,10 @@
             <div class="skel" style="height:160px;border-radius:var(--card-radius)"></div>
           </div>
         </div>`;
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        'perfil-config': ['Configuración', 'Ajusta la apariencia, notificaciones, privacidad, almacenamiento y seguridad de tu cuenta.', 'Elige la sección que quieres modificar y los cambios se guardarán en tu perfil.']
+      });
       raiz.querySelector('[data-volver]').onclick = () => router.navegar('/perfil');
 
       const cont = raiz.querySelector('#configContenido');
@@ -757,13 +808,13 @@
           mensaje: 'Verificaremos tu contraseña actual antes de cambiarla.',
           campos: [
             { nombre: 'actual', etiqueta: 'Contraseña actual', tipo: 'password', requerido: true },
-            { nombre: 'nueva', etiqueta: 'Contraseña nueva', tipo: 'password', requerido: true, placeholder: 'Mínimo 6 caracteres' },
+            { nombre: 'nueva', etiqueta: 'Contraseña nueva', tipo: 'password', requerido: true, placeholder: 'Mínimo 8 caracteres, letras y números' },
             { nombre: 'confirmar', etiqueta: 'Confirmar contraseña nueva', tipo: 'password', requerido: true }
           ],
           textoConfirmar: 'Cambiar contraseña'
         });
         if (!datos) return;
-        if (datos.nueva.length < 6) { window.helpers.mostrarAlerta('La contraseña nueva debe tener al menos 6 caracteres.', 'advertencia'); return; }
+        if (datos.nueva.length < 8 || !/[A-Za-z]/.test(datos.nueva) || !/[0-9]/.test(datos.nueva)) { window.helpers.mostrarAlerta('La contraseña debe tener al menos 8 caracteres e incluir letras y números.', 'advertencia'); return; }
         if (datos.nueva !== datos.confirmar) { window.helpers.mostrarAlerta('Las contraseñas no coinciden.', 'advertencia'); return; }
         try {
           // FASE 2 (028): la contraseña la gestiona Supabase Auth (auth-repository)
@@ -796,6 +847,13 @@
     // PÁGINAS ACERCA DE
     // ============================================================
     _montarAcerca(raiz, usuario, seccion) {
+      // Términos, privacidad y licencias son las mismas páginas que en el
+      // login (fuente única public-site/): se abren en una ventana aparte con
+      // ?volver= para volver aquí. Los enlaces antiguos a estas rutas redirigen.
+      if (['terminos', 'privacidad', 'licencias'].includes(seccion)) {
+        window.location.href = legalHref(seccion);
+        return;
+      }
       const versionActual = window.__FB_APP_VERSION__?.version || '—';
       const contenido = {
         'que-es': `
@@ -817,95 +875,10 @@
               <div class="perfil-fila"><span class="perfil-fila__label">Tecnologías</span><span class="perfil-fila__valor" style="font-weight:400;max-width:70%">HTML, CSS, JS, Supabase</span></div>
             </div>
           </div>`,
-        terminos: `
-          <div class="perfil-seccion">
-            <h4 class="perfil-seccion__titulo" style="margin-bottom:var(--espaciado-sm)">Términos de uso</h4>
-            <p class="u-fs-xxs u-color-texto-terciario" style="margin-bottom:var(--espaciado-md)">Última actualización: 14 de agosto de 2026</p>
-            <div class="perfil-texto-legal">
-              <h5>1. Aceptación de los términos</h5>
-              <p>Al usar FormsBiblicos, aceptas estos términos de uso. Si no estás de acuerdo, no utilices la plataforma.</p>
-              <h5>2. Descripción del servicio</h5>
-              <p>FormsBiblicos es una plataforma de estudio bíblico que ofrece lectura guiada, memorización con repetición espaciada y exámenes personalizados para grupos de estudio.</p>
-              <h5>3. Cuenta de usuario</h5>
-              <ul>
-                <li>Eres responsable de mantener la confidencialidad de tu contraseña.</li>
-                <li>Debes notificarnos inmediatamente sobre cualquier uso no autorizado.</li>
-                <li>Un solo usuario por cuenta; no se permite el uso compartido.</li>
-              </ul>
-              <h5>4. Uso aceptable</h5>
-              <p>Te comprometes a:</p>
-              <ul>
-                <li>Usar la plataforma solo para fines de estudio bíblico personal y grupal.</li>
-                <li>No intentar acceder a cuentas de otros usuarios.</li>
-                <li>No usar la plataforma para fines comerciales no autorizados.</li>
-                <li>Respetar a otros miembros de la comunidad.</li>
-              </ul>
-              <h5>5. Propiedad intelectual</h5>
-              <p>El contenido bíblico está basado en textos públicos. El diseño, código y funcionalidades de la plataforma son propiedad de FormsBiblicos.</p>
-              <h5>6. Limitación de responsabilidad</h5>
-              <p>FormsBiblicos se proporciona "tal cual" sin garantías de ningún tipo. No nos hacemos responsables por pérdidas de datos, interrupciones del servicio o el uso que hagas de la información bíblica.</p>
-              <h5>7. Terminación</h5>
-              <p>Podemos suspender o cancelar tu acceso si violas estos términos. Puedes eliminar tu cuenta en cualquier momento desde tu perfil.</p>
-              <h5>8. Cambios en los términos</h5>
-              <p>Nos reservamos el derecho de actualizar estos términos. El uso continuado de la plataforma tras los cambios implica aceptación.</p>
-            </div>
-          </div>`,
-        privacidad: `
-          <div class="perfil-seccion">
-            <h4 class="perfil-seccion__titulo" style="margin-bottom:var(--espaciado-sm)">Política de privacidad</h4>
-            <p class="u-fs-xxs u-color-texto-terciario" style="margin-bottom:var(--espaciado-md)">Última actualización: 14 de agosto de 2026</p>
-            <div class="perfil-texto-legal">
-              <h5>1. Información que recopilamos</h5>
-              <p>FormsBiblicos recopila únicamente la información necesaria para el funcionamiento de la plataforma:</p>
-              <ul>
-                <li><strong>Datos de cuenta:</strong> nombre de usuario, correo electrónico y contraseña (almacenada de forma segura).</li>
-                <li><strong>Datos de uso:</strong> progreso de lectura, versículos memorizados, resultados de exámenes y actividad dentro de la plataforma.</li>
-                <li><strong>Datos del grupo:</strong> pertenencia a grupos de estudio e interacciones con otros miembros.</li>
-              </ul>
-              <h5>2. Cómo usamos tu información</h5>
-              <ul>
-                <li>Para proporcionar y mejorar el servicio de estudio bíblico.</li>
-                <li>Para sincronizar tu progreso entre dispositivos.</li>
-                <li>Para enviar notificaciones relevantes a tu estudio (solo si las activas).</li>
-                <li>Para comunicarnos contigo sobre actualizaciones del servicio.</li>
-              </ul>
-              <h5>3. Compartir información</h5>
-              <p>No vendemos ni compartimos tu información personal con terceros, excepto:</p>
-              <ul>
-                <li>Con los miembros de tu grupo de estudio (solo información de progreso compartido).</li>
-                <li>Cuando lo requiera la ley.</li>
-              </ul>
-              <h5>4. Seguridad</h5>
-              <p>Utilizamos Supabase como proveedor de infraestructura, que incluye encriptación en tránsito y en reposo, autenticación JWT y políticas de seguridad a nivel de fila (RLS).</p>
-              <h5>5. Tus derechos</h5>
-              <p>Puedes acceder, actualizar o eliminar tu cuenta en cualquier momento desde la configuración de tu perfil. Para solicitudes específicas, contáctanos.</p>
-              <h5>6. Cambios en esta política</h5>
-              <p>Podemos actualizar esta política periódicamente. Te notificaremos de cambios significativos a través de la plataforma.</p>
-            </div>
-          </div>`,
-        licencias: `
-          <div class="perfil-seccion">
-            <h4 class="perfil-seccion__titulo" style="margin-bottom:var(--espaciado-sm)">Licencias</h4>
-            <div class="perfil-texto-legal">
-              <h5>FormsBiblicos</h5>
-              <p>Plataforma de estudio bíblico desarrollada sin frameworks: HTML, CSS y JavaScript nativos.</p>
-              <h5>Supabase</h5>
-              <p>Backend y base de datos (PostgreSQL) — <a href="https://supabase.com" target="_blank" rel="noopener">supabase.com</a>. Licencia Apache 2.0.</p>
-              <h5>Lucide Icons</h5>
-              <p>Iconografía de la interfaz — <a href="https://lucide.dev" target="_blank" rel="noopener">lucide.dev</a>. Licencia ISC.</p>
-              <h5>Vite y Vitest</h5>
-              <p>Herramientas de desarrollo y pruebas — <a href="https://vitejs.dev" target="_blank" rel="noopener">vitejs.dev</a>. Licencia MIT.</p>
-              <h5>Textos bíblicos</h5>
-              <p>El contenido bíblico es de dominio público (versión RVR1960 y similares).</p>
-            </div>
-          </div>`
       };
 
       const meta = {
-        'que-es':   { titulo: 'Qué es FormsBiblicos', sub: 'Información de la aplicación' },
-        terminos:   { titulo: 'Términos de uso', sub: 'Condiciones de uso del servicio' },
-        privacidad: { titulo: 'Política de privacidad', sub: 'Cómo tratamos tus datos' },
-        licencias:  { titulo: 'Licencias', sub: 'Tecnologías y atribuciones' }
+        'que-es':   { titulo: 'Qué es FormsBiblicos', sub: 'Información de la aplicación' }
       }[seccion] || { titulo: 'Acerca de', sub: '' };
 
       raiz.innerHTML = `
@@ -915,6 +888,10 @@
             ${contenido[seccion] || contenido['que-es']}
           </div>
         </div>`;
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        'perfil-acerca': ['Información de FormsBiblicos', 'Consulta el propósito, la versión y las tecnologías de la plataforma.', 'Desde aquí también puedes volver al perfil cuando termines.']
+      });
       raiz.querySelector('[data-volver]').onclick = () => router.navegar('/perfil');
       if (window.Iconos) window.Iconos.actualizar();
     }

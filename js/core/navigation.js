@@ -19,6 +19,27 @@ class NavigationManager {
     if (!this._nav) return;
     // Garantizar estado visible inicial (nunca oculta por scroll)
     this._nav.style.transform = '';
+    this._initTeclado();
+  }
+
+  // Teclado virtual → ocultar la barra inferior mientras se escribe (el
+  // teclado tapa la parte inferior; la barra reaparece al desenfocar).
+  // Solo aplica en pantallas estrechas (barra inferior); en escritorio la
+  // navegación es una sidebar fija a la izquierda y no hay teclado virtual.
+  // Antes vivía como script inline en index.html; la CSP de producción no
+  // permite inline, así que vive aquí.
+  _initTeclado() {
+    document.addEventListener('focusin', (e) => {
+      if (window.innerWidth >= 1024) return;
+      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        this.ocultarPorTeclado(true);
+      }
+    }, true);
+    document.addEventListener('focusout', (e) => {
+      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
+        this.ocultarPorTeclado(false);
+      }
+    }, true);
   }
 
   // ============================================================

@@ -105,6 +105,18 @@
 
       if (editando) {
         const existente = await window.examenesRepository.obtener(idParam);
+        if (!existente) {
+          // El examen no existe (URL antigua, borrado o ID equivocado): NO caer
+          // en modo "nuevo examen" en silencio (podría crear un duplicado vacío).
+          raiz.innerHTML = `<div class="o-contenedor o-pila o-pila--lg u-mt-4">
+            <p class="u-fs-lg">No se encontró el examen.</p>
+            <p class="u-color-texto-secundario">Puede que haya sido eliminado o que el enlace sea incorrecto.</p>
+            <button class="btn-primario" style="max-width:240px" id="btnVolverExamenes">Volver a exámenes</button>
+          </div>`;
+          const btn = raiz.querySelector('#btnVolverExamenes');
+          if (btn) btn.onclick = () => router.navegar('/examenes');
+          return;
+        }
         if (existente) {
           examen = { ...examen, ...existente };
           // Normalizar colores legacy (morados de versiones antiguas) al azul de la web

@@ -93,7 +93,13 @@
   row-gap: var(--espaciado-xs);
   margin-bottom: var(--espaciado-md);
 }
-.notif-centro__titulo { margin: 0; font-size: var(--texto-xl); font-weight: 600; }
+.notif-centro__titulo {
+  margin: 0;
+  font-family: var(--fuente-display);
+  font-size: var(--texto-3xl);
+  font-weight: 700;
+  line-height: 1.08;
+}
 .notif-centro__acciones { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--espaciado-xs); align-items: center; flex-shrink: 0; }
 
 /* Filtros por categoría / estado */
@@ -181,6 +187,17 @@
 .notif-card--logros .notif-card__icono { color: var(--color-amarillo-500); background: var(--color-amarillo-100); }
 .notif-card--sistema .notif-card__icono { color: var(--color-gris-500); background: var(--color-gris-100); }
 .notif-card--anuncios .notif-card__icono { color: var(--color-acento); background: var(--color-acento-soft); }
+
+/* Las variantes primitivas también se adaptan al fondo oscuro. */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .notif-card--desafios .notif-card__icono { background: var(--color-naranja-soft); }
+  :root:not([data-theme="light"]) .notif-card--logros .notif-card__icono { background: var(--color-amarillo-100); }
+  :root:not([data-theme="light"]) .notif-card--sistema .notif-card__icono { background: var(--color-gris-100); }
+}
+
+:root[data-theme="dark"] .notif-card--desafios .notif-card__icono { background: var(--color-naranja-soft); }
+:root[data-theme="dark"] .notif-card--logros .notif-card__icono { background: var(--color-amarillo-100); }
+:root[data-theme="dark"] .notif-card--sistema .notif-card__icono { background: var(--color-gris-100); }
 
 /* Borde izquierdo por categoría (mismo mapa que CATEGORIAS) */
 .notif-card--desafios { border-left-color: var(--color-naranja); }

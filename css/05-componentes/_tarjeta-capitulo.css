@@ -24,7 +24,7 @@
 .tarjeta-capitulo__referencia {
   font-family: var(--fuente-display);
   font-size: var(--texto-lg);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-texto);
   margin-bottom: var(--espaciado-xxs);
   letter-spacing: -0.005em;

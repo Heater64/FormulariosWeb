@@ -10,6 +10,11 @@ class Router {
     this._ejecucionToken = 0;
     this._ultimaEjecucionMs = 0;
 
+    // ── Navegación direccional ──
+    this._historial = [];          // pila de rutas visitadas
+    this._direccion = 'adelante';  // 'adelante' | 'atras'
+    this._scrollPosiciones = new Map(); // ruta → { x, y }
+
     window.addEventListener('hashchange', () => this._ejecutar());
   }
 
@@ -97,6 +102,27 @@ class Router {
     // ejecución obsoleta se descarta y nunca pisa la vista recién montada.
     const token = ++this._ejecucionToken;
 
+    // ── Detectar dirección de navegación ──
+    // Si la ruta destino ya está en el historial → es retroceso (back/atrás).
+    // Si no está → es avance (nueva vista).
+    const idxEnHistorial = this._historial.lastIndexOf(ruta);
+    const esAtras = idxEnHistorial >= 0;
+    if (esAtras) {
+      // Recortar historial desde esa posición en adelante
+      this._historial.splice(idxEnHistorial + 1);
+      this._direccion = 'atras';
+    } else {
+      // Guardar scroll de la vista actual antes de navegar
+      if (this._vistaActual && this._historial.length > 0) {
+        const rutaAnterior = this._historial[this._historial.length - 1];
+        this._scrollPosiciones.set(rutaAnterior, { x: window.scrollX, y: window.scrollY });
+      }
+      this._historial.push(ruta);
+      this._direccion = 'adelante';
+      // Limitar historial a 20 entradas
+      if (this._historial.length > 20) this._historial.shift();
+    }
+
     for (const guardia of this._guardias) {
       try {
         const resultado = await guardia(ruta);
@@ -175,9 +201,10 @@ class Router {
         this._ultimaEjecucionMs = ahora;
 
         if (!this._primeraCarga && this._transiciones && !navegacionRapida) {
-          raiz.classList.add('app-transicion-salida');
+          const claseSalida = this._direccion === 'atras' ? 'app-transicion-salida-atras' : 'app-transicion-salida';
+          raiz.classList.add(claseSalida);
           await new Promise(r => setTimeout(r, 150));
-          raiz.classList.remove('app-transicion-salida');
+          raiz.classList.remove(claseSalida);
         }
 
 raiz.innerHTML = '';
@@ -199,10 +226,11 @@ raiz.innerHTML = '';
               <h2>Error al cargar</h2>
               <p class="u-color-texto-secundario u-fs-sm">${msg}</p>
               <div class="o-flecha" style="justify-content:center;flex-wrap:wrap">
-                <button class="btn-primario" onclick="location.reload()">Reintentar</button>
-                <button class="btn-secundario" onclick="window.errorRecovery&&window.errorRecovery.recuperarCacheYRecargar('error de vista')">Limpiar caché y recargar</button>
+                <button class="btn-primario" data-router-accion="recargar">Reintentar</button>
+                <button class="btn-secundario" data-router-accion="limpiar-cache">Limpiar caché y recargar</button>
               </div>
             </div>`;
+            this._conectarAccionesError(raiz);
           }
           // Una vista async puede terminar de escribir su HTML DESPUÉS de que
           // el usuario ya navegó a otra (carrera de monturas). Si eso ocurre,
@@ -216,21 +244,30 @@ raiz.innerHTML = '';
           raiz.innerHTML = `<div class="o-contenedor u-mt-4 u-texto-centrado o-pila">
             <h2>Vista no disponible</h2>
             <p class="u-color-texto-secundario u-fs-sm">Es necesario recargar para obtener la última versión.</p>
-            <button class="btn-primario" onclick="location.reload()">Recargar</button>
+            <button class="btn-primario" data-router-accion="recargar">Recargar</button>
           </div>`;
+          this._conectarAccionesError(raiz);
         }
 
         if (this._transiciones) {
-          raiz.classList.add('app-transicion-entrada');
-          requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove('app-transicion-entrada')));
+          const claseEntrada = this._direccion === 'atras' ? 'app-transicion-entrada-atras' : 'app-transicion-entrada';
+          raiz.classList.add(claseEntrada);
+          requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove(claseEntrada)));
         }
 
-        // App-like: cada vista nueva arranca arriba. En una SPA con hash, el
-        // scroll de la vista anterior persiste entre rutas (señal clásica de
-        // web): hay que resetearlo en cada montaje.
-        try { window.scrollTo({ top: 0, left: 0, behavior: 'auto' }); } catch (e) { window.scrollTo(0, 0); }
+        // App-like: restaurar posición de scroll o ir arriba
+        try {
+          if (this._direccion === 'atras' && this._scrollPosiciones.has(ruta)) {
+            const pos = this._scrollPosiciones.get(ruta);
+            window.scrollTo({ top: pos.y, left: pos.x, behavior: 'auto' });
+            this._scrollPosiciones.delete(ruta);
+          } else {
+            window.scrollTo({ top: 0, left: 0, behavior: 'auto' });
+          }
+        } catch (e) { window.scrollTo(0, 0); }
 
         this._primeraCarga = false;
+        this._aplicarTitulo(rutaConfig, params);
         store.actualizar('rutaActual', ruta);
         window.eventBus.publicar('route:change', { ruta, rutaConfig, params, query: queryObj });
 
@@ -251,7 +288,7 @@ raiz.innerHTML = '';
     if (!raiz || !this._vistaActual || !this._vistaActual.montar) return;
 
     // Limpiar sin animación
-    raiz.classList.remove('app-transicion-salida', 'app-transicion-entrada');
+    raiz.classList.remove('app-transicion-salida', 'app-transicion-entrada', 'app-transicion-salida-atras', 'app-transicion-entrada-atras');
     raiz.innerHTML = '';
 
     // Reconstruir el contexto desde la ruta actual
@@ -277,20 +314,84 @@ raiz.innerHTML = '';
     }
   }
 
+  _conectarAccionesError(raiz) {
+    raiz.querySelectorAll('[data-router-accion]').forEach((boton) => {
+      boton.addEventListener('click', () => {
+        const accion = boton.dataset.routerAccion;
+        if (accion === 'recargar') window.location.reload();
+        if (accion === 'inicio') this.navegar('/estudio');
+        if (accion === 'limpiar-cache' && window.errorRecovery) {
+          window.errorRecovery.recuperarCacheYRecargar('error de vista');
+        }
+      });
+    });
+  }
+
   _irError(mensaje) {
     const raiz = document.getElementById('app-root');
     if (raiz) {
       raiz.innerHTML = `<div class="o-contenedor u-texto-centrado u-mt-4 o-pila">
         <h1>404</h1>
         <p>${mensaje}</p>
-        <button class="btn-primario" onclick="router.navegar('/estudio')">Ir al inicio</button>
+        <button class="btn-primario" data-router-accion="inicio">Ir al inicio</button>
       </div>`;
+      this._conectarAccionesError(raiz);
     }
+  }
+
+  // Títulos únicos por ruta (UX/SEO dentro de la app). La marca del centro
+  // configurada por el propietario (fb_marca) tiene prioridad: si existe,
+  // se mantiene como título en todas las secciones.
+  _titulos() {
+    return {
+      '/': 'FormsBiblicos — Estudio bíblico guiado',
+      '/estudio': 'Estudio — FormsBiblicos',
+      '/agenda': 'Agenda de estudio — FormsBiblicos',
+      '/estudio/libro/:libro': 'Capítulos — FormsBiblicos',
+      '/estudio/sesion/:libro/:capitulo': 'Sesión de estudio — FormsBiblicos',
+      '/leer/:libro/:capitulo': 'Lectura — FormsBiblicos',
+      '/examenes': 'Exámenes — FormsBiblicos',
+      '/memorizacion': 'Memorización — FormsBiblicos',
+      '/explorar': 'Explorar — FormsBiblicos',
+      '/perfil': 'Perfil — FormsBiblicos',
+      '/notificaciones': 'Notificaciones — FormsBiblicos',
+      '/mapa': 'Mapa bíblico — FormsBiblicos',
+      '/tomar/:id': 'Examen — FormsBiblicos',
+      '/editor/nuevo': 'Nuevo examen — FormsBiblicos',
+      '/editor/:id': 'Editar examen — FormsBiblicos',
+      '/corregir/:id': 'Corregir examen — FormsBiblicos',
+      '/calificaciones': 'Calificaciones — FormsBiblicos',
+      '/progreso': 'Progreso — FormsBiblicos',
+      '/grupos': 'Clases — FormsBiblicos',
+      '/grupos/:id': 'Clase — FormsBiblicos',
+      '/desafio/:id': 'Desafío — FormsBiblicos',
+      '/admin': 'Panel de administración — FormsBiblicos'
+    };
+  }
+
+  _aplicarTitulo(rutaConfig, params) {
+    let marcaNombre = '';
+    try {
+      const cache = JSON.parse(localStorage.getItem('fb_marca') || 'null');
+      if (cache && cache.marca_nombre) marcaNombre = cache.marca_nombre;
+    } catch (e) {}
+    if (marcaNombre) {
+      document.title = marcaNombre;
+      return;
+    }
+    const plantilla = this._titulos()[rutaConfig];
+    if (!plantilla) return;
+    document.title = plantilla.replace(/:\w+/g, (_, n) => params[n] || '');
   }
 
   irAtras() {
     window.history.back();
   }
+
+  // ── Utilidades de navegación ──
+  get direccion() { return this._direccion; }
+  get historialLength() { return this._historial.length; }
+  puedeRetroceder() { return this._historial.length >= 2; }
 
   recargar() {
     this._ejecutar();

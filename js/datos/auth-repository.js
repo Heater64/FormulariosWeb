@@ -82,7 +82,7 @@ const authRepository = {
     if (!sb || !usuario) return usuario;
     if (usuario.grupo_id) return usuario;
     const { data: grupoId, error } = await sb.rpc('asegurar_grupo');
-    if (error) throw new Error('No se pudo crear un grupo para tu cuenta: ' + _traducir(error));
+    if (error) throw new Error('No se pudo crear un grupo para tu cuenta: ' + this._traducir(error));
     // Releer el perfil para obtener el grupo_id recién asignado por el servidor
     const { data: perfil } = await sb
       .from('perfiles')
@@ -97,17 +97,96 @@ const authRepository = {
   // FASE 2 (028): la contraseña vive en Supabase Auth, no en perfiles.
   // Se verifica la actual con auth_login (devuelve email solo si acierta) y
   // el cambio se aplica con updateUser (no requiere el email del usuario).
+  _validarPassword(nueva) {
+    const password = String(nueva || '');
+    if (password.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
+    if (!/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) {
+      throw new Error('La contraseña debe incluir letras y números.');
+    }
+    return password;
+  },
+
+  async registrarResponsable(email, password, nombre) {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+    const direccion = String(email || '').trim().toLowerCase();
+    const nombreSeguro = String(nombre || '').trim();
+    if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(direccion)) throw new Error('Escribe un correo electrónico válido.');
+    if (nombreSeguro.length < 2 || nombreSeguro.length > 120) throw new Error('Escribe tu nombre completo.');
+    const passwordSegura = this._validarPassword(password);
+    const { data, error } = await sb.auth.signUp({
+      email: direccion,
+      password: passwordSegura,
+      options: {
+        emailRedirectTo: new URL('/onboarding.html', window.location.origin).toString(),
+        data: { nombre_completo: nombreSeguro, rol: 'usuario', activo: true }
+      }
+    });
+    if (error) {
+      if (/already registered|already been registered|registered/i.test(error.message || '')) {
+        throw new Error('Ya existe una cuenta con ese correo. Intenta iniciar sesión o recuperar el acceso.');
+      }
+      throw new Error('No se pudo crear la cuenta. Inténtalo de nuevo.');
+    }
+    return data;
+  },
+
+  async crearInstitucionYClase(nombreInstitucion, nombreClase, descripcion) {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+    const { data, error } = await sb.rpc('crear_institucion_y_clase', {
+      p_institucion_nombre: String(nombreInstitucion || '').trim(),
+      p_clase_nombre: String(nombreClase || '').trim(),
+      p_descripcion: String(descripcion || '').trim()
+    });
+    if (error) throw new Error(this._extraerMensajeAuth(error));
+    if (!data || !data.institucion_id || !data.grupo_id || !data.codigo) {
+      throw new Error('El onboarding no devolvió una institución válida.');
+    }
+    return data;
+  },
+
+  async solicitarRecuperacion(email) {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+    const direccion = String(email || '').trim().toLowerCase();
+    if (!direccion || !/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(direccion)) {
+      throw new Error('Escribe un correo electrónico válido.');
+    }
+    if (direccion.endsWith('@accounts.formsbiblicos.com') || direccion.endsWith('@formsbiblicos.local')) {
+      throw new Error('Esta cuenta no tiene un correo recuperable. Contacta con el administrador de tu institución.');
+    }
+    const { error } = await sb.auth.resetPasswordForEmail(direccion, {
+      redirectTo: this._urlRecuperacion()
+    });
+    if (error) throw new Error('No se pudo solicitar la recuperación. Inténtalo de nuevo.');
+  },
+
+  _urlRecuperacion() {
+    return new URL('/recuperar.html', window.location.origin).toString();
+  },
+
+  async actualizarPasswordRecuperacion(nueva) {
+    const sb = window.supabaseClient;
+    if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
+    const password = this._validarPassword(nueva);
+    const { data, error } = await sb.auth.updateUser({ password });
+    if (error || !data || !data.user) throw new Error('El enlace de recuperación no es válido o ha caducado. Solicita uno nuevo.');
+    await sb.auth.signOut();
+  },
+
   async cambiarPassword(actual, nueva) {
     const sb = window.supabaseClient;
     if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
     const usuario = store.obtener('usuario');
     if (!usuario || !usuario.username) throw new Error('Sesión no válida.');
+    const password = this._validarPassword(nueva);
 
     const { error } = await sb.rpc('auth_login', { p_username: usuario.username, p_password: actual });
     if (error) throw new Error(this._extraerMensajeAuth(error));
 
-    const { error: errUpdate } = await sb.auth.updateUser({ password: nueva });
-    if (errUpdate) throw new Error('No se pudo cambiar la contraseña: ' + _traducir(errUpdate));
+    const { error: errUpdate } = await sb.auth.updateUser({ password });
+    if (errUpdate) throw new Error('No se pudo cambiar la contraseña: ' + this._traducir(errUpdate));
   },
 
   async eliminarMisDatos(usuarioId) {
@@ -126,7 +205,7 @@ const authRepository = {
     ];
     for (const [tabla, col] of tablas) {
       const { error } = await sb.from(tabla).delete().eq(col, usuarioId);
-      if (error) throw new Error('Error al eliminar ' + tabla + ': ' + _traducir(error));
+      if (error) throw new Error('Error al eliminar ' + tabla + ': ' + this._traducir(error));
     }
   }
 };

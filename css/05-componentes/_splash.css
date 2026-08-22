@@ -37,32 +37,21 @@
   transform: scale(0.8);
 }
 
-.splash-screen__logo svg {
-  width: 40px;
-  height: 40px;
-  stroke: var(--color-texto-acento);
-  stroke-width: 1.75;
-  fill: none;
+.splash-screen__logo-img {
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
 }
 
 /* ===== TEXTO ===== */
 .splash-screen__title {
   font-family: var(--fuente-display);
   font-size: var(--texto-2xl);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-texto);
   margin: 0;
   letter-spacing: -0.01em;
   animation: splash-text-in var(--transicion-normal) 0.2s forwards;
-  opacity: 0;
-  transform: translateY(12px);
-}
-
-.splash-screen__subtitle {
-  font-size: var(--texto-sm);
-  color: var(--color-texto-secundario);
-  margin: -6px 0 0;
-  animation: splash-text-in var(--transicion-normal) 0.3s forwards;
   opacity: 0;
   transform: translateY(12px);
 }
@@ -143,7 +132,6 @@
 @media (prefers-reduced-motion: reduce) {
   .splash-screen__logo,
   .splash-screen__title,
-  .splash-screen__subtitle,
   .splash-screen__progress,
   .splash-screen__status {
     animation: none !important;
@@ -168,17 +156,13 @@
     height: 64px;
   }
 
-  .splash-screen__logo svg {
-    width: 32px;
-    height: 32px;
+  .splash-screen__logo-img {
+    width: 76%;
+    height: 76%;
   }
 
   .splash-screen__title {
     font-size: var(--texto-xl);
-  }
-
-  .splash-screen__subtitle {
-    font-size: var(--texto-sm);
   }
 
   .splash-screen__progress {
@@ -192,9 +176,9 @@
     height: 56px;
   }
 
-  .splash-screen__logo svg {
-    width: 28px;
-    height: 28px;
+  .splash-screen__logo-img {
+    width: 76%;
+    height: 76%;
   }
 
   .splash-screen__title {

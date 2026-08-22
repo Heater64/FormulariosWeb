@@ -2139,3 +2139,9 @@
     flex: 1 1 auto;
   }
 }
+
+/* ═══ Excepción dark: icono sobre fondo exito fijo → texto blanco (AA) ═══ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .admin-alerta--ok .admin-alerta__icono { color: #FFFFFF; }
+}
+:root[data-theme="dark"] .admin-alerta--ok .admin-alerta__icono { color: #FFFFFF; }

@@ -8,6 +8,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="default">
 <meta name="description" content="FormsBiblicos: estudio bíblico guiado capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://formularios-web-flax.vercel.app/">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FormsBiblicos">
 <meta property="og:title" content="FormsBiblicos — Estudio bíblico guiado">
@@ -134,7 +136,7 @@
     transition: transform var(--fast) var(--ease-spring);
   }
   .header__logo:hover .header__icono { transform: scale(1.05); }
-  .header__icono svg { width: 18px; height: 18px; }
+  .header__icono-img { width: 78%; height: 78%; object-fit: contain; }
 
   .header__texto {
     font-family: var(--fuente-display); font-size: 1.15rem;
@@ -192,7 +194,7 @@
   .hero__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.8rem, 8vw, 3.8rem);
-    font-weight: 600; line-height: 1.08; letter-spacing: -0.02em;
+    font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
     margin-bottom: var(--sm);
   }
 
@@ -298,12 +300,12 @@
   @media (min-width: 768px) {
     .login-card__icono { width: 56px; height: 56px; margin-bottom: var(--lg); }
   }
-  .login-card__icono svg { width: 24px; height: 24px; }
+  .login-card__icono-img { width: 82%; height: 82%; object-fit: contain; }
 
   .login-card__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 4vw, 1.7rem);
-    font-weight: 600; letter-spacing: -0.01em;
+    font-weight: 800; letter-spacing: -0.01em;
     margin-bottom: var(--xxs); text-align: center;
   }
 
@@ -374,8 +376,10 @@
     box-shadow: none;
   }
   @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) .login-card .btn-login-submit { color: #0C0A09; }
     :root:not([data-theme="light"]) .login-card .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
   }
+  :root[data-theme="dark"] .login-card .btn-login-submit { color: #0C0A09; }
   :root[data-theme="dark"] .login-card .btn-login-submit:hover { background: #93C5FD; color: #0C0A09; }
 
   .login-card__footer {
@@ -405,7 +409,7 @@
   .como-funciona__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 5vw, 2rem);
-    font-weight: 600; text-align: center;
+    font-weight: 800; text-align: center;
     margin-bottom: var(--xl); letter-spacing: -0.02em;
   }
 
@@ -459,7 +463,7 @@
   .faq__titulo {
     font-family: var(--fuente-display);
     font-size: clamp(1.4rem, 5vw, 2rem);
-    font-weight: 600; text-align: center;
+    font-weight: 800; text-align: center;
     margin-bottom: var(--xl); letter-spacing: -0.02em;
   }
 
@@ -499,6 +503,24 @@
   .footer a:hover { text-decoration: underline; }
 
   .footer__links { display: flex; gap: var(--md); }
+
+  /* ── PWA INSTALADA (html.fb-pwa, detectado en theme.js) ──
+     Pantalla de acceso limpia: solo logo + tarjeta de login centrada,
+     sin hero, marketing, FAQ, footer ni el enlace del pie de tarjeta. */
+  html.fb-pwa .hero,
+  html.fb-pwa .como-funciona,
+  html.fb-pwa .faq,
+  html.fb-pwa .footer,
+  html.fb-pwa .login-card__footer { display: none; }
+
+  html.fb-pwa .header { justify-content: center; }
+  html.fb-pwa .header__nav { display: none; }
+
+  html.fb-pwa .login-section {
+    min-height: calc(100dvh - 57px);
+    display: flex; flex-direction: column; justify-content: center;
+    padding-top: var(--md); padding-bottom: calc(var(--md) + var(--safe-bottom));
+  }
 
   /* ── ENTRADAS ORQUESTADAS ── */
   @keyframes fadeSlideUp {
@@ -596,7 +618,7 @@
 <header class="header">
   <a href="/" class="header__logo" aria-label="FormsBiblicos - Inicio">
     <span class="header__icono">
-      <svg xmlns="http://www.w3.org/2000/svg" width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></svg>
+      <img src="/assets/iconos/icono.svg" alt="" class="header__icono-img">
     </span>
     <span class="header__texto">FormsBiblicos</span>
   </a>
@@ -625,7 +647,7 @@
 <section class="login-section" id="login">
   <div class="login-card">
     <div class="login-card__icono">
-      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><polyline points="10 17 15 12 10 7"/><line x1="15" y1="12" x2="3" y2="12"/></svg>
+      <img src="/assets/iconos/icono.svg" alt="" class="login-card__icono-img">
     </div>
     <h2 class="login-card__titulo">Iniciar sesión</h2>
     <p class="login-card__sub">Accede con tu cuenta de grupo de estudio.</p>
@@ -648,7 +670,9 @@
     </form>
 
     <p class="login-card__footer">
-      ¿No tienes cuenta? <a href="#">Contacta a tu grupo</a>
+      <a href="recuperar.html">He olvidado mi contraseña</a><br>
+      ¿No tienes cuenta? <a href="registro.html">Crea una cuenta institucional</a><br>
+      ¿Ya perteneces a un grupo? <a href="contacto.html">Contacta a tu administrador</a>
     </p>
   </div>
 </section>
@@ -694,7 +718,7 @@
 
     <details class="faq__item">
       <summary class="faq__pregunta">¿Necesito cuenta?</summary>
-      <p class="faq__respuesta">Sí. Un administrador de tu grupo debe crear tu cuenta con credenciales de acceso.</p>
+      <p class="faq__respuesta">Sí. Si diriges una institución puedes crear tu cuenta y configurar tu primera clase desde <a href="registro.html">Crear cuenta institucional</a>. Si eres alumno o profesor, pide una invitación o un código a tu administrador.</p>
     </details>
 
     <details class="faq__item">
@@ -709,7 +733,7 @@
 
     <details class="faq__item">
       <summary class="faq__pregunta">¿Necesito una cuenta?</summary>
-      <p class="faq__respuesta">Contacta con un administrador de tu grupo de estudio para que te cree una.</p>
+      <p class="faq__respuesta">Los responsables pueden registrarse directamente. Los alumnos y profesores deben recibir el acceso de su institución.</p>
     </details>
   </div>
 </section>
@@ -720,6 +744,7 @@
   <div class="footer__links">
     <a href="privacidad.html">Privacidad</a>
     <a href="terminos.html">Términos</a>
+    <a href="licencias.html">Licencias</a>
     <a href="contacto.html">Contacto</a>
   </div>
 </footer>

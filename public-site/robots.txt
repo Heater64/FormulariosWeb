@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /app/
+Disallow: /o/
+
+Sitemap: https://formularios-web-flax.vercel.app/sitemap.xml

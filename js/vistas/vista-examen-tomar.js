@@ -88,7 +88,8 @@
       } catch (e) {
         console.error('Error cargando examen:', e.message || e);
         if (e.stack) console.error(e.stack);
-        raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" onclick="router.navegar('/examenes')">← Volver</button></div>`;
+        raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" id="btnErrorExamenVolver">← Volver</button></div>`;
+        raiz.querySelector('#btnErrorExamenVolver')?.addEventListener('click', () => router.navegar('/examenes'));
       }
     },
 
@@ -98,7 +99,8 @@
       // Aleatorizar el orden de las preguntas (las respuestas se guardan por id, seguro)
       const preguntasRender = config.aleatorizar_preguntas ? [...preguntas].sort(() => Math.random() - 0.5) : preguntas;
       if (preguntas.length === 0) {
-        raiz.innerHTML = '<div class="o-contenedor o-pila o-pila--lg u-mt-4 u-texto-centrado"><p class="u-color-texto-secundario">Este examen no tiene preguntas todavía.</p><button class="btn-primario" onclick="router.navegar(\'/examenes\')">← Volver a exámenes</button></div>';
+        raiz.innerHTML = '<div class="o-contenedor o-pila o-pila--lg u-mt-4 u-texto-centrado"><p class="u-color-texto-secundario">Este examen no tiene preguntas todavía.</p><button class="btn-primario" id="btnExamenVacioVolver">← Volver a exámenes</button></div>';
+        raiz.querySelector('#btnExamenVacioVolver')?.addEventListener('click', () => router.navegar('/examenes'));
         return;
       }
       // Si el intento ya empezó antes, descontar el tiempo transcurrido para que

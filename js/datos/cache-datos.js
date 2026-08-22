@@ -80,6 +80,14 @@
       if (navigator.onLine && window.supabaseClient) {
         try {
           const fresco = await fnRed();
+          // Una respuesta vacía no debe borrar una caché válida: puede ser
+          // una respuesta incompleta por RLS, una caída parcial o una réplica
+          // todavía no disponible. Solo sustituimos con vacío si no había
+          // datos locales previos.
+          const cachePrevio = await this.get(clave);
+          const remotoVacio = Array.isArray(fresco) && fresco.length === 0;
+          const objetoVacio = fresco && typeof fresco === 'object' && !Array.isArray(fresco) && Object.keys(fresco).length === 0;
+          if ((remotoVacio || objetoVacio) && cachePrevio != null) return cachePrevio;
           await this.set(clave, fresco, ttl);
           return fresco;
         } catch (e) {
@@ -92,6 +100,10 @@
       if (cache !== null) return cache;
       if (navigator.onLine && window.supabaseClient) {
         const fresco = await fnRed();
+        const cachePrevio = await this.get(clave);
+        const remotoVacio = Array.isArray(fresco) && fresco.length === 0;
+        const objetoVacio = fresco && typeof fresco === 'object' && !Array.isArray(fresco) && Object.keys(fresco).length === 0;
+        if ((remotoVacio || objetoVacio) && cachePrevio != null) return cachePrevio;
         await this.set(clave, fresco, ttl);
         return fresco;
       }

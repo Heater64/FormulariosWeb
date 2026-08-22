@@ -80,7 +80,7 @@
 .tarjeta-libro__barra {
   width: 100%;
   height: 5px;
-  background: var(--color-gris-200);
+  background: var(--color-fondo-alt);
   border-radius: var(--radio-pill);
   overflow: hidden;
   margin-top: 2px;
@@ -96,7 +96,7 @@
 
 /* 0% → barra gris */
 .tarjeta-libro--vacio .tarjeta-libro__barra--lleno {
-  background: var(--color-gris-300);
+  background: var(--color-borde);
 }
 
 /* 100% → barra verde */

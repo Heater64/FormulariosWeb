@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Auditoría de diseño</title>
+<style>
+  body { font-family: system-ui, sans-serif; background: #111; color: #eee; margin: 0; padding: 24px; }
+  h1 { font-size: 20px; }
+  h2 { font-size: 16px; margin: 32px 0 8px; color: #7dd3fc; border-bottom: 1px solid #333; padding-bottom: 6px; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(560px, 1fr)); gap: 16px; }
+  figure { margin: 0; }
+  figcaption { font-size: 12px; color: #999; margin-bottom: 4px; }
+  img { width: 100%; border: 1px solid #333; border-radius: 8px; background: #fff; }
+  .movil { grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); }
+</style>
+</head>
+<body>
+<h1>Auditoría de diseño — escritorio (1280px)</h1>
+<div class="grid">
+  <figure><figcaption>Estudio</figcaption><img src="shot-desktop-estudio.png"></figure>
+  <figure><figcaption>Explorar</figcaption><img src="shot-desktop-explorar.png"></figure>
+  <figure><figcaption>Exámenes</figcaption><img src="shot-desktop-examenes.png"></figure>
+  <figure><figcaption>Memorización</figcaption><img src="shot-desktop-memorizacion.png"></figure>
+  <figure><figcaption>Perfil</figcaption><img src="shot-desktop-perfil.png"></figure>
+  <figure><figcaption>Grupos</figcaption><img src="shot-desktop-grupos.png"></figure>
+  <figure><figcaption>Mapa</figcaption><img src="shot-desktop-mapa.png"></figure>
+  <figure><figcaption>Progreso</figcaption><img src="shot-desktop-progreso.png"></figure>
+  <figure><figcaption>Notificaciones</figcaption><img src="shot-desktop-notificaciones.png"></figure>
+</div>
+<h2>Móvil (390px)</h2>
+<div class="grid movil">
+  <figure><figcaption>Estudio</figcaption><img src="shot-movil-estudio.png"></figure>
+  <figure><figcaption>Explorar</figcaption><img src="shot-movil-explorar.png"></figure>
+  <figure><figcaption>Exámenes</figcaption><img src="shot-movil-examenes.png"></figure>
+  <figure><figcaption>Memorización</figcaption><img src="shot-movil-memorizacion.png"></figure>
+  <figure><figcaption>Perfil</figcaption><img src="shot-movil-perfil.png"></figure>
+  <figure><figcaption>Grupos</figcaption><img src="shot-movil-grupos.png"></figure>
+  <figure><figcaption>Mapa</figcaption><img src="shot-movil-mapa.png"></figure>
+  <figure><figcaption>Progreso</figcaption><img src="shot-movil-progreso.png"></figure>
+  <figure><figcaption>Notificaciones</figcaption><img src="shot-movil-notificaciones.png"></figure>
+</div>
+<h2>Login (SPA)</h2>
+<div class="grid">
+  <figure><figcaption>Login desktop claro</figcaption><img src="shot-login-desktop-claro.png"></figure>
+  <figure><figcaption>Login desktop oscuro</figcaption><img src="shot-login-desktop-oscuro.png"></figure>
+  <figure><figcaption>Login móvil claro</figcaption><img src="shot-login-movil-claro.png"></figure>
+</div>
+<h2>Panel admin</h2>
+<div class="grid">
+  <figure><figcaption>Admin desktop</figcaption><img src="shot-desktop-admin.png"></figure>
+  <figure><figcaption>Admin móvil</figcaption><img src="shot-movil-admin.png"></figure>
+</div>
+<h2>Modo oscuro</h2>
+<div class="grid">
+  <figure><figcaption>Estudio oscuro</figcaption><img src="shot-desktop-oscuro-estudio.png"></figure>
+  <figure><figcaption>Exámenes oscuro</figcaption><img src="shot-desktop-oscuro-examenes.png"></figure>
+  <figure><figcaption>Perfil oscuro</figcaption><img src="shot-desktop-oscuro-perfil.png"></figure>
+</div>
+<h2>Superficies clave</h2>
+<div class="grid">
+  <figure><figcaption>Login standalone (login.html)</figcaption><img src="shot-standalone-login.png"></figure>
+  <figure><figcaption>Sesión de lectura desktop</figcaption><img src="shot-desktop-sesion.png"></figure>
+  <figure><figcaption>Sesión de lectura móvil</figcaption><img src="shot-movil-sesion.png"></figure>
+  <figure><figcaption>Editor de exámenes</figcaption><img src="shot-desktop-editor.png"></figure>
+  <figure><figcaption>Capítulos de libro</figcaption><img src="shot-desktop-capitulos.png"></figure>
+</div>
+<h2>Post-flip token (verificación)</h2>
+<div class="grid">
+  <figure><figcaption>Dark login SPA</figcaption><img src="post-dark-login.png"></figure>
+  <figure><figcaption>Dark estudio</figcaption><img src="post-dark-estudio.png"></figure>
+  <figure><figcaption>Dark memorización</figcaption><img src="post-dark-memorizacion.png"></figure>
+  <figure><figcaption>Dark exámenes</figcaption><img src="post-dark-examenes.png"></figure>
+  <figure><figcaption>Dark standalone login</figcaption><img src="post-dark-standalone.png"></figure>
+  <figure><figcaption>Light login (regresión)</figcaption><img src="post-light-login.png"></figure>
+</div>
+</body>
+</html>

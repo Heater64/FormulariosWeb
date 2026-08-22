@@ -22,11 +22,7 @@
   line-height: 1.2;
 }
 
-.grupos-cabecera__sub {
-  margin: 2px 0 0;
-  font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
-}
+.grupos-cabecera__sub { display: none; }
 
 /* ===== Acciones (unirme / nueva clase / institución) ===== */
 
@@ -383,6 +379,7 @@
 .grupos-clase-banner__nombre {
   margin: 0;
   font-size: var(--texto-xl);
+  font-weight: 800;
   line-height: 1.2;
   font-family: var(--fuente-display, var(--fuente-base));
 }
@@ -996,7 +993,9 @@
 .grupos-tiempo__opcion:has(input:checked) {
   border-color: var(--color-acento);
   background: var(--color-acento-soft);
-  color: var(--color-texto-acento);
+  /* El fondo es el soft (claro en claro, oscuro en oscuro): el texto debe
+     ser el acento, no --color-texto-acento (blanco/oscuro según tema). */
+  color: var(--color-acento);
 }
 
 .grupos-tiempo__opcion input {

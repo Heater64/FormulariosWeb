@@ -69,7 +69,8 @@
 }
 
 .modal-formulario__campo input,
-.modal-formulario__campo textarea {
+.modal-formulario__campo textarea,
+.modal-formulario__campo select {
   font: inherit;
   padding: var(--espaciado-sm);
   border: 1px solid var(--color-borde);
@@ -79,10 +80,129 @@
   width: 100%;
 }
 
+.modal-formulario__campo select {
+  appearance: auto;
+  cursor: pointer;
+}
+
 .modal-formulario__campo input:focus,
-.modal-formulario__campo textarea:focus {
+.modal-formulario__campo textarea:focus,
+.modal-formulario__campo select:focus {
   outline: none;
   border-color: var(--color-acento);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+/* ── Selector de color (swatches) ── */
+.modal-formulario__swatches {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+}
+
+.modal-formulario__swatch {
+  position: relative;
+  cursor: pointer;
+  line-height: 0;
+}
+
+.modal-formulario__swatch input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-formulario__swatch-circulo {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.12);
+  transition: transform var(--transicion-rapida), border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+}
+
+.modal-formulario__swatch:hover .modal-formulario__swatch-circulo {
+  transform: scale(1.12);
+}
+
+.modal-formulario__swatch:has(input:checked) .modal-formulario__swatch-circulo {
+  border-color: var(--color-texto);
+  box-shadow: 0 0 0 2px var(--color-fondo-tarjeta), 0 0 0 4px var(--color-texto);
+}
+
+.modal-formulario__swatch-circulo::after {
+  content: '';
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--color-texto);
+  opacity: 0;
+  transform: scale(0.4);
+  transition: opacity var(--transicion-rapida), transform var(--transicion-rapida);
+}
+
+.modal-formulario__swatch:has(input:checked) .modal-formulario__swatch-circulo::after {
+  opacity: 1;
+  transform: scale(1);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .modal-formulario__swatch-circulo {
+    box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+  }
+}
+
+:root[data-theme="dark"] .modal-formulario__swatch-circulo {
+  box-shadow: inset 0 0 0 1px rgba(255, 255, 255, 0.22);
+}
+
+/* ── Selector de iconos ── */
+.modal-formulario__iconos {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+}
+
+.modal-formulario__icono-btn {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo);
+  color: var(--color-texto-secundario);
+  cursor: pointer;
+  transition: all var(--transicion-rapida);
+}
+
+.modal-formulario__icono-btn input {
+  position: absolute;
+  opacity: 0;
+  pointer-events: none;
+}
+
+.modal-formulario__icono-btn svg {
+  width: 18px;
+  height: 18px;
+  pointer-events: none;
+}
+
+.modal-formulario__icono-btn:hover {
+  border-color: var(--color-acento);
+  color: var(--color-acento);
+  background: var(--color-acento-soft);
+}
+
+.modal-formulario__icono-btn:has(input:checked) {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
   box-shadow: 0 0 0 2px var(--color-acento-soft);
 }
 

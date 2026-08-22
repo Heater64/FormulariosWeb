@@ -51,4 +51,9 @@
   }
 
   window.connectionIndicator = { iniciar, mostrar, ocultar };
+
+  // Auto-inicio (antes era un script inline en index.html; la CSP de
+  // producción no permite inline). El módulo se carga con defer, así que
+  // DOMContentLoaded aún no ha ocurrido y el listener se dispara a tiempo.
+  document.addEventListener('DOMContentLoaded', () => iniciar());
 })();

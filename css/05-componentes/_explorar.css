@@ -15,6 +15,8 @@
 
 .explorar__titulo h2 {
   margin: 0;
+  font-size: var(--texto-3xl);
+  line-height: 1.08;
 }
 
 /* ===== Search ===== */
@@ -1405,4 +1407,8 @@
   }
 }
 
-
+/* ═══ Excepción dark: chip de cumplimiento sobre exito fijo → blanco (AA) ═══ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .explorar__ref--cumplimiento:hover { color: #FFFFFF; }
+}
+:root[data-theme="dark"] .explorar__ref--cumplimiento:hover { color: #FFFFFF; }

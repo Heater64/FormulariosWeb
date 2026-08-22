@@ -111,7 +111,7 @@
     async montar(raiz, contextoVista) {
       const usuario = store.obtener('usuario');
       if (!usuario || !['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase())) {
-        raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" onclick="window.vistaPanelAdmin._volver()">Volver</button></div>'; return;
+        raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" data-admin-volver>Volver</button></div>'; raiz.querySelector('[data-admin-volver]')?.addEventListener('click', () => this._volver()); return;
       }
       raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(8, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando panel...</p></div>';
       this._inicioSesion = Date.now();
@@ -225,6 +225,7 @@
           <div id="adminContenido">${this._renderTabContent(raiz)}</div>
         </div>`;
       window.adminComunes.bindTabs(this, raiz);
+      raiz.querySelector('[data-admin-volver]')?.addEventListener('click', () => this._volver());
       raiz.querySelectorAll('[data-nivel]').forEach(btn => {
         btn.onclick = () => {
           this._nivelActivo = btn.dataset.nivel;

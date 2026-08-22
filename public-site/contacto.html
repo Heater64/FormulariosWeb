@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://formularios-web-flax.vercel.app/contacto.html">
 <meta name="description" content="Contacta con el equipo de FormsBiblicos: preguntas, sugerencias o problemas.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FormsBiblicos">
@@ -15,19 +17,12 @@
 <meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
 <meta property="og:locale" content="es_ES">
 <meta name="twitter:card" content="summary_large_image">
-<script>
-  (function () {
-    try {
-      var raw = localStorage.getItem('fb_preferencias');
-      var p = null;
-      try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-      var tema = (p && p.tema) || localStorage.getItem('fb_tema');
-      if (tema === 'claro') tema = 'light';
-      else if (tema === 'oscuro') tema = 'dark';
-      document.documentElement.setAttribute('data-theme', tema === 'dark' ? 'dark' : 'light');
-    } catch (e) {}
-  })();
-</script>
+<script src="./theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="../js/config/entorno.js" defer></script>
+<script src="../js/datos/supabase-client.js" defer></script>
+<script src="./contacto.js" defer></script>
+<script src="./legal.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root {
@@ -92,7 +87,7 @@
 </head>
 <body>
 <div class="page">
-  <a href="login.html" class="back">
+  <a href="index.html" class="back">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     Volver
   </a>
@@ -117,17 +112,5 @@
     <button type="submit" class="btn-submit">Enviar mensaje</button>
   </form>
 </div>
-
-<script>
-  document.getElementById('contactForm').addEventListener('submit', (e) => {
-    e.preventDefault();
-    const nombre = document.getElementById('nombre').value.trim();
-    const email = document.getElementById('email').value.trim();
-    const mensaje = document.getElementById('mensaje').value.trim();
-    if (!nombre || !email || !mensaje) return;
-    document.getElementById('exitoMsg').classList.add('visible');
-    e.target.reset();
-  });
-</script>
 </body>
 </html>

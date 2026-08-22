@@ -9,6 +9,16 @@
       if (!sb || !usuario) return;
       try {
         const { data: libro } = await sb.from('libros_biblicos').select('*').eq('id', libroId).single();
+        if (!libro) {
+          raiz.innerHTML = `<div class="o-contenedor o-pila o-pila--lg u-mt-4">
+            <p class="u-fs-lg">Libro no encontrado.</p>
+            <p class="u-color-texto-secundario">Puede que el enlace sea incorrecto.</p>
+            <button class="btn-primario" style="max-width:240px" id="btnVolverEstudio">Volver al estudio</button>
+          </div>`;
+          const btn = raiz.querySelector('#btnVolverEstudio');
+          if (btn) btn.onclick = () => router.navegar('/estudio');
+          return;
+        }
         const { data: progreso } = await sb.from('progreso_lectura')
           .select('capitulo_id').eq('usuario_id', usuario.id).eq('completado', true);
         const { data: capitulos } = await sb.from('capitulos').select('id, numero').eq('libro_id', libroId);
@@ -22,14 +32,21 @@
 
         raiz.innerHTML = `
           <div class="o-contenedor o-pila o-pila--lg u-app-shell">
-            <div class="o-flecha o-flecha--between u-mb-2">
-              <button class="btn-secundario" onclick="router.navegar('/estudio')">${window.Iconos.render('arrow-left')}</button>
-              <span class="u-fs-xs u-color-texto-terciario">${libro.testamento === 'antiguo' ? 'Antiguo Testamento' : 'Nuevo Testamento'}</span>
-            </div>
+            <header class="vista-cabecera capitulos-vista-cabecera">
+              <div class="vista-cabecera__principal">
+                <button class="btn-icono" id="btnCabeceraVolverEstudio" aria-label="Volver al estudio">${window.Iconos.render('arrow-left')}</button>
+                <div>
+                  <h1>${window.Iconos.render('book-open')} ${libro.nombre} <button class="info-ayuda" data-guia="capitulos" aria-label="Guía de capítulos">i</button></h1>
+                </div>
+              </div>
+              <div class="vista-cabecera__acciones">
+                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+              </div>
+            </header>
             <div class="capitulos-cabecera">
               <div class="capitulos-cabecera__icono">${window.Iconos.render('book-open')}</div>
               <div class="capitulos-cabecera__info">
-                <h2>${libro.nombre}</h2>
+                <h2>Tu progreso</h2>
                 <p class="capitulos-cabecera__meta">${leidos} de ${total} capítulos leídos · ${pct}%</p>
                 <div class="capitulos-cabecera__barra"><div class="capitulos-cabecera__barra--lleno" style="width:${pct}%"></div></div>
               </div>
@@ -42,7 +59,13 @@
             </div>
           </div>`;
 
-        raiz.querySelector('#btnEmpezar').onclick = () => router.navegar(`/estudio/sesion/${libroId}/${primerPendiente}`);
+        raiz.querySelector('#btnCabeceraVolverEstudio')?.addEventListener('click', () => router.navegar('/estudio'));
+        raiz.querySelector('#btnEmpezar').addEventListener('click', () => router.navegar(`/estudio/sesion/${libroId}/${primerPendiente}`));
+        if (window.Iconos) window.Iconos.actualizar();
+        if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+        window.helpers.registrarGuias(raiz, {
+          capitulos: ['Capítulos', 'Consulta el progreso de este libro y entra directamente en el capítulo que quieras estudiar.', 'Usa Empezar para continuar por el primer capítulo pendiente o elige un número concreto.']
+        });
 
         const grid = raiz.querySelector('#gridCaps');
         grid.innerHTML = Array.from({ length: total }, (_, i) => i + 1).map(n => {
@@ -55,7 +78,6 @@
         grid.querySelectorAll('[data-cap]').forEach(el => {
           el.addEventListener('click', () => router.navegar(`/estudio/sesion/${libroId}/${el.dataset.cap}`));
         });
-        window.Iconos.actualizar();
       } catch (e) {
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`;
       }

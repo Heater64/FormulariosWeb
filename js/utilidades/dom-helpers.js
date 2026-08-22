@@ -215,6 +215,23 @@
             control = `<textarea id="cmp_${i}" rows="${c.filas || 2}" placeholder="${window.helpers.escapeHtml(c.placeholder || '')}">${window.helpers.escapeHtml(c.valor || '')}</textarea>`;
           } else if (c.tipo === 'select') {
             control = `<select id="cmp_${i}">${(c.opciones || []).map(o => `<option value="${window.helpers.escapeHtml(o.valor)}" ${String(o.valor) === String(c.valor) ? 'selected' : ''}>${window.helpers.escapeHtml(o.texto || o.valor)}</option>`).join('')}</select>`;
+          } else if (c.tipo === 'color') {
+            // Swatches de color: radio invisible + círculo de color (estilo Gizmo)
+            control = `<div class="modal-formulario__swatches" id="cmp_${i}" role="radiogroup" aria-label="${window.helpers.escapeHtml(c.etiqueta || c.nombre)}">${(c.opciones || []).map(o => {
+              const sel = String(o.valor) === String(c.valor);
+              return `<label class="modal-formulario__swatch" title="${window.helpers.escapeHtml(o.texto || o.valor)}">` +
+                `<input type="radio" name="cmp_${i}" value="${window.helpers.escapeHtml(o.valor)}" ${sel ? 'checked' : ''}>` +
+                `<span class="modal-formulario__swatch-circulo" style="background:${window.helpers.escapeHtml(o.valor)}"></span></label>`;
+            }).join('')}</div>`;
+          } else if (c.tipo === 'iconos') {
+            // Selector de iconos: radio invisible + botón con el icono lucide
+            control = `<div class="modal-formulario__iconos" id="cmp_${i}" role="radiogroup" aria-label="${window.helpers.escapeHtml(c.etiqueta || c.nombre)}">${(c.opciones || []).map(o => {
+              const sel = String(o.valor) === String(c.valor);
+              const icono = window.Iconos ? window.Iconos.render(String(o.valor)) : (o.texto || o.valor);
+              return `<label class="modal-formulario__icono-btn" title="${window.helpers.escapeHtml(o.texto || o.valor)}">` +
+                `<input type="radio" name="cmp_${i}" value="${window.helpers.escapeHtml(o.valor)}" ${sel ? 'checked' : ''}>` +
+                `${icono}</label>`;
+            }).join('')}</div>`;
           } else {
             const tipoInput = c.tipo === 'password' ? 'password' : 'text';
             control = `<input type="${tipoInput}" id="cmp_${i}" value="${window.helpers.escapeHtml(c.valor || '')}" placeholder="${window.helpers.escapeHtml(c.placeholder || '')}">`;
@@ -256,14 +273,18 @@
         overlay.querySelector('[data-confirmar]').onclick = () => {
           const valores = {};
           campos.forEach((c, i) => {
-            const el = overlay.querySelector('#cmp_' + i);
+            let el = overlay.querySelector('#cmp_' + i);
+            // Campos compuestos (swatches/iconos): leer el radio marcado
+            if (el && !el.matches('input, select, textarea')) {
+              el = el.querySelector('input[type="radio"]:checked') || el.querySelector('input[type="radio"]');
+            }
             valores[c.nombre] = el ? el.value : '';
           });
           const faltan = campos.some(c => c.requerido && !(valores[c.nombre] || '').trim());
           if (faltan) { window.helpers.mostrarAlerta('Completa los campos obligatorios.', 'advertencia'); return; }
           cerrar(valores);
         };
-        setTimeout(() => { const p = overlay.querySelector('#cmp_0'); if (p) p.focus(); }, 50);
+        setTimeout(() => { const p = overlay.querySelector('#cmp_0'); if (p && p.focus) p.focus(); }, 50);
       });
     }
   };

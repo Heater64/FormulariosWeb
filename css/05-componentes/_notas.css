@@ -19,10 +19,12 @@
 }
 
 .notas-cabecera__titulo {
-  font-size: var(--texto-2xl);
+  font-family: var(--fuente-display);
+  font-size: var(--texto-3xl);
   font-weight: 700;
+  line-height: 1.08;
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .notas-cabecera__papelera {

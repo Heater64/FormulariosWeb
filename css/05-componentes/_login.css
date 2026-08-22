@@ -112,7 +112,7 @@
   display: block;
   font-family: var(--fuente-display);
   font-size: clamp(1.75rem, 7.5vw, 2.7rem);
-  font-weight: 600;
+  font-weight: 800;
   line-height: 1.15;
   letter-spacing: -0.015em;
   color: var(--color-texto);
@@ -521,7 +521,7 @@
 .login-info__titulo {
   font-family: var(--fuente-display);
   font-size: var(--texto-2xl);
-  font-weight: 600;
+  font-weight: 800;
   letter-spacing: -0.01em;
   color: var(--color-texto);
   margin: 0;
@@ -1049,7 +1049,7 @@
 .login-welcome__nombre {
   font-family: var(--fuente-display);
   font-size: var(--texto-xl);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-texto);
   margin: 0;
 }
@@ -1087,7 +1087,7 @@
 .login-setup__titulo {
   font-family: var(--fuente-display);
   font-size: var(--texto-xl);
-  font-weight: 600;
+  font-weight: 800;
   color: var(--color-texto);
   margin: 0 0 var(--espaciado-xs);
 }
@@ -1287,7 +1287,10 @@
     grid-template-columns: 1fr;
     gap: var(--espaciado-xl);
   }
-
-
 }
+
+/* ═══ Excepción dark: check de bienvenida sobre exito fijo → blanco (AA) ═══ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .login-welcome__check { color: #FFFFFF; }
 }
+:root[data-theme="dark"] .login-welcome__check { color: #FFFFFF; }

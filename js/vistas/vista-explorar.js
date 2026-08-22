@@ -549,9 +549,13 @@
       const mostrarBusqueda = _pestana !== 'general';
       raiz.innerHTML = `
         <div class="o-contenedor explorar">
-          <div class="explorar__titulo">
-            <h2>${I('compass')} Explorar</h2>
-            ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+          <div class="explorar__titulo vista-cabecera">
+            <div class="vista-cabecera__principal">
+              <h1>${I('compass')} Explorar <button class="info-ayuda" data-guia="explorar" aria-label="Guía de Explorar">i</button></h1>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
           </div>
           ${mostrarBusqueda ? `
           <div class="explorar__search">
@@ -593,6 +597,9 @@
 
       if (!esSkeleton) _renderContenido(raiz);
       window.Iconos.actualizar();
+      window.helpers.registrarGuias(raiz, {
+        explorar: ['Explorar', 'Consulta reyes, personajes, lugares, parábolas, profecías y otros contenidos relacionados con la Biblia.', 'Usa las pestañas y el buscador para encontrar un tema concreto.']
+      });
     }
   };
 })();

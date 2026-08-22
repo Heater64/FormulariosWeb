@@ -46,71 +46,20 @@
        Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
        Lee preferencias de localStorage sincrónicamente y aplica
        data-theme + un fondo inicial, antes de que se renderice el
-       CSS. Cuando los tokens (--color-fondo, etc.) se definan más
-       tarde, los componentes usarán esos valores. Importante: solo
-       aplicamos estilos INLINE sobre el propio elemento <html>, NO
-       sobre variables CSS (eso pisaría el sistema de tokens y
-       rompería los cambios de tema vía UI). Tambien sincroniza
-       la meta theme-color para que la statusbar del navegador
-       coincida con el tema elegido.
+       CSS. Archivo EXTERNO (js/core/theme-init.js) y bloqueante: la
+       CSP de producción no permite scripts inline, así que no pueden
+       ser <script> incrustados.
        ============================================================ -->
-  <script>
-    (function () {
-      try {
-        var raw = localStorage.getItem('fb_preferencias');
-        var p = null;
-        try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-        var tema = (p && p.tema) || localStorage.getItem('fb_tema') || 'light';
-        if (tema === 'claro') tema = 'light';
-        else if (tema === 'oscuro') tema = 'dark';
-        var root = document.documentElement;
-        var isDark = tema === 'dark';
-        var isLight = tema === 'light';
-        if (isLight || isDark) root.setAttribute('data-theme', tema);
-        var hc = p && p.alto_contraste === true;
-        var bg = isDark ? (hc ? '#000000' : '#0F172A') : '#FFFFFF';
-        var txt = isDark ? '#FFFFFF' : '#0F172A';
-        // Color de fondo inmediato solo en el propio elemento root.
-        // Los tokens (--color-fondo) se definen luego desde CSS y
-        // se aplican a <body>, así que no hay conflicto de cascada.
-        root.style.backgroundColor = bg;
-        root.style.color = txt;
-        root.style.colorScheme = isDark ? 'dark' : 'light';
-        // Sincroniza la meta theme-color con el tema + HC
-        var meta = document.head.querySelector('meta[name="theme-color"]');
-        if (meta) meta.setAttribute('content', bg);
-      } catch (e) { /* offline / no localStorage -> defaults del navegador */ }
-    })();
-  </script>
+  <script src="js/core/theme-init.js"></script>
 
   <!-- ============================================================
        Captura global de errores (corre antes que cualquier script):
        alimenta el buffer que procesa error-recovery.js (primer
        script diferido). Sin esto, un error en el arranque pasaría
-       desapercibido y la app podría quedarse en blanco.
+       desapercibido y la app podría quedarse en blanco. Externo
+       (js/core/error-capture.js) por la CSP de producción.
        ============================================================ -->
-  <script>
-    (function () {
-      window.__fbErrores = [];
-      window.__fbRegistrarError = function (e) {
-        try {
-          var msg = (e && e.message) || (e && e.name) || String(e);
-          window.__fbErrores.push({ ts: Date.now(), msg: msg });
-        } catch (err) {}
-        if (window.errorRecovery && window.errorRecovery.registrarError) {
-          try { window.errorRecovery.registrarError(e); } catch (err) {}
-        }
-      };
-      window.addEventListener('error', function (e) {
-        // Los errores de recursos (img, link, audio, vídeo...) no son errores
-        // de código: no cuentan para la autorrecuperación (si no, cualquier
-        // imagen rota dispararía una reparación de caché falsa).
-        if (e && e.target && !e.error) return;
-        window.__fbRegistrarError(e.error || e);
-      }, true);
-      window.addEventListener('unhandledrejection', function (e) { window.__fbRegistrarError(e.reason); });
-    })();
-  </script>
+  <script src="js/core/error-capture.js"></script>
 
   <!-- Default body bg usando los tokens: una vez CSS se carga,
        el body toma --color-fondo. Mientras tanto, html.style.backgroundColor
@@ -156,6 +105,7 @@
   <link rel="stylesheet" href="css/05-componentes/_celebracion.css">
   <link rel="stylesheet" href="css/05-componentes/_tarjeta-libro.css">
   <link rel="stylesheet" href="css/05-componentes/_estudio.css">
+  <link rel="stylesheet" href="css/05-componentes/_agenda-estudio.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-progreso.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-accion.css">
   <link rel="stylesheet" href="css/05-componentes/_modal.css">
@@ -226,6 +176,7 @@
 
   <!-- JS: Utilities -->
   <script src="js/utilidades/dom-helpers.js" defer></script>
+  <script src="js/utilidades/sanitizacion.js" defer></script>
   <script src="js/utilidades/iconos.js" defer></script>
   <script src="js/utilidades/storage.js" defer></script>
   <script src="js/utilidades/preferencias.js" defer></script>
@@ -239,6 +190,8 @@
   <!-- Coordinador único de back: cierra modales/sheets con el back del sistema
        (navegador, gesto Android y botón físico de la APK) antes de navegar. -->
   <script src="js/core/back-navigation.js" defer></script>
+  <!-- Gesto global swipe-derecha para retroceder (como iOS/Android) -->
+  <script src="js/core/swipe-back.js" defer></script>
   <!-- Barra inferior: ocultarse al hacer scroll y con el teclado abierto -->
   <script src="js/core/navigation.js" defer></script>
 
@@ -322,61 +275,28 @@
        el último script de la página, así que el orden no cambia. -->
   <script type="module" src="js/core/index.js"></script>
 
-  <!-- JS: Feedback háptico -->
-  <script>
-    document.addEventListener('click', e => {
-      if ('vibrate' in navigator && e.target.closest('button, a, [role="button"], .btn-primario, .btn-secundario'))
-        navigator.vibrate(8);
-    }, { passive: true });
-  </script>
+  <!-- JS: Feedback háptico (vive en js/utilidades/haptica.js, auto-inicio) -->
 
-  <!-- JS: Indicadores de conexión y sincronización -->
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      if (window.connectionIndicator) window.connectionIndicator.iniciar();
-      if (window.syncStatus) window.syncStatus.iniciar();
-    });
-  </script>
+  <!-- JS: Indicadores de conexión y sincronización (auto-inicio en
+       js/utilidades/connection-indicator.js y sync-status.js) -->
 
-  <!-- JS: Teclado → ocultar la barra inferior mientras se escribe (el teclado
-       virtual tapa la parte inferior; la barra reaparece al desenfocar).
-       Solo aplica en pantallas estrechas (barra inferior): en escritorio la
-       navegación es una sidebar fija a la izquierda y no hay teclado virtual. -->
-  <script>
-    document.addEventListener('focusin', (e) => {
-      if (window.innerWidth >= 1024) return;
-      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
-        if (window.navigationManager) window.navigationManager.ocultarPorTeclado(true);
-      }
-    }, true);
-    document.addEventListener('focusout', (e) => {
-      if (e.target && e.target.matches && e.target.matches('input, textarea, select, [contenteditable="true"]')) {
-        if (window.navigationManager) window.navigationManager.ocultarPorTeclado(false);
-      }
-    }, true);
-  </script>
+  <!-- JS: Teclado → ocultar barra inferior mientras se escribe (vive en
+       js/core/navigation.js, NavigationManager._initTeclado) -->
 
-  <!-- PWA: registra el service worker. En producción (https) activa la
-       instalación y el modo offline; en desarrollo local (http) se omite
-       para no interferir con el HMR de Vite. -->
-  <script>
-    if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
-      window.addEventListener('load', () => {
-        navigator.serviceWorker.register('./sw.js').catch(() => {});
-      });
-    }
-  </script>
+  <!-- PWA: registra el service worker (js/core/sw-register.js). En producción
+       (https) activa la instalación y el modo offline; en desarrollo local
+       (http) se omite para no interferir con el HMR de Vite. -->
+  <script src="js/core/sw-register.js" defer></script>
 </head>
 <body>
   <!-- Splash Screen -->
   <div id="splashScreen" class="splash-screen" role="status" aria-label="Cargando FormsBiblicos">
     <div class="splash-screen__logo" aria-hidden="true">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>
+      <img src="assets/iconos/icono.svg" alt="" class="splash-screen__logo-img">
     </div>
     <h1 class="splash-screen__title">FormsBiblicos</h1>
-    <p class="splash-screen__subtitle">Cargando tu progreso…</p>
     <div class="splash-screen__progress"><div class="splash-screen__bar"></div></div>
-    <p class="splash-screen__status" id="splashStatus">Iniciando…</p>
+    <p class="splash-screen__status" id="splashStatus">Cargando…</p>
   </div>
 
   <!-- Online/Offline Indicator -->

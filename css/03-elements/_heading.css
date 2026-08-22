@@ -7,8 +7,8 @@ h1, h2, h3, h4, h5, h6 {
 /* Display headings use the serif face — restrained, editorial */
 h1, h2 {
   font-family: var(--fuente-display);
-  font-weight: 600;
-  letter-spacing: -0.01em;
+  font-weight: 700;
+  letter-spacing: 0;
 }
 
 h3, h4, h5, h6 {

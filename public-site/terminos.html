@@ -7,6 +7,8 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://formularios-web-flax.vercel.app/terminos.html">
 <meta name="description" content="Términos de uso de FormsBiblicos, la plataforma de estudio bíblico guiado.">
 <meta property="og:type" content="website">
 <meta property="og:site_name" content="FormsBiblicos">
@@ -15,19 +17,8 @@
 <meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
 <meta property="og:locale" content="es_ES">
 <meta name="twitter:card" content="summary_large_image">
-<script>
-  (function () {
-    try {
-      var raw = localStorage.getItem('fb_preferencias');
-      var p = null;
-      try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-      var tema = (p && p.tema) || localStorage.getItem('fb_tema');
-      if (tema === 'claro') tema = 'light';
-      else if (tema === 'oscuro') tema = 'dark';
-      document.documentElement.setAttribute('data-theme', tema === 'dark' ? 'dark' : 'light');
-    } catch (e) {}
-  })();
-</script>
+<script src="./theme.js"></script>
+<script src="./legal.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
   :root {
@@ -52,11 +43,13 @@
   p, li { font-size: 15px; color: var(--texto-sec); margin-bottom: var(--md); }
   ul { padding-left: 20px; margin-bottom: var(--md); }
   li { margin-bottom: 8px; }
+  .legal-nav { font-size: 13px; color: var(--texto-ter); margin-top: var(--xl); padding-top: var(--md); border-top: 1px solid var(--borde); }
+  .legal-nav a { color: var(--texto-sec); }
 </style>
 </head>
 <body>
 <div class="page">
-  <a href="login.html" class="back">
+  <a href="index.html" class="back">
     <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg>
     Volver
   </a>
@@ -97,8 +90,8 @@
   <h2>8. Cambios en los términos</h2>
   <p>Nos reservamos el derecho de actualizar estos términos. El uso continuado de la plataforma tras los cambios implica aceptación.</p>
 
-  <p style="margin-top: var(--xl); padding-top: var(--md); border-top: 1px solid var(--borde);">
-    ¿Preguntas? <a href="contacto.html">Contáctanos</a>
+  <p class="legal-nav">
+    <a href="privacidad.html">Privacidad</a> · <a href="terminos.html">Términos</a> · <a href="licencias.html">Licencias</a> · <a href="contacto.html">Contacto</a>
   </p>
 </div>
 </body>

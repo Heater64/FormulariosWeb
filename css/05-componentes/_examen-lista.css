@@ -114,7 +114,10 @@
 
 .examen-header__titulo {
   margin: 0;
-  font-size: clamp(1rem, 2.4vw, var(--texto-xl));
+  font-family: var(--fuente-display);
+  font-size: var(--texto-3xl);
+  font-weight: 700;
+  line-height: 1.08;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;

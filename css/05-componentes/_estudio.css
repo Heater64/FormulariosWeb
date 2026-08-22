@@ -3,6 +3,8 @@
    ========================================================================== */
 
 /* ── Cabecera de la sección ──────────────────────────────────────────── */
+/* La estructura visual la gobierna .vista-cabecera; estos estilos solo
+   conservan el comportamiento específico de Estudio. */
 .estudio-cabecera {
   display: flex;
   flex-direction: column;
@@ -17,14 +19,14 @@
   gap: var(--espaciado-sm);
 }
 
-.estudio-cabecera h2 {
+.estudio-cabecera h1 {
   display: inline-flex;
   align-items: center;
   gap: var(--espaciado-sm);
   margin: 0;
   min-width: 0;
-  font-size: var(--texto-xl);
-  line-height: var(--texto-altura-linea-titulo);
+  font-size: var(--texto-3xl);
+  line-height: 1.08;
 }
 
 .estudio-cabecera__titulo-texto {
@@ -33,15 +35,13 @@
   text-overflow: ellipsis;
 }
 
-.estudio-cabecera h2 svg {
+.estudio-cabecera h1 svg {
   color: var(--color-acento);
   flex-shrink: 0;
 }
 
 .estudio-cabecera__sub {
-  margin: 0;
-  font-size: var(--texto-sm);
-  color: var(--color-texto-terciario);
+  display: none;
 }
 
 .estudio-cabecera__derecha {

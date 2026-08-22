@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<meta name="theme-color" content="#FAFAF9" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0C0A09" media="(prefers-color-scheme: dark)">
+<meta name="robots" content="noindex, nofollow">
+<link rel="canonical" href="https://formularios-web-flax.vercel.app/recuperar.html">
+<meta name="description" content="Recupera el acceso a tu cuenta de FormsBiblicos.">
+<title>Recuperar acceso — FormsBiblicos</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,600;1,6..72,400&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="./theme.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+<script src="../js/config/entorno.js" defer></script>
+<script src="../js/core/store.js" defer></script>
+<script src="../js/core/eventBus.js" defer></script>
+<script src="../js/core/errores.js" defer></script>
+<script src="../js/datos/supabase-client.js" defer></script>
+<script src="../js/datos/auth-repository.js" defer></script>
+<script src="./recuperar.js" defer></script>
+<style>
+  *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+  :root{--accento:#2563EB;--accento-hover:#1D4ED8;--accento-soft:#EFF6FF;--acento-glow:rgba(37,99,235,.12);--texto:#1C1917;--texto-sec:#78716C;--texto-ter:#A8A29E;--fondo:#FAFAF9;--fondo-alt:#F5F5F4;--tarjeta:#FFF;--borde:#E7E5E4;--error:#B91C1C;--error-soft:#FEE2E2;--exito:#065F46;--exito-soft:#D1FAE5;--fuente-display:"Newsreader",Georgia,serif;--fuente-body:"Inter",sans-serif;--sm:14px;--md:18px;--lg:26px;--xl:36px;--radio-md:10px;--radio-xl:18px;--toque:48px;--fast:200ms cubic-bezier(.4,0,.2,1)}
+  @media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--texto:#FAFAF9;--texto-sec:#A8A29E;--texto-ter:#78716C;--fondo:#0C0A09;--fondo-alt:#1C1917;--tarjeta:#1C1917;--borde:#292524;--accento:#60A5FA;--accento-hover:#3B82F6;--accento-soft:#1E3A5F;--acento-glow:rgba(96,165,250,.15);--error:#FCA5A5;--error-soft:#7F1D1D;--exito:#A7F3D0;--exito-soft:#064E3B}}
+  :root[data-theme="dark"]{--texto:#FAFAF9;--texto-sec:#A8A29E;--texto-ter:#78716C;--fondo:#0C0A09;--fondo-alt:#1C1917;--tarjeta:#1C1917;--borde:#292524;--accento:#60A5FA;--accento-hover:#3B82F6;--accento-soft:#1E3A5F;--acento-glow:rgba(96,165,250,.15);--error:#FCA5A5;--error-soft:#7F1D1D;--exito:#A7F3D0;--exito-soft:#064E3B}
+  html{font-size:16px;-webkit-font-smoothing:antialiased}body{min-height:100vh;font-family:var(--fuente-body);background:var(--fondo);color:var(--texto);display:flex;flex-direction:column}a{color:var(--accento);text-decoration:none}a:hover{text-decoration:underline}.header{display:flex;align-items:center;padding:10px var(--md);border-bottom:1px solid var(--borde)}.logo{display:flex;align-items:center;gap:10px;color:var(--texto);font-family:var(--fuente-display);font-size:1.15rem;font-weight:600}.logo-icon{width:36px;height:36px;border-radius:var(--radio-md);background:var(--accento);display:grid;place-items:center}.logo-icon img{width:78%;height:78%;object-fit:contain}.main{width:min(100% - 36px,460px);margin:auto;padding:var(--xl) 0}.card{background:var(--tarjeta);border:1px solid var(--borde);border-radius:var(--radio-xl);padding:var(--xl) var(--lg);box-shadow:0 8px 24px -6px rgba(0,0,0,.12);position:relative;overflow:hidden}.card::before{content:"";position:absolute;inset:0 0 auto;height:3px;background:linear-gradient(90deg,var(--accento),#60A5FA,var(--accento))}.icon{width:52px;height:52px;margin:0 auto var(--md);padding:8px;border-radius:50%;background:var(--accento-soft);display:grid;place-items:center}.icon img{width:100%;height:100%;object-fit:contain}.title{font-family:var(--fuente-display);font-size:clamp(1.6rem,6vw,2rem);font-weight:700;text-align:center;margin-bottom:var(--sm)}.sub{text-align:center;color:var(--texto-sec);font-size:var(--sm);line-height:1.6;margin-bottom:var(--lg)}.campo{margin-bottom:var(--md)}label{display:block;font-size:var(--sm);font-weight:600;margin-bottom:6px}input{width:100%;min-height:var(--toque);padding:12px 14px;border:1.5px solid var(--borde);border-radius:var(--radio-md);background:var(--fondo-alt);color:var(--texto);font:inherit;font-size:16px}input:focus{outline:none;border-color:var(--accento);background:var(--tarjeta);box-shadow:0 0 0 3px var(--acento-glow)}button{width:100%;min-height:var(--toque);padding:12px 16px;border:0;border-radius:var(--radio-md);background:var(--accento);color:#fff;font:inherit;font-size:var(--sm);font-weight:700;cursor:pointer;box-shadow:0 2px 8px var(--acento-glow);transition:all var(--fast)}button:hover{background:var(--accento-hover);transform:translateY(-1px)}button:disabled{opacity:.65;cursor:wait;transform:none}.mensaje{display:none;padding:12px 14px;border-radius:var(--radio-md);font-size:var(--sm);line-height:1.5;margin-bottom:var(--md)}.mensaje.visible{display:block}.mensaje.error{background:var(--error-soft);color:var(--error)}.mensaje.exito{background:var(--exito-soft);color:var(--exito)}.footer{text-align:center;color:var(--texto-ter);font-size:var(--sm);margin-top:var(--lg);line-height:1.7}.footer a{color:var(--texto-sec)}.oculto{display:none!important}*:focus-visible{outline:2px solid var(--accento);outline-offset:2px}@media(max-width:480px){.main{width:min(100% - 28px,460px);padding:var(--lg) 0}.card{padding:var(--xl) var(--md)}}
+</style>
+</head>
+<body>
+<header class="header"><a class="logo" href="./index.html" aria-label="FormsBiblicos - Inicio"><span class="logo-icon"><img src="/assets/iconos/icono.svg" alt=""></span><span>FormsBiblicos</span></a></header>
+<main class="main"><section class="card" aria-labelledby="tituloRecuperacion">
+  <div class="icon"><img src="/assets/iconos/icono.svg" alt=""></div>
+  <h1 class="title" id="tituloRecuperacion">Recuperar acceso</h1>
+  <p class="sub" id="subtituloRecuperacion">Solicita un enlace para recuperar la contraseña de tu cuenta.</p>
+  <div class="mensaje error" id="errorRecuperacion" role="alert"></div>
+  <div class="mensaje exito" id="exitoRecuperacion" role="status"></div>
+  <form id="formSolicitar" novalidate>
+    <div class="campo"><label for="correoRecuperacion">Correo electrónico</label><input id="correoRecuperacion" type="email" autocomplete="email" placeholder="tu@correo.com" required></div>
+    <button type="submit" id="btnSolicitar">Enviar enlace de recuperación</button>
+  </form>
+  <form id="formNuevaPassword" class="oculto" novalidate>
+    <div class="campo"><label for="nuevaPassword">Nueva contraseña</label><input id="nuevaPassword" type="password" autocomplete="new-password" placeholder="8 caracteres, letras y números" required></div>
+    <div class="campo"><label for="confirmarPassword">Confirmar contraseña</label><input id="confirmarPassword" type="password" autocomplete="new-password" required></div>
+    <button type="submit" id="btnActualizar">Guardar nueva contraseña</button>
+  </form>
+  <p class="footer"><a href="index.html">Volver al inicio de sesión</a> · <a href="contacto.html">Contactar con soporte</a></p>
+</section></main>
+</body>
+</html>

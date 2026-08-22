@@ -37,7 +37,7 @@ run(process.execPath, [viteBin, 'build', '--config', 'vite.public.config.js']);
 
 // 2) Copiar archivos estáticos necesarios para el login:
 //    - JS de auth (entorno, store, eventBus, errores, supabase-client, auth-repository)
-//    - Páginas legales (privacidad, terminos, contacto)
+//    - Páginas públicas (legales, contacto y recuperación)
 console.log('[build-public] 2/4 Archivos estáticos…');
 const jsDirs = [
   { src: join(root, 'js', 'config'), dest: join(distPublic, 'js', 'config') },
@@ -62,11 +62,18 @@ for (const file of jsFiles) {
   }
 }
 
-// Copiar páginas legales
-const legalPages = ['privacidad.html', 'terminos.html', 'contacto.html'];
+// Copiar páginas legales (fuente única compartida con el perfil de la app)
+const legalPages = ['privacidad.html', 'terminos.html', 'licencias.html', 'contacto.html', 'recuperar.html', 'registro.html', 'onboarding.html'];
 for (const page of legalPages) {
   const src = join(root, 'public-site', page);
   if (existsSync(src)) cpSync(src, join(distPublic, page));
+}
+
+// Copiar assets/ (iconos, logo, capturas) → dist-public/assets/
+// para que la landing y el login puedan referenciar /assets/... igual que /js/.
+const assetsSrc = join(root, 'assets');
+if (existsSync(assetsSrc)) {
+  cpSync(assetsSrc, join(distPublic, 'assets'), { recursive: true });
 }
 
 // 3) App para navegador con base /app/

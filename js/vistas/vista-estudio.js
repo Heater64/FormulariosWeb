@@ -7,12 +7,18 @@
       const sb = window.supabaseClient;
       if (!sb || !usuario) return;
       try {
-        const [librosResult, progresoResult] = await Promise.all([
+        const [librosResult, progresoResult, examenesResult, memPendientesResult] = await Promise.all([
           sb.from('libros_biblicos').select('*').order('id'),
-          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true)
+          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
+          window.examenesRepository ? window.examenesRepository.misIntentos(usuario.id).catch(() => []) : [],
+          window.memorizacionRepository ? window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => []) : []
         ]);
         const libros = librosResult.data;
         const completados = progresoResult.data || [];
+        const intentos = examenesResult || [];
+        const repasosPendientes = memPendientesResult || [];
+        const lecturasHoy = completados.filter(p => p.fecha_lectura && new Date(p.fecha_lectura).toDateString() === new Date().toDateString()).length;
+        const examenesPendientes = intentos.filter(i => i.estado === 'pendiente' || i.estado === 'en_progreso').length;
         const leidosPorLibro = {};
         completados.forEach(p => {
           const lid = p.capitulos?.libro_id;
@@ -51,16 +57,27 @@
         }
         raiz.innerHTML = `
           <div class="o-contenedor o-contenedor--ancho o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-            <div class="estudio-cabecera">
-              <div class="estudio-cabecera__fila">
-                <h2>${window.Iconos.render('book-open')} <span class="estudio-cabecera__titulo-texto">Estudio Guiado</span> <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button></h2>
-                <div class="estudio-cabecera__derecha">
-                  ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
-                  <span class="estudio-usuario">${usuario.foto_perfil ? `<img src="${window.helpers.escapeHtml(usuario.foto_perfil)}" alt="" class="estudio-usuario__foto">` : `<span class="estudio-usuario__inicial">${(usuario.nombre_completo || '?').charAt(0).toUpperCase()}</span>`}</span>
-                </div>
+            <div class="estudio-cabecera vista-cabecera">
+              <div class="vista-cabecera__principal">
+                <h1>${window.Iconos.render('book-open')} <span class="estudio-cabecera__titulo-texto">Estudio Guiado</span> <button class="info-ayuda" data-guia="estudio" aria-label="Resumen y guía de Estudio">i</button></h1>
               </div>
-              <p class="estudio-cabecera__sub">Lee la Biblia capítulo a capítulo con preguntas de repaso.</p>
+              <div class="vista-cabecera__acciones">
+                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+              </div>
             </div>
+            <section class="estudio-panel-personal" aria-label="Resumen personal de estudio">
+              <div class="estudio-panel-personal__intro">
+                <span class="estudio-panel-personal__eyebrow">Tu plan de hoy</span>
+                <strong>${lecturasHoy ? `${lecturasHoy} capítulo${lecturasHoy === 1 ? '' : 's'} completado${lecturasHoy === 1 ? '' : 's'}` : 'Empieza tu sesión de estudio'}</strong>
+                <span>${pctGeneral}% de la Biblia recorrida · Racha de ${racha} día${racha === 1 ? '' : 's'}</span>
+              </div>
+              <div class="estudio-panel-personal__acciones">
+                <button class="estudio-atajo estudio-atajo--principal" data-ruta="/agenda"><span>${window.Iconos.render('calendar-days')}</span><span><b>Agenda</b><small>Organiza tu ritmo</small></span></button>
+                <button class="estudio-atajo" data-ruta="/progreso"><span>${window.Iconos.render('bar-chart-2')}</span><span><b>Progreso</b><small>${completados.length} capítulos</small></span></button>
+                <button class="estudio-atajo" data-ruta="/memorizacion"><span>${window.Iconos.render('brain')}</span><span><b>Repasos</b><small>${repasosPendientes.length ? `${repasosPendientes.length} pendientes` : 'Al día'}</small></span>${repasosPendientes.length ? `<em>${repasosPendientes.length}</em>` : ''}</button>
+                <button class="estudio-atajo" data-ruta="/examenes"><span>${window.Iconos.render('clipboard-check')}</span><span><b>Exámenes</b><small>${examenesPendientes ? `${examenesPendientes} pendientes` : 'Ver disponibles'}</small></span>${examenesPendientes ? `<em>${examenesPendientes}</em>` : ''}</button>
+              </div>
+            </section>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
               <div class="estudio-continuar__icono">${window.Iconos.render('book-open')}</div>
               <div class="estudio-continuar__info">
@@ -92,6 +109,9 @@
             </section>
           </div>`;
         if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+        raiz.querySelectorAll('[data-ruta]').forEach(btn => {
+          btn.addEventListener('click', () => router.navegar(btn.dataset.ruta));
+        });
         if (siguienteLibro) {
           const irLectura = () => router.navegar(`/estudio/sesion/${siguienteLibro.id}/${siguienteCap}`);
           const elContinuar = raiz.querySelector('#continuarLectura');

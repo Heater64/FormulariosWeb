@@ -89,12 +89,20 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <!-- TÍTULO -->
-          <h2 class="u-texto-2xl" style="margin:0">${window.Iconos.render('graduation-cap')} Notas</h2>
+          <header class="vista-cabecera calificaciones-cabecera">
+            <div class="vista-cabecera__principal">
+              <button class="btn-icono" id="btnVolver" aria-label="Volver a exámenes">${window.Iconos.render('arrow-left')}</button>
+              <div>
+                <h1>${window.Iconos.render('graduation-cap')} Notas <button class="info-ayuda" data-guia="calificaciones" aria-label="Guía de Notas">i</button></h1>
+              </div>
+            </div>
+            <div class="vista-cabecera__acciones">
+              ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            </div>
+          </header>
 
           <!-- BOTONES BAJO EL TÍTULO -->
           <div class="o-flecha o-flecha--wrap" style="gap:var(--espaciado-xs)">
-            <button class="btn-secundario" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
             <div style="position:relative">
               <button class="btn-secundario calif-exportar-btn" data-menu-toggle="menuExportar">${window.Iconos.render('download')} Exportar</button>
               <div class="calif-menu" id="menuExportar" style="position:absolute;left:0;top:100%;margin-top:4px;background:var(--color-fondo-tarjeta);border:1px solid var(--color-borde);border-radius:var(--radio-md);box-shadow:var(--sombra-lg);z-index:50;min-width:150px;padding:var(--espaciado-xxs) 0">
@@ -120,6 +128,10 @@
         </div>`;
 
       window.Iconos.actualizar();
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
+      window.helpers.registrarGuias(raiz, {
+        calificaciones: ['Notas', 'Consulta las calificaciones de tu grupo y organiza evaluaciones con sus pesos y exámenes asociados.', 'Usa Exportar para compartir un resumen o selecciona una evaluación para revisar sus resultados.']
+      });
       this._conectarEventos(raiz, { evaluaciones, sueltos, intentos, alumnos, notasPorExamen, usuario, grupos });
     },
 

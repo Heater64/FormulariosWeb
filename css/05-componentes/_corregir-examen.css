@@ -221,12 +221,12 @@
 
 .corregir-toggle__btn--correcta {
   background: var(--color-exito);
-  color: #fff;
+  color: var(--color-texto-acento);
 }
 
 .corregir-toggle__btn--incorrecta {
   background: var(--color-error);
-  color: #fff;
+  color: var(--color-texto-acento);
 }
 
 /* ===== Stepper de puntos ===== */

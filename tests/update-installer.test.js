@@ -276,9 +276,18 @@ describe('orden de scripts en el build (dist/index.html)', () => {
     expect(capPos).toBeLessThan(headClose);
   });
 
-  test('el build inyecta la versión para la UI, sin exigir URL de actualización de APK', { skip }, () => {
+  test('el build genera la versión para la UI como archivo externo, sin exigir URL de actualización de APK', { skip }, () => {
+    // La versión vive en js/core/version.js (archivo externo): la CSP de
+    // producción no permite scripts inline, así que inyectarla como <script>
+    // incrustado haría que __FB_APP_VERSION__ quedara undefined.
     const html = readFileSync(distIndex, 'utf8');
-    expect(html).toContain('__FB_APP_VERSION__');
-    expect(html).not.toMatch(/__FB_UPDATE_MANIFEST_URL__="https?:\/\//);
+    expect(html).toContain('js/core/version.js');
+    expect(html).not.toContain('<script>window.__FB_APP_VERSION__');
+    const versionJsPath = join(srcDir, 'dist/js/core/version.js');
+    if (existsSync(versionJsPath)) {
+      const versionJs = readFileSync(versionJsPath, 'utf8');
+      expect(versionJs).toContain('__FB_APP_VERSION__');
+      expect(versionJs).not.toMatch(/__FB_UPDATE_MANIFEST_URL__="https?:\/\//);
+    }
   });
 });

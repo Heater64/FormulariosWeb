@@ -79,6 +79,10 @@
       return data || [];
     },
     async obtener(id) {
+      // Los IDs son UUID: un id claramente inválido no debe llegar a la BD
+      // (Supabase devuelve un error 22P02 ruidoso en consola por cada intento).
+      const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
+      if (!esUuid) return null;
       if (!sb()) {
         return await window.cacheDatos.get(`examen:${id}`) || null;
       }
