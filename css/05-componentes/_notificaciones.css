@@ -86,21 +86,23 @@
    Centro de notificaciones (vista)
    ──────────────────────────────────────────── */
 .notif-centro__cabecera {
-  display: flex;
-  align-items: center;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--espaciado-xs);
-  row-gap: var(--espaciado-xs);
   margin-bottom: var(--espaciado-md);
 }
 .notif-centro__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   font-family: var(--fuente-display);
   font-size: var(--texto-3xl);
   font-weight: 700;
   line-height: 1.08;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
-.notif-centro__acciones { margin-left: auto; display: flex; flex-wrap: wrap; gap: var(--espaciado-xs); align-items: center; flex-shrink: 0; }
+.notif-centro__acciones { margin-left: auto; display: flex; flex-wrap: nowrap; gap: var(--espaciado-xs); align-items: center; flex: 0 0 auto; }
 
 /* Filtros por categoría / estado */
 .notif-filtros {

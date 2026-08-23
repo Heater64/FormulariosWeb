@@ -67,17 +67,20 @@
         const permitidos = config.intentos === 'ilimitados' ? Infinity : (parseInt(config.intentos, 10) || 1);
         const completados = misIntentos.filter(i => i.examen_id === params.id && (i.estado === 'completado' || i.estado === 'calificado'));
         const terminado = completados.length >= permitidos ? completados[0] : null;
-        if (terminado) { this._renderResultados(raiz, examen, preguntas, terminado, usuario); return; }
+        if (terminado) {
+          // Las respuestas correctas solo se solicitan con el RPC de resultado,
+          // tras comprobar que este intento ya fue corregido por el servidor.
+          if (terminado.corregido && window.examenesRepository.obtenerResultado) {
+            try { examen = await window.examenesRepository.obtenerResultado(examen.id, terminado.id); } catch (e) { /* vista pendiente si no está publicado */ }
+          }
+          preguntas = typeof examen.preguntas === 'string' ? JSON.parse(examen.preguntas) : (examen.preguntas || preguntas);
+          this._renderResultados(raiz, examen, preguntas, terminado, usuario); return;
+        }
         let intento = misIntentos.find(i => i.examen_id === params.id && (i.estado === 'en_progreso' || i.estado === 'pendiente'));
         if (!intento) {
           // Guardar fecha_inicio para poder descontar el tiempo transcurrido si
           // el alumno recarga o navega: el temporizador no se reinicia al volver.
           intento = await window.examenesRepository.guardarIntento({ examen_id: params.id, alumno_id: usuario.id, respuestas: '{}', estado: 'en_progreso', fecha_inicio: new Date().toISOString() });
-        } else if (intento.estado === 'pendiente') {
-          // Convert pendiente → en_progreso when student starts the exam
-          intento = await window.examenesRepository.guardarIntento({
-            ...intento, respuestas: intento.respuestas || '{}', estado: 'en_progreso', fecha_inicio: new Date().toISOString()
-          });
         }
         const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
         if (intento.estado === 'completado' || intento.estado === 'calificado') {
@@ -387,19 +390,10 @@
           this._guardarRespuesta(respuestas, intento);
           raiz.querySelector('#btnEntregar').disabled = true;
           const respuestasFinales = respuestas;
-          const resultado = window.puntuacionExamen.calcularPuntuacion(respuestasFinales, preguntas);
-          // La corrección SIEMPRE la publica el profesor: al entregar, el intento
-          // queda 'completado' pero NO corregido, y la nota no se expone al alumno
-          // hasta que el profesor envía la corrección desde la vista de corregir.
-          await window.examenesRepository.guardarIntento({
-            id: intento.id, examen_id: examen.id, alumno_id: usuario.id,
-            respuestas: JSON.stringify(respuestasFinales),
-            puntuacion: resultado.porcentaje,
-            estado: 'completado',
-            nota: null,
-            corregido: false,
-            fecha_completado: new Date().toISOString()
-          });
+          // La entrega y la puntuación pasan por una RPC SECURITY DEFINER:
+          // el servidor filtra respuestas, valida obligatorias/temporizador y
+          // calcula la puntuación sobre el snapshot inmutable del intento.
+          await window.examenesRepository.entregarIntento(intento.id, respuestasFinales);
           try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { console.warn('Auditoría no registrada:', e.message); }
           // Notificar al profesor vía Notification Service (persiste en BD + nativa)
           try {
@@ -856,7 +850,10 @@
 
     _guardarRespuesta(respuestas, intento) {
       intento.respuestas = JSON.stringify(respuestas);
-      window.examenesRepository.guardarIntento({ id: intento.id, respuestas: intento.respuestas });
+      // El borrador se valida y filtra en PostgreSQL; los errores de autosave no
+      // convierten la respuesta en una entrega válida ni bloquean la edición.
+      window.examenesRepository.guardarIntento({ id: intento.id, respuestas: intento.respuestas })
+        .catch(e => console.warn('No se pudo guardar el borrador del examen:', e.message));
     },
 
     desmontar() {

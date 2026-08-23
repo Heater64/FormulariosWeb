@@ -23,6 +23,7 @@
     { id: 'examenes', icono: 'file-text', texto: 'Exámenes' },
     { id: 'memorizacion', icono: 'brain', texto: 'Memorización' },
     { id: 'sugerencias', icono: 'message-square', texto: 'Sugerencias' },
+    { id: 'contacto', icono: 'mail', texto: 'Contacto' },
     { id: 'auditoria', icono: 'clipboard-list', texto: 'Auditoría' },
     { id: 'admins', icono: 'shield', texto: 'Administradores' },
     { id: 'marca', icono: 'palette', texto: 'Marca' },
@@ -117,7 +118,7 @@
       this._inicioSesion = Date.now();
       try {
         const esOwner = ((usuario.rol || '').toString().trim().toLowerCase()) === 'owner';
-        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias] = await Promise.all(
+        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto] = await Promise.all(
           esOwner
             ? [
                 window.adminRepository.listarUsuarios(usuario),
@@ -128,7 +129,8 @@
                 window.adminRepository.obtenerResumenExamenes(),
                 window.adminRepository.listarBackups(),
                 window.adminRepository.listarConfiguracion(),
-                window.sugerenciasRepository ? window.sugerenciasRepository.listarTodas() : Promise.resolve([])
+                window.sugerenciasRepository ? window.sugerenciasRepository.listarTodas() : Promise.resolve([]),
+                window.adminRepository.listarMensajesContacto().catch(() => [])
               ]
             : [
                 window.adminRepository.listarUsuarios(usuario),
@@ -139,6 +141,7 @@
                 window.adminRepository.obtenerResumenExamenes(),
                 Promise.resolve([]),
                 Promise.resolve({}),
+                Promise.resolve([]),
                 Promise.resolve([])
               ]
         );
@@ -158,7 +161,7 @@
             examenes = [];
           }
         }
-        this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, usuario };
+        this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto, usuario };
         this._nivelActivo = esOwner ? 'owner' : 'admin';
         this._tabActivo = 'centro';
         // Deep link desde Memorización: /admin?tab=memorizacion&mazo=ID abre la gestión del mazo
@@ -225,6 +228,7 @@
           <div id="adminContenido">${this._renderTabContent(raiz)}</div>
         </div>`;
       window.adminComunes.bindTabs(this, raiz);
+      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
       raiz.querySelector('[data-admin-volver]')?.addEventListener('click', () => this._volver());
       raiz.querySelectorAll('[data-nivel]').forEach(btn => {
         btn.onclick = () => {
@@ -246,6 +250,7 @@
           case 'examenes': return this._renderExamenes(examenes);
           case 'memorizacion': return this._renderMemorizacion();
           case 'sugerencias': return this._renderSugerencias();
+          case 'contacto': return this._renderContacto();
           case 'auditoria': return this._renderAuditoria();
           case 'admins': return this._renderAdmins(usuarios, usuario);
           case 'marca': return this._renderMarca();
@@ -886,6 +891,25 @@
     },
 
     // ==================================================================
+    // CONTACTO (Owner) — bandeja de soporte
+    // ==================================================================
+    _renderContacto() {
+      const mensajes = this._datos.contacto || [];
+      const nuevos = mensajes.filter(m => m.estado === 'nuevo').length;
+      const estado = (m) => m.estado === 'nuevo' ? 'Nuevo' : m.estado === 'en_proceso' ? 'En proceso' : m.estado === 'resuelto' ? 'Resuelto' : 'Spam';
+      return `<div class="o-pila">
+        <div class="o-flecha o-flecha--between" style="align-items:center;gap:var(--espaciado-sm);flex-wrap:wrap">
+          <div><h3 style="margin:0">${I('mail')} Contacto</h3><p class="u-fs-xs u-color-texto-terciario">Bandeja operativa · ${nuevos} nuevos · ${mensajes.length} total</p></div>
+          <span class="u-fs-xs u-color-texto-terciario">Responde desde cada dirección de correo del mensaje.</span>
+        </div>
+        ${mensajes.length ? `<div class="o-pila" style="gap:var(--espaciado-xs)">${mensajes.map(m => `<article class="admin-setting-row" data-contacto-id="${E(m.id)}" style="align-items:flex-start;gap:var(--espaciado-sm)">
+          <div style="flex:1;min-width:220px"><strong>${E(m.nombre)}</strong> <a href="mailto:${E(m.email)}">&lt;${E(m.email)}&gt;</a><p class="u-fs-xs u-color-texto-secundario" style="white-space:pre-wrap;margin:6px 0">${E(m.mensaje)}</p><span class="u-fs-xxs u-color-texto-terciario">${TR(m.creado_en)}</span></div>
+          <select class="contacto-estado" data-id="${E(m.id)}" aria-label="Estado de mensaje de ${E(m.nombre)}"><option value="nuevo" ${m.estado === 'nuevo' ? 'selected' : ''}>Nuevo</option><option value="en_proceso" ${m.estado === 'en_proceso' ? 'selected' : ''}>En proceso</option><option value="resuelto" ${m.estado === 'resuelto' ? 'selected' : ''}>Resuelto</option><option value="spam" ${m.estado === 'spam' ? 'selected' : ''}>Spam</option></select>
+        </article>`).join('')}</div>` : window.adminComunes.vacio('mail', 'Sin mensajes de contacto', 'Las nuevas solicitudes aparecerán aquí.')}
+      </div>`;
+    },
+
+    // ==================================================================
     // AUDITORÍA (Owner)
     // ==================================================================
     _renderAuditoria() {
@@ -1132,6 +1156,7 @@
       this._bindMemorizacion(raiz);
       this._bindComun(raiz);
       this._bindSugerencias(raiz);
+      this._bindContacto(raiz);
       this._bindAuditoria(raiz);
       this._bindMarca(raiz);
       this._bindNotificaciones(raiz);
@@ -1934,6 +1959,25 @@
             this._renderizar(raiz);
           } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
         };
+      });
+    },
+
+    // ---- CONTACTO (Owner) ----
+    _bindContacto(raiz) {
+      const r = raiz.querySelector('#adminContenido');
+      if (!r || this._tabActivo !== 'contacto') return;
+      r.querySelectorAll('.contacto-estado').forEach(select => {
+        select.addEventListener('change', async () => {
+          select.disabled = true;
+          try {
+            await window.adminRepository.actualizarMensajeContacto(select.dataset.id, select.value);
+            this._datos.contacto = await window.adminRepository.listarMensajesContacto();
+            this._renderizar(raiz);
+          } catch (e) {
+            select.disabled = false;
+            window.helpers.mostrarAlerta('No se pudo actualizar el mensaje: ' + e.message, 'error');
+          }
+        });
       });
     },
 

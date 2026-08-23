@@ -70,10 +70,14 @@
   justify-content: center;
   gap: var(--espaciado-xl);
   opacity: 1;
+  will-change: opacity;
+  transition: opacity 900ms var(--easing-smooth), visibility 0s linear 900ms;
 }
 
 .splash-screen--loaded {
-  animation: splash-fade-out var(--transicion-lenta) forwards;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
 }
 
 .splash-screen__logo {
@@ -158,11 +162,6 @@
   100% { width: 100%; }
 }
 
-@keyframes splash-fade-out {
-  from { opacity: 1; }
-  to { opacity: 0; visibility: hidden; }
-}
-
 @media (prefers-reduced-motion: reduce) {
   .splash-screen,
   .splash-screen__logo,
@@ -175,4 +174,9 @@
     transform: none;
   }
   .splash-screen__bar { width: 100%; }
+  .splash-screen--loaded {
+    opacity: 0;
+    visibility: hidden;
+    transition: none !important;
+  }
 }

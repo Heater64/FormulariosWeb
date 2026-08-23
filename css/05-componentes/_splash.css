@@ -13,7 +13,7 @@
   justify-content: center;
   gap: var(--espaciado-lg);
   padding: var(--espaciado-xl);
-  transition: opacity var(--transicion-lenta), visibility var(--transicion-lenta);
+  transition: opacity 900ms var(--easing-smooth), visibility 0s linear 900ms;
 }
 
 .splash-screen--loaded {
@@ -145,6 +145,8 @@
   }
 
   .splash-screen--loaded {
+    opacity: 0;
+    visibility: hidden;
     transition: none !important;
   }
 }

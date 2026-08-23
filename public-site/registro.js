@@ -13,10 +13,12 @@
       var email = document.getElementById('emailRegistro').value.trim();
       var password = document.getElementById('passwordRegistro').value;
       var confirmar = document.getElementById('confirmarRegistro').value;
+      var acepta = document.getElementById('aceptarPrivacidad')?.checked;
       if (nombre.length < 2) { mensaje(error, 'Escribe tu nombre completo.', 'error'); return; }
       if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) { mensaje(error, 'Escribe un correo electrónico válido.', 'error'); return; }
       if (password.length < 8 || !/[A-Za-z]/.test(password) || !/[0-9]/.test(password)) { mensaje(error, 'La contraseña debe tener al menos 8 caracteres e incluir letras y números.', 'error'); return; }
       if (password !== confirmar) { mensaje(error, 'Las contraseñas no coinciden.', 'error'); return; }
+      if (!acepta) { mensaje(error, 'Debes aceptar la política de privacidad y los términos de uso.', 'error'); return; }
       var boton = document.getElementById('btnRegistro'); boton.disabled = true; boton.textContent = 'Creando cuenta…';
       try {
         var resultado = await window.authRepository.registrarResponsable(email, password, nombre);

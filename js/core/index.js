@@ -10,6 +10,9 @@
     window.location.href = enApp ? '../' : 'login.html';
   }
 
+  const SPLASH_MINIMO_MS = 2000;
+  const SPLASH_SALIDA_MS = 900;
+
   const APP = {
     async init() {
       // Aplicar preferencias primero
@@ -18,17 +21,14 @@
       // Controlar splash screen
       this._controlarSplash();
     
-      // Push nativas Android: instalar las escuchas lo antes posible para
-      // capturar la apertura por notificación en arranque en frío. Si ya hay
-      // sesión restaurada, registra el token; si no, lo hará tras el login.
-      if (window.pushNotificationService) await window.pushNotificationService.iniciar();
-    
       // Recuperar sesión (async: valida el JWT de Supabase Auth, 028)
       await this._recuperarSesion();
     
-      // Tras restaurar la sesión, completar el registro push si quedó
-      // pendiente (el arranque en frío puede haber llegado sin usuario).
-      if (window.pushNotificationService) await window.pushNotificationService.iniciar();
+      // Tras restaurar la sesión, registrar push en segundo plano. No bloquea
+      // el montaje de la primera vista y el listener de login cubre el resto.
+      if (window.pushNotificationService) {
+        window.pushNotificationService.iniciar().catch(() => {});
+      }
 
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
@@ -42,14 +42,17 @@
       // Aplicar preferencias del usuario
       this._aplicarPreferencias();
     
-      // Iniciar sincronización local pendiente
-      if (window.colaSync) {
-        this.splashEstado('Sincronizando...');
-        window.colaSync.iniciar();
-      }
-    
-      // Verificar sesión
+      // Verificar sesión y montar la primera vista antes de iniciar tareas
+      // secundarias. La sincronización no debe convertir el splash en un
+      // bloqueo; si tarda, su propia pantalla aparecerá de forma diferida.
       this._verificarSesion();
+
+      // Iniciar sincronización local pendiente en segundo plano. Solo tiene
+      // sentido con una sesión restaurada; la pantalla de sincronización se
+      // muestra únicamente si el trabajo sigue activo tras un breve margen.
+      if (window.colaSync && store.obtener('usuario')) {
+        window.colaSync.iniciar({ inicial: true });
+      }
 
       // Re-validar la sesión contra el servidor: evita que un rol forjado en
       // localStorage (o una cuenta desactivada) se mantenga tras recargar.
@@ -116,7 +119,9 @@
 
         // Push nativas Android: registrar el token del dispositivo y, si la
         // app se abrió pulsando una notificación, navegar al destino.
-        if (window.pushNotificationService) await window.pushNotificationService.iniciar();
+        if (window.pushNotificationService) {
+          window.pushNotificationService.iniciar().catch(() => {});
+        }
       });
 
       window.eventBus.suscribir('auth:logout', () => {
@@ -133,10 +138,11 @@
         this._renderizarBarraNavegacion();
         // Cancelar watchdog: la app ya cargó correctamente
         if (this._watchdogTimer) { clearTimeout(this._watchdogTimer); this._watchdogTimer = null; }
-        // Ocultar splash tras montar la primera vista
+        // La primera vista ya puede ser interactiva. El splash mantiene una
+        // entrada mínima de 2 s y después se desvanece sin cortar el render.
         if (this._splash && !this._splashOculto) {
-          this.splashEstado('Cargando datos...');
-          setTimeout(() => this.ocultarSplash(), 400);
+          this.splashEstado('Listo');
+          this._programarOcultarSplash();
         }
       });
     },
@@ -153,8 +159,10 @@
       this._splash = splash;
       this._splashStatus = status;
       this._splashOculto = false;
-      // Protección: nunca dejar el splash bloqueando la app más de 6s.
-      this._splashTimeout = setTimeout(() => this.ocultarSplash(), 6000);
+      this._splashInicio = Date.now();
+      this._splashOcultarTimer = null;
+      // Protección: nunca dejar el splash bloqueando la app más de 10 s.
+      this._splashTimeout = setTimeout(() => this.ocultarSplash(), 10000);
 
       const actualizarEstado = (texto) => {
         if (this._splashStatus) this._splashStatus.textContent = texto;
@@ -180,15 +188,26 @@
       if (this._splashEstado) this._splashEstado(texto);
     },
 
+    _programarOcultarSplash() {
+      if (this._splashOculto || !this._splash) return;
+      if (this._splashOcultarTimer) clearTimeout(this._splashOcultarTimer);
+      const transcurrido = Date.now() - (this._splashInicio || Date.now());
+      const espera = Math.max(0, SPLASH_MINIMO_MS - transcurrido);
+      this._splashOcultarTimer = setTimeout(() => this.ocultarSplash(), espera);
+    },
+
     ocultarSplash() {
       if (this._splashOculto || !this._splash) return;
       this._splashOculto = true;
       clearTimeout(this._splashTimeout);
+      if (this._splashOcultarTimer) clearTimeout(this._splashOcultarTimer);
       if (this._splashEstado) this._splashEstado('Listo');
       this._splash.classList.add('splash-screen--loaded');
+      const reducida = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+      const esperaSalida = reducida ? 0 : SPLASH_SALIDA_MS + 80;
       setTimeout(() => {
         if (this._splash && this._splash.parentNode) this._splash.remove();
-      }, 600);
+      }, esperaSalida);
     },
 
     // Watchdog: si la app no carga en 15s, reparar la caché y recargar.

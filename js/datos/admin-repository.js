@@ -132,6 +132,18 @@
       const { data } = await sb().from('auditoria').select('*, perfiles!actor_id(nombre_completo, username)').order('creado_en', { ascending: false }).limit(100);
       return data || [];
     },
+    async listarMensajesContacto() {
+      if (!sb()) return [];
+      const { data, error } = await sb().rpc('listar_contacto_mensajes');
+      if (error) throw new Error(_traducir(error));
+      return data || [];
+    },
+    async actualizarMensajeContacto(id, estado) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data, error } = await sb().rpc('actualizar_contacto_mensaje', { p_id: id, p_estado: estado });
+      if (error) throw new Error(_traducir(error));
+      return data;
+    },
     async registrarAuditoria(accion, detalle, actorId, grupoId) {
       if (!sb()) throw new Error('Sin conexión');
       await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });

@@ -110,7 +110,7 @@
             <div class="mem-gizmo-cabecera__titulo vista-cabecera__principal">
               <h1>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion-juego" aria-label="Guía de Memorización">i</button></h1>
             </div>
-            <div class="mem-gizmo-cabecera__acciones">
+            <div class="mem-gizmo-cabecera__acciones vista-cabecera__acciones">
               ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
             </div>
           </header>
@@ -401,7 +401,7 @@
             <div class="mem-gizmo-cabecera__titulo vista-cabecera__principal">
               <h1>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion-juego" aria-label="Guía de Memorización">i</button></h1>
             </div>
-            <div class="mem-gizmo-cabecera__acciones">
+            <div class="mem-gizmo-cabecera__acciones vista-cabecera__acciones">
               ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
             </div>
           </header>
@@ -470,7 +470,7 @@
             <div class="mem-gizmo-cabecera__titulo vista-cabecera__principal">
               <h1>${I('brain')} Memorización <button class="info-ayuda" data-guia="memorizacion-juego" aria-label="Guía de Memorización">i</button></h1>
             </div>
-            <div class="mem-gizmo-cabecera__acciones">
+            <div class="mem-gizmo-cabecera__acciones vista-cabecera__acciones">
               ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
             </div>
           </header>

@@ -18,6 +18,7 @@ Aplicar en un proyecto Supabase de staging, en este orden:
 10. `044_grupos_profesionales.sql`
 11. `045_onboarding_institucion.sql`
 12. `046_contacto_soporte.sql`
+13. `047_seguridad_examenes_y_soporte.sql`
 
 No ejecutar `supabase/migraciones/pendientes_produccion.sql` como bloque: contiene políticas históricas abiertas a `anon` y debe dividirse o sustituirse por migraciones RLS equivalentes.
 
@@ -42,10 +43,12 @@ select routine_name, routine_type
 from information_schema.routines
 where routine_schema = 'public'
   and routine_name in ('auth_login', 'crear_institucion_y_clase',
-                       'enviar_contacto');
+                       'enviar_contacto', 'iniciar_intento_examen',
+                       'guardar_borrador_examen', 'entregar_intento_examen',
+                       'calificar_intento_examen', 'listar_contacto_mensajes');
 ```
 
-Todas las tablas de datos privados deben tener `rowsecurity = true`. No debe existir una política `FOR ALL TO anon USING (true)` en tablas de usuarios, notas, exámenes, progreso, notificaciones, backups o contacto.
+Todas las tablas de datos privados deben tener `rowsecurity = true`. No debe existir ninguna política para `anon` en tablas públicas tras la 047. Las respuestas correctas y snapshots de exámenes no deben estar disponibles en lecturas directas del alumno.
 
 ## Prueba de aislamiento
 
@@ -76,7 +79,7 @@ Las cuentas legacy con `@accounts.formsbiblicos.com` no pueden recibir correo. D
 
 ## Contacto y operación
 
-La RPC `enviar_contacto` persiste solicitudes en `contacto_mensajes`. Antes de producción hay que definir quién consulta la tabla, un canal de respuesta y una alerta o revisión diaria. La persistencia por sí sola no equivale a un buzón atendido.
+La RPC `enviar_contacto` persiste solicitudes en `contacto_mensajes`. La migración 047 añade una bandeja para el owner y estados de atención. Antes de producción hay que configurar el correo real de soporte, probar respuestas y establecer una revisión diaria; la persistencia por sí sola no equivale a un buzón atendido.
 
 ## Rollback
 

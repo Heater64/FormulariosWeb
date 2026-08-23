@@ -8,8 +8,12 @@
         return cache || [];
       }
       try {
-        const { data } = await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id).order('creado_en', { ascending: false });
-        const lista = data || [];
+        const esAlumno = (usuario.rol || '').toLowerCase() === 'usuario';
+        const respuesta = esAlumno
+          ? await sb().rpc('listar_examenes_alumno', { p_grupo_id: usuario.grupo_id })
+          : await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id).order('creado_en', { ascending: false });
+        if (respuesta.error) throw respuesta.error;
+        const lista = respuesta.data || [];
         await window.cacheDatos.set(`examenes:grupo:${usuario.grupo_id}`, lista);
         return lista;
       } catch (e) {
@@ -79,18 +83,19 @@
       return data || [];
     },
     async obtener(id) {
-      // Los IDs son UUID: un id claramente inválido no debe llegar a la BD
-      // (Supabase devuelve un error 22P02 ruidoso en consola por cada intento).
+      // Los IDs son UUID: un id claramente inválido no debe llegar a la BD.
       const esUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id));
       if (!esUuid) return null;
-      if (!sb()) {
-        return await window.cacheDatos.get(`examen:${id}`) || null;
-      }
+      if (!sb()) return await window.cacheDatos.get(`examen:${id}`) || null;
       try {
-        const { data, error } = await sb().from('examenes_personalizados').select('*').eq('id', id).single();
-        if (error) { console.error('obtener examen:', error); return null; }
-        if (data) await window.cacheDatos.set(`examen:${id}`, data);
-        return data || null;
+        const usuario = window.store?.obtener?.('usuario');
+        const esAlumno = (usuario?.rol || '').toLowerCase() === 'usuario';
+        const respuesta = esAlumno
+          ? await sb().rpc('obtener_examen_alumno', { p_examen_id: id })
+          : await sb().from('examenes_personalizados').select('*').eq('id', id).single();
+        if (respuesta.error) throw respuesta.error;
+        if (respuesta.data) await window.cacheDatos.set(`examen:${id}`, respuesta.data);
+        return respuesta.data || null;
       } catch (e) {
         return await window.cacheDatos.get(`examen:${id}`) || null;
       }
@@ -137,31 +142,10 @@
       const { data } = await q.order('nombre_completo');
       return data || [];
     },
-    async asignarAGrupo(examenId, grupoId) {
-      if (!sb()) throw new Error('Sin conexión');
-      const alumnos = await this.obtenerMiembrosGrupo(grupoId, true);
-      if (alumnos.length === 0) return 0;
-      const { data: existentes } = await sb().from('intentos_examen_personalizado').select('alumno_id').eq('examen_id', examenId);
-      const yaAsignados = new Set((existentes || []).map(i => i.alumno_id));
-      const nuevos = alumnos.filter(a => !yaAsignados.has(a.id));
-      if (nuevos.length === 0) return 0;
-      const filas = nuevos.map(a => ({ examen_id: examenId, alumno_id: a.id, estado: 'pendiente', respuestas: '{}' }));
-      const { error } = await sb().from('intentos_examen_personalizado').insert(filas);
-      if (error) throw error;
-      return nuevos.length;
-    },
-    async asignarAlumnos(examenId, alumnoIds) {
-      if (!sb()) throw new Error('Sin conexión');
-      if (!alumnoIds || alumnoIds.length === 0) return 0;
-      const { data: existentes } = await sb().from('intentos_examen_personalizado').select('alumno_id').eq('examen_id', examenId);
-      const yaAsignados = new Set((existentes || []).map(i => i.alumno_id));
-      const nuevos = alumnoIds.filter(id => !yaAsignados.has(id));
-      if (nuevos.length === 0) return 0;
-      const filas = nuevos.map(id => ({ examen_id: examenId, alumno_id: id, estado: 'pendiente', respuestas: '{}' }));
-      const { error } = await sb().from('intentos_examen_personalizado').insert(filas);
-      if (error) throw error;
-      return nuevos.length;
-    },
+    // Los intentos ya no se preasignan desde el navegador. El servidor crea
+    // uno al comenzar y aplica el límite de intentos bajo bloqueo transaccional.
+    async asignarAGrupo() { return 0; },
+    async asignarAlumnos() { return 0; },
     async obtenerIntentosGrupo(grupoId) {
       if (!sb() || !grupoId) return [];
       const { data: ex } = await sb().from('examenes_personalizados').select('id').eq('grupo_id', grupoId);
@@ -235,36 +219,26 @@
      * "Could not find the '<X>' column of 'intentos_examen_personalizado' in the schema cache"
      */
     async guardarIntento(intento) {
-      const CAMPOS_VALIDOS = new Set([
-        'id', 'examen_id', 'alumno_id', 'respuestas', 'puntuacion', 'nota',
-        'corregido', 'corregido_por', 'observaciones', 'estado',
-        'fecha_inicio', 'fecha_completado', 'fecha_corregido',
-        'creado_en', 'correccion'
-      ]);
-      const limpio = {};
-      for (const k of Object.keys(intento || {})) {
-        if (CAMPOS_VALIDOS.has(k) && k !== 'pendiente_sync') limpio[k] = intento[k];
-      }
-      if (!sb() || !navigator.onLine) {
-        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', limpio, { onConflict: 'id' }); } catch (e) { console.warn('guardarIntento offline queue:', e); }
-        return { ...limpio, pendiente_sync: true };
-      }
-      try {
-        const { data, error } = await sb().from('intentos_examen_personalizado').upsert(limpio, { onConflict: 'id' }).select().single();
+      // La escritura de intentos ya no se hace con upsert directo: el servidor
+      // controla propietario, estado y columnas inmutables.
+      if (sb() && intento && intento.id && Object.prototype.hasOwnProperty.call(intento, 'respuestas') && Object.keys(intento).every(k => ['id', 'respuestas'].includes(k))) {
+        const respuestas = typeof intento.respuestas === 'string' ? JSON.parse(intento.respuestas || '{}') : (intento.respuestas || {});
+        const { data, error } = await sb().rpc('guardar_borrador_examen', { p_intento_id: intento.id, p_respuestas: respuestas });
         if (error) throw error;
         return data;
-      } catch (e) {
-        try { window.colaSync.encolar('upsert', 'intentos_examen_personalizado', limpio, { onConflict: 'id' }); } catch (e2) { console.warn('guardarIntento sync queue:', e2); }
-        return { ...limpio, pendiente_sync: true };
       }
+      if (sb() && intento && !intento.id && intento.examen_id) {
+        const { data, error } = await sb().rpc('iniciar_intento_examen', { p_examen_id: intento.examen_id });
+        if (error) throw error;
+        return data;
+      }
+      throw new Error('Operación de intento no soportada: usa iniciar, guardar borrador o entregar mediante RPC');
     },
     async misIntentos(usuarioId) {
-      if (!sb()) {
-        return await window.cacheDatos.get(`intentos:${usuarioId}`) || [];
-      }
+      if (!sb()) return await window.cacheDatos.get(`intentos:${usuarioId}`) || [];
       try {
-        const { data, error } = await sb().from('intentos_examen_personalizado').select('*, examenes_personalizados!examen_id(*)').eq('alumno_id', usuarioId).order('fecha_inicio', { ascending: false });
-        if (error) { console.error('misIntentos:', error); return []; }
+        const { data, error } = await sb().rpc('listar_mis_intentos_examen');
+        if (error) throw error;
         const lista = data || [];
         await window.cacheDatos.set(`intentos:${usuarioId}`, lista);
         return lista;
@@ -272,14 +246,29 @@
         return await window.cacheDatos.get(`intentos:${usuarioId}`) || [];
       }
     },
+    async obtenerResultado(examenId, intentoId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { data, error } = await sb().rpc('obtener_resultado_examen', { p_examen_id: examenId, p_intento_id: intentoId });
+      if (error) throw error;
+      return data || null;
+    },
+    async entregarIntento(intentoId, respuestas) {
+      if (!sb()) throw new Error('Sin conexión: no se puede entregar un examen sin validación del servidor');
+      const payload = typeof respuestas === 'string' ? JSON.parse(respuestas || '{}') : (respuestas || {});
+      const { data, error } = await sb().rpc('entregar_intento_examen', { p_intento_id: intentoId, p_respuestas: payload });
+      if (error) throw error;
+      return data;
+    },
     async calificar(intentoId, nota, observaciones, corregidoPor, correccion) {
       if (!sb()) throw new Error('Sin conexión');
-      const update = {
-        nota, observaciones, corregido: true, corregido_por: corregidoPor,
-        estado: 'calificado', fecha_corregido: new Date().toISOString()
-      };
-      if (correccion !== undefined) update.correccion = correccion;
-      await sb().from('intentos_examen_personalizado').update(update).eq('id', intentoId);
+      const { data, error } = await sb().rpc('calificar_intento_examen', {
+        p_intento_id: intentoId,
+        p_nota: nota,
+        p_observaciones: observaciones || '',
+        p_correccion: correccion || {}
+      });
+      if (error) throw error;
+      return data;
     }
   };
 })();

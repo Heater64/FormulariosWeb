@@ -10,18 +10,36 @@
    ========================================================================== */
 .admin-panel-cabecera {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--espaciado-sm);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
   margin-bottom: var(--espaciado-lg);
 }
 
+.admin-panel-cabecera__brand {
+  display: flex;
+  align-items: center;
+  flex: 1 1 auto;
+  min-width: 0;
+  gap: var(--espaciado-sm);
+}
+
+.admin-panel-cabecera__brand > div {
+  min-width: 0;
+}
+
 .admin-panel-cabecera__titulo {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
   font-size: var(--texto-2xl);
   font-weight: 700;
   margin: 0;
-  letter-spacing: -0.02em;
+  letter-spacing: 0;
 }
 
 .admin-panel-cabecera__subtitulo {
@@ -31,8 +49,24 @@
   max-width: 56ch;
 }
 
+.admin-panel-cabecera__acciones {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaciado-xs);
+  flex: 0 0 auto;
+  min-width: var(--toque-minimo);
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.admin-panel-cabecera__acciones > * {
+  flex: 0 0 auto;
+}
+
 .admin-panel-cabecera__volver {
-  flex-shrink: 0;
+  flex: 0 0 auto;
+  white-space: nowrap;
 }
 
 /* ==========================================================================
@@ -2114,13 +2148,29 @@
     flex: 1 1 100%;
   }
   .admin-panel-cabecera {
-    flex-direction: column;
-    align-items: flex-start;
-    gap: var(--espaciado-sm);
+    gap: var(--espaciado-xs);
+  }
+  .admin-panel-cabecera__titulo {
+    font-size: var(--texto-xl);
+  }
+  .admin-panel-cabecera__subtitulo {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .admin-panel-cabecera__volver {
+    padding-inline: var(--espaciado-xs);
   }
 }
 
 @media (max-width: 480px) {
+  .admin-panel-cabecera__volver span {
+    display: none;
+  }
+  .admin-panel-cabecera__volver {
+    width: var(--toque-minimo);
+    padding-inline: 0;
+  }
   .admin-vista-general__stats {
     grid-template-columns: 1fr;
   }

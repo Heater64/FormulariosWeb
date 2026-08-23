@@ -513,11 +513,12 @@
   html.fb-pwa .footer,
   html.fb-pwa .login-card__footer { display: none; }
 
-  html.fb-pwa .header { justify-content: center; }
-  html.fb-pwa .header__nav { display: none; }
+  /* La PWA empieza directamente en el acceso: no mostramos una segunda
+     barra de navegación encima de la pantalla de login. */
+  html.fb-pwa .header { display: none; }
 
   html.fb-pwa .login-section {
-    min-height: calc(100dvh - 57px);
+    min-height: 100dvh;
     display: flex; flex-direction: column; justify-content: center;
     padding-top: var(--md); padding-bottom: calc(var(--md) + var(--safe-bottom));
   }

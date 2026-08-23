@@ -22,18 +22,13 @@
 
 /* Cabecera */
 .mem-gizmo-cabecera {
-  display: flex;
-  align-items: flex-end;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--espaciado-sm);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .mem-gizmo-cabecera h2 {
-  display: flex;
-  align-items: center;
   gap: var(--espaciado-xs);
-  margin: 0;
   font-size: var(--texto-3xl);
   line-height: 1.08;
   letter-spacing: 0;
@@ -43,8 +38,9 @@
 .mem-gizmo-cabecera__acciones {
   display: flex;
   align-items: center;
+  flex: 0 0 auto;
   gap: var(--espaciado-sm);
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
 }
 
 .mem-gizmo-chip {

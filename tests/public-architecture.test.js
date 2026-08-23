@@ -17,6 +17,22 @@ const manifest = JSON.parse(read('public/manifest.json'));
 const sw = read('public/sw.js');
 
 describe('arquitectura pública y PWA (APK en pausa)', () => {
+  test('las cabeceras de sección conservan título y campana en una sola fila', () => {
+    const headerCss = read('css/06-utilidades/_estilos-inline.css');
+    const memCss = read('css/05-componentes/_memorizacion-juego.css');
+    const adminCss = read('css/05-componentes/_admin-panel.css');
+    const memView = read('js/vistas/vista-memorizacion.js');
+    const adminCommon = read('js/vistas/admin/admin-comunes.js');
+    expect(headerCss).toContain('flex-wrap: nowrap;');
+    expect(headerCss).toContain('flex-direction: column;');
+    expect(headerCss).not.toContain('.vista-cabecera {\n    align-items: stretch;');
+    expect(headerCss).toContain('text-overflow: ellipsis;');
+    expect(memCss).toContain('.mem-gizmo-cabecera');
+    expect(memView).toContain('mem-gizmo-cabecera__acciones vista-cabecera__acciones');
+    expect(adminCss).toContain('.admin-panel-cabecera__acciones');
+    expect(adminCommon).toContain('campanaNotificaciones.renderCampana()');
+  });
+
   test('la app es instalable como PWA (manifest + service worker)', () => {
     expect(appHtml).toContain('rel="manifest"');
     expect(appHtml).toContain('apple-mobile-web-app-capable');
@@ -117,6 +133,8 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(read('public-site/contacto.html')).toContain('src="./contacto.js"');
     expect(read('public-site/contacto.html')).toContain('supabase-client.js');
     expect(read('public-site/contacto.js')).toContain("rpc('enviar_contacto'");
+    expect(read('public-site/privacidad.html')).toContain('Documento pendiente de revisión jurídica');
+    expect(read('public-site/terminos.html')).toContain('no admite cuentas autónomas de menores');
     expect(read('js/core/router.js')).not.toContain('onclick=');
     expect(read('js/vistas/vista-sesion-estudio.js')).not.toContain('onclick=');
     expect(read('js/vistas/vista-examen-tomar.js')).not.toContain('onclick=');
@@ -153,9 +171,12 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
 
   test('la landing se adapta al modo PWA instalado (pantalla de acceso limpia)', () => {
     expect(publicHtml).toContain('html.fb-pwa .hero');
+    expect(publicHtml).toContain('html.fb-pwa .header { display: none; }');
     expect(publicHtml).toContain('html.fb-pwa .login-section');
+    expect(publicHtml).toContain('min-height: 100dvh');
     expect(publicThemeJs).toContain('display-mode: standalone');
     expect(publicThemeJs).toContain('fb-pwa');
+    expect(manifest.display_override).toEqual(['standalone']);
   });
 
   test('Vercel aplica caching por tipo de recurso', () => {

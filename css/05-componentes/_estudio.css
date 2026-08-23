@@ -6,8 +6,6 @@
 /* La estructura visual la gobierna .vista-cabecera; estos estilos solo
    conservan el comportamiento específico de Estudio. */
 .estudio-cabecera {
-  display: flex;
-  flex-direction: column;
   gap: var(--espaciado-xs);
   margin-bottom: var(--espaciado-lg);
 }

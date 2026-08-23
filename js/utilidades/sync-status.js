@@ -7,8 +7,14 @@
 
   const CLAVE_ULTIMA = 'fb_ultima_sync';
   let el = null;
+  const RETRASO_MOSTRAR_MS = 650;
+  const DURACION_SALIDA_MS = 700;
   let hideTimer = null;
+  let showTimer = null;
+  let hideCleanupTimer = null;
   let tickTimer = null;
+  let sincronizacionActiva = false;
+  let sincronizacionInicial = false;
 
   function crear() {
     if (el) return el;
@@ -42,8 +48,10 @@
     try { return parseInt(localStorage.getItem(CLAVE_ULTIMA) || '0', 10) || 0; } catch (e) { return 0; }
   }
 
-  function mostrar({ texto, estado, duracion = 3500, unaVez = false }) {
+  function mostrar({ texto, estado, duracion = 3500, unaVez = false, pantalla = false }) {
     const node = crear();
+    const yaVisible = node.classList.contains('sync-indicator--visible');
+    const pantallaAnterior = node.classList.contains('sync-indicator--pantalla');
     // Si unaVez y ya está visible con el mismo texto, no re-muestra (evita permanencia/parpadeo)
     if (unaVez && node.classList.contains('sync-indicator--visible') && node.dataset.msg === texto) {
       if (hideTimer) clearTimeout(hideTimer);
@@ -52,51 +60,88 @@
     }
     const icono = estado === 'ok' ? 'check-circle' : (estado === 'pendiente' ? 'alert-triangle' : 'refresh-cw');
     node.dataset.msg = texto;
+    node.classList.remove('sync-indicator--ok', 'sync-indicator--pendiente', 'sync-indicator--cargando');
+    node.classList.add(`sync-indicator--${estado}`);
     node.innerHTML = `
       <span class="sync-indicator__icon" aria-hidden="true">${window.Iconos?.render(icono) || ''}</span>
       <span class="sync-indicator__text">${texto}</span>`;
     window.Iconos?.actualizar?.();
-    node.classList.remove('u-oculto');
-    node.classList.add('sync-indicator--visible');
-
     if (hideTimer) clearTimeout(hideTimer);
-    hideTimer = setTimeout(() => ocultar(), duracion);
+    if (hideCleanupTimer) clearTimeout(hideCleanupTimer);
+    node.classList.toggle('sync-indicator--pantalla', pantalla);
+
+    if (!yaVisible || pantallaAnterior !== pantalla) {
+      node.classList.remove('u-oculto', 'sync-indicator--visible');
+      // Separar la retirada de display:none de la activación de opacity para
+      // permitir una entrada suave incluso después de una salida reciente.
+      requestAnimationFrame(() => {
+        if (node) node.classList.add('sync-indicator--visible');
+      });
+    } else {
+      node.classList.remove('u-oculto');
+    }
+
+    if (duracion !== Infinity) hideTimer = setTimeout(() => ocultar(), duracion);
   }
 
   function ocultar() {
     if (!el) return;
+    if (showTimer) { clearTimeout(showTimer); showTimer = null; }
     el.classList.remove('sync-indicator--visible');
-    el.classList.add('u-oculto');
+    if (hideCleanupTimer) clearTimeout(hideCleanupTimer);
+    hideCleanupTimer = setTimeout(() => {
+      if (el && !el.classList.contains('sync-indicator--visible')) {
+        el.classList.add('u-oculto');
+        el.classList.remove('sync-indicator--pantalla');
+      }
+    }, DURACION_SALIDA_MS);
   }
 
   function iniciar() {
     crear();
 
-    window.eventBus.suscribir('sincronizacion:inicio', () => {
-      mostrar({ texto: 'Sincronizando…', estado: 'cargando', duracion: 3000 });
+    window.eventBus.suscribir('sincronizacion:inicio', (e = {}) => {
+      sincronizacionActiva = true;
+      sincronizacionInicial = e.inicial === true;
+      if (showTimer) clearTimeout(showTimer);
+      // Una sincronización rápida no interrumpe la entrada. Solo mostramos
+      // la pantalla si después de 650 ms todavía queda trabajo pendiente.
+      showTimer = setTimeout(() => {
+        if (!sincronizacionActiva) return;
+        mostrar({
+          texto: 'Sincronizando datos…',
+          estado: 'cargando',
+          duracion: Infinity,
+          pantalla: sincronizacionInicial
+        });
+      }, RETRASO_MOSTRAR_MS);
     });
 
-    window.eventBus.suscribir('sincronizacion:progreso', (e) => {
+    window.eventBus.suscribir('sincronizacion:progreso', (e = {}) => {
+      if (!sincronizacionActiva) return;
       const cats = Object.keys(e.completadas || {});
-      if (cats.length) {
+      if (cats.length && el?.classList.contains('sync-indicator--visible')) {
         const lista = cats.map(c => `✓ ${c}`).join('  ');
-        mostrar({ texto: lista, estado: 'cargando', duracion: 2500 });
+        mostrar({ texto: lista, estado: 'cargando', duracion: Infinity, pantalla: sincronizacionInicial });
       }
     });
 
-    window.eventBus.suscribir('sincronizacion:fin', (e) => {
+    window.eventBus.suscribir('sincronizacion:fin', (e = {}) => {
+      sincronizacionActiva = false;
+      if (showTimer) { clearTimeout(showTimer); showTimer = null; }
       const pend = e.pendientes || 0;
       if (pend === 0) {
         setUltima(Date.now());
+        ocultar();
       } else {
-        mostrar({ texto: `Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
+        mostrar({ texto: `Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000, pantalla: false });
       }
     });
 
     window.eventBus.suscribir('sincronizacion:estado', (e) => {
       const pend = e.pendientes || 0;
-      // Solo avisar si hay pendientes; si no hay, no mostrar nada (el estado "ok" ya se avisó en fin)
-      if (pend > 0) {
+      // Solo avisar si hay pendientes; si no hay, no mostrar nada.
+      if (pend > 0 && !sincronizacionActiva) {
         mostrar({ texto: `Pendientes: ${pend} cambios`, estado: 'pendiente', duracion: 4000 });
       }
     });

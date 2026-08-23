@@ -100,7 +100,10 @@
               <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
             </div>
           </div>
-          <button class="btn-secundario admin-panel-cabecera__volver" data-admin-volver>${I('arrow-left')} Volver</button>
+          <div class="admin-panel-cabecera__acciones">
+            ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
+            <button class="btn-secundario admin-panel-cabecera__volver" data-admin-volver>${I('arrow-left')} <span>Volver</span></button>
+          </div>
         </header>`;
     },
 

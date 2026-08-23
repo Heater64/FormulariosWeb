@@ -96,9 +96,12 @@
    de colección propia para conservar la jerarquía visual de sus mazos. */
 .vista-cabecera {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--espaciado-md);
+  flex-wrap: nowrap;
+  width: 100%;
+  min-width: 0;
   padding: 0 0 var(--espaciado-md);
   margin-bottom: var(--espaciado-lg);
   border-bottom: 1px solid var(--color-borde);
@@ -106,9 +109,11 @@
 
 .vista-cabecera__principal {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  flex: 1 1 auto;
   gap: var(--espaciado-sm);
   min-width: 0;
+  overflow: hidden;
 }
 
 .vista-cabecera__principal > svg,
@@ -130,18 +135,26 @@
   align-items: center;
   gap: var(--espaciado-sm);
   min-width: 0;
+  overflow: hidden;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
 .vista-cabecera h1,
 .vista-cabecera h2,
 .vista-cabecera__titulo {
+  flex: 1 1 auto;
+  min-width: 0;
   margin: 0;
   font-family: var(--fuente-display);
   font-size: var(--texto-3xl);
   font-weight: 700;
   line-height: 1.08;
   color: var(--color-texto);
-  overflow-wrap: anywhere;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  overflow-wrap: normal;
 }
 
 .vista-cabecera__sub {
@@ -158,25 +171,44 @@
   justify-content: flex-end;
   gap: var(--espaciado-xs);
   flex: 0 0 auto;
-  flex-wrap: wrap;
+  min-width: var(--toque-minimo);
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+.vista-cabecera__acciones > * {
+  flex: 0 0 auto;
+}
+
+.vista-cabecera .info-ayuda {
+  flex: 0 0 auto;
 }
 
 @media (max-width: 560px) {
   .vista-cabecera {
-    align-items: stretch;
-    flex-direction: column;
-    gap: var(--espaciado-sm);
+    gap: var(--espaciado-xs);
   }
-  .vista-cabecera__acciones {
-    justify-content: flex-start;
+  .vista-cabecera__principal {
+    gap: var(--espaciado-xs);
+  }
+  .vista-cabecera__principal h1,
+  .vista-cabecera__principal h2,
+  .vista-cabecera h1,
+  .vista-cabecera h2,
+  .vista-cabecera__titulo {
+    font-size: var(--texto-2xl);
   }
   .vista-cabecera__principal > svg,
   .vista-cabecera__principal h1 > svg,
   .vista-cabecera__principal h2 > svg,
   .vista-cabecera__icono {
-    width: 38px;
-    height: 38px;
-    padding: 8px;
+    width: 36px;
+    height: 36px;
+    padding: 7px;
+  }
+  .vista-cabecera .notif-cabecera {
+    width: 42px;
+    height: 42px;
   }
 }
 

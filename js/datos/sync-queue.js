@@ -118,7 +118,8 @@
     return Math.min(BACKOFF_BASE * Math.pow(2, reintentos), BACKOFF_MAX);
   }
 
-  async function sincronizar() {
+  async function sincronizar(opciones = {}) {
+    const inicial = opciones.inicial === true;
     if (_procesando) return;
     if (!navigator.onLine) return;
     if (!window.supabaseClient) return;
@@ -132,13 +133,13 @@
       if (!ops.length) {
         store.actualizar('sincronizando', false);
         store.actualizar('ultimaSincronizacion', Date.now());
-        window.eventBus.publicar('sincronizacion:fin', { pendientes: 0 });
+        window.eventBus.publicar('sincronizacion:fin', { pendientes: 0, inicial });
         _procesando = false;
         return;
       }
 
       const totalInicial = ops.length;
-      window.eventBus.publicar('sincronizacion:inicio', { total: totalInicial });
+      window.eventBus.publicar('sincronizacion:inicio', { total: totalInicial, inicial });
 
       const hechas = {};
       const categorias = [...new Set(ops.map(o => categoriaDe(o.tabla)))];
@@ -172,12 +173,13 @@
         window.eventBus.publicar('sincronizacion:progreso', {
           completadas: totalInicial - restantes,
           total: totalInicial,
-          categorias
+          categorias,
+          inicial
         });
       }
 
       const finales = await contarPendientes();
-      window.eventBus.publicar('sincronizacion:fin', { pendientes: finales, completadas: hechas });
+      window.eventBus.publicar('sincronizacion:fin', { pendientes: finales, completadas: hechas, inicial });
       store.actualizar('ultimaSincronizacion', Date.now());
     } catch (e) {
       console.warn('[SyncQueue] Error en sincronización:', e);
@@ -310,7 +312,7 @@
     });
   }
 
-  function iniciar() {
+  function iniciar(opciones = {}) {
     if (_inicializado) return;
     _inicializado = true;
 
@@ -324,9 +326,9 @@
     });
 
     if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => sincronizar());
+      document.addEventListener('DOMContentLoaded', () => sincronizar(opciones));
     } else {
-      sincronizar();
+      sincronizar(opciones);
     }
 
     setInterval(() => {

@@ -140,7 +140,7 @@
           </div>
           <div class="corregir-final__nota-row">
             <span class="u-fs-sm u-fw-600">Nota final:</span>
-            <input type="number" class="corregir-final__nota-input" id="nota_${intentoId}" value="${int.corregido && int.nota != null ? int.nota : window.puntuacionExamen.calcularConCorreccion(preguntas, resp, map).nota}" min="0" max="10" step="0.25">
+            <input type="number" class="corregir-final__nota-input" id="nota_${intentoId}" value="${int.corregido && int.nota != null ? int.nota : window.puntuacionExamen.calcularConCorreccion(preguntas, resp, map).nota}" min="0" max="10" step="0.25" readonly aria-label="Nota calculada por el servidor" title="La nota final se calcula y valida en el servidor">
             <span class="u-fs-sm u-color-texto-terciario">/ 10</span>
             <button class="corregir-final__btn-enviar btn-calificar" data-intento="${intentoId}">${window.Iconos.render('send')} Enviar corrección</button>
           </div>
@@ -284,15 +284,16 @@
         const nota = parseFloat(raiz.querySelector('#nota_' + id)?.value || 0);
         const obs = raiz.querySelector('#obs_' + id)?.value || '';
         try {
-          await window.examenesRepository.calificar(id, Math.min(10, Math.max(0, nota)), obs, this._usuario.id, this._correcciones[id]);
-          await window.adminRepository?.registrarAuditoria('examen:calificar', `Examen "${this._examen.titulo}" nota: ${nota}`, this._usuario.id, this._usuario.grupo_id);
+          const resultadoServidor = await window.examenesRepository.calificar(id, Math.min(10, Math.max(0, nota)), obs, this._usuario.id, this._correcciones[id]);
+          const notaServidor = Number(resultadoServidor?.nota ?? nota);
+          await window.adminRepository?.registrarAuditoria('examen:calificar', `Examen "${this._examen.titulo}" nota: ${notaServidor}`, this._usuario.id, this._usuario.grupo_id);
 
           // Guardar nota del alumno en notas del profesor
           const nombreAlumno = window.helpers.nombreAlumno(int.perfiles);
           try {
             await window.notasRepository?.crearPersonal(this._usuario.id, {
               titulo: `📝 ${nombreAlumno} — ${this._examen.titulo}`,
-              contenido: `Nota: ${nota}/10\n\n${obs ? 'Observaciones: ' + obs + '\n\n' : ''}Examen: ${this._examen.titulo}\nAlumno: ${nombreAlumno}\nFecha: ${new Date().toLocaleDateString('es-ES')}`
+              contenido: `Nota: ${notaServidor}/10\n\n${obs ? 'Observaciones: ' + obs + '\n\n' : ''}Examen: ${this._examen.titulo}\nAlumno: ${nombreAlumno}\nFecha: ${new Date().toLocaleDateString('es-ES')}`
             });
           } catch (noteErr) { /* notas offline o no disponible */ }
 
@@ -302,13 +303,13 @@
             window.notificationService.emitir('examen.corregido', {
               examenId: this._examen.id,
               titulo: this._examen.titulo,
-              nota,
+              nota: notaServidor,
               destinatarios: [intentoNotif.alumno_id],
               datos: { examen_id: this._examen.id, alumno_id: intentoNotif.alumno_id }
             }).catch(e => console.warn('[Notif] calificación:', e.message));
           }
 
-          window.helpers.mostrarAlerta('Corrección enviada. El alumno puede ver sus resultados.', 'exito');
+          window.helpers.mostrarAlerta(`Corrección enviada. Nota validada por el servidor: ${notaServidor.toFixed(2)}/10.`, 'exito');
           router._ejecutar();
         } catch (e) {
           window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
