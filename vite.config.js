@@ -137,6 +137,19 @@ function servirLegalesDev() {
             return;
           }
         }
+        // En desarrollo, el runtime de versión también debe existir: en
+        // producción lo genera closeBundle, pero el index.html lo solicita
+        // igualmente durante la auditoría y la navegación local.
+        if (pathname === '/js/core/version.js') {
+          const pkgVersion = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')).version || '0.0.0';
+          const versionCodeFile = join(rootDir, 'android/version-code.properties');
+          const versionCodeSource = existsSync(versionCodeFile) ? readFileSync(versionCodeFile, 'utf8') : '';
+          const match = versionCodeSource.match(/^versionCode=(\d+)\s*$/m);
+          const versionCode = match ? Number(match[1]) : 0;
+          res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
+          res.end(`window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};`);
+          return;
+        }
         // JS que cargan esas páginas (theme, contacto, legal y login)
         if (/^\/(theme|legal|contacto|login|recuperar|registro|onboarding)\.js$/.test(pathname)) {
           const file = join(rootDir, 'public-site', url.replace(/^\//, ''));

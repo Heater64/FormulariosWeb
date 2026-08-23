@@ -357,7 +357,7 @@
       if (this._enJuego) return;
       this._enJuego = true;
       this._detenerLoops();
-      window.desafiosRepository.marcarEnJuego(desafio.id, this._usuario.id).catch(() => {});
+      window.desafiosRepository.marcarEnJuego(desafio.id).catch(() => {});
       // Datos legacy/incompletos pueden llegar con iniciado_en NULL/NaN:
       // new Date(null) = epoch → el reloj de tiempo transcurrido mostraría
       // decenas de millones de minutos. Mismo fallback que la cuenta atrás.
@@ -369,6 +369,7 @@
         idx: 0,
         correctas: 0,
         incorrectas: 0,
+        respuestas: {},
         inicioMs: inicioReal,
         // null = desafío sin límite de tiempo: el reloj muestra el tiempo
         // transcurrido y el turno solo acaba al responder todo (o si el
@@ -454,12 +455,23 @@
     },
 
     /* ── Feedback (sin corazones: solo acierto/fallo) ── */
-    _feedback(slot, ej, bien) {
+    async _feedback(slot, ej, respuesta, bienLocal = null) {
       const e = this._estado;
+      let bien = bienLocal;
+      try {
+        bien = await window.desafiosRepository.comprobarRespuesta(e.desafio.id, ej.id, respuesta);
+      } catch (error) {
+        window.helpers.mostrarAlerta('No se pudo comprobar la respuesta. Revisa tu conexión e inténtalo de nuevo.', 'advertencia');
+        // El servidor no ha contado la respuesta. Reconstruir el ejercicio
+        // deja el turno disponible sin perder el progreso anterior.
+        this._ejercicio();
+        return;
+      }
+      e.respuestas[ej.id] = respuesta;
       if (bien) e.correctas++; else e.incorrectas++;
       this._guardarProgreso();
       if (window.haptica) bien ? window.haptica.logro() : window.haptica.fallo();
-      const respuestaTexto = ej.respuestaCorrecta || (ej.tipo === 'verdadero_falso' ? (ej.esVerdadero ? 'Verdadero' : 'Falso') : '');
+      const respuestaTexto = bien ? '' : 'La respuesta no coincide con la solución.';
 
       const fb = document.createElement('div');
       fb.className = `mem-juego-feedback mem-juego-feedback--${bien ? 'ok' : 'ko'}`;
@@ -508,7 +520,7 @@
         : esCarrera
           ? '¡Has terminado! Mostrando resultados...'
           : 'Has terminado tu desafío. Estamos esperando a que los demás finalicen.');
-      window.desafiosRepository.terminarJugador(e.desafio.id, this._usuario.id, { correctas, total, tiempoMs })
+      window.desafiosRepository.terminarJugador(e.desafio.id, this._usuario.id, { respuestas: e.respuestas, tiempoMs })
         .then(() => { this._pollTimer = setTimeout(() => this._loop(), 1500); })
         .catch(() => { this._pollTimer = setTimeout(() => this._loop(), 1500); });
     },
@@ -542,7 +554,7 @@
             const tiempoMs = Date.now() - e.inicioMs;
             this._renderEsperando(this._desafio, 'Tu rival ha terminado. Mostrando resultados...');
             window.desafiosRepository.terminarJugador(this._desafioId, this._usuario.id, {
-              correctas: e.correctas, total: e.ejercicios.length, tiempoMs
+              respuestas: e.respuestas, tiempoMs
             }).then(() => { this._pollTimer = setTimeout(() => this._loop(), 1200); })
               .catch(() => { this._pollTimer = setTimeout(() => this._loop(), 1200); });
           }
@@ -789,15 +801,9 @@
           });
           $(slot, '#btnResp').onclick = () => {
             const vals = [...$$(slot, '.mem-juego-hueco')].map(inp => inp.value || '');
-            const aciertos = ej.verificar(vals);
-            const todasBien = aciertos.every(Boolean);
-            $$(slot, '.mem-juego-hueco').forEach((inp, i) => {
-              inp.classList.add(aciertos[i] ? 'mem-juego-hueco--ok' : 'mem-juego-hueco--ko');
-              if (!aciertos[i]) inp.value = ej.respuestas[i] || '';
-              inp.disabled = true;
-            });
+            $$(slot, '.mem-juego-hueco').forEach(inp => { inp.disabled = true; });
             $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, todasBien);
+            void this._feedback(slot, ej, vals);
           };
         };
         render();
@@ -847,10 +853,9 @@
             if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
           });
           $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(elegidas);
-            frase.innerHTML = ej.palabras.map((p, i) => `<span class="mem-juego-frase__palabra mem-juego-frase__palabra--${bien ? 'ok' : 'ko'}">${E(p)}</span>`).join('');
+            frase.innerHTML = ej.palabras.map((p) => `<span class="mem-juego-frase__palabra">${E(p)}</span>`).join('');
             $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien);
+            void this._feedback(slot, ej, elegidas);
           };
         };
         render();
@@ -884,14 +889,9 @@
             if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
           });
           $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(ej.opciones[sel]);
-            $$(slot, '.mem-juego-opcion').forEach((btn, i) => {
-              btn.disabled = true;
-              if (ej.opciones[i] === ej.respuestaCorrecta) btn.classList.add('mem-juego-opcion--ok');
-              else if (i === sel && !bien) btn.classList.add('mem-juego-opcion--ko');
-            });
+            $$(slot, '.mem-juego-opcion').forEach(btn => { btn.disabled = true; });
             $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien);
+            void this._feedback(slot, ej, ej.opciones[sel]);
           };
         };
         render();
@@ -927,14 +927,9 @@
             if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
           });
           $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(opciones[sel]);
-            $$(slot, '.mem-juego-opcion').forEach((btn, i) => {
-              btn.disabled = true;
-              if (ej.verificar(opciones[i])) btn.classList.add('mem-juego-opcion--ok');
-              else if (i === sel) btn.classList.add('mem-juego-opcion--ko');
-            });
+            $$(slot, '.mem-juego-opcion').forEach(btn => { btn.disabled = true; });
             $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien);
+            void this._feedback(slot, ej, opciones[sel]);
           };
         };
         render();
@@ -992,19 +987,9 @@
             if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
           });
           $(slot, '#btnResp').onclick = () => {
-            const bien = ej.verificar(asociaciones);
-            $$(slot, '.mem-juego-rel-item').forEach(btn => {
-              btn.disabled = true;
-              if (btn.dataset.izq !== undefined) {
-                const item = ej.izquierda[parseInt(btn.dataset.izq, 10)];
-                if (asociaciones[J().limpiar(item)]) btn.classList.add('mem-juego-rel-item--ok');
-              } else {
-                const der = ej.derecha[parseInt(btn.dataset.der, 10)];
-                if (Object.values(asociaciones).includes(der)) btn.classList.add('mem-juego-rel-item--ok');
-              }
-            });
+            $$(slot, '.mem-juego-rel-item').forEach(btn => { btn.disabled = true; });
             $(slot, '#btnResp').remove();
-            this._feedback(slot, ej, bien);
+            void this._feedback(slot, ej, asociaciones);
           };
         };
         render();
@@ -1048,13 +1033,10 @@
           if (b) b.style.display = b.style.display === 'none' ? 'block' : 'none';
         });
         $(slot, '#btnResp').onclick = () => {
-          const bien = ej.verificar(valor);
           const inp = $(slot, '#txtResp');
           inp.disabled = true;
-          inp.classList.add(bien ? 'mem-juego-input--ok' : 'mem-juego-input--ko');
-          if (!bien) inp.value = ej.respuestaCorrecta;
           $(slot, '#btnResp').remove();
-          this._feedback(slot, ej, bien);
+          void this._feedback(slot, ej, valor);
         };
       }
     }

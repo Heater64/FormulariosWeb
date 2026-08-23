@@ -347,9 +347,12 @@
      serializables), así que se guardan solo los datos y al cargar se
      re-engancha el verificador según el tipo. */
   function serializarSesion(sesion) {
-    return (sesion || []).map(ej => {
+    return (sesion || []).map((ej, indice) => {
       const { verificar, ...datos } = ej;
-      return datos;
+      // El id se usa para asociar cada respuesta con su ejercicio en el
+      // servidor. Se conserva el id de tarjeta, pero se garantiza uno aunque
+      // una tarjeta antigua no lo tuviera.
+      return { ...datos, id: String(ej.id || ej.tarjetaId || `ej-${indice}`) };
     });
   }
 

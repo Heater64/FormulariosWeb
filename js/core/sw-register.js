@@ -11,7 +11,10 @@
   'use strict';
   if ('serviceWorker' in navigator && window.location.protocol === 'https:') {
     window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js').catch(() => {});
+      // Registrar desde la raíz mantiene bajo el mismo scope al login público
+      // y a la app /app/; al salir de sesión no se reabre una pestaña del
+      // navegador con su barra superior.
+      navigator.serviceWorker.register('/sw.js', { scope: '/' }).catch(() => {});
     });
   }
 })();

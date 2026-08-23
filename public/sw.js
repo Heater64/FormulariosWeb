@@ -16,16 +16,16 @@ const CACHE_NAME = `formsbiblicos-${CACHE_VERSION}`;
 // Shell mínimo para que la app abra sin conexión. El resto se cachea
 // dinámicamente conforme el usuario navega (stale-while-revalidate).
 const PRECACHE = [
-  './',
-  './index.html',
-  './offline.html',
-  './manifest.json',
-  './assets/iconos/icono.svg',
-  './assets/iconos/16x16.png',
-  './assets/iconos/32x32.png',
-  './assets/iconos/180x180.png',
-  './assets/iconos/192x192.png',
-  './assets/iconos/512x512.png'
+  '/',
+  '/index.html',
+  '/offline.html',
+  '/manifest.json',
+  '/assets/iconos/icono.svg',
+  '/assets/iconos/16x16.png',
+  '/assets/iconos/32x32.png',
+  '/assets/iconos/180x180.png',
+  '/assets/iconos/192x192.png',
+  '/assets/iconos/512x512.png'
 ];
 
 // ============================================================
@@ -70,12 +70,12 @@ self.addEventListener('fetch', (event) => {
       fetch(request)
         .then((response) => {
           const copy = response.clone();
-          caches.open(CACHE_NAME).then((cache) => cache.put('./index.html', copy));
+          caches.open(CACHE_NAME).then((cache) => cache.put('/index.html', copy));
           return response;
         })
         .catch(() =>
-          caches.match('./index.html')
-            .then((cached) => cached || caches.match('./offline.html'))
+          caches.match('/index.html')
+            .then((cached) => cached || caches.match('/offline.html'))
         )
     );
     return;

@@ -69,6 +69,15 @@ for (const page of legalPages) {
   if (existsSync(src)) cpSync(src, join(distPublic, page));
 }
 
+// Copiar manifest y service worker al raíz: el login público debe permanecer
+// dentro del mismo scope standalone que la app bajo /app/.
+const rootManifest = join(root, 'public-site', 'manifest.json');
+if (existsSync(rootManifest)) cpSync(rootManifest, join(distPublic, 'manifest.json'));
+const serviceWorker = join(root, 'public', 'sw.js');
+if (existsSync(serviceWorker)) cpSync(serviceWorker, join(distPublic, 'sw.js'));
+const offlinePage = join(root, 'public', 'offline.html');
+if (existsSync(offlinePage)) cpSync(offlinePage, join(distPublic, 'offline.html'));
+
 // Copiar assets/ (iconos, logo, capturas) → dist-public/assets/
 // para que la landing y el login puedan referenciar /assets/... igual que /js/.
 const assetsSrc = join(root, 'assets');

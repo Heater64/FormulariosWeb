@@ -136,8 +136,10 @@
           sb().from('miembros_grupo')
             .select('grupos(institucion_id)')
             .eq('usuario_id', usuarioId),
+          // Evitar el join ambiguo perfiles -> grupos: el usuario puede
+          // relacionarse con grupos por grupo_id y por membresías.
           sb().from('perfiles')
-            .select('grupos(institucion_id)')
+            .select('grupo_id')
             .eq('id', usuarioId).limit(1)
         ]);
         const ids = new Set();
@@ -148,7 +150,13 @@
           if (m && m.grupos && m.grupos.institucion_id) ids.add(m.grupos.institucion_id);
         });
         const clase = claseRes.data && claseRes.data[0];
-        if (clase && clase.grupos && clase.grupos.institucion_id) ids.add(clase.grupos.institucion_id);
+        if (clase && clase.grupo_id) {
+          const { data: grupos } = await sb().from('grupos')
+            .select('institucion_id')
+            .eq('id', clase.grupo_id).limit(1);
+          const institucionId = grupos && grupos[0] && grupos[0].institucion_id;
+          if (institucionId) ids.add(institucionId);
+        }
         if (!ids.size) return [...vistos.values()];
         // Traer datos completos de las instituciones restantes
         const faltantes = [...ids].filter(id => !vistos.has(id));

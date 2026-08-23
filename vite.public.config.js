@@ -1,5 +1,5 @@
 import { defineConfig } from 'vite';
-import { copyFileSync, existsSync, mkdirSync, readFileSync } from 'node:fs';
+import { copyFileSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 
 const rootDir = process.cwd();
@@ -49,6 +49,20 @@ export default defineConfig({
       mkdirSync(outputDir, { recursive: true });
       const source = join(rootDir, 'version.json');
       if (existsSync(source)) copyFileSync(source, join(outputDir, 'version.json'));
+      const rootManifest = join(rootDir, 'public-site', 'manifest.json');
+      if (existsSync(rootManifest)) {
+        copyFileSync(rootManifest, join(outputDir, 'manifest.json'));
+        // Vite puede convertir el href absoluto en un asset con hash. El
+        // login necesita siempre el manifest estable del scope raíz.
+        const indexPath = join(outputDir, 'index.html');
+        if (existsSync(indexPath)) {
+          const html = readFileSync(indexPath, 'utf8')
+            .replace(/(<link\s+rel=["']manifest["']\s+href=["'])[^"']+(["'][^>]*>)/i, '$1/manifest.json$2');
+          writeFileSync(indexPath, html);
+        }
+      }
+      const offline = join(rootDir, 'public', 'offline.html');
+      if (existsSync(offline)) copyFileSync(offline, join(outputDir, 'offline.html'));
       for (const file of ['theme.js', 'login.js', 'contacto.js', 'legal.js', 'recuperar.js', 'registro.js', 'onboarding.js']) {
         const publicSource = join(rootDir, 'public-site', file);
         if (existsSync(publicSource)) copyFileSync(publicSource, join(outputDir, file));

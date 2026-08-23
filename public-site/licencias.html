@@ -35,8 +35,11 @@
   .page { max-width: 680px; margin: 0 auto; padding: var(--xl) var(--md) 80px; }
   a { color: var(--accento); text-decoration: none; }
   a:hover { text-decoration: underline; }
-  .back { display: inline-flex; align-items: center; gap: 6px; font-size: 14px; font-weight: 500; color: var(--texto-sec); margin-bottom: var(--lg); }
+  .back { display: inline-flex; align-items: center; gap: 6px; min-height: 32px; padding: 4px 2px; font-size: 14px; font-weight: 500; color: var(--texto-sec); margin-bottom: var(--lg); }
   .back:hover { color: var(--texto); text-decoration: none; }
+  p a, .legal-nav a { display: inline-flex; align-items: center; min-height: 32px; padding-block: 4px; }
+  .legal-nav { display: flex; flex-wrap: wrap; align-items: center; gap: 4px; }
+  .legal-nav a { padding-inline: 2px; }
   h1 { font-family: var(--fuente-display); font-size: clamp(1.6rem, 5vw, 2.2rem); font-weight: 600; margin-bottom: var(--xs); letter-spacing: -0.02em; }
   .fecha { font-size: 13px; color: var(--texto-ter); margin-bottom: var(--xl); }
   h2 { font-family: var(--fuente-display); font-size: 1.2rem; font-weight: 600; margin: var(--lg) 0 var(--xs); }

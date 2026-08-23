@@ -14,7 +14,9 @@ const authRepository = read('js/datos/auth-repository.js');
 const publicThemeJs = read('public-site/theme.js');
 const appHtml = read('index.html');
 const manifest = JSON.parse(read('public/manifest.json'));
+const publicManifest = JSON.parse(read('public-site/manifest.json'));
 const sw = read('public/sw.js');
+const swRegister = read('js/core/sw-register.js');
 
 describe('arquitectura pública y PWA (APK en pausa)', () => {
   test('las cabeceras de sección conservan título y campana en una sola fila', () => {
@@ -45,6 +47,15 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(manifest.icons.length).toBeGreaterThan(0);
     expect(sw).toContain("addEventListener('install'");
     expect(sw).toContain("addEventListener('fetch'");
+    expect(swRegister).toContain("serviceWorker.register('/sw.js', { scope: '/' })");
+  });
+
+  test('el login público queda dentro del mismo scope standalone que /app', () => {
+    expect(publicHtml).toContain('<link rel="manifest" href="/manifest.json">');
+    expect(publicManifest.start_url).toBe('/');
+    expect(publicManifest.scope).toBe('/');
+    expect(publicManifest.display).toBe('standalone');
+    expect(publicManifest.icons.length).toBeGreaterThan(0);
   });
 
   test('la app no carga el sistema de actualización de APK (pausado)', () => {
