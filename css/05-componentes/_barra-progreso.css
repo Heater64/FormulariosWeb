@@ -10,7 +10,11 @@
   height: 100%;
   background: var(--color-acento);
   border-radius: var(--radio-pill);
-  transition: width var(--transicion-normal);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal);
+  will-change: transform;
 }
 
 .barra-progreso--exito .barra-progreso__lleno {

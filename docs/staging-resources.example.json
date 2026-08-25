@@ -1,0 +1,27 @@
+{
+  "A": {
+    "grupos": ["UUID_GRUPO_A"],
+    "notas_personales": ["UUID_NOTA_A"],
+    "progreso_lectura": ["UUID_PROGRESO_A"],
+    "notificaciones": ["UUID_NOTIFICACION_A"],
+    "examenes_personalizados": ["UUID_EXAMEN_A"],
+    "intentos_examen_personalizado": ["UUID_INTENTO_A"],
+    "desafios": ["UUID_DESAFIO_A"],
+    "desafio_participantes": ["UUID_PARTICIPANTE_A"]
+  },
+  "B": {
+    "grupos": ["UUID_GRUPO_B"],
+    "notas_personales": ["UUID_NOTA_B"],
+    "progreso_lectura": ["UUID_PROGRESO_B"],
+    "notificaciones": ["UUID_NOTIFICACION_B"],
+    "examenes_personalizados": ["UUID_EXAMEN_B"],
+    "intentos_examen_personalizado": ["UUID_INTENTO_B"],
+    "desafios": ["UUID_DESAFIO_B"],
+    "desafio_participantes": ["UUID_PARTICIPANTE_B"]
+  },
+  "storage": {
+    "bucket": "avatars",
+    "A": ["UUID_USUARIO_A/avatar.png"],
+    "B": ["UUID_USUARIO_B/avatar.png"]
+  }
+}

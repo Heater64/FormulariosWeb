@@ -49,8 +49,7 @@
     },
     async eliminarGrupo(id) {
       if (!sb()) throw new Error('Sin conexión');
-      await sb().from('auditoria').update({ grupo_id: null }).eq('grupo_id', id);
-      const { error } = await sb().from('grupos').delete().eq('id', id);
+      const { error } = await sb().rpc('admin_eliminar_grupo', { p_grupo_id: id });
       if (error) throw new Error('No se pudo eliminar el grupo: ' + _traducir(error));
     },
     // FASE 2 (028): el CRUD de usuarios pasa por las RPCs de admin
@@ -146,7 +145,16 @@
     },
     async registrarAuditoria(accion, detalle, actorId, grupoId) {
       if (!sb()) throw new Error('Sin conexión');
-      await sb().from('auditoria').insert({ accion, detalle, actor_id: actorId, grupo_id: grupoId });
+      const usuario = window.store?.obtener?.('usuario');
+      if (!usuario || !usuario.id || (actorId && actorId !== usuario.id)) {
+        throw new Error('No se puede registrar una auditoría con otro actor.');
+      }
+      const { error } = await sb().rpc('registrar_auditoria', {
+        p_accion: accion,
+        p_detalle: detalle,
+        p_grupo_id: grupoId || null
+      });
+      if (error) throw new Error(_traducir(error));
     },
     async statsGenerales(actor) {
       if (!sb()) return { usuarios: 0, examenes: 0, lecturas: 0, tarjetas: 0, porRol: {} };
@@ -456,11 +464,6 @@
     async establecerModoMantenimiento(activo, actorId) {
       await this.guardarConfiguracion('modo_mantenimiento', activo ? '1' : '0');
       await this.registrarAuditoria('config:mantenimiento', activo ? 'Modo mantenimiento activado' : 'Modo mantenimiento desactivado', actorId);
-    },
-    async limpiarAuditoriaCompleta(actorId) {
-      if (!sb()) throw new Error('Sin conexión');
-      await sb().from('auditoria').delete().neq('id', '00000000-0000-0000-0000-000000000000');
-      await this.registrarAuditoria('config:limpiar', 'Auditoría completa vaciada', actorId);
     },
     async limpiarSugerenciasRechazadas(actorId) {
       if (!sb()) throw new Error('Sin conexión');

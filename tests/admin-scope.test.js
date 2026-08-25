@@ -47,6 +47,26 @@ describe('alcance del panel de administración', () => {
     expect(sql).toContain('UPDATE auth.identities');
     expect(sql).not.toContain("v_email := v_base || '@formsbiblicos.local'");
   });
+
+  test('las migraciones finales no reintroducen credenciales legacy ni borrado de auditoría', () => {
+    const auth = readFileSync(join(root, 'supabase/migraciones/052_auth_sin_password_legacy.sql'), 'utf8');
+    const auditoria = readFileSync(join(root, 'supabase/migraciones/051_admin_grupos_y_auditoria.sql'), 'utf8');
+    expect(auth).toContain('ALTER TABLE public.perfiles DROP COLUMN IF EXISTS password');
+    expect(auth).toContain('encrypted_password = extensions.crypt');
+    expect(auth).not.toContain('v_perfil.password');
+    expect(auditoria).toContain('ON DELETE SET NULL');
+    expect(auditoria).toContain('admin_eliminar_grupo');
+    expect(auditoria).not.toMatch(/DELETE FROM public\.auditoria|UPDATE public\.auditoria/);
+  });
+
+  test('las semillas no contienen contraseñas demo conocidas', () => {
+    const semillas = [
+      readFileSync(join(root, 'supabase/migraciones/002_seed_data.sql'), 'utf8'),
+      readFileSync(join(root, 'esquema-consolidado.sql'), 'utf8')
+    ].join('\\n');
+    expect(semillas).not.toMatch(/owner123|admin123|editor123|alumno123/);
+    expect(semillas).not.toContain('43a0d17178a9d26c9e0fe9a74b0b45e38d32f27aed887a008a54bf6e033bf7b9');
+  });
 });
 
 describe('adminRepository consultas acotadas', () => {
@@ -125,5 +145,27 @@ describe('adminRepository consultas acotadas', () => {
       nombre_completo: 'Admin Central', username: 'admin2', rol: 'admin', grupo_id: 'g-1', password: null
     });
     expect(llamadas[0].p_username).toBe('admin2');
+  });
+
+  test('eliminarGrupo usa la RPC controlada y no modifica auditoría directamente', async () => {
+    const llamadas = [];
+    global.window.supabaseClient = {
+      rpc: async (nombre, params) => {
+        llamadas.push({ nombre, params });
+        return { data: null, error: null };
+      }
+    };
+
+    await window.adminRepository.eliminarGrupo('g-1');
+
+    expect(llamadas).toEqual([{
+      nombre: 'admin_eliminar_grupo',
+      params: { p_grupo_id: 'g-1' }
+    }]);
+  });
+
+  test('el panel no expone borrado de auditoría tras hacerla inmutable', () => {
+    const codigo = readFileSync(join(root, 'js/vistas/admin/vista-panel-admin.js'), 'utf8');
+    expect(codigo).not.toContain('limpiar-auditoria');
   });
 });

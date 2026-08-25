@@ -178,7 +178,7 @@
               <span class="u-texto-etiqueta u-color-texto-terciario">${esRepaso ? 'Repaso' : 'Pregunta'} ${num} de ${total}</span>
               ${esRepaso ? `<span class="u-fs-xs u-fw-600 u-color-aviso">Corrige para avanzar</span>` : ''}
             </div>
-            <div class="barra-progreso"><div class="barra-progreso__lleno" style="width:${(num / total) * 100}%"></div></div>
+            <div class="barra-progreso"><div class="barra-progreso__lleno" style="transform:scaleX(${total ? num / total : 0})"></div></div>
           </div>
           <div class="cuestion">
             <p class="cuestion__texto">${window.helpers.escapeHtml(p.texto)}</p>

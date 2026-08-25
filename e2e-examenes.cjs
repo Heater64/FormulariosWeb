@@ -2,6 +2,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
+const PROFESOR = { usuario: process.env.FB_E2E_USER, password: process.env.FB_E2E_PASSWORD };
+const ALUMNO = { usuario: process.env.FB_E2E_STUDENT_USER, password: process.env.FB_E2E_STUDENT_PASSWORD };
+if (!PROFESOR.usuario || !PROFESOR.password || !ALUMNO.usuario || !ALUMNO.password) {
+  console.error('Configura FB_E2E_USER, FB_E2E_PASSWORD, FB_E2E_STUDENT_USER y FB_E2E_STUDENT_PASSWORD para ejecutar este E2E.');
+  process.exit(2);
+}
 const TITULO = 'Examen E2E Verificación';
 const PREGUNTA = '¿Cuál es el primer libro de la Biblia?';
 const OPCION_CORRECTA = 'Génesis';
@@ -80,11 +86,11 @@ let exitCode = 0;
 
   try {
     // ============ PASO 1: Login profesor ============
-    await login('admin1', 'admin123');
+    await login(PROFESOR.usuario, PROFESOR.password);
     await esperar(500);
     const loginDesaparecido = (await page.locator('#loginForm').count()) === 0;
     const urlNoLogin = !page.url().includes('#!/login');
-    log(loginDesaparecido && urlNoLogin, 'P1 Login admin1/admin123', 'login oculto=' + loginDesaparecido + ', URL=' + page.url());
+    log(loginDesaparecido && urlNoLogin, 'P1 Login profesor E2E', 'login oculto=' + loginDesaparecido + ', URL=' + page.url());
 
     // ============ PASO 2: Crear examen y publicar ============
     await page.goto(BASE + '/#!/examenes', { waitUntil: 'domcontentloaded' });
@@ -131,10 +137,10 @@ let exitCode = 0;
     // La alumna debe pertenecer AL MISMO GRUPO que admin1 para ver el examen
     // creado en el paso anterior (el examen se guarda con grupo_id del creador).
     await cerrarSesion();
-    await login('alumno', 'alumno123');
+    await login(ALUMNO.usuario, ALUMNO.password);
     await esperar(500);
     const loginAl = (await page.locator('#loginForm').count()) === 0;
-    log(loginAl, 'P3 Login alumno/alumno123 (alumno del grupo)');
+    log(loginAl, 'P3 Login alumno E2E (alumno del grupo)');
 
     // ============ PASO 4: Tomar el examen ============
     await page.goto(BASE + '/#!/examenes', { waitUntil: 'domcontentloaded' });
@@ -169,7 +175,7 @@ let exitCode = 0;
 
     // ============ PASO 5: Profesor corrige / ve respuestas ============
     await cerrarSesion();
-    await login('admin1', 'admin123');
+    await login(PROFESOR.usuario, PROFESOR.password);
     await page.goto(BASE + '/#!/examenes', { waitUntil: 'domcontentloaded' });
     await esperar(1000);
 

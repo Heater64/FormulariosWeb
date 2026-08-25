@@ -91,7 +91,7 @@ function copyAppStaticFiles() {
       mkdirSync(dirname(versionJsDestino), { recursive: true });
       const pkgVersion = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).version || '0.0.0';
       const versionCode = readAndroidVersionCode();
-      const versionJs = `window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};`;
+      const versionJs = `window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};window.__FB_SENTRY_DSN_PUBLIC__=${JSON.stringify(process.env.VITE_SENTRY_DSN_PUBLIC || '')};window.__FB_SENTRY_SDK_URL__=${JSON.stringify(process.env.VITE_SENTRY_SDK_URL || '')};window.__FB_SENTRY_ENVIRONMENT__=${JSON.stringify(process.env.VITE_SENTRY_ENVIRONMENT || 'production')};`;
       writeFileSync(versionJsDestino, versionJs, 'utf8');
 
       const distIndexPath = join(distRoot, 'index.html');
@@ -147,7 +147,7 @@ function servirLegalesDev() {
           const match = versionCodeSource.match(/^versionCode=(\d+)\s*$/m);
           const versionCode = match ? Number(match[1]) : 0;
           res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-          res.end(`window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};`);
+          res.end(`window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};window.__FB_SENTRY_DSN_PUBLIC__=${JSON.stringify(process.env.VITE_SENTRY_DSN_PUBLIC || '')};window.__FB_SENTRY_SDK_URL__=${JSON.stringify(process.env.VITE_SENTRY_SDK_URL || '')};window.__FB_SENTRY_ENVIRONMENT__=${JSON.stringify(process.env.VITE_SENTRY_ENVIRONMENT || 'development')};`);
           return;
         }
         // JS que cargan esas páginas (theme, contacto, legal y login)

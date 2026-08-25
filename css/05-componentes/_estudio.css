@@ -323,7 +323,11 @@
   height: 100%;
   border-radius: var(--radio-pill);
   background: linear-gradient(90deg, var(--color-acento), #60A5FA);
-  transition: width var(--transicion-normal) var(--easing-apple);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal) var(--easing-apple);
+  will-change: transform;
 }
 
 @media (max-width: 480px) {

@@ -1,5 +1,5 @@
 /* E2E: flujo de Memorización modo juego en FormsBiblicos (http://localhost:3000)
-   1. Login admin1/admin123
+   1. Login con FB_E2E_USER/FB_E2E_PASSWORD
    2. Crear mazo de prueba + tarjeta (vía repository, robusto con/sin migración 023)
    3. Home: grid de mazos estilo juego (.mem-juego-mazo) con porcentaje y botón Continuar
    4. Abrir mazo: detalle con stats y botón "Empezar sesión"
@@ -11,6 +11,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
+const E2E_USER = process.env.FB_E2E_USER;
+const E2E_PASSWORD = process.env.FB_E2E_PASSWORD;
+if (!E2E_USER || !E2E_PASSWORD) {
+  console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar este E2E.');
+  process.exit(2);
+}
 const NOMBRE_MAZO = 'Mazo Juego E2E';
 
 const errores = [];
@@ -87,9 +93,9 @@ let exitCode = 0;
 
   try {
     // ============ P1: Login ============
-    await login('admin1', 'admin123');
+    await login(E2E_USER, E2E_PASSWORD);
     const loginOk = (await page.locator('#loginForm').count()) === 0;
-    log(loginOk, 'P1 Login admin1/admin123', 'URL=' + page.url());
+    log(loginOk, 'P1 Login usuario E2E', 'URL=' + page.url());
 
     // ============ P2: Crear datos de prueba ============
     const creado = await crearMazoPrueba();

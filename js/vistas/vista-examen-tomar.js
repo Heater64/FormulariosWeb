@@ -130,7 +130,7 @@
               </div>
             </div>
             <div class="examen-progreso u-mt-2">
-              <div class="examen-progreso__lleno" id="barraProgresoExamen" style="width:${porcentaje}%"></div>
+              <div class="examen-progreso__lleno" id="barraProgresoExamen" style="transform:scaleX(${Math.max(0, Math.min(1, porcentaje / 100))})"></div>
             </div>
             <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs)">
               <p class="u-fs-xs u-color-texto-terciario" id="contadorProgreso">${respondidas}/${preguntas.length} respondidas</p>
@@ -198,7 +198,7 @@
         const count = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
         const barra = raiz.querySelector('#barraProgresoExamen');
         const texto = raiz.querySelector('#contadorProgreso');
-        if (barra) barra.style.width = `${Math.round((count / preguntas.length) * 100)}%`;
+        if (barra) barra.style.transform = `scaleX(${preguntas.length ? count / preguntas.length : 0})`;
         if (texto) texto.textContent = `${count}/${preguntas.length} respondidas`;
         _actualizarDots();
       };

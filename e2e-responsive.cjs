@@ -3,10 +3,14 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-const ADMIN_U = 'admin1';
-const ADMIN_C = 'admin123';
-const OWNER_U = 'owner';
-const OWNER_C = 'owner123';
+const ADMIN_U = process.env.FB_E2E_USER;
+const ADMIN_C = process.env.FB_E2E_PASSWORD;
+const OWNER_U = process.env.FB_E2E_OWNER_USER || ADMIN_U;
+const OWNER_C = process.env.FB_E2E_OWNER_PASSWORD || ADMIN_C;
+if (!ADMIN_U || !ADMIN_C || !OWNER_U || !OWNER_C) {
+  console.error('Configura FB_E2E_USER/FB_E2E_PASSWORD y, si procede, FB_E2E_OWNER_USER/FB_E2E_OWNER_PASSWORD.');
+  process.exit(2);
+}
 
 let aciertos = 0;
 let total = 0;

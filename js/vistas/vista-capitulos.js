@@ -48,7 +48,7 @@
               <div class="capitulos-cabecera__info">
                 <h2>Tu progreso</h2>
                 <p class="capitulos-cabecera__meta">${leidos} de ${total} capítulos leídos · ${pct}%</p>
-                <div class="capitulos-cabecera__barra"><div class="capitulos-cabecera__barra--lleno" style="width:${pct}%"></div></div>
+                <div class="capitulos-cabecera__barra"><div class="capitulos-cabecera__barra--lleno" style="transform:scaleX(${pct / 100})"></div></div>
               </div>
             </div>
             <button class="btn-primario u-btn-full" id="btnEmpezar" style="min-height:52px;font-size:var(--texto-lg)">

@@ -528,7 +528,7 @@
             <label class="admin-select-all-wrap" style="margin-right:2px" aria-label="Seleccionar a ${E(u.nombre_completo)}">
               <input type="checkbox" class="admin-select-cb" data-sel-id="${u.id}" ${sel ? 'checked' : ''}>
             </label>
-            <span class="admin-ficha__avatar" data-ver-detalle="${u.id}" title="Ver detalle">${foto ? `<img src="${E(foto)}" alt="">` : inicial}</span>
+            <span class="admin-ficha__avatar" data-ver-detalle="${u.id}" title="Ver detalle">${foto ? `<img src="${E(foto)}" alt="" width="44" height="44" loading="lazy" decoding="async">` : inicial}</span>
             <div class="admin-ficha__info" data-ver-detalle="${u.id}">
               <p class="admin-ficha__nombre">${E(u.nombre_completo)}</p>
               <p class="admin-ficha__username">@${E(u.username)} · ${rolBonito(u.rol)}</p>
@@ -1003,7 +1003,7 @@
             </div>
           </div>
           <div class="admin-marca__logo">
-            <img id="marcaLogoPreview" src="${logo}" alt="Logotipo actual" ${logo ? '' : 'hidden'}>
+            <img id="marcaLogoPreview" src="${logo}" alt="Logotipo actual" width="160" height="80" decoding="async" ${logo ? '' : 'hidden'}>
             <button class="btn-secundario u-fs-xs" id="btnSubirLogo">${I('upload')} ${logo ? 'Cambiar logo' : 'Subir logo'}</button>
             ${logo ? `<button class="btn-secundario u-fs-xs" id="btnQuitarLogo" style="color:var(--color-error)">${I('trash-2')} Quitar</button>` : ''}
           </div>
@@ -1128,10 +1128,6 @@
             icono: 'trash-2', iconoClase: 'admin-seccion__icono--error', titulo: 'Zona de limpieza', desc: 'Acciones destructivas, requieren confirmación',
             contenido: `
               <div class="owner-sistema__grid">
-                <button class="owner-tool owner-tool--peligro" data-herramienta="limpiar-auditoria">
-                  <span class="owner-tool__icono">${I('trash-2')}</span>
-                  <span class="owner-tool__info"><span class="owner-tool__titulo">Limpiar auditoría vieja</span><span class="owner-tool__desc">Registros con más de 90 días</span></span>
-                </button>
                 <button class="owner-tool owner-tool--peligro" data-herramienta="limpiar-sugerencias">
                   <span class="owner-tool__icono">${I('message-square')}</span>
                   <span class="owner-tool__info"><span class="owner-tool__titulo">Sugerencias rechazadas</span><span class="owner-tool__desc">Elimina las sugerencias rechazadas</span></span>
@@ -1554,7 +1550,7 @@
           const inicial = (u.nombre_completo || u.username || '?').charAt(0).toUpperCase();
           panel.innerHTML = `
             <div class="admin-user-detail__header">
-              <div class="admin-user-detail__avatar">${u.foto_perfil ? `<img src="${E(u.foto_perfil)}" alt="">` : inicial}</div>
+              <div class="admin-user-detail__avatar">${u.foto_perfil ? `<img src="${E(u.foto_perfil)}" alt="" width="44" height="44" loading="lazy" decoding="async">` : inicial}</div>
               <div class="admin-user-detail__info">
                 <p class="admin-user-detail__nombre">${E(u.nombre_completo)}</p>
                 <p class="admin-user-detail__meta">@${E(u.username)} · ${rolBonito(u.rol)}</p>
@@ -2175,18 +2171,6 @@
               this._datos.backups = backups;
               this._renderizar(raiz);
             } catch (e) { window.helpers.mostrarAlerta('Archivo inválido o error: ' + e.message, 'error'); }
-            return;
-          }
-          if (herramienta === 'limpiar-auditoria') {
-            const ok = await window.helpers.confirmar('¿Eliminar TODOS los registros de auditoría? Esta acción no se puede deshacer.', { titulo: 'Limpiar auditoría', textoConfirmar: 'Limpiar todo' });
-            if (!ok) return;
-            try {
-              await window.adminRepository.limpiarAuditoriaCompleta(usuario.id);
-              window.helpers.mostrarAlerta('Auditoría vaciada.', 'exito');
-              const nueva = await window.adminRepository.obtenerAuditoria();
-              this._datos.auditoria = nueva;
-              this._renderizar(raiz);
-            } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
             return;
           }
           if (herramienta === 'limpiar-sugerencias') {

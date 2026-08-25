@@ -60,6 +60,7 @@
        (js/core/error-capture.js) por la CSP de producción.
        ============================================================ -->
   <script src="js/core/error-capture.js"></script>
+  <script src="js/services/sentry-loader.js"></script>
 
   <!-- Default body bg usando los tokens: una vez CSS se carga,
        el body toma --color-fondo. Mientras tanto, html.style.backgroundColor
@@ -203,6 +204,7 @@
   <script src="js/componentes/campana-notificaciones.js" defer></script>
 
   <!-- JS: Notificaciones push nativas Android (FCM vía Capacitor) -->
+  <script src="js/services/fcm-messaging-adapter.js" defer></script>
   <script src="js/services/push-notification-service.js" defer></script>
 
   <!-- JS: Data Repositories -->

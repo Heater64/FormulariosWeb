@@ -5,8 +5,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-const CREADOR = { u: 'admin1', c: 'admin123' };
-const RIVAL = { u: 'editor1', c: 'editor123' };
+const CREADOR = { u: process.env.FB_E2E_USER, c: process.env.FB_E2E_PASSWORD };
+const RIVAL = { u: process.env.FB_E2E_RIVAL_USER, c: process.env.FB_E2E_RIVAL_PASSWORD };
+if (!CREADOR.u || !CREADOR.c || !RIVAL.u || !RIVAL.c) {
+  console.error('Configura FB_E2E_USER, FB_E2E_PASSWORD, FB_E2E_RIVAL_USER y FB_E2E_RIVAL_PASSWORD para ejecutar este E2E.');
+  process.exit(2);
+}
 
 let aciertos = 0;
 let total = 0;

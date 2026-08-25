@@ -52,7 +52,7 @@
         <div class="tarjeta-libro ${pct === 100 ? 'tarjeta-libro--completado' : ''}" data-libro-id="${libro.id}">
           <div class="tarjeta-libro__nombre">${libro.nombre}</div>
           <div class="tarjeta-libro__progreso">${leidos}/${total}</div>
-          <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
+          <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="transform:scaleX(${pct / 100})"></div></div>
           <div class="tarjeta-libro__detalle u-pila-gap-xs" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(6px,1fr));gap:2px;margin-top:var(--espaciado-sm)">
             ${caps.map(c => `<span class="mapa__dot${c ? ' mapa__dot--leido' : ''}" title="${caps.indexOf(c)+1}"></span>`).join('')}
           </div>

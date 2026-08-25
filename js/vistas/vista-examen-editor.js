@@ -487,7 +487,7 @@
             ${p.tipo === 'completar' ? '' : `<textarea class="u-fw-600" rows="2" data-campo-pregunta="texto" data-idx="${i}" placeholder="Pregunta sin título">${window.helpers.escapeHtml(p.texto)}</textarea>`}
             
             <!-- Zona Multimedia (opcional, si tiene valor asignado) -->
-            ${p.imagen ? `<div style="position:relative"><img src="${window.helpers.escapeHtml(p.imagen)}" style="max-height:150px;border-radius:var(--radio-sm)"><button class="btn-secundario btn-icono btn-remove-img" data-idx="${i}" style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.8)">✕</button></div>` : ''}
+            ${p.imagen ? `<div style="position:relative"><img src="${window.helpers.escapeHtml(p.imagen)}" width="320" height="150" loading="lazy" decoding="async" style="max-height:150px;width:auto;border-radius:var(--radio-sm)"><button class="btn-secundario btn-icono btn-remove-img" data-idx="${i}" style="position:absolute;top:5px;left:5px;background:rgba(255,255,255,0.8)">✕</button></div>` : ''}
 
             <!-- Opciones específicas de Tipo de Pregunta -->
             <div class="o-pila u-mt-1" data-opciones-p-idx="${i}">
@@ -1097,7 +1097,7 @@
           <div class="forms-card forms-card--pregunta" data-pid="${pid}" style="border-left-color: ${p.obligatoria ? 'var(--color-acento)' : 'transparent'}">
             <span class="u-fw-600 u-fs-sm">${numPregunta}. ${p.tipo === 'completar' ? 'Completa la frase:' : window.helpers.escapeHtml(p.texto)} ${p.obligatoria ? '<span style="color:var(--color-error)">*</span>' : ''}</span>
             <span class="u-fs-xs u-color-texto-terciario" style="margin-top:-6px">${p.puntos || 1} pt</span>
-            ${p.imagen ? `<img src="${window.helpers.escapeHtml(p.imagen)}" style="max-height:120px;border-radius:var(--radio-sm);align-self:flex-start">` : ''}
+            ${p.imagen ? `<img src="${window.helpers.escapeHtml(p.imagen)}" width="320" height="120" loading="lazy" decoding="async" style="max-height:120px;width:auto;border-radius:var(--radio-sm);align-self:flex-start">` : ''}
             <div class="o-pila u-mt-1" style="gap:4px">
               ${this._renderOpcionesPreview(p, pid, resp)}
             </div>

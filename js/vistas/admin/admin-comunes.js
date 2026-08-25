@@ -94,7 +94,7 @@
       return `
         <header class="admin-panel-cabecera">
           <div class="admin-panel-cabecera__brand">
-            ${marca && marca.logo ? `<img class="admin-panel-cabecera__logo" src="${marca.logo}" alt="Logotipo del centro">` : `<span class="admin-panel-cabecera__logo-fallback">${I('command')}</span>`}
+            ${marca && marca.logo ? `<img class="admin-panel-cabecera__logo" src="${marca.logo}" alt="Logotipo del centro" width="44" height="44" decoding="async">` : `<span class="admin-panel-cabecera__logo-fallback">${I('command')}</span>`}
             <div>
               <h1 class="admin-panel-cabecera__titulo">${E(tituloFinal)}</h1>
               <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>
@@ -173,7 +173,7 @@
         const alumnos = (miembros || []).filter(m => m.rol === 'usuario');
         const avatarMiembro = (m) => {
           const inicial = (m.nombre_completo || m.username || '?').charAt(0).toUpperCase();
-          if (m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" class="admin-miembro__foto">`;
+          if (m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" class="admin-miembro__foto" width="40" height="40" loading="lazy" decoding="async">`;
           return `<span class="admin-miembro__inicial">${inicial}</span>`;
         };
         const filaMiembro = (m) => {

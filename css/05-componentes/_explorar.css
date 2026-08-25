@@ -484,7 +484,11 @@
   height: 7px;
   border-radius: var(--radio-pill);
   background: rgba(255, 255, 255, 0.35);
-  transition: width var(--transicion-normal), background var(--transicion-normal);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal), background var(--transicion-normal);
+  will-change: transform;
 }
 
 .curiosidades-hero__dot--activo {

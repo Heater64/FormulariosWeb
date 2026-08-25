@@ -131,7 +131,7 @@
             <div class="tarjeta-libro__info">
               <span class="tarjeta-libro__nombre">${l.nombre}</span>
               <span class="tarjeta-libro__progreso">${leidos}/${l.num_capitulos} leídos · ${pct}%</span>
-              <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="width:${pct}%"></div></div>
+              <div class="tarjeta-libro__barra"><div class="tarjeta-libro__barra--lleno" style="transform:scaleX(${pct / 100})"></div></div>
             </div>
             <span class="tarjeta-libro__flecha">${window.Iconos.render('chevron-right')}</span>
           </div>`;

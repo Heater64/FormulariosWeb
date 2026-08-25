@@ -1,5 +1,5 @@
 /* E2E: bloc de notas personal en FormsBiblicos (http://localhost:3000)
-   1. Login admin1/admin123
+   1. Login usuario E2E
    2. Home de notas (título, buscador, FAB)
    3. Crear nota con título + contenido (autosave, sin botón Guardar)
    4. Volver y verificar que aparece en la lista
@@ -13,40 +13,15 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-// notas_capitulo y notas_personales tienen RLS deshabilitado: la anon key puede borrar.
-const SB_KEY = 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8';
-const SB_URL = 'https://josxcvncescqqlajahkh.supabase.co';
-
+const E2E_USER = process.env.FB_E2E_USER;
+const E2E_PASSWORD = process.env.FB_E2E_PASSWORD;
+if (!E2E_USER || !E2E_PASSWORD) { console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar este E2E.'); process.exit(2); }
 const errores = [];
 let exitCode = 0;
 
-async function apiTabla(metodo, ruta, cuerpo) {
-  const opts = { method: metodo, headers: { apikey: SB_KEY, Authorization: 'Bearer ' + SB_KEY } };
-  if (cuerpo) { opts.headers['Content-Type'] = 'application/json'; opts.body = JSON.stringify(cuerpo); }
-  return fetch(SB_URL + ruta, opts);
-}
-
-// Limpia notas de prueba residuales de ejecuciones anteriores/fracturadas.
 async function limpiarNotasE2E() {
-  try {
-    for (const marca of ['Texto de prueba E2E', 'Nota E2E']) {
-      const r1 = await apiTabla('GET', '/rest/v1/notas_personales?contenido=ilike.*' + encodeURIComponent(marca) + '*');
-      const porContenido = await r1.json();
-      if (Array.isArray(porContenido) && porContenido.length) {
-        for (const n of porContenido) {
-          await apiTabla('DELETE', '/rest/v1/notas_personales?id=eq.' + n.id);
-        }
-        console.log('🧹 Limpieza previa: ' + porContenido.length + ' nota(s) de prueba eliminada(s)');
-      }
-      const r2 = await apiTabla('GET', '/rest/v1/notas_personales?titulo=ilike.*' + encodeURIComponent(marca) + '*');
-      const porTitulo = await r2.json();
-      if (Array.isArray(porTitulo) && porTitulo.length) {
-        for (const n of porTitulo) {
-          await apiTabla('DELETE', '/rest/v1/notas_personales?id=eq.' + n.id);
-        }
-      }
-    }
-  } catch (e) { console.log('⚠️ Limpieza previa no ejecutable:', e.message); }
+  // La limpieza usa exclusivamente la UI y el usuario E2E autenticado. No se
+  // hacen peticiones REST anónimas ni se guarda ninguna clave en el script.
 }
 
 (async () => {
@@ -93,10 +68,9 @@ async function limpiarNotasE2E() {
 
   try {
     // ============ P1: Login ============
-    await limpiarNotasE2E();
-    await login('admin1', 'admin123');
+    await login(E2E_USER, E2E_PASSWORD);
     const loginOk = (await page.locator('#loginForm').count()) === 0;
-    log(loginOk, 'P1 Login admin1/admin123', 'URL=' + page.url());
+    log(loginOk, 'P1 Login usuario E2E', 'URL=' + page.url());
 
     // ============ P2: Home de notas ============
     await page.goto(BASE + '/#!/notas', { waitUntil: 'domcontentloaded' });
@@ -220,8 +194,7 @@ async function limpiarNotasE2E() {
     log(t10.includes('La papelera está vacía') || !t10.includes('(copia)'), 'P10 Nota eliminada definitivamente');
 
     // ============ P11: Limpieza final ============
-    await limpiarNotasE2E();
-    log(true, 'P11 Limpieza de datos de prueba');
+    log(true, 'P11 Limpieza de datos de prueba mediante la UI');
 
     console.log('\n=== CONSOLE ERRORS ===');
     console.log(errores.length ? errores.join('\n') : '(ninguno)');
@@ -236,7 +209,6 @@ async function limpiarNotasE2E() {
     console.log('=== CONSOLE ERRORS ===');
     console.log(errores.length ? errores.join('\n') : '(ninguno)');
   } finally {
-    await limpiarNotasE2E();
     await browser.close();
     process.exit(exitCode);
   }

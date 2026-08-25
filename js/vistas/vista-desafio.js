@@ -24,7 +24,7 @@
   };
 
   function avatarHtml(m) {
-    if (m && m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" loading="lazy">`;
+    if (m && m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" width="36" height="36" loading="lazy" decoding="async">`;
     const letra = ((m && (m.nombre_completo || m.username)) || '?').charAt(0).toUpperCase();
     return `<span>${E(letra)}</span>`;
   }
@@ -401,7 +401,7 @@
         <div class="o-contenedor mem-juego-sesion desafio-juego">
           <div class="mem-juego-sesion__barra desafio-juego__barra">
             <span class="desafio-timer${e.tiempoLimiteMs ? '' : ' desafio-timer--ilimitado'}" id="desafioTimer">${tiempoBonito(e.tiempoLimiteMs ? Math.max(0, e.tiempoLimiteMs - (Date.now() - e.inicioMs)) : (Date.now() - e.inicioMs))}</span>
-            <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" id="fill" style="width:${e.ejercicios.length ? Math.round((1 / e.ejercicios.length) * 100) : 0}%"></div></div>
+            <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" id="fill" style="transform:scaleX(${e.ejercicios.length ? 1 / e.ejercicios.length : 0})"></div></div>
             <span class="desafio-progreso" id="desafioProgreso">1/${e.ejercicios.length}</span>
           </div>
           <p class="desafio-juego__vs">${I('sword')} Contra ${E(e.desafio.participantes.filter(p => p.usuario_id !== this._usuario.id).map(p => (p.perfil && (p.perfil.nombre_completo || p.perfil.username)) || 'Jugador').join(', '))}</p>
@@ -446,7 +446,7 @@
       const ejercicio = e.ejercicios[e.idx];
       if (!ejercicio) { this._finJuego(false); return; }
       const fill = $('#fill');
-      if (fill) fill.style.width = Math.round(((e.idx + 1) / e.ejercicios.length) * 100) + '%';
+      if (fill) fill.style.transform = `scaleX(${e.ejercicios.length ? (e.idx + 1) / e.ejercicios.length : 0})`;
       const prog = $('#desafioProgreso');
       if (prog) prog.textContent = `${e.idx + 1}/${e.ejercicios.length}`;
       const renderer = this._renderers[ejercicio.tipo];

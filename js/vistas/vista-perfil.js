@@ -279,7 +279,7 @@
       // Avatar con foto
       if (usuario.foto_perfil) {
         const avatar = raiz.querySelector('#avatarPerfil');
-        if (avatar) avatar.innerHTML = `<img src="${E(usuario.foto_perfil)}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+        if (avatar) avatar.innerHTML = `<img src="${E(usuario.foto_perfil)}" alt="Foto de perfil" width="88" height="88" decoding="async"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
       }
 
       // (El hero ya no se contrae al hacer scroll: la foto de perfil se
@@ -357,7 +357,7 @@
 
           // Actualizar UI
           const avatar = raiz.querySelector('#avatarPerfil');
-          if (avatar) avatar.innerHTML = `<img src="${E(publicUrl)}" alt="Foto de perfil"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
+          if (avatar) avatar.innerHTML = `<img src="${E(publicUrl)}" alt="Foto de perfil" width="88" height="88" decoding="async"><input type="file" id="inputFotoPerfil" accept="image/*" aria-label="Subir foto de perfil" style="position:absolute;inset:0;opacity:0;cursor:pointer">`;
           const nuevoInput = raiz.querySelector('#inputFotoPerfil');
           if (nuevoInput) nuevoInput.onchange = onFotoChange;
 

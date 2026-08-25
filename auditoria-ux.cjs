@@ -4,8 +4,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-const USUARIO = 'owner';
-const PASS = 'owner123';
+const USUARIO = process.env.FB_E2E_USER;
+const PASS = process.env.FB_E2E_PASSWORD;
+if (!USUARIO || !PASS) {
+  console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar la auditoría UX.');
+  process.exit(2);
+}
 
 const RUTAS = ['/estudio', '/examenes', '/memorizacion', '/explorar', '/perfil', '/progreso', '/grupos', '/calificaciones'];
 

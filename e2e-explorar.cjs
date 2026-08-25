@@ -3,8 +3,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-const USUARIO = 'admin1';
-const CLAVE = 'admin123';
+const USUARIO = process.env.FB_E2E_USER;
+const CLAVE = process.env.FB_E2E_PASSWORD;
+if (!USUARIO || !CLAVE) {
+  console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar este E2E.');
+  process.exit(2);
+}
 
 let aciertos = 0;
 let total = 0;

@@ -36,7 +36,11 @@
   height: 100%;
   border-radius: var(--radio-pill);
   background: linear-gradient(90deg, var(--color-acento), var(--color-verde-500));
-  transition: width var(--transicion-normal);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal);
+  will-change: transform;
 }
 
 /* Modo oscuro: gradiente único índigo/azul oscuro (hex ornamental) */

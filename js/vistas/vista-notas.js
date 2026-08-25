@@ -216,7 +216,7 @@
       return `
         <button class="nota-item" data-id="${n.id}" data-color="${E(n.color_fondo || 'blanco')}" style="--nota-color:${color.css}" aria-label="Abrir ${E(n.titulo || 'nota')}">
           ${mini
-            ? `<span class="nota-item__miniatura"><img src="${mini}" alt="" loading="lazy"></span>`
+            ? `<span class="nota-item__miniatura"><img src="${mini}" alt="" width="52" height="52" loading="lazy" decoding="async"></span>`
             : `<span class="nota-item__icono">${I('file-text')}</span>`}
           <span class="nota-item__cuerpo">
             <span class="nota-item__fila">

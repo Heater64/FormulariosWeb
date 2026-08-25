@@ -74,13 +74,9 @@ Al subir la versión, actualiza también `CACHE_VERSION` en `sw.js` para que los
 3. O usa la página de login directa: `paginas/login.html`
 4. Para probar la instalación PWA: despliega en https (p. ej. Vercel con `npm run build:public`) y usa "Instalar aplicación" del navegador.
 
-### Cuenta de producción conservada
+### Cuenta de producción
 
-| Usuario | Contraseña | Rol |
-|---------|-----------|-----|
-| `owner` | `owner123` | Owner |
-
-Las cuentas de prueba anteriores (`admin1`, `editor1`, `alumno`, etc.) fueron eliminadas durante el reinicio de producción. El owner debe crear nuevos responsables y asignarlos a una clase desde el panel global.
+Las credenciales de producción no se guardan en el repositorio. El propietario debe usar un gestor de secretos y crear responsables desde el panel global; las cuentas de prueba antiguas no son fixtures válidos para E2E.
 
 ## Configuración de Supabase
 

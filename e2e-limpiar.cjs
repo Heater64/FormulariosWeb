@@ -4,6 +4,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
+const E2E_USER = process.env.FB_E2E_USER;
+const E2E_PASSWORD = process.env.FB_E2E_PASSWORD;
+if (!E2E_USER || !E2E_PASSWORD) {
+  console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar la limpieza E2E.');
+  process.exit(2);
+}
 const TITULO = 'Examen E2E Verificación';
 
 (async () => {
@@ -26,8 +32,8 @@ const TITULO = 'Examen E2E Verificación';
     // Login como admin1
     await page.goto(BASE + '/#!/login', { waitUntil: 'domcontentloaded' });
     await esperar(600);
-    await page.fill('#loginUser', 'admin1');
-    await page.fill('#loginPass', 'admin123');
+    await page.fill('#loginUser', E2E_USER);
+    await page.fill('#loginPass', E2E_PASSWORD);
     await page.click('#loginBtn');
     try { await page.waitForSelector('#loginForm', { state: 'detached', timeout: 8000 }); } catch (e) {}
     await esperar(1200);

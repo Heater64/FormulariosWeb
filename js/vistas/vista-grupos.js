@@ -5,7 +5,7 @@
   const J = () => window.ejerciciosMemorizacion;
 
   function avatarHtml(m, grande = false) {
-    if (m && m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" loading="lazy">`;
+    if (m && m.foto_perfil) return `<img src="${E(m.foto_perfil)}" alt="" width="40" height="40" loading="lazy" decoding="async">`;
     const letra = ((m && (m.nombre_completo || m.username)) || '?').charAt(0).toUpperCase();
     return `<span class="${grande ? 'grupos-avatar__letra--lg' : ''}">${E(letra)}</span>`;
   }
@@ -73,10 +73,7 @@
             <button class="btn-secundario" id="btnCrearInstitucion">${I('building')} Nueva institución</button>` : ''}
           </div>
           <div id="gruposContenido">
-            <div class="skeleton-stack" aria-hidden="true">
-              <div class="skel" style="height:150px;border-radius:var(--card-radius)"></div>
-              <div class="skel" style="height:150px;border-radius:var(--card-radius)"></div>
-            </div>
+            ${window.skeleton ? window.skeleton.tarjetas(2, { ancho: '100%' }) : '<div class="skeleton-stack" aria-hidden="true"><div class="skel" style="height:150px;border-radius:var(--card-radius)"></div><div class="skel" style="height:150px;border-radius:var(--card-radius)"></div></div>'}
           </div>
         </div>`;
       if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(raiz);
@@ -822,7 +819,7 @@
                 <span class="grupos-miembro__avatar">${avatarHtml(p)}</span>
                 <div class="grupos-progreso-item__info">
                   <p class="grupos-progreso-item__nombre">${E(p.nombre_completo || p.username)}</p>
-                  <div class="grupos-progreso-item__barra"><span style="width:${Math.min(100, Math.round((p.capitulos_estudiados || 0) / 50 * 100))}%"></span></div>
+                  <div class="grupos-progreso-item__barra"><span style="transform:scaleX(${Math.min(1, (p.capitulos_estudiados || 0) / 50)});transform-origin:left center"></span></div>
                 </div>
                 <strong class="grupos-progreso-item__num">${p.capitulos_estudiados || 0}</strong>
               </div>`).join('')}

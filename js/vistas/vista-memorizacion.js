@@ -719,7 +719,7 @@
         <div class="o-contenedor mem-juego-sesion">
           <div class="mem-juego-sesion__barra">
             <button class="btn-secundario u-fs-xs" id="btnSalir" style="padding:6px 10px">${I('x')}</button>
-            <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" style="width:${sesion.length ? Math.round((1 / sesion.length) * 100) : 0}%"></div></div>
+            <div class="mem-juego-sesion__track" aria-hidden="true"><div class="mem-juego-sesion__fill" style="transform:scaleX(${sesion.length ? 1 / sesion.length : 0})"></div></div>
             <span class="mem-juego-sesion__corazones" id="corazones" title="Fallos permitidos"></span>
           </div>
           <div id="slot" class="o-pila" style="flex:1;min-height:300px"></div>
@@ -748,7 +748,7 @@
 
       const avance = Math.round(((estado.idx + 1) / estado.ejercicios.length) * 100);
       const fill = $(raiz, '.mem-juego-sesion__fill');
-      if (fill) fill.style.width = avance + '%';
+      if (fill) fill.style.transform = `scaleX(${avance / 100})`;
 
       const renderer = this._renderers[ejercicio.tipo];
       if (renderer) renderer.call(this, slot, ejercicio, estado, raiz);

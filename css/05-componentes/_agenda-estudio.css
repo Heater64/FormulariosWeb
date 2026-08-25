@@ -171,7 +171,11 @@
   height: 100%;
   border-radius: inherit;
   background: var(--color-acento);
-  transition: width var(--transicion-normal);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal);
+  will-change: transform;
 }
 
 .agenda-resumen__objetivo {

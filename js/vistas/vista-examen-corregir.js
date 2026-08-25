@@ -67,7 +67,7 @@
           </header>
 
           <div class="corregir-progreso">
-            <div class="corregir-progreso__barra"><div class="corregir-progreso__lleno" style="width:${pct}%"></div></div>
+            <div class="corregir-progreso__barra"><div class="corregir-progreso__lleno" style="transform:scaleX(${Math.max(0, Math.min(1, pct / 100))})"></div></div>
             <span class="corregir-progreso__texto">${corregidos}/${total}</span>
           </div>
 
@@ -110,7 +110,7 @@
       return `
         <div class="corregir-card ${abierto ? 'corregir-card--abierta' : ''}" data-intento="${int.id}">
           <div class="corregir-card__header" data-toggle="${int.id}">
-            <div class="corregir-card__avatar">${foto ? `<img src="${window.helpers.escapeHtml(foto)}" alt="">` : inicial}</div>
+            <div class="corregir-card__avatar">${foto ? `<img src="${window.helpers.escapeHtml(foto)}" alt="" width="40" height="40" loading="lazy" decoding="async">` : inicial}</div>
             <div class="corregir-card__info">
               <span class="corregir-card__nombre">${window.helpers.escapeHtml(nombre)}</span>
               <span class="corregir-card__fecha">${fecha}</span>

@@ -4,8 +4,12 @@
 const { chromium } = require('playwright-core');
 
 const BASE = 'http://localhost:3000';
-const ADMIN_U = 'admin1';
-const ADMIN_C = 'admin123';
+const ADMIN_U = process.env.FB_E2E_USER;
+const ADMIN_C = process.env.FB_E2E_PASSWORD;
+if (!ADMIN_U || !ADMIN_C) {
+  console.error('Configura FB_E2E_USER y FB_E2E_PASSWORD para ejecutar la auditoría responsive.');
+  process.exit(2);
+}
 
 let aciertos = 0;
 let total = 0;

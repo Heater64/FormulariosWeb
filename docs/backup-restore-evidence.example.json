@@ -1,0 +1,13 @@
+{
+  "environment": "staging",
+  "backup_created": true,
+  "backup_provider": "Supabase",
+  "backup_reference": "RELLENAR_CON_ID_O_FECHA",
+  "restore_verified": true,
+  "restore_reference": "RELLENAR_CON_PROYECTO_O_SNAPSHOT",
+  "rpo_minutes": 60,
+  "rto_minutes": 120,
+  "verified_at": "2026-08-25T00:00:00.000Z",
+  "verified_by": "RELLENAR_RESPONSABLE",
+  "notes": "No usar este fichero como prueba: es una plantilla. Copiarlo fuera del repo y rellenarlo con evidencia real."
+}

@@ -1,0 +1,76 @@
+name: Supabase encrypted backup
+
+on:
+  schedule:
+    # GitHub Actions usa UTC. 00:00 UTC = 02:00 en España peninsular durante CEST.
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backup:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      SUPABASE_DB_URL: ${{ secrets.SUPABASE_DB_URL }}
+      BACKUP_AGE_RECIPIENT: ${{ secrets.BACKUP_AGE_RECIPIENT }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Validate secrets
+        run: |
+          test -n "$SUPABASE_DB_URL" || { echo "Falta SUPABASE_DB_URL"; exit 1; }
+          test -n "$BACKUP_AGE_RECIPIENT" || { echo "Falta BACKUP_AGE_RECIPIENT (clave pública age)"; exit 1; }
+          echo "$BACKUP_AGE_RECIPIENT" | grep -Eq '^age1[0-9a-z]+$' || { echo "BACKUP_AGE_RECIPIENT no parece una clave age pública"; exit 1; }
+
+      - name: Setup Supabase CLI
+        uses: supabase/setup-cli@v1
+        with:
+          version: latest
+
+      - name: Setup age
+        uses: AnimMouse/setup-age@v1
+        with:
+          version: latest
+
+      - name: Dump roles, schema and data
+        run: |
+          mkdir -p backup-out
+          supabase db dump --db-url "$SUPABASE_DB_URL" --role-only > backup-out/roles.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --schema-only > backup-out/schema.sql
+          supabase db dump --db-url "$SUPABASE_DB_URL" --data-only --use-copy > backup-out/data.sql
+          for file in backup-out/*.sql; do
+            test -s "$file" || { echo "Dump vacío: $file"; exit 1; }
+          done
+          sha256sum backup-out/*.sql > backup-out/SHA256SUMS
+
+      - name: Encrypt backup files with authenticated age encryption
+        shell: bash
+        run: |
+          mkdir -p backup-encrypted
+          for file in backup-out/*.sql; do
+            name=$(basename "$file")
+            age --encrypt --recipient "$BACKUP_AGE_RECIPIENT" \
+              --output "backup-encrypted/${name}.age" "$file"
+          done
+          cp backup-out/SHA256SUMS backup-encrypted/SHA256SUMS
+          tar -czf "formsbiblicos-backup-${GITHUB_RUN_ID}.tar.gz" backup-encrypted
+          sha256sum "formsbiblicos-backup-${GITHUB_RUN_ID}.tar.gz" > "formsbiblicos-backup-${GITHUB_RUN_ID}.sha256"
+          rm -rf backup-out backup-encrypted
+
+      - name: Upload encrypted artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: formsbiblicos-backup-${{ github.run_id }}
+          path: |
+            formsbiblicos-backup-${{ github.run_id }}.tar.gz
+            formsbiblicos-backup-${{ github.run_id }}.sha256
+          retention-days: 35
+
+      - name: Summary
+        run: |
+          echo "Backup age cifrado generado. El artefacto no contiene SQL plano." >> "$GITHUB_STEP_SUMMARY"
+          echo "Para producción, copiarlo a almacenamiento privado con retención y probar restauración en staging." >> "$GITHUB_STEP_SUMMARY"

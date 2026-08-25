@@ -123,7 +123,7 @@
               <span class="agenda-resumen__meta">${totalHoy >= this._objetivo ? 'Objetivo diario completado' : `Te faltan ${this._objetivo - totalHoy} para cumplirlo`}</span>
             </div>
             <div class="agenda-resumen__barra" aria-label="${totalHoy} de ${this._objetivo} capítulos del objetivo diario">
-              <span style="width:${Math.min(100, Math.round(totalHoy / this._objetivo * 100))}%"></span>
+              <span style="transform:scaleX(${Math.min(1, totalHoy / Math.max(1, this._objetivo))});transform-origin:left center"></span>
             </div>
             <div class="agenda-resumen__objetivo">
               <span>Objetivo diario</span>

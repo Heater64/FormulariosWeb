@@ -393,7 +393,7 @@
         return `
           <div class="examen-alumno-fila">
             <div class="examen-alumno-fila__avatar">
-              ${a.foto_perfil ? `<img src="${_esc(a.foto_perfil)}" alt="">` : (a.nombre_completo || a.username || '?').charAt(0).toUpperCase()}
+              ${a.foto_perfil ? `<img src="${_esc(a.foto_perfil)}" alt="" width="44" height="44" loading="lazy" decoding="async">` : (a.nombre_completo || a.username || '?').charAt(0).toUpperCase()}
             </div>
             <div class="examen-alumno-fila__info">
               <div class="examen-alumno-fila__nombre">${_esc(a.nombre_completo || a.username)}</div>
