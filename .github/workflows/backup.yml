@@ -27,7 +27,7 @@ jobs:
           echo "$BACKUP_AGE_RECIPIENT" | grep -Eq '^age1[0-9a-z]+$' || { echo "BACKUP_AGE_RECIPIENT no parece una clave age pública"; exit 1; }
 
       - name: Setup Supabase CLI
-        uses: supabase/setup-cli@v1
+        uses: supabase/setup-cli@v3
         with:
           version: latest
 
