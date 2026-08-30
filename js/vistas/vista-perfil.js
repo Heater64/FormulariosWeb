@@ -152,22 +152,6 @@
             </div>
           </header>
 
-          <section class="perfil-estudio-accesos" aria-label="Tu estudio">
-            <div class="perfil-estudio-accesos__cabecera">
-              <div class="perfil-seccion__icono">${I('book-open')}</div>
-              <div>
-                <h2>Tu estudio</h2>
-                <p>Accede rápidamente a tus espacios de aprendizaje</p>
-              </div>
-            </div>
-            <div class="perfil-estudio-accesos__grid">
-              ${filaNav('book-open', 'Estudio Guiado', 'Continúa con la lectura bíblica', '/estudio')}
-              ${filaNav('calendar-days', 'Agenda de estudio', 'Organiza tu objetivo diario', '/agenda')}
-              ${filaNav('bar-chart-2', 'Mi progreso', 'Consulta tu avance y racha', '/progreso')}
-              ${filaNav('brain', 'Memorización', 'Practica tus tarjetas pendientes', '/memorizacion')}
-            </div>
-          </section>
-
           <div class="o-pila o-pila--md">
 
             <!-- CONFIGURACIÓN -->
@@ -184,7 +168,6 @@
                 ${filaNav('bell', 'Notificaciones', 'Avisos y sonidos de la app', '/perfil/config/notificaciones')}
                 ${filaNav('eye-off', 'Privacidad', 'Qué puede verse de tu perfil', '/perfil/config/privacidad')}
                 ${filaNav('database', 'Almacenamiento', 'Caché, datos temporales y sincronización', '/perfil/config/almacenamiento')}
-                ${filaNav('calendar-days', 'Agenda de estudio', 'Lectura, repasos y objetivo diario', '/agenda')}
                 ${filaNav('lock', 'Seguridad', 'Contraseña, sesión y zona de peligro', '/perfil/config/seguridad')}
               </div>
             </section>

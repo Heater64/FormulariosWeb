@@ -159,6 +159,7 @@
       this._splash = splash;
       this._splashStatus = status;
       this._splashOculto = false;
+      this._splashEsInicial = true;
       this._splashInicio = Date.now();
       this._splashOcultarTimer = null;
       // Protección: nunca dejar el splash bloqueando la app más de 10 s.
@@ -194,6 +195,22 @@
       const transcurrido = Date.now() - (this._splashInicio || Date.now());
       const espera = Math.max(0, SPLASH_MINIMO_MS - transcurrido);
       this._splashOcultarTimer = setTimeout(() => this.ocultarSplash(), espera);
+    },
+
+    mostrarSplashSeccion() {
+      if (this._splash && !this._splashOculto) return;
+      const splash = document.createElement('div');
+      splash.id = 'splashScreen';
+      splash.className = 'splash-screen splash-screen--seccion';
+      splash.setAttribute('role', 'status');
+      splash.setAttribute('aria-label', 'Cargando sección');
+      splash.innerHTML = '<div class="splash-screen__logo" aria-hidden="true"><img src="assets/iconos/icono.svg" alt="" class="splash-screen__logo-img"></div>';
+      document.body.appendChild(splash);
+      this._splash = splash;
+      this._splashOculto = false;
+      this._splashEsInicial = false;
+      requestAnimationFrame(() => splash.classList.add('splash-screen--visible'));
+      setTimeout(() => this.ocultarSplash(), 450);
     },
 
     ocultarSplash() {
@@ -598,7 +615,7 @@
       // (logout, guardia, enlace antiguo guardado) redirige al login normal.
       router.registrar('/login', { montar: () => irAlLogin() });
       router.registrar('/estudio', window.vistaEstudio);
-      router.registrar('/agenda', this._vistaLazy(['./js/vistas/vista-agenda.js'], () => window.vistaAgenda));
+
       router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
       router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
       router.registrar('/leer/:libro/:capitulo', window.vistaSesionEstudio);
@@ -621,7 +638,6 @@
       router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
       router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-examen-corregir.js'], () => window.vistaExamenCorregir));
       router.registrar('/calificaciones', this._vistaLazy(['./js/vistas/vista-calificaciones.js'], () => window.vistaCalificaciones));
-      router.registrar('/progreso', this._vistaLazy(['./js/vistas/vista-progreso.js'], () => window.vistaProgreso));
       router.registrar('/grupos', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
       router.registrar('/grupos/:id', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
       router.registrar('/desafio/:id', this._vistaLazy(['./js/vistas/vista-desafio.js'], () => window.vistaDesafio));

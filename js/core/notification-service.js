@@ -277,7 +277,7 @@ class NotificationService {
       categoria: 'logros', prioridad: 'media',
       titulo: (p) => `Logro desbloqueado: ${p.nombre || ''}`,
       cuerpo: (p) => p.descripcion || '',
-      url: () => '/progreso',
+      url: () => '/estudio',
       icono: 'trophy',
       nativo: true, toast: false, sonido: true,
       acciones: []

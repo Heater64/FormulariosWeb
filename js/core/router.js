@@ -193,6 +193,13 @@ class Router {
         const raiz = document.getElementById('app-root');
         if (!raiz) return;
 
+        // En el primer arranque solo se muestra el splash principal. Las
+        // navegaciones posteriores usan la transición ligera de sección;
+        // nunca vuelven a bloquear la app con una pantalla completa.
+        // No mostramos una pantalla completa al cambiar de sección: el shell y
+        // los skeletons de cada vista mantienen la interfaz estable y permiten
+        // navegar como en una app nativa. El splash solo pertenece al arranque.
+
         // Saltar animación de salida si el usuario está navegando muy rápido
         // (menos de 250ms entre ejecuciones): evita parpadeo por transiciones
         // solapadas de opacity: 0 → 1 → 0.
@@ -200,7 +207,7 @@ class Router {
         const navegacionRapida = !this._primeraCarga && (ahora - this._ultimaEjecucionMs) < 250;
         this._ultimaEjecucionMs = ahora;
 
-        if (!this._primeraCarga && this._transiciones && !navegacionRapida) {
+        if (!this._primeraCarga && this._transiciones && !navegacionRapida && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
           const claseSalida = this._direccion === 'atras' ? 'app-transicion-salida-atras' : 'app-transicion-salida';
           raiz.classList.add(claseSalida);
           await new Promise(r => setTimeout(r, 150));
@@ -346,7 +353,6 @@ raiz.innerHTML = '';
     return {
       '/': 'FormsBiblicos — Estudio bíblico guiado',
       '/estudio': 'Estudio — FormsBiblicos',
-      '/agenda': 'Agenda de estudio — FormsBiblicos',
       '/estudio/libro/:libro': 'Capítulos — FormsBiblicos',
       '/estudio/sesion/:libro/:capitulo': 'Sesión de estudio — FormsBiblicos',
       '/leer/:libro/:capitulo': 'Lectura — FormsBiblicos',
@@ -361,7 +367,6 @@ raiz.innerHTML = '';
       '/editor/:id': 'Editar examen — FormsBiblicos',
       '/corregir/:id': 'Corregir examen — FormsBiblicos',
       '/calificaciones': 'Calificaciones — FormsBiblicos',
-      '/progreso': 'Progreso — FormsBiblicos',
       '/grupos': 'Clases — FormsBiblicos',
       '/grupos/:id': 'Clase — FormsBiblicos',
       '/desafio/:id': 'Desafío — FormsBiblicos',

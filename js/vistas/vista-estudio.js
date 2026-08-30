@@ -17,26 +17,15 @@
         const completados = progresoResult.data || [];
         const intentos = examenesResult || [];
         const repasosPendientes = memPendientesResult || [];
-        const lecturasHoy = completados.filter(p => p.fecha_lectura && new Date(p.fecha_lectura).toDateString() === new Date().toDateString()).length;
         const examenesPendientes = intentos.filter(i => i.estado === 'pendiente' || i.estado === 'en_progreso').length;
         const leidosPorLibro = {};
         completados.forEach(p => {
           const lid = p.capitulos?.libro_id;
           if (lid) leidosPorLibro[lid] = (leidosPorLibro[lid] || 0) + 1;
         });
-        const librosCompletados = (libros || []).filter(l => l.num_capitulos > 0 && (leidosPorLibro[l.id] || 0) >= l.num_capitulos).length;
         const antiguos = (libros || []).filter(l => l.testamento === 'antiguo');
         const nuevos = (libros || []).filter(l => l.testamento === 'nuevo');
-        const totalCapitulosBiblia = (libros || []).reduce((sum, l) => sum + (l.num_capitulos || 0), 0);
-        const racha = window.progresoLectura.calcularRacha(completados);
-        try { localStorage.setItem('fb_racha', String(racha)); } catch (e) {}
-        const pctGeneral = totalCapitulosBiblia ? Math.round((completados.length / totalCapitulosBiblia) * 100) : 0;
-        const statsResumen = `
-          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${completados.length}</p><p class="guia-popup__stat-etiqueta">Capítulos leídos</p></div>
-          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${librosCompletados}/${(libros || []).length}</p><p class="guia-popup__stat-etiqueta">Libros completados</p></div>
-          <div class="guia-popup__stat"><p class="guia-popup__stat-valor">${pctGeneral}%</p><p class="guia-popup__stat-etiqueta">Progreso general</p></div>
-        `;
-        const ultimo = completados.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura))[0];
+                const ultimo = completados.sort((a, b) => new Date(b.fecha_lectura) - new Date(a.fecha_lectura))[0];
         let ultimoLibro = null, ultimoCap = null;
         if (ultimo?.capitulos) {
           ultimoLibro = (libros || []).find(l => l.id === ultimo.capitulos.libro_id);
@@ -65,19 +54,10 @@
                 ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
               </div>
             </div>
-            <section class="estudio-panel-personal" aria-label="Resumen personal de estudio">
-              <div class="estudio-panel-personal__intro">
-                <span class="estudio-panel-personal__eyebrow">Tu plan de hoy</span>
-                <strong>${lecturasHoy ? `${lecturasHoy} capítulo${lecturasHoy === 1 ? '' : 's'} completado${lecturasHoy === 1 ? '' : 's'}` : 'Empieza tu sesión de estudio'}</strong>
-                <span>${pctGeneral}% de la Biblia recorrida · Racha de ${racha} día${racha === 1 ? '' : 's'}</span>
-              </div>
-              <div class="estudio-panel-personal__acciones">
-                <button class="estudio-atajo estudio-atajo--principal" data-ruta="/agenda"><span>${window.Iconos.render('calendar-days')}</span><span><b>Agenda</b><small>Organiza tu ritmo</small></span></button>
-                <button class="estudio-atajo" data-ruta="/progreso"><span>${window.Iconos.render('bar-chart-2')}</span><span><b>Progreso</b><small>${completados.length} capítulos</small></span></button>
-                <button class="estudio-atajo" data-ruta="/memorizacion"><span>${window.Iconos.render('brain')}</span><span><b>Repasos</b><small>${repasosPendientes.length ? `${repasosPendientes.length} pendientes` : 'Al día'}</small></span>${repasosPendientes.length ? `<em>${repasosPendientes.length}</em>` : ''}</button>
-                <button class="estudio-atajo" data-ruta="/examenes"><span>${window.Iconos.render('clipboard-check')}</span><span><b>Exámenes</b><small>${examenesPendientes ? `${examenesPendientes} pendientes` : 'Ver disponibles'}</small></span>${examenesPendientes ? `<em>${examenesPendientes}</em>` : ''}</button>
-              </div>
-            </section>
+            <div class="estudio-accesos" aria-label="Accesos de estudio">
+              <button class="estudio-atajo" data-ruta="/memorizacion"><span>${window.Iconos.render('brain')}</span><span><b>Repasos</b><small>${repasosPendientes.length ? `${repasosPendientes.length} pendientes` : 'Al día'}</small></span>${repasosPendientes.length ? `<em>${repasosPendientes.length}</em>` : ''}</button>
+              <button class="estudio-atajo" data-ruta="/examenes"><span>${window.Iconos.render('clipboard-check')}</span><span><b>Exámenes</b><small>${examenesPendientes ? `${examenesPendientes} pendientes` : 'Ver disponibles'}</small></span>${examenesPendientes ? `<em>${examenesPendientes}</em>` : ''}</button>
+            </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
               <div class="estudio-continuar__icono">${window.Iconos.render('book-open')}</div>
               <div class="estudio-continuar__info">
@@ -168,7 +148,7 @@
         toggleAT.addEventListener('keydown', tecladoTestamento(toggleAT, listaAT, 'fb_collapse_at'));
         toggleNT.addEventListener('keydown', tecladoTestamento(toggleNT, listaNT, 'fb_collapse_nt'));
         const guias = {
-          'estudio': ['Estudio Guiado', 'Aquí navegas por todos los libros de la Biblia. Cada libro contiene capítulos; al seleccionar uno accedes al plan de lectura con preguntas de comprensión. El progreso se guarda automáticamente.', 'Ej: Selecciona "Génesis" → "Capítulo 1" para comenzar a leer y responder preguntas.', statsResumen]
+          'estudio': ['Estudio Guiado', 'Aquí navegas por todos los libros de la Biblia. Cada libro contiene capítulos; al seleccionar uno accedes al plan de lectura con preguntas de comprensión. El progreso se guarda automáticamente.', 'Ej: Selecciona "Génesis" → "Capítulo 1" para comenzar a leer y responder preguntas.']
         };
         window.helpers.registrarGuias(raiz, guias);
       } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
