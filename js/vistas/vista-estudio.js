@@ -7,17 +7,12 @@
       const sb = window.supabaseClient;
       if (!sb || !usuario) return;
       try {
-        const [librosResult, progresoResult, examenesResult, memPendientesResult] = await Promise.all([
+        const [librosResult, progresoResult] = await Promise.all([
           sb.from('libros_biblicos').select('*').order('id'),
           sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
-          window.examenesRepository ? window.examenesRepository.misIntentos(usuario.id).catch(() => []) : [],
-          window.memorizacionRepository ? window.memorizacionRepository.tarjetasPendientes(usuario.id).catch(() => []) : []
         ]);
         const libros = librosResult.data;
         const completados = progresoResult.data || [];
-        const intentos = examenesResult || [];
-        const repasosPendientes = memPendientesResult || [];
-        const examenesPendientes = intentos.filter(i => i.estado === 'pendiente' || i.estado === 'en_progreso').length;
         const leidosPorLibro = {};
         completados.forEach(p => {
           const lid = p.capitulos?.libro_id;
@@ -53,10 +48,6 @@
               <div class="vista-cabecera__acciones">
                 ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
               </div>
-            </div>
-            <div class="estudio-accesos" aria-label="Accesos de estudio">
-              <button class="estudio-atajo" data-ruta="/memorizacion"><span>${window.Iconos.render('brain')}</span><span><b>Repasos</b><small>${repasosPendientes.length ? `${repasosPendientes.length} pendientes` : 'Al día'}</small></span>${repasosPendientes.length ? `<em>${repasosPendientes.length}</em>` : ''}</button>
-              <button class="estudio-atajo" data-ruta="/examenes"><span>${window.Iconos.render('clipboard-check')}</span><span><b>Exámenes</b><small>${examenesPendientes ? `${examenesPendientes} pendientes` : 'Ver disponibles'}</small></span>${examenesPendientes ? `<em>${examenesPendientes}</em>` : ''}</button>
             </div>
             ${siguienteLibro ? `<div class="tarjeta-capitulo tarjeta-capitulo--en-progreso estudio-continuar" id="continuarLectura" role="button" tabindex="0" aria-label="Continuar leyendo ${siguienteLibro.nombre} ${siguienteCap}">
               <div class="estudio-continuar__icono">${window.Iconos.render('book-open')}</div>
