@@ -565,16 +565,6 @@
           <label class="switch"><input type="checkbox" data-notif="${clave}" ${activo ? 'checked' : ''}><span class="slider"></span></label>
         </div>`;
       };
-      // Preferencias futuras (correo, push, resúmenes): deshabilitadas.
-      const filaFutura = (icono, titulo, desc) => `
-        <div class="perfil-opcion" style="opacity:0.55">
-          <div class="perfil-opcion__info">
-            <p class="perfil-opcion__label">${I(icono)} ${E(titulo)} <span class="u-fs-xxs u-color-texto-terciario">Próximamente</span></p>
-            <p class="perfil-opcion__desc">${E(desc)}</p>
-          </div>
-          <label class="switch"><input type="checkbox" disabled><span class="slider"></span></label>
-        </div>`;
-
       cont.innerHTML = `
         <div class="perfil-seccion">
           <div class="perfil-seccion__cabecera">
@@ -616,20 +606,7 @@
           ${filaToggle('notif_vibracion', 'vibrate', 'Vibración', 'Vibra al recibir un aviso')}
           ${filaToggle('notif_nativas', 'smartphone', 'Notificaciones del dispositivo', 'Mostrar en la bandeja del sistema (si no, avisos internos)')}
         </div>
-
-        <div class="perfil-seccion">
-          <div class="perfil-seccion__cabecera">
-            <div class="perfil-seccion__icono" style="background:var(--color-info-soft);color:var(--color-info)">${I('send')}</div>
-            <div>
-              <h4 class="perfil-seccion__titulo">Más canales</h4>
-              <p class="perfil-seccion__desc">Próximamente</p>
-            </div>
-          </div>
-          ${filaFutura('mail', 'Correo electrónico', 'Recibe un resumen por correo')}
-          ${filaFutura('bell-plus', 'Web Push', 'Notificaciones con la app cerrada')}
-          ${filaFutura('calendar', 'Resumen diario', 'Un resumen cada mañana')}
-          ${filaFutura('calendar-days', 'Resumen semanal', 'Tu actividad de la semana')}
-        </div>`;
+`;
 
       if (window.Iconos) window.Iconos.actualizar();
 

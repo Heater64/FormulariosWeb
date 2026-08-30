@@ -180,7 +180,9 @@ class Router {
         }
 
         if (this._vistaActual?.desmontar) {
-          await this._vistaActual.desmontar(ruta);
+          // Desmontaje no bloqueante: una vista nunca debe retrasar la
+          // siguiente sección por limpiar listeners o timers.
+          Promise.resolve(this._vistaActual.desmontar(ruta)).catch(() => {});
         }
         if (window.memoria) window.memoria.liberar(this._vistaActual);
 
@@ -196,9 +198,8 @@ class Router {
         // En el primer arranque solo se muestra el splash principal. Las
         // navegaciones posteriores usan la transición ligera de sección;
         // nunca vuelven a bloquear la app con una pantalla completa.
-        // No mostramos una pantalla completa al cambiar de sección: el shell y
-        // los skeletons de cada vista mantienen la interfaz estable y permiten
-        // navegar como en una app nativa. El splash solo pertenece al arranque.
+        // El splash queda reservado para el arranque y nunca se muestra entre
+        // secciones; los skeletons mantienen la interfaz estable.
 
         // Saltar animación de salida si el usuario está navegando muy rápido
         // (menos de 250ms entre ejecuciones): evita parpadeo por transiciones
@@ -207,14 +208,11 @@ class Router {
         const navegacionRapida = !this._primeraCarga && (ahora - this._ultimaEjecucionMs) < 250;
         this._ultimaEjecucionMs = ahora;
 
-        if (!this._primeraCarga && this._transiciones && !navegacionRapida && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
-          const claseSalida = this._direccion === 'atras' ? 'app-transicion-salida-atras' : 'app-transicion-salida';
-          raiz.classList.add(claseSalida);
-          await new Promise(r => setTimeout(r, 150));
-          raiz.classList.remove(claseSalida);
-        }
-
-raiz.innerHTML = '';
+        // Montaje inmediato: no esperamos una animación de salida antes de
+        // pintar la nueva sección. La vista muestra su skeleton/cache y
+        // actualiza los datos en segundo plano.
+        raiz.classList.remove('app-transicion-salida', 'app-transicion-salida-atras', 'app-transicion-entrada', 'app-transicion-entrada-atras');
+        raiz.innerHTML = '';
         this._vistaActual = config.vista;
 
         // Contexto uniforme para las vistas: { params, query, path }
@@ -256,11 +254,8 @@ raiz.innerHTML = '';
           this._conectarAccionesError(raiz);
         }
 
-        if (this._transiciones) {
-          const claseEntrada = this._direccion === 'atras' ? 'app-transicion-entrada-atras' : 'app-transicion-entrada';
-          raiz.classList.add(claseEntrada);
-          requestAnimationFrame(() => requestAnimationFrame(() => raiz.classList.remove(claseEntrada)));
-        }
+        // Sin transición bloqueante: el contenido queda interactivo en el
+        // mismo ciclo de navegación.
 
         // App-like: restaurar posición de scroll o ir arriba
         try {

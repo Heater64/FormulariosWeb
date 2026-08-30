@@ -9,7 +9,7 @@
       try {
         const [librosResult, progresoResult] = await Promise.all([
           sb.from('libros_biblicos').select('*').order('id'),
-          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true),
+          sb.from('progreso_lectura').select('*, capitulos!capitulo_id(libro_id)').eq('usuario_id', usuario.id).eq('completado', true)
         ]);
         const libros = librosResult.data;
         const completados = progresoResult.data || [];
