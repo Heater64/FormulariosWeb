@@ -33,4 +33,9 @@ describe('4 temas: tokens', () => {
     }
     expect(read('js/core/theme-init.js')).toContain('dataset.theme');
   });
+  test('apariencia ofrece grid 2x2 con los 4 temas + auto', () => {
+    const v = read('js/vistas/vista-perfil.js');
+    for (const s of ['tema-grid','umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro','data-tema="auto"']) expect(v).toContain(s);
+    expect(read('css/05-componentes/_perfil.css')).toContain('.tema-card');
+  });
 });

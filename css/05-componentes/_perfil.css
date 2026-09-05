@@ -309,6 +309,97 @@
   background: var(--color-acento);
 }
 
+/* ===== Grid de temas 2x2 (selector elegante) ===== */
+
+.tema-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--espaciado-sm);
+  margin-top: var(--espaciado-sm);
+}
+
+.tema-card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  min-height: var(--toque-minimo);
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  cursor: pointer;
+  font: inherit;
+  color: var(--color-texto);
+  text-align: left;
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida), transform var(--transicion-rapida);
+}
+
+.tema-card:hover {
+  border-color: var(--color-acento);
+  transform: translateY(-2px);
+}
+
+.tema-card--activo {
+  border: 2px solid var(--color-acento);
+  padding: calc(var(--espaciado-sm) - 1px);
+  box-shadow: var(--focus-ring);
+}
+
+.tema-card:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+}
+
+.tema-card__preview {
+  display: flex;
+  gap: 4px;
+}
+
+.tema-card__preview i {
+  flex: 1;
+  height: 22px;
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+}
+
+.tema-card__nombre {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.tema-card__check {
+  position: absolute;
+  top: var(--espaciado-xs);
+  right: var(--espaciado-xs);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  font-size: var(--texto-xs);
+  font-weight: 700;
+}
+
+.tema-card--activo .tema-card__check {
+  display: flex;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .tema-card {
+    transition: none;
+  }
+  .tema-card:hover {
+    transform: none;
+  }
+}
+
 /* ===== Botón de sección (Admin/Owner) ===== */
 
 .perfil-boton-seccion {

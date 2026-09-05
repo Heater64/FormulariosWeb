@@ -461,19 +461,36 @@
     },
 
     _configApariencia(cont, usuario, prefs) {
+      // ponytail: legacy light/dark/claro/oscuro se normalizan al id de 4 temas; null = auto
+      const temaId = prefs.tema === 'light' || prefs.tema === 'claro' ? 'clasico-claro'
+        : prefs.tema === 'dark' || prefs.tema === 'oscuro' ? 'clasico-oscuro'
+        : (prefs.tema || 'auto');
+      // hex solo ornamentales (mini-preview); todo lo demás usa var(--*)
+      const tarjeta = (id, icono, nombre, grupo, hex) => `
+        <button class="tema-card ${temaId === id ? 'tema-card--activo' : ''}" data-tema="${id}" role="radio" aria-checked="${temaId === id}" aria-label="Tema ${nombre} (grupo ${grupo})">
+          <span class="tema-card__preview" aria-hidden="true">${hex.map(h => `<i style="background:${h}"></i>`).join('')}</span>
+          <span class="tema-card__nombre">${I(icono)} ${nombre}</span>
+          <span class="tema-card__check" aria-hidden="true">✓</span>
+        </button>`;
       cont.innerHTML = `
         <div class="perfil-seccion">
           <div class="perfil-seccion__cabecera">
             <div class="perfil-seccion__icono">${I('palette')}</div>
             <div>
-              <h4 class="perfil-seccion__titulo">Modo</h4>
+              <h4 class="perfil-seccion__titulo">Tema</h4>
               <p class="perfil-seccion__desc">Elige el aspecto visual de la app</p>
             </div>
           </div>
-          <div class="perfil-segmented" role="radiogroup" aria-label="Seleccionar modo">
-            <button class="perfil-segmented__btn ${prefs.tema === 'light' ? 'perfil-segmented__btn--activo' : ''}" data-tema="light" role="radio" aria-checked="${prefs.tema === 'light'}">${I('sun')} Claro</button>
-            <button class="perfil-segmented__btn ${!prefs.tema ? 'perfil-segmented__btn--activo' : ''}" data-tema="auto" role="radio" aria-checked="${!prefs.tema}">${I('settings')} Automático</button>
-            <button class="perfil-segmented__btn ${prefs.tema === 'dark' ? 'perfil-segmented__btn--activo' : ''}" data-tema="dark" role="radio" aria-checked="${prefs.tema === 'dark'}">${I('moon')} Oscuro</button>
+          <div role="radiogroup" aria-label="Seleccionar tema">
+            <div class="tema-grid">
+              ${tarjeta('umbra-claro', 'sun', 'Umbra Claro', 'Claros', ['#faf6f8', '#e2dade', '#c2185b'])}
+              ${tarjeta('umbra-oscuro', 'moon', 'Umbra Oscuro', 'Oscuros', ['#0a0a0c', '#232324', '#e8735a'])}
+              ${tarjeta('clasico-claro', 'sun', 'Clásico Claro', 'Claros', ['#FAFAF9', '#E7E5E4', '#2563EB'])}
+              ${tarjeta('clasico-oscuro', 'moon', 'Clásico Oscuro', 'Oscuros', ['#0B1020', '#2A3952', '#7DB7FF'])}
+            </div>
+            <div class="perfil-segmented" style="margin-top:var(--espaciado-sm)">
+              <button class="perfil-segmented__btn ${temaId === 'auto' ? 'perfil-segmented__btn--activo' : ''}" data-tema="auto" role="radio" aria-checked="${temaId === 'auto'}">${I('settings')} Seguir sistema</button>
+            </div>
           </div>
 
           <div class="perfil-opcion" style="margin-top:var(--espaciado-sm)">
@@ -503,26 +520,30 @@
         guardarPref(usuario, 'letra_grande', this.checked);
       });
 
-      cont.querySelectorAll('.perfil-segmented__btn').forEach(btn => {
+      cont.querySelectorAll('[data-tema]').forEach(btn => {
         btn.addEventListener('click', () => {
-          const tema = btn.dataset.tema;
-          const temaValor = tema === 'auto' ? null : tema;
-          cont.querySelectorAll('.perfil-segmented__btn').forEach(b => {
-            b.classList.remove('perfil-segmented__btn--activo');
+          const id = btn.dataset.tema;
+          const auto = id === 'auto';
+          cont.querySelectorAll('[data-tema]').forEach(b => {
+            b.classList.remove('tema-card--activo', 'perfil-segmented__btn--activo');
             b.setAttribute('aria-checked', 'false');
           });
-          btn.classList.add('perfil-segmented__btn--activo');
+          btn.classList.add(btn.classList.contains('tema-card') ? 'tema-card--activo' : 'perfil-segmented__btn--activo');
           btn.setAttribute('aria-checked', 'true');
-          if (tema === 'auto') delete document.documentElement.dataset.theme;
-          else document.documentElement.dataset.theme = tema;
-          guardarPref(usuario, 'tema', temaValor);
+          if (auto) { delete document.documentElement.dataset.theme; delete document.documentElement.dataset.tema; }
+          else {
+            document.documentElement.dataset.theme = /-oscuro$/.test(id) ? 'dark' : 'light';
+            document.documentElement.dataset.tema = id;
+          }
+          guardarPref(usuario, 'tema', auto ? null : id);
         });
       });
 
-      cont.querySelector('#btnResetPrefs').onclick = async () => {
+      cont.querySelector('#btnResetPrefs').addEventListener('click', async () => {
         const ok = await window.helpers.confirmar('Se restaurarán las preferencias a sus valores por defecto.', { titulo: '¿Restablecer preferencias?', textoConfirmar: 'Restablecer' });
         if (!ok) return;
         delete document.documentElement.dataset.theme;
+        delete document.documentElement.dataset.tema;
         document.documentElement.dataset.hc = 'false';
         document.documentElement.dataset.lg = 'false';
         if (window.preferencias) window.preferencias.guardar({ tema: null, alto_contraste: false, letra_grande: false });
@@ -534,7 +555,7 @@
         try { await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefsDefault) }).eq('id', usuario.id); } catch (e) {}
         window.helpers.mostrarAlerta('Preferencias restablecidas.', 'exito');
         router.navegar('/perfil/config/apariencia');
-      };
+      });
     },
 
     // ============================================================
