@@ -329,3 +329,58 @@
     --sombra-nav: 0 -1px 0 rgba(255,255,255,0.15), 0 -8px 24px -16px rgba(0,0,0,0.6);
   }
 }
+/* ===== THEME: Umbra Claro (porcelana rosa; override sobre base clara) ===== */
+:root[data-tema="umbra-claro"] {
+  --color-acento: #c2185b;
+  --color-acento-hover: #d63068;
+  --color-acento-soft: #fdf3f6;
+  --color-acento-soft-hover: #f8e7ee;
+  --color-acento-fuerte: #a5124b;
+  --color-texto-acento: #FFFFFF;
+  --color-texto: rgba(50,16,32,.94);
+  --color-texto-secundario: rgba(50,16,32,.62);
+  --color-texto-terciario: rgba(50,16,32,.40);
+  --color-fondo: #faf6f8;
+  --color-fondo-alt: #fdf3f6;
+  --color-fondo-tarjeta: #ffffff;
+  --color-borde: rgba(50,16,32,.12);
+  --color-borde-foco: #c2185b;
+  --color-exito: #15803d;
+  --color-exito-soft: #DCFCE7;
+  --color-error: #dc2626;
+  --color-error-soft: #FEE2E2;
+  --color-aviso: #b45309;
+  --color-aviso-soft: #FEF3C7;
+  --color-info: #2563eb;
+  --color-info-soft: #E0F2FE;
+  --fuente-display: "Playfair Display", Georgia, "Times New Roman", serif;
+}
+/* ===== THEME: Umbra Oscuro (override sobre base oscura) ===== */
+:root[data-tema="umbra-oscuro"] {
+  --color-acento: #e8735a;
+  --color-acento-hover: #f0846c;
+  --color-acento-soft: rgba(232,115,90,.12);
+  --color-acento-soft-hover: rgba(232,115,90,.22);
+  --color-acento-fuerte: #d4624a;
+  --color-texto-acento: #0a0a0c;
+  --color-texto: rgba(255,255,255,.93);
+  --color-texto-secundario: rgba(255,255,255,.65);
+  --color-texto-terciario: rgba(255,255,255,.38);
+  --color-fondo: #0a0a0c;
+  --color-fondo-alt: #111114;
+  --color-fondo-tarjeta: #19191d;
+  --color-borde: rgba(255,255,255,.10);
+  --color-borde-foco: #e8735a;
+  --color-exito: #5FE0A0;
+  --color-exito-soft: #123E36;
+  --color-error: #FF8A92;
+  --color-error-soft: #542A38;
+  --color-aviso: #FFD166;
+  --color-aviso-soft: #4C3A1C;
+  --color-info: #72D4FF;
+  --color-info-soft: #123E56;
+  --color-fondo-dibujo: #F7F9FC;
+  --color-vidrio: rgba(17,17,20,.86);
+  --color-vidrio-borde: rgba(255,255,255,.10);
+  --fuente-display: "Playfair Display", Georgia, "Times New Roman", serif;
+}
