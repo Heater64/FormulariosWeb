@@ -20,4 +20,14 @@ describe('4 temas: tokens', () => {
     expect(css).toContain('#e8735a');
     expect(css).toContain('#0a0a0c');
   });
+  test('preferencias.js normaliza legacy y acepta los 4 ids', () => {
+    const js = read('js/utilidades/preferencias.js');
+    for (const s of ['umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro']) expect(js).toContain(s);
+    expect(js).toContain('claro');
+  });
+  test('theme-init, public theme y login mapean bg + dual atributo', () => {
+    expect(read('js/core/theme-init.js')).toContain('data-tema');
+    expect(read('public-site/theme.js')).toContain('data-tema');
+    expect(read('login.html')).toContain('data-tema');
+  });
 });
