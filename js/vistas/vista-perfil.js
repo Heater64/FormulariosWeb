@@ -164,7 +164,7 @@
                 </div>
               </div>
               <div class="o-pila" style="gap:var(--espaciado-xxs)">
-                ${filaNav('palette', 'Apariencia', 'Modo claro, oscuro o automático', '/perfil/config/apariencia')}
+                ${filaNav('palette', 'Apariencia', 'Temas Umbra y Clásico, o automático', '/perfil/config/apariencia')}
                 ${filaNav('bell', 'Notificaciones', 'Avisos y sonidos de la app', '/perfil/config/notificaciones')}
                 ${filaNav('eye-off', 'Privacidad', 'Qué puede verse de tu perfil', '/perfil/config/privacidad')}
                 ${filaNav('database', 'Almacenamiento', 'Caché, datos temporales y sincronización', '/perfil/config/almacenamiento')}

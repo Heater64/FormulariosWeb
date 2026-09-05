@@ -38,4 +38,11 @@ describe('4 temas: tokens', () => {
     for (const s of ['tema-grid','umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro','data-tema="auto"']) expect(v).toContain(s);
     expect(read('css/05-componentes/_perfil.css')).toContain('.tema-card');
   });
+  test('arranque y wizard usan el esquema de 4 temas', () => {
+    const idx = read('js/core/index.js');
+    for (const s of ['umbra-claro', 'umbra-oscuro', 'clasico-claro', 'clasico-oscuro']) expect(idx).toContain(s);
+    expect(idx).toContain('dataset.tema');
+    expect(idx).not.toContain("(tema === 'light' || tema === 'dark') ? tema : null");
+    expect(read('js/vistas/vista-perfil.js')).toContain('Temas Umbra y Clásico');
+  });
 });
