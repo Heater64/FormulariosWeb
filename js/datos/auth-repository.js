@@ -192,21 +192,12 @@ const authRepository = {
   async eliminarMisDatos(usuarioId) {
     const sb = window.supabaseClient;
     if (!sb) throw new Error('No se ha podido conectar con el servidor. Comprueba tu conexión e inténtalo de nuevo.');
-    const tablas = [
-      ['notas_capitulo', 'usuario_id'],
-      ['categorias_tarjetas', 'usuario_id'],
-      ['categorias_memorizacion', 'usuario_id'],
-      ['mazos_memorizacion', 'usuario_id'],
-      ['miembros_grupo', 'usuario_id'],
-      ['logros_usuario', 'usuario_id'],
-      ['progreso_lectura', 'usuario_id'],
-      ['tarjetas_memorizacion', 'usuario_id'], // repasos_memorizacion se borran en cascada
-      ['intentos_examen_personalizado', 'alumno_id']
-    ];
-    for (const [tabla, col] of tablas) {
-      const { error } = await sb.from(tabla).delete().eq(col, usuarioId);
-      if (error) throw new Error('Error al eliminar ' + tabla + ': ' + this._traducir(error));
-    }
+    // RPC SECURITY DEFINER (migración 055): borra las 9 tablas en una sola
+    // transacción. El DELETE directo a intentos_examen_personalizado quedó
+    // revocado por la 047 (seguridad de exámenes), así que no se puede
+    // hacer desde el cliente.
+    const { error } = await sb.rpc('eliminar_datos_usuario', { p_usuario_id: usuarioId });
+    if (error) throw new Error('Error al eliminar tus datos: ' + this._traducir(error));
   }
 };
 

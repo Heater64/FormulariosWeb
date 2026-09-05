@@ -6,7 +6,14 @@ try {
   const url = window.entorno && window.entorno.supabaseUrl;
   const key = window.entorno && window.entorno.supabaseAnonKey;
   if (typeof supabase !== 'undefined' && supabase.createClient && url && key) {
-    cliente = supabase.createClient(url, key);
+    cliente = supabase.createClient(url, key, {
+      auth: {
+        persistSession: true,
+        autoRefreshToken: true,
+        detectSessionInUrl: false, // SPA: el callback de OAuth se maneja aparte
+        storage: window.localStorage
+      }
+    });
   } else {
     console.warn('⚠️ SDK de Supabase no disponible o configuración ausente');
   }

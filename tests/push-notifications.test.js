@@ -191,12 +191,13 @@ describe('esCapacitor()', () => {
 // Envío a destinatarios ajenos (integrado desde notification-service)
 // ============================================================
 describe('PushNotificationService.enviarPush()', () => {
-  test('es no-op en web (sin Capacitor)', async () => {
+  test('funciona desde web: invoca la Edge Function aunque no haya Capacitor', async () => {
     const invocado = [];
     global.supabaseClient = { functions: { invoke: async (n, o) => { invocado.push([n, o]); return { error: null }; } } };
-    const s = new PushService();
+    const s = new PushService(); // _capacitor = false (sin Capacitor: emisor web)
     await s.enviarPush([{ usuario_id: 'u2', tipo: 'x' }]);
-    expect(invocado.length).toBe(0);
+    expect(invocado.length).toBe(1);
+    expect(invocado[0][0]).toBe('enviar-push');
   });
 
   test('invoca la Edge Function con el payload de las filas ajenas', async () => {

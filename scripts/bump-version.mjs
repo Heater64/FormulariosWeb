@@ -5,6 +5,7 @@ import { dirname, join } from 'node:path';
 const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packagePath = join(rootDir, 'package.json');
 const versionCodePath = join(rootDir, 'android/version-code.properties');
+const swPath = join(rootDir, 'public/sw.js');
 const kind = process.argv[2];
 const increments = { patch: [0, 0, 1], minor: [0, 1, 0], major: [1, 0, 0] };
 
@@ -33,4 +34,13 @@ const nextVersionCode = Number(versionCodeMatch[1]) + 1;
 packageData.version = next.join('.');
 await writeFile(packagePath, `${JSON.stringify(packageData, null, 2)}\n`, 'utf8');
 await writeFile(versionCodePath, versionCodeText.replace(/^versionCode=\d+\s*$/m, `versionCode=${nextVersionCode}`), 'utf8');
-console.log(`${previousVersion} → ${packageData.version} · Android versionCode ${nextVersionCode}`);
+
+// Mantener CACHE_VERSION en sw.js sincronizado con package.json
+const swText = await readFile(swPath, 'utf8');
+const newSwText = swText.replace(
+  /const CACHE_VERSION = 'v[\d.]+'/,
+  `const CACHE_VERSION = 'v${packageData.version}'`
+);
+if (newSwText !== swText) await writeFile(swPath, newSwText);
+
+console.log(`${previousVersion} → ${packageData.version} · Android versionCode ${nextVersionCode} · SW CACHE_VERSION actualizado`);

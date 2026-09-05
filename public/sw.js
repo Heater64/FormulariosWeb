@@ -29,13 +29,16 @@ const PRECACHE = [
 ];
 
 // ============================================================
-// INSTALL — precache del shell y activación inmediata
+// INSTALL — precache del shell
+// ============================================================
+// NOTA: skipWaiting() se llama solo cuando el cliente lo solicita
+// (via postMessage) para que la app pueda mostrar un aviso de
+// actualización antes de recargar.
 // ============================================================
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
       .then((cache) => Promise.allSettled(PRECACHE.map((url) => cache.add(url))))
-      .then(() => self.skipWaiting())
   );
 });
 
@@ -52,6 +55,15 @@ self.addEventListener('activate', (event) => {
       ))
       .then(() => self.clients.claim())
   );
+});
+
+// ============================================================
+// MESSAGE — skipWaiting bajo demanda del cliente
+// ============================================================
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 // ============================================================

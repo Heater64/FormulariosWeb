@@ -319,7 +319,10 @@
           const resp = await fetch(base64);
           const blob = await resp.blob();
           const ext = blob.type === 'image/png' ? 'png' : blob.type === 'image/webp' ? 'webp' : 'jpg';
-          const nombre = `${usuario.id}.${ext}`;
+          // Política avatars_insert_autenticado (028): la ruta DEBE empezar por
+          // la carpeta del usuario (storage.foldername(name)[1] = auth.uid()).
+          // Un nombre plano en la raíz del bucket es denegado siempre por RLS.
+          const nombre = `${usuario.id}/avatar.${ext}`;
 
           // Subir a Supabase Storage
           const { error: uploadErr } = await window.supabaseClient.storage

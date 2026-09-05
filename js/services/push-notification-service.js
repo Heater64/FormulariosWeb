@@ -441,12 +441,12 @@
 
     /**
      * Pide a la Edge Function enviar-push que entregue una o varias filas
-     * del historial como notificaciones nativas. Solo en Android (Capacitor);
-     * en web es no-op. Cada fila lleva su usuario_id: la función busca los
-     * tokens activos de cada destinatario.
+     * del historial como notificaciones nativas. La entrega es server-side
+     * (la función valida el JWT del emisor y busca los tokens activos de
+     * cada destinatario), así que funciona tanto desde la APK como desde la
+     * web: el emisor solo la invoca con su sesión.
      */
     async enviarPush(filas) {
-      if (!this._capacitor) return;
       const notificaciones = (Array.isArray(filas) ? filas : [])
         .map(aPayloadPush)
         .filter((f) => f && f.usuario_id);

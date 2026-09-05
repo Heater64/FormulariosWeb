@@ -59,6 +59,16 @@
       this._revalidarSesion();
       window.addEventListener('online', () => this._revalidarSesion());
 
+      // Sync con Supabase Auth: cuando el token se refresca, mantener el
+      // store actualizado. Si Supabase cierra sesión, limpiar local.
+      this._escucharAuthState();
+
+      // Refrescar sesión al volver a la pestaña (tokens que expiraron mientras
+      // el usuario estaba en otra app).
+      window.addEventListener('visibilitychange', () => {
+        if (document.visibilityState === 'visible') this._refrescarSesionSilenciosa();
+      });
+
       // Sistema de notificaciones centralizado: poller + realtime + recordatorios
       // (todo delegado a notification-service; ver js/core/notification-service.js)
       if (window.notificationService) window.notificationService.iniciar();
@@ -75,7 +85,6 @@
       // ============================================================
       window.eventBus.suscribir('auth:login', async (payload) => {
         const usuario = payload.usuario || payload;
-        const recordar = payload.recordar !== false;
       
         if (!usuario.foto_perfil) {
           try {
@@ -84,14 +93,10 @@
           } catch (e) {}
         }
       
-        if (recordar) {
-          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
-          localStorage.setItem('fb_recordar_sesion', 'true');
-        } else {
-          localStorage.removeItem('fb_usuario');
-          localStorage.removeItem('fb_recordar_sesion');
-          sessionStorage.setItem('fb_usuario', JSON.stringify(usuario));
-        }
+        // Siempre persistir en localStorage para que la sesión sobreviva
+        // recargas y cierres de navegador.
+        localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+        localStorage.setItem('fb_recordar_sesion', 'true');
       
         this._renderizarBarraNavegacion();
 
@@ -297,28 +302,54 @@
       };
     },
 
-    // FASE 2 (028): con el RLS cerrado la sesión solo es válida si el SDK de
-    // Supabase Auth tiene un JWT activo para el mismo usuario. Si el token
-    // expiró o no existe, se limpia la sesión local y se pide login de nuevo.
+    // Restaura la sesión desde localStorage y revalida con Supabase Auth.
+    // Si hay usuario guardado, se restaura INMEDIATAMENTE para que la app
+    // sea usable offline. La revalidación contra Supabase corre en background
+    // y solo cierra sesión si el refresh token expiró (no por errores de red).
     async _recuperarSesion() {
       try {
-        const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
+        const guardado = localStorage.getItem('fb_usuario');
         if (!guardado) return;
         const usuario = JSON.parse(guardado);
+
+        // Restaurar inmediatamente: la app puede funcionar offline
+        store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
+
+        // Revalidar con Supabase en background (no bloquea el arranque)
         const sb = window.supabaseClient;
         if (sb) {
-          const { data } = await sb.auth.getSession();
-          if (!data || !data.session || data.session.user.id !== usuario.id) {
-            localStorage.removeItem('fb_usuario');
-            localStorage.removeItem('fb_recordar_sesion');
-            sessionStorage.removeItem('fb_usuario');
+          const { data, error } = await sb.auth.getSession();
+          if (error) {
+            // Error de red u otro problema transitorio: mantener sesión local
             return;
           }
+          if (!data.session) {
+            // Sin sesión en Supabase: el refresh token pudo expirar.
+            // Intentar refrescar una vez más antes de cerrar.
+            const { data: refreshData, error: refreshErr } = await sb.auth.refreshSession();
+            if (refreshErr || !refreshData.session) {
+              // Refresh falló: el token expiró definitivamente
+              store.asignar({ usuario: null, sesion: null });
+              localStorage.removeItem('fb_usuario');
+              localStorage.removeItem('fb_recordar_sesion');
+              return;
+            }
+            // Refresh exitoso: actualizar la sesión con los nuevos tokens
+            if (refreshData.session.user.id !== usuario.id) {
+              store.asignar({ usuario: null, sesion: null });
+              localStorage.removeItem('fb_usuario');
+              localStorage.removeItem('fb_recordar_sesion');
+              return;
+            }
+          } else if (data.session.user.id !== usuario.id) {
+            // Sesión de otro usuario: limpiar
+            store.asignar({ usuario: null, sesion: null });
+            localStorage.removeItem('fb_usuario');
+            localStorage.removeItem('fb_recordar_sesion');
+          }
         }
-        store.asignar({ usuario, sesion: { autenticado: true, inicio: Date.now() } });
       } catch (e) {
-        localStorage.removeItem('fb_usuario');
-        sessionStorage.removeItem('fb_usuario');
+        // Error inesperado: mantener sesión si existe (modo offline-friendly)
       }
     },
 
@@ -413,18 +444,55 @@
           preferencias,
           foto_perfil: servidor.foto_perfil != null ? servidor.foto_perfil : (usuario.foto_perfil || null)
         };
-        // Solo tocar localStorage si el usuario eligió "recordar sesión"
-        const recordar = localStorage.getItem('fb_recordar_sesion') === 'true';
-        if (recordar) {
-          try {
-            localStorage.setItem('fb_usuario', JSON.stringify(actualizado));
-          } catch (e) {}
-        }
+        // Persistir la actualización en localStorage
+        try {
+          localStorage.setItem('fb_usuario', JSON.stringify(actualizado));
+        } catch (e) {}
         store.actualizar('usuario', actualizado);
         this._renderizarBarraNavegacion();
       } catch (e) {
         // Sin conexión o error de red: mantener la sesión local sin cambios
       }
+    },
+
+    // Escucha cambios de estado de Supabase Auth para mantener la sesión local
+    // sincronizada (token refresh, logout desde otra pestaña, etc.).
+    _escucharAuthState() {
+      const sb = window.supabaseClient;
+      if (!sb?.auth?.onAuthStateChange) return;
+      sb.auth.onAuthStateChange((evento, session) => {
+        if (evento === 'SIGNED_OUT' || evento === 'USER_DELETED') {
+          store.asignar({ usuario: null, sesion: null });
+          localStorage.removeItem('fb_usuario');
+          localStorage.removeItem('fb_recordar_sesion');
+          irAlLogin();
+        } else if (evento === 'SIGNED_IN' || evento === 'TOKEN_REFRESHED') {
+          // Actualizar el usuario en store si tenemos sesión activa
+          const usuario = store.obtener('usuario');
+          if (usuario && session?.user?.id === usuario.id) {
+            // Token refrescado: la sesión sigue válida, no tocar nada
+          }
+        }
+      });
+    },
+
+    // Refresca la sesión de Supabase cuando el usuario vuelve a la pestaña.
+    // Si el refresh token sigue válido, el nuevo JWT se guarda automáticamente.
+    // Si expiró, la sesión local se mantiene (el revalidarSesion la validará).
+    async _refrescarSesionSilenciosa() {
+      const sb = window.supabaseClient;
+      const usuario = store.obtener('usuario');
+      if (!sb || !usuario) return;
+      try {
+        const { data } = await sb.auth.getSession();
+        if (!data.session) {
+          // Token expiró: intentar refresh silencioso
+          const { data: refreshData } = await sb.auth.refreshSession();
+          if (!refreshData.session) {
+            // Refresh falló: mantener sesión local para modo offline
+          }
+        }
+      } catch (e) { /* no bloquea la UI */ }
     },
 
     // Nota: los repasos y recordatorios ahora los genera el Notification

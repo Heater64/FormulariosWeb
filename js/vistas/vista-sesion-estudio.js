@@ -10,7 +10,14 @@
       if (!sb || !usuario) return;
       try {
         const { data: libro } = await sb.from('libros_biblicos').select('*').eq('id', libroId).single();
-        const { data: cap } = await sb.from('capitulos').select('id').eq('libro_id', libroId).eq('numero', capituloNum).single();
+        if (!libro) throw new Error('Libro no encontrado');
+        let { data: cap } = await sb.from('capitulos').select('id').eq('libro_id', libroId).eq('numero', capituloNum).single();
+        // Si el capítulo no existe en BD (semilla incompleta), crearlo bajo demanda
+        if (!cap) {
+          const { data: nuevo } = await sb.from('capitulos').insert({ libro_id: libroId, numero: capituloNum }).select('id').single();
+          cap = nuevo;
+        }
+        if (!cap) throw new Error('No se pudo crear el capítulo');
         const { data: progreso } = await sb.from('progreso_lectura').select('*').eq('usuario_id', usuario.id).eq('capitulo_id', cap.id).single();
         const preguntas = await window.progresoRepository.obtenerPreguntasSistema(cap.id);
         this.estado = {
