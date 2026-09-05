@@ -1,6 +1,6 @@
 # 4 Temas (2 claros + 2 oscuros) — Design Spec
 
-**Fecha:** 2026-09-05 · **Enfoque aprobado:** A (`data-theme` con 4 valores + alias)
+**Fecha:** 2026-09-05 · **Enfoque aprobado:** A revisado (dual atributo: `data-theme` modo + `data-tema` id; 228 selectores `data-theme` existentes intactos)
 **Objetivo:** poder elegir desde Perfil > Apariencia entre 4 temas de forma elegante, manteniendo tono actual y añadiendo tono Umbra claro/oscuro.
 
 ## 1. Los 4 temas
@@ -12,17 +12,17 @@
 | `umbra-claro` | Umbra Claro | `#faf6f8` / `#ffffff` | `#c2185b` | `rgba(50,16,32,.94)` |
 | `umbra-oscuro` | Umbra Oscuro | `#0a0a0c` / `#111114` | `#e8735a` | `rgba(255,255,255,.93)` |
 
-- `:root` sin `data-theme` = `clasico-claro` (no se toca el bloque actual).
-- `light` → se normaliza a `clasico-claro`; `dark` → `clasico-oscuro` (retrocompat con localStorage/Supabase/tests).
-- `null` (sin `data-theme`) = Auto: sigue `prefers-color-scheme` del SO (clásico claro/oscuro).
+- `data-theme` = modo (`light|dark|ausente`): NO se toca ningún selector existente; `data-tema` = id (`umbra-claro|umbra-oscuro|clasico-claro|clasico-oscuro|ausente`): solo los overrides Umbra usan `data-tema`.
+- `light`/`claro` → `clasico-claro`; `dark`/`oscuro` → `clasico-oscuro` (retrocompat con localStorage/Supabase/tests).
+- `null` (sin ambos atributos) = Auto: sigue `prefers-color-scheme` del SO (clásico claro/oscuro).
 - Umbra usa `--fuente-display: "Playfair Display", Georgia, serif` solo en sus bloques; Clásico mantiene `Newsreader`.
 - Alto contraste (`data-hc`) y letra grande (`data-lg`) siguen ortogonales, solo con variables.
 
 ## 2. Arquitectura
 
-- Fuente única de verdad visual: `css/00-settings/_tokens.css`. Sin hojas por tema, sin hex fuera de tokens (CONVENCIONES §CSS).
-- Capas: `theme-init.js` (bloqueante en `<head>`, anti-flash) → `preferencias.js` (`aplicar()`/`guardar()`, `color-scheme` + `meta theme-color`) → `vista-perfil.js` (selector) → `public-site/theme.js` + `login.html` (mismo mapa).
-- `isDark` = tema termina en `-oscuro` o alias `dark`; todo lo demás es claro. `theme-color`: umbra-oscuro `#0a0a0c`, clasico-oscuro `#0B1020`, claros `#FFFFFF`/`#faf6f8`.
+- Fuente única de verdad visual: `css/00-settings/_tokens.css` (solo se añaden 2 bloques `data-tema` Umbra al final; Clásico = base + dark existentes). Sin hojas por tema, sin hex fuera de tokens (CONVENCIONES §CSS).
+- Capas: `theme-init.js` (bloqueante en `<head>`, anti-flash) → `preferencias.js` (`aplicar()`/`guardar()`, `color-scheme` + `meta theme-color`) → `vista-perfil.js` (selector) → `public-site/theme.js` + `login.html` inline (mismo mapa dual).
+- Escritura dual: `data-theme` = `light` si id `*-claro`, `dark` si `*-oscuro`; `data-tema` = id. `isDark` = `/-oscuro$/`. `theme-color`: umbra-oscuro `#0a0a0c`, clasico-oscuro `#0B1020`, umbra-claro `#faf6f8`, clasico-claro `#FFFFFF`.
 
 ## 3. UI Apariencia (Perfil > Config > Apariencia)
 
@@ -56,10 +56,11 @@
 
 ## 8. Archivos a tocar (plan)
 
-1. `css/00-settings/_tokens.css` (bloques `umbra-claro`, `umbra-oscuro`, `clasico-oscuro` explícito + alias `light/dark`)
-2. `js/utilidades/preferencias.js` (normalizar + bg/notch por 4 temas)
-3. `js/core/theme-init.js` (mismo mapa, anti-flash)
-4. `public-site/theme.js` (mismo mapa)
-5. `js/vistas/vista-perfil.js` (`_configApariencia` → grid 2x2 + Auto)
-6. `css/05-componentes/_perfil.css` (`.tema-grid`, `.tema-card`, preview, check)
-7. `tests/temas-cuatro.test.js` (nuevo)
+1. `css/00-settings/_tokens.css` (solo 2 bloques `data-tema` Umbra al final)
+2. `js/utilidades/preferencias.js` (normalizar + escritura dual + bg/notch por 4 temas)
+3. `js/core/theme-init.js` (mismo mapa dual, anti-flash)
+4. `public-site/theme.js` (mismo mapa dual)
+5. `login.html` (script inline: mismo mapa dual mínimo; sus `<style data-theme>` intactos)
+6. `js/vistas/vista-perfil.js` (`_configApariencia` → grid 2x2 + Auto)
+7. `css/05-componentes/_perfil.css` (`.tema-grid`, `.tema-card`, preview, check)
+8. `tests/temas-cuatro.test.js` (nuevo)
