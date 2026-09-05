@@ -164,10 +164,13 @@ test('preferencias.js normaliza legacy y acepta los 4 ids', () => {
   for (const s of ['umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro']) expect(js).toContain(s);
   expect(js).toContain("claro");
 });
-test('theme-init, public theme y login mapean bg + dual atributo', () => {
-  expect(read('js/core/theme-init.js')).toContain('data-tema');
-  expect(read('public-site/theme.js')).toContain('data-tema');
-  expect(read('login.html')).toContain('data-tema');
+test('theme-init, public theme y login escriben dual atributo (comportamiento, no literales)', () => {
+  for (const f of ['js/core/theme-init.js','public-site/theme.js','login.html','js/utilidades/preferencias.js']) {
+    const src = read(f);
+    expect(src).toContain('dataset.tema');
+    expect(src).toContain('aplicarTema');
+  }
+  expect(read('js/core/theme-init.js')).toContain("dataset.theme");
 });
 ```
 
@@ -207,7 +210,7 @@ function aplicarTema(root, id) {
 
 `js/core/theme-init.js`: mismo `normalizarTema` + mapa bg/txt (`umbra-claro #faf6f8`, `clasico-claro #FFFFFF`, `umbra-oscuro #0a0a0c`, `clasico-oscuro #0B1020`); escribe dual: `data-theme` = modo (`light` si `*-claro`, `dark` si `*-oscuro`) + `data-tema` = id; sin elección → borra ambos (Auto).
 
-`public-site/theme.js`: mismo mapa dual + meta theme-color por id.
+`public-site/theme.js`: mismo mapa dual + meta theme-color por id, con excepción legacy: la meta de `clasico-claro` es `#FAFAF9` (valor original de la landing, se conserva; en app el bg de `clasico-claro` sigue `#FFFFFF`).
 
 `login.html` (inline ~líneas 28-45): mismo mapa dual mínimo (normaliza `claro/oscuro/light/dark`, escribe `data-theme` + `data-tema`); no tocar sus `<style>` con `:not([data-theme="light"])` — siguen funcionando vía modo.
 

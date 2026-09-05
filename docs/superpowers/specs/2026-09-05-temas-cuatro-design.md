@@ -22,7 +22,7 @@
 
 - Fuente única de verdad visual: `css/00-settings/_tokens.css` (solo se añaden 2 bloques `data-tema` Umbra al final; Clásico = base + dark existentes). Sin hojas por tema, sin hex fuera de tokens (CONVENCIONES §CSS).
 - Capas: `theme-init.js` (bloqueante en `<head>`, anti-flash) → `preferencias.js` (`aplicar()`/`guardar()`, `color-scheme` + `meta theme-color`) → `vista-perfil.js` (selector) → `public-site/theme.js` + `login.html` inline (mismo mapa dual).
-- Escritura dual: `data-theme` = `light` si id `*-claro`, `dark` si `*-oscuro`; `data-tema` = id. `isDark` = `/-oscuro$/`. `theme-color`: umbra-oscuro `#0a0a0c`, clasico-oscuro `#0B1020`, umbra-claro `#faf6f8`, clasico-claro `#FFFFFF`.
+- Escritura dual: `data-theme` = `light` si id `*-claro`, `dark` si `*-oscuro`; `data-tema` = id. `isDark` = `/-oscuro$/`. `theme-color`/bg: umbra-oscuro `#0a0a0c`, clasico-oscuro `#0B1020`, umbra-claro `#faf6f8`, clasico-claro `#FFFFFF` en app; en `public-site` la meta de clasico-claro conserva el legacy `#FAFAF9` de la landing.
 
 ## 3. UI Apariencia (Perfil > Config > Apariencia)
 
