@@ -15,7 +15,7 @@
       return (TEMAS.indexOf(t) !== -1) ? t : null;
     }
     function aplicarTema(root, id) {
-      // dual: data-theme (modo light/dark) + data-tema (id de 4 temas)
+      // dual: modo light/dark + id de 4 temas sobre el root
       if (!id) { delete root.dataset.theme; delete root.dataset.tema; return; }
       root.dataset.theme = /-oscuro$/.test(id) ? 'dark' : 'light';
       root.dataset.tema = id;

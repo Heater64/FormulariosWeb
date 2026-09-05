@@ -25,9 +25,12 @@ describe('4 temas: tokens', () => {
     for (const s of ['umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro']) expect(js).toContain(s);
     expect(js).toContain('claro');
   });
-  test('theme-init, public theme y login mapean bg + dual atributo', () => {
-    expect(read('js/core/theme-init.js')).toContain('data-tema');
-    expect(read('public-site/theme.js')).toContain('data-tema');
-    expect(read('login.html')).toContain('data-tema');
+  test('theme-init, public theme y login escriben dual atributo (comportamiento, no literales)', () => {
+    for (const f of ['js/core/theme-init.js','public-site/theme.js','login.html','js/utilidades/preferencias.js']) {
+      const src = read(f);
+      expect(src).toContain('dataset.tema');
+      expect(src).toContain('aplicarTema');
+    }
+    expect(read('js/core/theme-init.js')).toContain('dataset.theme');
   });
 });
