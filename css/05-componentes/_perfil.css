@@ -303,6 +303,12 @@
   box-shadow: inset 0 1px 0 rgba(255,255,255,0.2);
 }
 
+/* En táctil el :hover queda "pegado": misma especificidad que
+   .perfil-segmented__btn:hover pero declarada después, gana la cascada. */
+.perfil-segmented__btn--activo:hover {
+  background: var(--color-acento);
+}
+
 /* ===== Botón de sección (Admin/Owner) ===== */
 
 .perfil-boton-seccion {

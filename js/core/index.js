@@ -473,13 +473,14 @@
         }
       } catch (e) { /* caché corrupta: usar nombre por defecto */ }
 
+      // DEV: 'Memoria' y 'Explorar' ocultas en la navegación hasta su lanzamiento — quitar el filtro para restaurarlas.
       const items = [
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
         { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
         { ruta: '/estudio', icono: 'book-open', texto: 'Estudio', centro: true },
         { ruta: '/explorar', icono: 'compass', texto: 'Explorar' },
         { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
-      ];
+      ].filter(i => !['/memorizacion', '/explorar'].includes(i.ruta));
       const rutaActual = router.pathActual();
       const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/')) || (r === '/perfil' && (rutaActual === '/grupos' || rutaActual.startsWith('/perfil/config/') || rutaActual.startsWith('/perfil/acerca/')));
 
