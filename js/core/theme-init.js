@@ -17,34 +17,16 @@
     var raw = localStorage.getItem('fb_preferencias');
     var p = null;
     try { p = raw ? JSON.parse(raw) : null; } catch (e) {}
-    var TEMAS = ['umbra-claro','umbra-oscuro','clasico-claro','clasico-oscuro'];
-    function normalizarTema(t) {
-      if (t === 'claro') return 'clasico-claro';
-      if (t === 'oscuro') return 'clasico-oscuro';
-      if (t === 'light') return 'clasico-claro';
-      if (t === 'dark') return 'clasico-oscuro';
-      return (TEMAS.indexOf(t) !== -1) ? t : null;
-    }
-    function aplicarTema(root, id) {
-      // dual: modo light/dark + id de 4 temas sobre el root
-      if (!id) { delete root.dataset.theme; delete root.dataset.tema; return; }
-      root.dataset.theme = /-oscuro$/.test(id) ? 'dark' : 'light';
-      root.dataset.tema = id;
-    }
-    var id = normalizarTema((p && p.tema) || localStorage.getItem('fb_tema'));
+    var tema = (p && p.tema) || localStorage.getItem('fb_tema') || 'light';
+    if (tema === 'claro') tema = 'light';
+    else if (tema === 'oscuro') tema = 'dark';
     var root = document.documentElement;
-    if (!id) {
-      // Auto: sin elección guardada, no fijar atributos; el CSS usa el modo del SO.
-      delete root.dataset.theme; delete root.dataset.tema;
-      return;
-    }
-    aplicarTema(root, id);
+    var isDark = tema === 'dark';
+    var isLight = tema === 'light';
+    if (isLight || isDark) root.setAttribute('data-theme', tema);
     var hc = p && p.alto_contraste === true;
-    var isDark = /-oscuro$/.test(id);
-    var bg = id === 'umbra-oscuro' ? '#0a0a0c' : id === 'clasico-oscuro' ? '#0B1020'
-      : id === 'umbra-claro' ? '#faf6f8' : '#FFFFFF';
-    if (hc) bg = isDark ? '#000000' : '#FFFFFF';
-    var txt = isDark ? '#FFFFFF' : (id === 'umbra-claro' ? '#321020' : '#0F172A');
+    var bg = isDark ? (hc ? '#000000' : '#0B1020') : '#FFFFFF';
+    var txt = isDark ? '#FFFFFF' : '#0F172A';
     // Color de fondo inmediato solo en el propio elemento root.
     // Los tokens (--color-fondo) se definen luego desde CSS y
     // se aplican a <body>, así que no hay conflicto de cascada.

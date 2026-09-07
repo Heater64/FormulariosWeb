@@ -256,21 +256,13 @@
           <h2 class="login-setup__titulo">${I('sparkles')} ¡Bienvenido!</h2>
           <p class="login-setup__sub">Antes de comenzar, elige tu tema visual.</p>
           <div class="login-setup__temas">
-            <button class="login-setup__tema" data-tema="umbra-claro">
+            <button class="login-setup__tema" data-tema="light">
               <span class="login-setup__tema-radio"></span>
-              <span class="login-setup__tema-label">${I('sun')} Umbra Claro</span>
+              <span class="login-setup__tema-label">${I('sun')} Claro</span>
             </button>
-            <button class="login-setup__tema" data-tema="umbra-oscuro">
+            <button class="login-setup__tema" data-tema="dark">
               <span class="login-setup__tema-radio"></span>
-              <span class="login-setup__tema-label">${I('moon')} Umbra Oscuro</span>
-            </button>
-            <button class="login-setup__tema" data-tema="clasico-claro">
-              <span class="login-setup__tema-radio"></span>
-              <span class="login-setup__tema-label">${I('sun')} Clásico Claro</span>
-            </button>
-            <button class="login-setup__tema" data-tema="clasico-oscuro">
-              <span class="login-setup__tema-radio"></span>
-              <span class="login-setup__tema-label">${I('moon')} Clásico Oscuro</span>
+              <span class="login-setup__tema-label">${I('moon')} Oscuro</span>
             </button>
             <button class="login-setup__tema" data-tema="auto">
               <span class="login-setup__tema-radio"></span>
@@ -291,19 +283,13 @@
         });
       });
 
-      overlay.querySelector('#btnSetupContinuar').addEventListener('click', async () => {
+      overlay.querySelector('#btnSetupContinuar').onclick = async () => {
         if (!temaSel) return;
-        const temaId = temaSel === 'auto' ? null : temaSel;
-        let prefs = { tema: temaId, alto_contraste: false, letra_grande: false };
-        if (window.preferencias) prefs = { ...prefs, tema: window.preferencias.guardar(prefs).tema };
-        const root = document.documentElement;
-        if (temaId) {
-          root.dataset.theme = /-oscuro$/.test(temaId) ? 'dark' : 'light';
-          root.dataset.tema = temaId;
-        } else {
-          delete root.dataset.theme;
-          delete root.dataset.tema;
-        }
+        const temaValor = temaSel === 'auto' ? null : temaSel;
+        const prefs = { tema: temaValor, alto_contraste: false, letra_grande: false };
+        if (window.preferencias) window.preferencias.guardar(prefs);
+        if (temaSel !== 'auto') document.documentElement.dataset.theme = temaSel;
+        else delete document.documentElement.dataset.theme;
         usuario.preferencias = prefs;
         store.actualizar('usuario', { ...usuario });
         localStorage.setItem('fb_usuario', JSON.stringify(usuario));
@@ -376,12 +362,15 @@
           try { prefs = JSON.parse(prefs); } catch (e) { prefs = {}; }
         }
         if (window.preferencias) {
-          const guardado = window.preferencias.guardar({ tema: prefs.tema, alto_contraste: !!prefs.alto_contraste, letra_grande: !!prefs.letra_grande });
-          prefs.tema = guardado.tema;
-        } else {
-          // Fallback sin preferencias: acepta los 4 ids + legacy, desconocido → null (Auto).
-          const mapa = { claro: 'clasico-claro', oscuro: 'clasico-oscuro', light: 'clasico-claro', dark: 'clasico-oscuro' };
-          prefs.tema = mapa[prefs.tema] || (['umbra-claro', 'umbra-oscuro', 'clasico-claro', 'clasico-oscuro'].indexOf(prefs.tema) !== -1 ? prefs.tema : null);
+          let tema = prefs.tema;
+          if (tema === 'claro') tema = 'light';
+          else if (tema === 'oscuro') tema = 'dark';
+          window.preferencias.guardar({
+            tema: (tema === 'light' || tema === 'dark') ? tema : null,
+            alto_contraste: !!prefs.alto_contraste,
+            letra_grande: !!prefs.letra_grande
+          });
+          prefs.tema = tema;
         }
         const actualizado = { ...usuario, preferencias: prefs };
         localStorage.setItem('fb_usuario', JSON.stringify(actualizado));
