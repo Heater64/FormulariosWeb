@@ -107,6 +107,18 @@ const puntuacionExamen = {
   puntosPregunta(p) {
     return Number(p.puntos) || 1;
   },
+  /**
+   * Espejo de fb_evaluar_pregunta (migración 047): una pregunta correcta vale
+   * sus puntos; incorrecta o sin responder, 0; nunca negativo; puntos no
+   * numéricos, 0. Sirve para pre-rellenar la corrección de entregas con la
+   * misma regla que aplicará el servidor al recalcular la nota final.
+   */
+  evaluarPregunta(esCorrecta, puntos) {
+    if (!esCorrecta) return 0;
+    const pts = Number(puntos);
+    if (!Number.isFinite(pts) || pts <= 0) return 0;
+    return pts;
+  },
   calcularConCorreccion(preguntas, respuestas, correccion) {
     let puntosObtenidos = 0, totalPuntos = 0, aciertos = 0;
     for (const p of preguntas) {

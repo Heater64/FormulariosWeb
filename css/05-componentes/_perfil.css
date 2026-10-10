@@ -71,7 +71,7 @@
 }
 
 .perfil-rol-badge--owner   { background: var(--color-naranja-soft); color: var(--color-naranja); border: 1px solid rgba(249, 115, 22, 0.35); }
-.perfil-rol-badge--admin   { background: var(--color-acento-soft);  color: var(--color-acento); }
+.perfil-rol-badge--admin   { background: var(--color-acento-soft);  color: var(--color-acento-fuerte); }
 .perfil-rol-badge--editor  { background: var(--color-exito-soft);   color: var(--color-exito); }
 .perfil-rol-badge--usuario { background: var(--color-fondo-alt);    color: var(--color-texto-secundario); }
 

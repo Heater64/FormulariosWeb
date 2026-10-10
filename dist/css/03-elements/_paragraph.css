@@ -1,0 +1,5 @@
+p {
+  color: var(--color-texto-secundario);
+  margin-bottom: var(--espaciado-md);
+  line-height: var(--altura-linea-cuerpo);
+}

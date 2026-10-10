@@ -1,0 +1,9 @@
+{
+  "schemaVersion": 1,
+  "version": "1.0.12",
+  "releaseNotes": [
+    "FormsBiblicos vuelve a ser una aplicación web instalable (PWA)",
+    "La distribución como APK de Android queda en pausa por ahora (ver README)"
+  ],
+  "publishedAt": "2026-08-13T00:00:00.000Z"
+}

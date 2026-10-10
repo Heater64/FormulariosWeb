@@ -641,7 +641,7 @@
   height: 46px;
   border-radius: 50%;
   background: var(--color-acento-soft);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
   font-weight: 700;
   font-size: var(--texto-lg);
   display: flex;
@@ -759,7 +759,7 @@
 /* Badge de rol (tarjetas de usuario) */
 .admin-tabla-badge--rol {
   background: var(--color-acento-soft);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
 }
 
 /* ==========================================================================
@@ -1860,7 +1860,7 @@
   height: 44px;
   border-radius: 50%;
   background: var(--color-acento-soft);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
   display: flex;
   align-items: center;
   justify-content: center;

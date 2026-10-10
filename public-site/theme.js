@@ -25,11 +25,11 @@
     if (tema === 'dark') {
       root.setAttribute('data-theme', 'dark');
       var metaClaro = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: light)"]');
-      if (metaClaro) metaClaro.content = '#0C0A09';
+      if (metaClaro) metaClaro.content = '#0B1220';
     } else if (tema === 'light') {
       root.setAttribute('data-theme', 'light');
       var metaOscuro = document.querySelector('meta[name="theme-color"][media="(prefers-color-scheme: dark)"]');
-      if (metaOscuro) metaOscuro.content = '#FAFAF9';
+      if (metaOscuro) metaOscuro.content = '#F8FAFC';
     }
   } catch (e) {}
 })();

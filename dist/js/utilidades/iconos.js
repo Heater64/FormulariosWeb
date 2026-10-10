@@ -1,0 +1,1 @@
+window.Iconos={render(c,e=""){return`<i data-lucide="${c}"${e?` class="${e}"`:""}></i>`},actualizar(){if(window.lucide&&typeof window.lucide.createIcons=="function")try{window.lucide.createIcons()}catch(c){console.warn("Iconos Lucide:",c.message)}}};

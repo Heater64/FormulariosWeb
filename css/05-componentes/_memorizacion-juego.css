@@ -858,7 +858,7 @@
 }
 
 .mem-juego-rel-item:hover { border-color: var(--color-acento); }
-.mem-juego-rel-item--sel { border-color: var(--color-acento); background: var(--color-acento-soft); color: var(--color-acento); }
+.mem-juego-rel-item--sel { border-color: var(--color-acento); background: var(--color-acento-soft); color: var(--color-acento-fuerte); }
 .mem-juego-rel-item--ok { border-color: var(--color-exito); background: var(--color-exito-soft); color: var(--color-exito); }
 .mem-juego-rel-item--ko { border-color: var(--color-error); background: var(--color-error-soft); color: var(--color-error); }
 .mem-juego-rel-item--disabled { opacity: 0.4; cursor: default; }

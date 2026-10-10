@@ -62,9 +62,14 @@ for (const file of jsFiles) {
   }
 }
 
-// Copiar páginas legales (fuente única compartida con el perfil de la app)
-const legalPages = ['privacidad.html', 'terminos.html', 'licencias.html', 'contacto.html', 'recuperar.html', 'registro.html', 'onboarding.html'];
-for (const page of legalPages) {
+// Copiar páginas estáticas del sitio público
+// (legales, recuperación, alta y el examen del alumno sin cuenta)
+const publicPages = [
+  'privacidad.html', 'terminos.html', 'licencias.html', 'contacto.html',
+  'recuperar.html', 'registro.html', 'onboarding.html',
+  'examen.html' // enlace individual /e/<token> (rewrite de vercel.json)
+];
+for (const page of publicPages) {
   const src = join(root, 'public-site', page);
   if (existsSync(src)) cpSync(src, join(distPublic, page));
 }

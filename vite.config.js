@@ -118,17 +118,29 @@ function copyAppStaticFiles() {
 // dist-public. En desarrollo la app (raíz del proyecto) no las despliega, así
 // que este middleware las sirve desde public-site/ para que login.html y el
 // SPA usen exactamente los mismos archivos que el preview de producción.
-function servirLegalesDev() {
+function servirPublicSite() {
   const rootDir = process.cwd();
   return {
-    name: 'servir-legales-dev',
+    name: 'servir-public-site-dev',
     configureServer(server) {
       server.middlewares.use((req, res, next) => {
         const url = req.url || '';
-        // Las páginas legales se abren con ?volver=<ruta> (p. ej. desde el
-        // perfil de la app): hay que ignorar la query al identificar el archivo.
         const pathname = url.split('?')[0];
-        const m = /^\/(privacidad|terminos|licencias|contacto|recuperar|registro|onboarding)\.html$/.exec(pathname);
+        // Enlace individual /e/:token → página pública del examen.
+        // El rewrite se aplica al HTML; examen.html y examen.js usan rutas
+        // absolutas, así que los siguientes peticiones del navegador siguen
+        // siendo /examen.js, /theme.js, /js/config/entorno.js, etc.
+        if (/^\/e\/[^?\/]+$/.test(pathname)) {
+          const file = join(rootDir, 'public-site', 'examen.html');
+          if (existsSync(file)) {
+            res.setHeader('Content-Type', 'text/html; charset=utf-8');
+            res.end(readFileSync(file));
+            return;
+          }
+        }
+        // El enlace también puede usarse con ?volver= para volver al SPA
+        // tras entregar; ignoramos query al decidir el archivo.
+        const m = /^\/(examen|privacidad|terminos|licencias|contacto|recuperar|registro|onboarding)\.html$/.exec(pathname);
         if (m) {
           const file = join(rootDir, 'public-site', m[1] + '.html');
           if (existsSync(file)) {
@@ -150,8 +162,8 @@ function servirLegalesDev() {
           res.end(`window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};window.__FB_SENTRY_DSN_PUBLIC__=${JSON.stringify(process.env.VITE_SENTRY_DSN_PUBLIC || '')};window.__FB_SENTRY_SDK_URL__=${JSON.stringify(process.env.VITE_SENTRY_SDK_URL || '')};window.__FB_SENTRY_ENVIRONMENT__=${JSON.stringify(process.env.VITE_SENTRY_ENVIRONMENT || 'development')};`);
           return;
         }
-        // JS que cargan esas páginas (theme, contacto, legal y login)
-        if (/^\/(theme|legal|contacto|login|recuperar|registro|onboarding)\.js$/.test(pathname)) {
+        // JS que cargan esas páginas y el examen (theme, legal, login, examen)
+        if (/^\/(theme|legal|contacto|login|examen|recuperar|registro|onboarding)\.js$/.test(pathname)) {
           const file = join(rootDir, 'public-site', url.replace(/^\//, ''));
           if (existsSync(file)) {
             res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
@@ -171,5 +183,5 @@ export default defineConfig({
     open: true,
     port: 3000
   },
-  plugins: [injectRuntimeVersion(), copyAppStaticFiles(), servirLegalesDev()]
+  plugins: [injectRuntimeVersion(), copyAppStaticFiles(), servirPublicSite()]
 });

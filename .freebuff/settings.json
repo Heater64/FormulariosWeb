@@ -1,0 +1,13 @@
+{
+  "preloadedSkills": [
+    "using-agent-skills",
+    "cyber-neo",
+    "code-review-and-quality",
+    "executing-plans",
+    "image-to-code",
+    "frontend-design",
+    "web-design-guidelines",
+    "designing-frontend-interfaces",
+    "building-web-artifacts"
+  ]
+}

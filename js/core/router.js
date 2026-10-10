@@ -321,7 +321,7 @@ class Router {
       boton.addEventListener('click', () => {
         const accion = boton.dataset.routerAccion;
         if (accion === 'recargar') window.location.reload();
-        if (accion === 'inicio') this.navegar('/estudio');
+        if (accion === 'inicio') this.navegar('/inicio');
         if (accion === 'limpiar-cache' && window.errorRecovery) {
           window.errorRecovery.recuperarCacheYRecargar('error de vista');
         }
@@ -346,26 +346,14 @@ class Router {
   // se mantiene como título en todas las secciones.
   _titulos() {
     return {
-      '/': 'FormsBiblicos — Estudio bíblico guiado',
-      '/estudio': 'Estudio — FormsBiblicos',
-      '/estudio/libro/:libro': 'Capítulos — FormsBiblicos',
-      '/estudio/sesion/:libro/:capitulo': 'Sesión de estudio — FormsBiblicos',
-      '/leer/:libro/:capitulo': 'Lectura — FormsBiblicos',
+      '/': 'Panel — FormsBiblicos',
+      '/inicio': 'Inicio — FormsBiblicos',
       '/examenes': 'Exámenes — FormsBiblicos',
-      '/memorizacion': 'Memorización — FormsBiblicos',
-      '/explorar': 'Explorar — FormsBiblicos',
-      '/perfil': 'Perfil — FormsBiblicos',
-      '/notificaciones': 'Notificaciones — FormsBiblicos',
-      '/mapa': 'Mapa bíblico — FormsBiblicos',
-      '/tomar/:id': 'Examen — FormsBiblicos',
+      '/entregas': 'Entregas — FormsBiblicos',
+      '/cuenta': 'Mi cuenta — FormsBiblicos',
       '/editor/nuevo': 'Nuevo examen — FormsBiblicos',
       '/editor/:id': 'Editar examen — FormsBiblicos',
-      '/corregir/:id': 'Corregir examen — FormsBiblicos',
-      '/calificaciones': 'Calificaciones — FormsBiblicos',
-      '/grupos': 'Clases — FormsBiblicos',
-      '/grupos/:id': 'Clase — FormsBiblicos',
-      '/desafio/:id': 'Desafío — FormsBiblicos',
-      '/admin': 'Panel de administración — FormsBiblicos'
+      '/corregir/:id': 'Entregas del examen — FormsBiblicos'
     };
   }
 

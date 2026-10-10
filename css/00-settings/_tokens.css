@@ -1,45 +1,49 @@
 :root {
-  /* ── Palette ── */
+  /* ── Palette (DailyHub slate) ── */
   --color-acento: #2563EB;
   --color-acento-hover: #1D4ED8;
   --color-acento-soft: #EFF6FF;
   --color-texto-acento: #FFFFFF;
   --color-fondo-dibujo: #FFFFFF;
-  --color-texto: #1C1917;
-  --color-texto-secundario: #78716C;
-  --color-texto-terciario: #A8A29E;
-  --color-fondo: #FAFAF9;
-  --color-fondo-alt: #F5F5F4;
+  --color-texto: #0F172A;
+  --color-texto-secundario: #475569;
+  --color-texto-terciario: #5E6D84;
+  --color-fondo: #F8FAFC;
+  --color-fondo-alt: #F1F5F9;
+  --color-fondo-hover: #E8EDF3;
   --color-fondo-tarjeta: #FFFFFF;
-  --color-borde: #E7E5E4;
+  --color-borde: #E2E8F0;
+  --color-borde-suave: #EEF2F7;
   --color-borde-foco: #2563EB;
   --color-exito: #15803D;
-  --color-exito-soft: #DCFCE7;
+  --color-exito-soft: #F0FDF4;
   --color-error: #B91C1C;
-  --color-error-soft: #FEE2E2;
+  --color-error-soft: #FEF2F2;
   --color-error-hover: #DC2626;
-  --color-aviso: #D97706;
-  --color-aviso-soft: #FEF3C7;
+  --color-aviso: #B45309;
+  --color-aviso-soft: #FFFBEB;
   --color-info: #0369A1;
   --color-info-soft: #E0F2FE;
-  --color-acento-fuerte: #1E40AF;
+  --color-acento-fuerte: #1D4ED8;
   --color-acento-soft-hover: #DBEAFE;
   /* Colores canónicos de testamento — invariantes al tema */
   --color-testamento-at: #8B4513;
   --color-testamento-nt: #2563EB;
   /* Color neutro medio para bandas/secciones */
-  --color-seccion-banda: #57534E;
+  --color-seccion-banda: #475569;
   --color-seccion-texto: #fff;
   --color-naranja: #C2410C;
   --color-naranja-soft: #FFEDD5;
   --color-shimmer: rgba(255, 255, 255, 0.35);
-  --color-superficie-modal: rgba(0,0,0,0.32);
-  --color-vidrio: rgba(255,255,255,0.72);
-  --color-vidrio-borde: rgba(255,255,255,0.6);
+  --color-superficie-modal: rgba(15, 23, 42, 0.4);
+  --color-vidrio: rgba(255,255,255,0.94);
+  --color-vidrio-borde: rgba(238,242,247,0.9);
   --desenfoque-vidrio: saturate(180%) blur(20px);
 
   /* ── Typography ── */
-  --fuente-display: "Newsreader", Georgia, "Times New Roman", serif;
+  /* DailyHub usa solo Inter: la display apunta a la misma familia para que
+     las cabeceras serif hereden la identidad sin cambiar cada componente. */
+  --fuente-display: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --fuente-base: "Inter", -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", sans-serif;
   --fuente-mono: "SF Mono", ui-monospace, "Fira Code", "Cascadia Code", monospace;
 
@@ -56,8 +60,9 @@
   --texto-peso-medio: 500;
   --texto-peso-semibold: 600;
   --texto-peso-bold: 700;
+  --texto-peso-black: 800;
   --texto-altura-linea-titulo: 1.2;
-  --texto-altura-linea-cuerpo: 1.6;
+  --texto-altura-linea-cuerpo: 1.45;
   --lectura-max-ancho: 72ch;
 
   /* ── Spacing ── */
@@ -70,49 +75,59 @@
   --espaciado-2xl: 52px;
   --espaciado-3xl: 72px;
 
-  /* ── Radii — tighter, less AI-rounded ── */
-  --radio-sm: 6px;
-  --radio-md: 10px;
-  --radio-lg: 14px;
-  --radio-xl: 18px;
-  --radio-2xl: 22px;
+  /* ── Radios — DailyHub scale: 8 / 12 / 16 / 20 / 24 ── */
+  --radio-sm: 8px;
+  --radio-md: 12px;
+  --radio-lg: 16px;
+  --radio-xl: 20px;
+  --radio-2xl: 24px;
   --radio-pill: 999px;
 
   /* ── Design System: unified tokens ── */
-  --card-radius: var(--radio-lg);
-  --card-padding: var(--espaciado-lg);
-  --card-padding-sm: var(--espaciado-md);
+  --card-radius: var(--radio-xl);
+  --card-padding: var(--espaciado-md);
+  --card-padding-sm: var(--espaciado-sm);
   --card-shadow: var(--sombra-sm);
   --card-shadow-hover: var(--sombra-md);
-  --card-border: 1px solid var(--color-borde);
+  --card-border: 1px solid var(--color-borde-suave);
   --card-bg: var(--color-fondo-tarjeta);
   --card-transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida), border-color var(--transicion-rapida);
   --card-hover-lift: translateY(-1px);
-  --btn-radius: var(--radio-md);
+  --btn-radius: var(--radio-lg);
   --btn-radius-sm: var(--radio-sm);
-  --btn-padding: var(--espaciado-sm) var(--espaciado-xl);
-  --btn-padding-sm: var(--espaciado-xs) var(--espaciado-lg);
-  --focus-ring: 0 0 0 3px var(--color-acento-soft);
+  --btn-padding: var(--espaciado-sm) var(--espaciado-md);
+  --btn-padding-sm: var(--espaciado-xs) var(--espaciado-sm);
+  --focus-ring: 3px solid var(--color-acento);
+  --focus-ring-shadow: 0 0 0 3px var(--color-acento-soft-hover);
+  --focus-offset: 3px;
   --section-gap: var(--espaciado-md);
   --section-gap-lg: var(--espaciado-lg);
 
-  /* ── Shadows — flat, grounded ── */
-  --sombra-sm: 0 1px 2px rgba(28,25,23,0.04);
-  --sombra-md: 0 2px 8px -2px rgba(28,25,23,0.08);
-  --sombra-lg: 0 8px 24px -6px rgba(28,25,23,0.10);
-  --sombra-xl: 0 16px 48px -12px rgba(28,25,23,0.14);
-  --sombra-nav: 0 -1px 0 rgba(28,25,23,0.06);
+  /* ── Shadows — DailyHub: tres niveles, suaves y grounded ── */
+  --sombra-sm: 0 1px 2px rgba(15,23,42,0.05);
+  --sombra-md: 0 6px 20px rgba(15,23,42,0.06);
+  --sombra-lg: 0 12px 40px rgba(15,23,42,0.12);
+  --sombra-xl: 0 16px 48px -12px rgba(15,23,42,0.16);
+  --sombra-nav: 0 -1px 0 rgba(15,23,42,0.06);
+  --sombra-acento: 0 4px 14px rgba(37,99,235,0.22);
 
-  /* ── Motion ── */
+  /* ── Motion — DailyHub: breve y con propósito (.12 / .18 / .28) ── */
   --easing-apple: cubic-bezier(0.32, 0.72, 0, 1);
-  --easing-smooth: cubic-bezier(0.4, 0, 0.2, 1);
+  --easing-smooth: cubic-bezier(0.2, 0.8, 0.2, 1);
   --easing-entrada: cubic-bezier(0, 0, 0.2, 1);
   --easing-salida: cubic-bezier(0.4, 0, 1, 1);
-  --easing-spring: cubic-bezier(0.34, 1.56, 0.64, 1);
-  --transicion-rapida: 200ms var(--easing-smooth);
-  --transicion-normal: 320ms var(--easing-smooth);
-  --transicion-lenta: 560ms var(--easing-smooth);
+  --easing-spring: cubic-bezier(0.34, 1.3, 0.64, 1);
+  --transicion-rapida: 120ms var(--easing-smooth);
+  --transicion-normal: 180ms var(--easing-smooth);
+  --transicion-lenta: 280ms var(--easing-smooth);
   --toque-minimo: 48px;
+
+  /* ── Semantic surfaces ── */
+  --color-superficie: var(--color-fondo-tarjeta);
+  --color-superficie-secundaria: var(--color-fondo-alt);
+  --color-texto-primario: var(--color-texto);
+  --color-texto-sutil: #5E6D84;
+  --color-borde-suave-token: var(--color-borde-suave);
 }
 
 @media (prefers-reduced-data: reduce) {
@@ -128,6 +143,7 @@
     --color-texto-terciario: #333333;
     --color-fondo: #FFFFFF;
     --color-fondo-alt: #F0F0F0;
+    --color-fondo-hover: #E0E0E0;
     --color-fondo-tarjeta: #FFFFFF;
     --color-borde: #000000;
     --color-acento: #1D4ED8;
@@ -147,6 +163,7 @@
     --color-texto-terciario: #CCCCCC;
     --color-fondo: #000000;
     --color-fondo-alt: #0A0A0A;
+    --color-fondo-hover: #1A1A1A;
     --color-fondo-tarjeta: #1A1A1A;
     --color-borde: #FFFFFF;
     --color-acento: #60A5FA;
@@ -161,31 +178,33 @@
   }
 }
 
-/* ===== THEME: Dark ===== */
+/* ===== THEME: Dark (DailyHub) ===== */
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
-    --color-texto: #F5F7FB;
-    --color-texto-secundario: #B7C0D1;
-    --color-texto-terciario: #8792A5;
-    --color-fondo: #0B1020;
-    --color-fondo-alt: #121A2B;
-    --color-fondo-tarjeta: #182236;
-    --color-borde: #2A3952;
-    --color-borde-foco: #7DB7FF;
-    --color-acento: #7DB7FF;
-    --color-acento-hover: #A8D1FF;
-    --color-acento-soft: #1B3557;
-    --color-acento-soft-hover: #274B78;
-    --color-exito: #5FE0A0;
-    --color-exito-soft: #123E36;
-    --color-error: #FF8A92;
-    --color-error-soft: #542A38;
+    --color-texto: #E6EDF7;
+    --color-texto-secundario: #94A3B8;
+    --color-texto-terciario: #7A8AA3;
+    --color-fondo: #0B1220;
+    --color-fondo-alt: #16213A;
+    --color-fondo-hover: #1E2B47;
+    --color-fondo-tarjeta: #111A2C;
+    --color-borde: #243149;
+    --color-borde-suave: #1B2740;
+    --color-borde-foco: #3B82F6;
+    --color-acento: #3B82F6;
+    --color-acento-hover: #60A5FA;
+    --color-acento-soft: rgba(59,130,246,0.14);
+    --color-acento-soft-hover: rgba(59,130,246,0.24);
+    --color-exito: #4ADE80;
+    --color-exito-soft: rgba(34,197,94,0.12);
+    --color-error: #F87171;
+    --color-error-soft: rgba(239,68,68,0.13);
     --color-error-hover: #FFADB3;
-    --color-aviso: #FFD166;
-    --color-aviso-soft: #4C3A1C;
+    --color-aviso: #FBBF24;
+    --color-aviso-soft: rgba(245,158,11,0.12);
     --color-info: #72D4FF;
     --color-info-soft: #123E56;
-    --color-acento-fuerte: #4B8BD8;
+    --color-acento-fuerte: #93C5FD;
     --color-naranja: #FFB86B;
     --color-naranja-soft: #4A2F1E;
     --color-azul-50: #142642;
@@ -202,15 +221,16 @@
     --color-amarillo-50: #332B16;
     --color-amarillo-100: #4C3A1C;
     --color-amarillo-300: #FFD166;
-    --color-gris-100: #202B40;
-    --color-gris-500: #8792A5;
-    --color-vidrio: rgba(18, 26, 43, 0.86);
-    --color-vidrio-borde: rgba(166, 197, 237, 0.18);
-    --sombra-sm: 0 1px 2px rgba(0,0,0,0.28);
-    --sombra-md: 0 8px 24px -12px rgba(0,0,0,0.58);
-    --sombra-lg: 0 18px 44px -18px rgba(0,0,0,0.72);
-    --sombra-xl: 0 28px 72px -24px rgba(0,0,0,0.82);
-    --sombra-nav: 0 -1px 0 rgba(166,197,237,0.14), 0 -12px 32px -24px rgba(0,0,0,0.75);
+    --color-gris-100: #1E293B;
+    --color-gris-500: #94A3B8;
+    --color-vidrio: rgba(17, 26, 44, 0.94);
+    --color-vidrio-borde: rgba(27, 39, 64, 0.95);
+    --sombra-sm: 0 1px 2px rgba(0,0,0,0.4);
+    --sombra-md: 0 6px 20px rgba(0,0,0,0.45);
+    --sombra-lg: 0 12px 40px rgba(0,0,0,0.55);
+    --sombra-xl: 0 16px 48px -12px rgba(0,0,0,0.6);
+    --sombra-nav: 0 -1px 0 rgba(36,49,73,0.9);
+    --sombra-acento: 0 4px 14px rgba(0,0,0,0.45);
     /* Texto sobre rellenos de acento: oscuro para AA (ver bloque explícito). */
     --color-texto-acento: #0C0A09;
     --color-fondo-dibujo: #F7F9FC;
@@ -218,29 +238,31 @@
 }
 
 :root[data-theme="dark"] {
-  --color-texto: #F5F7FB;
+  --color-texto: #E6EDF7;
   --color-shimmer: rgba(255, 255, 255, 0.07);
-  --color-texto-secundario: #B7C0D1;
-  --color-texto-terciario: #8792A5;
-  --color-fondo: #0B1020;
-  --color-fondo-alt: #121A2B;
-  --color-fondo-tarjeta: #182236;
-  --color-borde: #2A3952;
-  --color-borde-foco: #7DB7FF;
-  --color-acento: #7DB7FF;
-  --color-acento-hover: #A8D1FF;
-  --color-acento-soft: #1B3557;
-  --color-acento-soft-hover: #274B78;
-  --color-exito: #5FE0A0;
-  --color-exito-soft: #123E36;
-  --color-error: #FF8A92;
-  --color-error-soft: #542A38;
+  --color-texto-secundario: #94A3B8;
+  --color-texto-terciario: #7A8AA3;
+  --color-fondo: #0B1220;
+  --color-fondo-alt: #16213A;
+  --color-fondo-hover: #1E2B47;
+  --color-fondo-tarjeta: #111A2C;
+  --color-borde: #243149;
+  --color-borde-suave: #1B2740;
+  --color-borde-foco: #3B82F6;
+  --color-acento: #3B82F6;
+  --color-acento-hover: #60A5FA;
+  --color-acento-soft: rgba(59,130,246,0.14);
+  --color-acento-soft-hover: rgba(59,130,246,0.24);
+  --color-exito: #4ADE80;
+  --color-exito-soft: rgba(34,197,94,0.12);
+  --color-error: #F87171;
+  --color-error-soft: rgba(239,68,68,0.13);
   --color-error-hover: #FFADB3;
-  --color-aviso: #FFD166;
-  --color-aviso-soft: #4C3A1C;
+  --color-aviso: #FBBF24;
+  --color-aviso-soft: rgba(245,158,11,0.12);
   --color-info: #72D4FF;
   --color-info-soft: #123E56;
-  --color-acento-fuerte: #4B8BD8;
+  --color-acento-fuerte: #93C5FD;
   --color-naranja: #FFB86B;
   --color-naranja-soft: #4A2F1E;
   --color-azul-50: #142642;
@@ -257,15 +279,16 @@
   --color-amarillo-50: #332B16;
   --color-amarillo-100: #4C3A1C;
   --color-amarillo-300: #FFD166;
-  --color-gris-100: #202B40;
-  --color-gris-500: #8792A5;
-  --color-vidrio: rgba(18, 26, 43, 0.86);
-  --color-vidrio-borde: rgba(166, 197, 237, 0.18);
-  --sombra-sm: 0 1px 2px rgba(0,0,0,0.28);
-  --sombra-md: 0 8px 24px -12px rgba(0,0,0,0.58);
-  --sombra-lg: 0 18px 44px -18px rgba(0,0,0,0.72);
-  --sombra-xl: 0 28px 72px -24px rgba(0,0,0,0.82);
-  --sombra-nav: 0 -1px 0 rgba(166,197,237,0.14), 0 -12px 32px -24px rgba(0,0,0,0.75);
+  --color-gris-100: #1E293B;
+  --color-gris-500: #94A3B8;
+  --color-vidrio: rgba(17, 26, 44, 0.94);
+  --color-vidrio-borde: rgba(27, 39, 64, 0.95);
+  --sombra-sm: 0 1px 2px rgba(0,0,0,0.4);
+  --sombra-md: 0 6px 20px rgba(0,0,0,0.45);
+  --sombra-lg: 0 12px 40px rgba(0,0,0,0.55);
+  --sombra-xl: 0 16px 48px -12px rgba(0,0,0,0.6);
+  --sombra-nav: 0 -1px 0 rgba(36,49,73,0.9);
+  --sombra-acento: 0 4px 14px rgba(0,0,0,0.45);
   --color-texto-acento: #0C0A09;
   --color-fondo-dibujo: #F7F9FC;
 }
@@ -277,6 +300,7 @@
   --color-texto-terciario: #333333;
   --color-fondo: #FFFFFF;
   --color-fondo-alt: #F0F0F0;
+  --color-fondo-hover: #E0E0E0;
   --color-fondo-tarjeta: #FFFFFF;
   --color-borde: #000000;
   --color-acento: #1D4ED8;
@@ -295,6 +319,7 @@
   --color-texto-terciario: #CCCCCC;
   --color-fondo: #000000;
   --color-fondo-alt: #0A0A0A;
+  --color-fondo-hover: #1A1A1A;
   --color-fondo-tarjeta: #1A1A1A;
   --color-borde: #FFFFFF;
   --color-acento: #60A5FA;
@@ -316,6 +341,7 @@
     --color-texto-terciario: #CCCCCC;
     --color-fondo: #000000;
     --color-fondo-alt: #0A0A0A;
+    --color-fondo-hover: #1A1A1A;
     --color-fondo-tarjeta: #1A1A1A;
     --color-borde: #FFFFFF;
     --color-acento: #60A5FA;

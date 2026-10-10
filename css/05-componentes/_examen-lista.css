@@ -198,10 +198,10 @@
 }
 
 .examen-card__badge--borrador   { background: var(--color-fondo-alt);   color: var(--color-texto-terciario); }
-.examen-card__badge--publicado  { background: var(--color-acento-soft); color: var(--color-acento); }
+.examen-card__badge--publicado  { background: var(--color-acento-soft); color: var(--color-acento-fuerte); }
 .examen-card__badge--cerrado    { background: var(--color-aviso-soft);  color: var(--color-aviso); }
 .examen-card__badge--archivado  { background: var(--color-fondo-alt);   color: var(--color-texto-terciario); }
-.examen-card__badge--disponible { background: var(--color-acento-soft); color: var(--color-acento); }
+.examen-card__badge--disponible { background: var(--color-acento-soft); color: var(--color-acento-fuerte); }
 .examen-card__badge--completado { background: var(--color-exito-soft);  color: var(--color-exito); }
 .examen-card__badge--pendiente  { background: var(--color-aviso-soft);  color: var(--color-aviso); }
 .examen-card__badge--calificado { background: var(--color-exito-soft);  color: var(--color-exito); }

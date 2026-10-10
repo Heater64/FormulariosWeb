@@ -1,0 +1,5 @@
+.u-color-exito { color: var(--color-exito, #16a34a) !important; }
+
+.u-color-error { color: var(--color-error, #dc2626) !important; }
+
+.u-color-acento { color: var(--color-acento, #2563EB) !important; }

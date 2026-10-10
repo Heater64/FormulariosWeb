@@ -1,10 +1,33 @@
 (function() {
   'use strict';
   const MARCADOR_RE = /\{\{HUECO_(\d+)\}\}/g;
-  // Para 'completar' el título no debe repetir la frase (que ya se muestra con
-  // los huecos interactivos debajo) ni exponer los marcadores {{HUECO_N}}.
+  const TIENE_MARCADOR = /\{\{HUECO_\d+\}\}/;
+  // Mezcla estable por pregunta: el mismo examen se muestra siempre en el
+  // mismo orden (al retomar el borrador nada se mueve bajo el alumno), pero
+  // distinto al orden de edición del profesor en «relacionar» y «ordenar».
+  function mezclaEstable(id, n) {
+    const orden = [];
+    for (let i = 0; i < n; i++) orden.push(i);
+    let semilla = 2166136261;
+    const texto = String(id || '');
+    for (let i = 0; i < texto.length; i++) {
+      semilla ^= texto.charCodeAt(i);
+      semilla = (semilla * 16777619) >>> 0;
+    }
+    for (let i = n - 1; i > 0; i--) {
+      semilla = (semilla * 1664525 + 1013904223) >>> 0;
+      const j = semilla % (i + 1);
+      const tmp = orden[i]; orden[i] = orden[j]; orden[j] = tmp;
+    }
+    if (n > 1 && orden.every((v, k) => v === k)) orden.push(orden.shift());
+    return orden;
+  }
+  // Para 'completar' con marcadores el título no debe repetir la frase (ya se
+  // muestra con los huecos interactivos debajo) ni exponer {{HUECO_N}}. Sin
+  // marcadores la frase SOLO está en el enunciado: hay que mostrarla.
   function textoPreguntaVisible(p) {
-    if (p && p.tipo === 'completar') return 'Completa la frase:';
+    if (p && p.tipo === 'completar' && p.huecos && p.huecos.length &&
+        TIENE_MARCADOR.test(p.texto || '')) return 'Completa la frase:';
     return window.helpers.escapeHtml(p ? p.texto : '');
   }
   function renderizarTextoConHuecos(texto, huecos, respuestas, opciones) {
@@ -457,7 +480,13 @@
     _tieneRespuesta(respuestas, pregunta) {
       const r = respuestas[pregunta.id];
       if (r === undefined || r === '') return false;
-      if (Array.isArray(r)) return r.some(v => v !== '' && v !== undefined);
+      if (Array.isArray(r)) {
+        const conValor = r.filter(v => v !== '' && v !== undefined);
+        if (!conValor.length) return false;
+        // Arrays numéricos (varias_opciones / ordenar): basta con que haya algo;
+        // arrays de texto (huecos de completar): todos deben ir llenos.
+        return r.every(v => typeof v === 'number') ? true : conValor.length === r.length;
+      }
       return true;
     },
 
@@ -607,18 +636,24 @@
         const estadoClase = esCorrecta ? 'resultado-pregunta--ok' : 'resultado-pregunta--ko';
         const iconoEstado = p.tipo !== 'texto_largo' ? (esCorrecta ? I('check') : I('x')) : '';
 
+        const completarConHuecos = p.tipo === 'completar' && Array.isArray(p.huecos) && p.huecos.length > 0 &&
+          TIENE_MARCADOR.test(p.texto || '');
+
         let respuestaUsuarioHtml;
-        if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
+        if (completarConHuecos) {
           respuestaUsuarioHtml = this._renderResultadoCompletar(p, respuestas[p.id]);
         } else if (['multiple', 'verdadero_falso', 'varias_opciones', 'opcion_unica', 'relacionar', 'ordenar'].includes(p.tipo)) {
           respuestaUsuarioHtml = this._textoOpcion(p, rUser);
+        } else if (p.tipo === 'completar') {
+          // Sin marcadores: las palabras aceptadas van en «respuesta_correcta».
+          respuestaUsuarioHtml = E(String(rUser));
         } else {
           respuestaUsuarioHtml = E(String(rUser));
         }
 
         let correctaHtml = '';
         if (!esCorrecta) {
-          if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos)) {
+          if (completarConHuecos) {
             correctaHtml = this._renderRespuestaCorrectaCompletar(p);
           } else {
             correctaHtml = E(this._textoOpcion(p, p.respuesta_correcta));
@@ -681,14 +716,30 @@
     },
 
     _renderRespuestaCorrectaCompletar(pregunta) {
-      if (!pregunta.huecos) return '';
-      return pregunta.huecos.map((h, i) =>
-        `<span class="u-fw-600">${window.helpers.escapeHtml(h.respuesta_correcta)}</span>${i < pregunta.huecos.length - 1 ? ', ' : ''}`
-      ).join('');
+      if (Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
+        return pregunta.huecos.map((h, i) =>
+          `<span class="u-fw-600">${window.helpers.escapeHtml(h.respuesta_correcta)}</span>${i < pregunta.huecos.length - 1 ? ', ' : ''}`
+        ).join('');
+      }
+      // Sin marcadores, las palabras aceptadas son «a|b|c».
+      return String(pregunta.respuesta_correcta || '').split('|').map(s => s.trim()).filter(Boolean)
+        .map(a => `<span class="u-fw-600">${window.helpers.escapeHtml(a)}</span>`).join(' o ');
     },
 
     _textoOpcion(pregunta, valor) {
-      if (pregunta.tipo === 'verdadero_falso') return valor === 'true' ? 'Verdadero' : 'Falso';
+      if (pregunta.tipo === 'verdadero_falso') {
+        const opciones = (Array.isArray(pregunta.opciones) && pregunta.opciones.length === 2)
+          ? pregunta.opciones : ['Verdadero', 'Falso'];
+        if (valor === '0' || valor === 0 || valor === 'true') return String(opciones[0]);
+        if (valor === '1' || valor === 1 || valor === 'false') return String(opciones[1]);
+        return valor == null ? '' : String(valor);
+      }
+      if (pregunta.tipo === 'completar') {
+        if (Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
+          return pregunta.huecos.map(h => h.respuesta_correcta).join(', ');
+        }
+        return String(valor == null ? '' : valor).split('|').map(s => s.trim()).filter(Boolean).join(' o ');
+      }
       if (pregunta.tipo === 'varias_opciones' || pregunta.tipo === 'ordenar') {
         try {
           const arr = JSON.parse(valor);
@@ -732,10 +783,15 @@
         `).join('');
       }
       if (pregunta.tipo === 'verdadero_falso') {
-        return ['true', 'false'].map(v => `
-          <label class="examen-opcion${v === rActual ? ' examen-opcion--seleccionada' : ''}">
-            <input type="radio" name="p_${pregunta.id}" value="${v}" ${v === rActual ? 'checked' : ''}>
-            <span class="u-fs-sm">${v === 'true' ? 'Verdadero' : 'Falso'}</span>
+        // Respuesta por índice (0/1, opciones [Verdadero, Falso]); los intentos
+        // antiguos guardaban 'true'/'false' y se siguen mostrando igual.
+        const opciones = (Array.isArray(pregunta.opciones) && pregunta.opciones.length === 2)
+          ? pregunta.opciones : ['Verdadero', 'Falso'];
+        const actual = rActual === 'true' ? '0' : (rActual === 'false' ? '1' : String(rActual));
+        return ['0', '1'].map((v, vi) => `
+          <label class="examen-opcion${v === actual ? ' examen-opcion--seleccionada' : ''}">
+            <input type="radio" name="p_${pregunta.id}" value="${v}" ${v === actual ? 'checked' : ''}>
+            <span class="u-fs-sm">${window.helpers.escapeHtml(String(opciones[vi]))}</span>
           </label>
         `).join('');
       }
@@ -746,17 +802,20 @@
         return `<textarea data-pid="${pregunta.id}" rows="4" placeholder="Escribe tu respuesta detallada..." style="width:100%;padding:var(--espaciado-sm);border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit">${window.helpers.escapeHtml(rActual)}</textarea>`;
       }
       if (pregunta.tipo === 'completar') {
-        if (pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
+        if (TIENE_MARCADOR.test(pregunta.texto || '') && pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
           const respArr = Array.isArray(rActual) ? rActual : [];
           return renderizarTextoConHuecos(pregunta.texto, pregunta.huecos, respArr, { pid: pregunta.id });
         }
-        return `<input type="text" data-pid="${pregunta.id}" value="${window.helpers.escapeHtml(rActual)}" placeholder="Completa la frase..." style="width:100%">`;
+        return `<input type="text" data-pid="${pregunta.id}" value="${window.helpers.escapeHtml(rActual)}" placeholder="Escribe la palabra que falta..." style="width:100%">`;
       }
       if (pregunta.tipo === 'relacionar') {
         const pares = pregunta.opciones || [];
         const mit = Math.ceil(pares.length / 2);
         const izq = pares.slice(0, mit);
         const der = pares.slice(mit);
+        // La columna derecha se presenta en orden estable; los valores siguen
+        // siendo los índices originales (la respuesta correcta es identidad).
+        const ordenDer = mezclaEstable(pregunta.id, der.length);
         const relacion = rActual ? (() => { try { return JSON.parse(rActual); } catch(e) { return {}; } })() : {};
         return '<div class="o-pila"><p class="u-fs-xs u-color-texto-terciario u-mb-1">Relaciona cada elemento de la izquierda con su par de la derecha:</p>' +
           izq.map((item, ri) => `
@@ -765,14 +824,21 @@
               <span class="u-color-texto-terciario">→</span>
               <select data-relacion="${pregunta.id}" data-idx="${ri}" style="flex:1">
                 <option value="">— Seleccionar —</option>
-                ${der.map((d, di) => `<option value="${di}" ${relacion[ri] == di ? 'selected' : ''}>${window.helpers.escapeHtml(d)}</option>`).join('')}
+                ${ordenDer.map(di => `<option value="${di}" ${relacion[ri] == di ? 'selected' : ''}>${window.helpers.escapeHtml(der[di])}</option>`).join('')}
               </select>
             </div>
           `).join('') + '</div>';
       }
       if (pregunta.tipo === 'ordenar') {
         const items = pregunta.opciones || [];
-        const orden = rActual ? (() => { try { return JSON.parse(rActual); } catch(e) { return items.map((_, i) => i); } })() : items.map((_, i) => i);
+        // El alumno empieza en un orden estable desordenado (no en el correcto,
+        // que sería responder sin hacer nada); con respuesta guardada se
+        // respeta el orden que ya tenía.
+        let orden = items.map((_, i) => i);
+        if (rActual) {
+          try { const arr = JSON.parse(rActual); if (Array.isArray(arr) && arr.length === items.length) orden = arr; } catch (e) { /* se reordena abajo */ }
+        }
+        if (!rActual) orden = mezclaEstable(pregunta.id, items.length);
         return '<div class="o-pila"><p class="u-fs-xs u-color-texto-terciario u-mb-1">Ordena los elementos (usa las flechas para mover):</p>' +
           orden.map((oi, pos) => `
             <div class="o-flecha u-mb-1" style="gap:var(--espaciado-xs);padding:var(--espaciado-xs);background:var(--color-fondo-alt);border-radius:var(--radio-sm)">
@@ -803,6 +869,8 @@
         const temp = inputs[pos].value;
         inputs[pos].value = inputs[newPos].value;
         inputs[newPos].value = temp;
+        // Hasta que el alumno no mueva nada, «ordenar» sigue sin responder.
+        inputs.forEach(inp => { inp.dataset.tocado = '1'; });
         // Re-sincronizar data-pos de inputs y botones con el nuevo orden
         const filas = Array.from(cont.querySelectorAll('.o-flecha')).filter(f => f.querySelector(`input[data-orden="${preguntaId}"]`));
         filas.forEach((f, i) => {
@@ -832,9 +900,11 @@
       if (pregunta.tipo === 'ordenar') {
         const hiddens = cont.querySelectorAll(`input[data-orden="${pregunta.id}"]`);
         if (hiddens.length === 0) return undefined;
+        const tocado = Array.from(hiddens).some(h => h.dataset.tocado === '1');
+        if (!tocado) return undefined;
         return JSON.stringify(Array.from(hiddens).sort((a, b) => parseInt(a.dataset.pos) - parseInt(b.dataset.pos)).map(h => parseInt(h.value)));
       }
-      if (pregunta.tipo === 'completar' && pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0) {
+      if (pregunta.tipo === 'completar' && pregunta.huecos && Array.isArray(pregunta.huecos) && pregunta.huecos.length > 0 && TIENE_MARCADOR.test(pregunta.texto || '')) {
         const inputs = cont.querySelectorAll(`.pregunta-examen__hueco-input[data-hidx][data-pid="${pregunta.id}"]`);
         if (inputs.length === 0) return undefined;
         const arr = new Array(pregunta.huecos.length).fill('');

@@ -1,0 +1,295 @@
+/* === Editor: Drag-and-drop === */
+.editor-pregunta {
+  position: relative;
+  transition: transform var(--transicion-rapida), opacity var(--transicion-rapida);
+}
+
+.editor-pregunta--dragging {
+  opacity: 0.5;
+  transform: scale(0.98);
+}
+
+.editor-pregunta--drop {
+  border-top: 3px solid var(--color-acento) !important;
+}
+
+.editor-pregunta__drag-handle {
+  cursor: grab;
+  color: var(--color-texto-terciario);
+  padding: 4px;
+  opacity: 0;
+  transition: opacity var(--transicion-rapida);
+  display: flex;
+  align-items: center;
+}
+
+.editor-pregunta__drag-handle:active {
+  cursor: grabbing;
+}
+
+.editor-pregunta:hover .editor-pregunta__drag-handle {
+  opacity: 1;
+}
+
+/* === Editor: Acciones de pregunta === */
+.editor-pregunta__acciones {
+  display: flex;
+  gap: var(--espaciado-xxs);
+  align-items: center;
+}
+
+.editor-pregunta__accion-btn {
+  background: none;
+  border: none;
+  cursor: pointer;
+  display: inline-flex;
+  padding: 4px;
+  border-radius: var(--radio-sm);
+  transition: background var(--transicion-rapida);
+  min-height: auto;
+}
+
+.editor-pregunta__accion-btn:hover {
+  background: var(--color-fondo-alt);
+}
+
+.editor-pregunta__accion-btn--eliminar {
+  color: var(--color-error);
+}
+
+.editor-pregunta__accion-btn--mover {
+  color: var(--color-texto-terciario);
+}
+
+.editor-pregunta__accion-btn--duplicar {
+  color: var(--color-texto-secundario);
+}
+
+/* === Editor: Relacionar visual === */
+.editor-relacionar__pares {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.editor-relacionar__par {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+}
+
+.editor-relacionar__par input {
+  flex: 1;
+}
+
+.editor-relacionar__flecha {
+  color: var(--color-acento);
+  font-weight: 700;
+}
+
+/* === Editor: Ordenar visual === */
+.editor-ordenar__elementos {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.editor-ordenar__elemento {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+}
+
+.editor-ordenar__numero {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radio-sm);
+  background: var(--color-acento-soft);
+  color: var(--color-acento-fuerte);
+  font-weight: 700;
+  font-size: var(--texto-xs);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.editor-ordenar__elemento input {
+  flex: 1;
+}
+
+.editor-ordenar__drag-handle {
+  cursor: grab;
+  color: var(--color-texto-terciario);
+  padding: 4px;
+  display: flex;
+  align-items: center;
+}
+
+.editor-ordenar__drag-handle:active {
+  cursor: grabbing;
+}
+
+.editor-ordenar__elemento--dragging {
+  opacity: 0.5;
+}
+
+.editor-ordenar__elemento--drop {
+  border-top: 2px solid var(--color-acento);
+}
+
+/* === Editor: Relacionar mapping dropdown === */
+.editor-relacionar__mapeo {
+  margin-top: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-md);
+  border: 1px solid var(--color-borde);
+}
+
+.editor-relacionar__mapeo-fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xxs) 0;
+}
+
+.editor-relacionar__mapeo-izq {
+  flex: 1;
+  font-size: var(--texto-sm);
+  padding: 4px 8px;
+  background: var(--color-fondo);
+  border-radius: var(--radio-sm);
+  border: 1px solid var(--color-borde);
+  word-break: break-word;
+}
+
+.editor-relacionar__mapeo-flecha {
+  color: var(--color-acento);
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.editor-relacionar__mapeo-select {
+  flex: 1;
+  font-size: var(--texto-sm);
+}
+
+/* === Preview: Inline hueco (completar) === */
+.preview-hueco {
+  display: inline-block;
+  padding: 0 8px;
+  min-width: 60px;
+  border-bottom: 2px dashed var(--color-acento);
+  color: var(--color-acento);
+  font-weight: 600;
+  font-size: var(--texto-sm);
+  cursor: help;
+}
+
+/* === Preview: Related pair === */
+.preview-relacionar__row {
+  font-size: var(--texto-sm);
+}
+
+/* === Editor: Preview banner === */
+.editor-preview-banner {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-sm);
+  padding: var(--espaciado-sm);
+  background: var(--color-acento-soft);
+  border-radius: var(--radio-md);
+  color: var(--color-acento-fuerte);
+  font-size: var(--texto-sm);
+  font-weight: 600;
+}
+
+/* === Editor: Draft indicator === */
+.editor-draft-indicator {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+}
+
+.editor-draft-indicator--saved {
+  color: var(--color-exito);
+}
+
+@media (max-width: 768px) {
+  .editor-pregunta__drag-handle {
+    display: none;
+  }
+
+  /* Mapeo de relación pasa a vertical en pantallas estrechas */
+  .editor-relacionar__mapeo-fila {
+    flex-wrap: wrap;
+    gap: var(--espaciado-xxs);
+  }
+  .editor-relacionar__mapeo-izq {
+    flex-basis: 100%;
+  }
+  .editor-relacionar__mapeo-select {
+    flex-basis: 100%;
+  }
+
+  /* Pares de relación / ordenar elementos: padding reducido */
+  .editor-relacionar__par,
+  .editor-ordenar__elemento {
+    padding: var(--espaciado-xxs) var(--espaciado-xs);
+  }
+}
+
+@media (max-width: 480px) {
+  select[data-campo="tipo"] {
+    min-width: 0;
+    width: 100%;
+    font-size: var(--texto-xs);
+  }
+
+  .editor-pregunta__accion-btn {
+    min-width: 32px;
+    min-height: 32px; /* diana táctil cómoda al hacer clic */
+    padding: var(--espaciado-xxs);
+  }
+
+  .editor-relacionar__par input,
+  .editor-ordenar__elemento input {
+    font-size: var(--texto-sm);
+  }
+
+  .editor-ordenar__numero {
+    width: 24px;
+    height: 24px;
+  }
+
+  .editor-preview-banner {
+    font-size: var(--texto-xs);
+    padding: var(--espaciado-xs);
+  }
+
+  .preview-hueco {
+    min-width: 40px;
+    padding: 0 6px;
+  }
+}
+
+@media (max-width: 360px) {
+  .editor-relacionar__mapeo {
+    padding: var(--espaciado-xs);
+  }
+  .editor-relacionar__mapeo-flecha {
+    font-size: var(--texto-sm);
+  }
+}

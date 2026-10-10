@@ -5,6 +5,14 @@
     {
       "source": "/o/:tipo/:id",
       "destination": "/api/og"
+    },
+    {
+      "source": "/e/:token",
+      "destination": "/examen.html"
+    },
+    {
+      "source": "/examen.html",
+      "destination": "/examen.html"
     }
   ],
   "headers": [

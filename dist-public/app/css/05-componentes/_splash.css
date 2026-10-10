@@ -1,0 +1,192 @@
+/* ============================================================
+   _splash.css - Splash Screen
+   ============================================================ */
+
+.splash-screen {
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  /* La pantalla inicial siempre conserva el fondo blanco, incluso si el
+     tema guardado es oscuro; evita mostrar la oveja sobre fondo negro. */
+  background: #fff !important;
+  color: #0f172a;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-lg);
+  padding: var(--espaciado-xl);
+  transition: opacity 900ms var(--easing-smooth), visibility 0s linear 900ms;
+}
+
+.splash-screen--loaded {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+/* ===== LOGO ===== */
+.splash-screen__logo {
+  width: 80px;
+  height: 80px;
+  border-radius: var(--radio-xl);
+  background: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: var(--sombra-md);
+  animation: splash-logo-pop var(--transicion-lenta) forwards;
+  opacity: 0;
+  transform: scale(0.8);
+}
+
+.splash-screen__logo-img {
+  width: 76%;
+  height: 76%;
+  object-fit: contain;
+}
+
+/* ===== TEXTO ===== */
+.splash-screen__title {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: 800;
+  color: var(--color-texto);
+  margin: 0;
+  letter-spacing: -0.01em;
+  animation: splash-text-in var(--transicion-normal) 0.2s forwards;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+/* ===== PROGRESS BAR ===== */
+.splash-screen__progress {
+  width: min(240px, 60vw);
+  height: 3px;
+  background: #f1f5f9;
+  border-radius: var(--radio-pill);
+  overflow: hidden;
+  animation: splash-text-in var(--transicion-normal) 0.4s forwards;
+  opacity: 0;
+  transform: translateY(12px);
+}
+
+.splash-screen__bar {
+  width: 0%;
+  height: 100%;
+  background: #2563eb;
+  border-radius: var(--radio-pill);
+  animation: splash-progress var(--transicion-lenta) forwards;
+}
+
+/* ===== STATUS TEXT ===== */
+.splash-screen__status {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  margin: 0;
+  animation: splash-text-in var(--transicion-normal) 0.5s forwards;
+  opacity: 0;
+  transform: translateY(12px);
+  min-height: 1.5em;
+  transition: opacity var(--transicion-rapida);
+}
+
+/* ===== ANIMATIONS ===== */
+@keyframes splash-logo-pop {
+  0% {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes splash-text-in {
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes splash-progress {
+  0% { transform: scaleX(0); }
+  20% { transform: scaleX(.15); }
+  40% { transform: scaleX(.35); }
+  60% { transform: scaleX(.55); }
+  80% { transform: scaleX(.8); }
+  95% { transform: scaleX(.95); }
+  100% { transform: scaleX(1); }
+}
+
+/* ===== DARK MODE ===== */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) .splash-screen__logo {
+    box-shadow: var(--sombra-md);
+  }
+}
+
+:root[data-theme="dark"] .splash-screen__logo {
+  box-shadow: var(--sombra-md);
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+  .splash-screen__logo,
+  .splash-screen__title,
+  .splash-screen__progress,
+  .splash-screen__status {
+    animation: none !important;
+    opacity: 1;
+    transform: none;
+  }
+
+  .splash-screen__bar {
+    animation: none !important;
+    transform: scaleX(1);
+  }
+
+  .splash-screen--loaded {
+    opacity: 0;
+    visibility: hidden;
+    transition: none !important;
+  }
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 480px) {
+  .splash-screen__logo {
+    width: 64px;
+    height: 64px;
+  }
+
+  .splash-screen__logo-img {
+    width: 76%;
+    height: 76%;
+  }
+
+  .splash-screen__title {
+    font-size: var(--texto-xl);
+  }
+
+  .splash-screen__progress {
+    width: min(180px, 50vw);
+  }
+}
+
+@media (max-width: 360px) {
+  .splash-screen__logo {
+    width: 56px;
+    height: 56px;
+  }
+
+  .splash-screen__logo-img {
+    width: 76%;
+    height: 76%;
+  }
+
+  .splash-screen__title {
+    font-size: var(--texto-lg);
+  }
+}

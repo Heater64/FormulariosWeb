@@ -60,6 +60,10 @@
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  width: 44px;
+  height: 28px;
+  border-radius: var(--radio-pill);
+  transition: background-color var(--transicion-rapida) var(--easing-smooth);
 }
 
 .barra-nav-inferior__item svg {
@@ -70,13 +74,18 @@
               opacity var(--transicion-rapida) var(--easing-apple);
 }
 
-/* --- Estado ACTIVO: solo icono en color acento --- */
+/* --- Estado ACTIVO: icono en acento sobre píldora suave (DailyHub) --- */
 .barra-nav-inferior__item--activo {
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
+  font-weight: 700;
+}
+
+.barra-nav-inferior__item--activo .barra-nav-inferior__icono {
+  background: var(--color-acento-soft);
 }
 
 .barra-nav-inferior__item--activo svg {
-  transform: scale(1.06);
+  transform: scale(1.04);
 }
 
 /* --- Item destacado (Estudio): centrado y un poco más grande --- */

@@ -11,7 +11,7 @@
 @media (prefers-color-scheme: dark) {
   :root:not([data-theme="light"]) {
     --login-texto-acento: #0C0A09;
-    --login-error: #FCA5A5;
+    --login-error: #F87171;
     --login-acento-ring: rgba(12, 10, 9, 0.28);
   }
   /* Sin degradado azul en el panel de marca en modo oscuro */
@@ -20,7 +20,7 @@
 
 :root[data-theme="dark"] {
   --login-texto-acento: #0C0A09;
-  --login-error: #FCA5A5;
+  --login-error: #F87171;
   --login-acento-ring: rgba(12, 10, 9, 0.28);
 }
 :root[data-theme="dark"] .login-marca::before { display: none; }
@@ -750,7 +750,7 @@
   width: 100%;
   max-width: 760px;
   font-size: var(--texto-sm);
-  color: #F5F5F4;
+  color: #E2E8F0;
 }
 
 .login-lightbox__pie strong { color: #FFFFFF; }

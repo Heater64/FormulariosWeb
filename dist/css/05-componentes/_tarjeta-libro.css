@@ -1,0 +1,159 @@
+/* ==========================================================================
+   Tarjeta Libro — una sola columna, diseño horizontal
+   ========================================================================== */
+
+.tarjeta-libro {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+  padding: var(--espaciado-md);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+  transition: var(--card-transition);
+  cursor: pointer;
+  min-height: var(--toque-minimo);
+}
+
+@media (hover: hover) {
+  .tarjeta-libro:hover {
+    box-shadow: var(--card-shadow-hover);
+    border-color: var(--color-acento-soft);
+    transform: var(--card-hover-lift);
+  }
+}
+
+.tarjeta-libro:active {
+  transform: scale(0.985);
+  transition-duration: var(--transicion-rapida);
+}
+
+/* ── Icono (libro o check verde) ─────────────────────────────────────── */
+.tarjeta-libro__icono {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radio-md);
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  transition: background var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.tarjeta-libro__icono svg {
+  width: 20px;
+  height: 20px;
+}
+
+.tarjeta-libro--completado .tarjeta-libro__icono {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+/* ── Info central (nombre + progreso + barra) ─────────────────────────── */
+.tarjeta-libro__info {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tarjeta-libro__nombre {
+  font-weight: 700;
+  font-size: var(--texto-base);
+  color: var(--color-texto);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.tarjeta-libro__progreso {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+}
+
+/* ── Barra de progreso ────────────────────────────────────────────────── */
+.tarjeta-libro__barra {
+  width: 100%;
+  height: 5px;
+  background: var(--color-fondo-alt);
+  border-radius: var(--radio-pill);
+  overflow: hidden;
+  margin-top: 2px;
+}
+
+.tarjeta-libro__barra--lleno {
+  height: 100%;
+  border-radius: var(--radio-pill);
+  width: 100%;
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--transicion-normal) var(--easing-apple);
+  will-change: transform;
+  /* Por defecto: azul (1-99%) */
+  background: linear-gradient(90deg, var(--color-acento), #60A5FA);
+}
+
+/* 0% → barra gris */
+.tarjeta-libro--vacio .tarjeta-libro__barra--lleno {
+  background: var(--color-borde);
+}
+
+/* 100% → barra verde */
+.tarjeta-libro--completado .tarjeta-libro__barra--lleno {
+  background: linear-gradient(90deg, var(--color-exito), #34D399);
+}
+
+/* ── Flecha derecha ───────────────────────────────────────────────────── */
+.tarjeta-libro__flecha {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  color: var(--color-texto-terciario);
+  transition: transform var(--transicion-rapida), color var(--transicion-rapida);
+}
+
+.tarjeta-libro__flecha svg {
+  width: 18px;
+  height: 18px;
+}
+
+.tarjeta-libro:hover .tarjeta-libro__flecha {
+  transform: translateX(2px);
+  color: var(--color-acento);
+}
+
+.tarjeta-libro--completado {
+  border-color: color-mix(in srgb, var(--color-exito) 40%, transparent);
+  background: linear-gradient(180deg, var(--color-exito-soft) 0%, var(--card-bg) 70%);
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+
+@media (max-width: 480px) {
+  .tarjeta-libro {
+    padding: var(--espaciado-sm);
+    gap: var(--espaciado-sm);
+  }
+  .tarjeta-libro__icono {
+    width: 34px;
+    height: 34px;
+  }
+  .tarjeta-libro__icono svg {
+    width: 17px;
+    height: 17px;
+  }
+  .tarjeta-libro__nombre {
+    font-size: var(--texto-sm);
+  }
+}

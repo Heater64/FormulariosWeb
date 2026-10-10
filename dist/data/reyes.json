@@ -1,0 +1,31 @@
+[
+  {
+    "nombre": "Reino Unido",
+    "periodo": "1050–930 a.C.",
+    "reyes": [
+      { "nombre": "Saúl", "reinado": "1050–1010 a.C.", "calificacion": 2, "etiqueta": "Rey infiel", "detalle": "Primer rey de Israel. Elegido por el pueblo, desobedeció a Dios y perdió el reino.", "refs": ["1 Samuel 9-31", "1 Crónicas 10"], "eventos": ["Elegido como primer rey", "Desobedeció a Dios en Gilgal", "Persiguió a David", "Murió en el monte Gilboa"], "personajes": ["David", "Samuel", "Jonatás"] },
+      { "nombre": "David", "reinado": "1010–970 a.C.", "calificacion": 5, "etiqueta": "Rey fiel", "detalle": "Segundo rey de Israel, hombre según el corazón de Dios. Autor de muchos Salmos.", "refs": ["1 Samuel 16–2 Samuel 24", "1 Reyes 1-2", "Salmos"], "eventos": ["Derrotó a Goliat", "Fugitivo de Saúl", "Conquistó Jerusalén", "Trasladó el Arca", "Creyó en Betsabé", "Rebelión de Absalón"], "personajes": ["Saúl", "Salomón", "Natán", "Absalón", "Betsabé", "Joaab"] },
+      { "nombre": "Salomón", "reinado": "970–930 a.C.", "calificacion": 3, "etiqueta": "Sabio pero cayó", "detalle": "Hijo de David, construyó el Templo. Su sabiduría era proverbial, pero las mujeres extranjeras apartaron su corazón.", "refs": ["1 Reyes 1-11", "2 Crónicas 1-9", "Proverbios", "Eclesiastés"], "eventos": ["Construyó el Templo", "Juzgó a las dos madres", "Recibió sabiduría de Dios", "Se alió con naciones paganas", "El reino se dividió"], "personajes": ["David", "Betsabé", "Jeroboam", "Rehoboam"] }
+    ]
+  },
+  {
+    "nombre": "Reino del Norte (Israel)",
+    "periodo": "930–722 a.C.",
+    "reyes": [
+      { "nombre": "Jeroboam I", "reinado": "930–909 a.C.", "calificacion": 1, "etiqueta": "Idólatra", "detalle": "Primer rey del norte. Creó becerros de oro para evitar que el pueblo subiera a Jerusalén.", "refs": ["1 Reyes 11-14"], "eventos": ["Dividió el reino", "Creó becerros de oro", "Profetizó su caída"], "personajes": ["Salomón", "Roboam", "Ajías"] },
+      { "nombre": "Acab", "reinado": "874–853 a.C.", "calificacion": 1, "etiqueta": "Muy malvado", "detalle": "El más malvado de los reyes del norte. Casó con Jezabel y promovió la idolatría.", "refs": ["1 Reyes 16-22"], "eventos": ["Construyó templo a Baal", "Enfrentó a Elías en el Carmelo", "Murió en batalla"], "personajes": ["Jezabel", "Elías", "Nabot"] },
+      { "nombre": "Jeojás", "reinado": "797–782 a.C.", "calificacion": 4, "etiqueta": "Fiel", "detalle": "Rey piadoso que restauró el templo y siguió a Dios.", "refs": ["2 Reyes 13:10-14"], "eventos": ["Restauró el templo", "Ganó batallas contra Siria"], "personajes": ["Eliseo"] }
+    ]
+  },
+  {
+    "nombre": "Reino del Sur (Juda)",
+    "periodo": "930–586 a.C.",
+    "reyes": [
+      { "nombre": "Roboam", "reinado": "930–913 a.C.", "calificacion": 2, "etiqueta": "Mixto", "detalle": "Hijo de Salomón. Su arrogancia causó la división del reino.", "refs": ["1 Reyes 12-14", "2 Crónicas 10-12"], "eventos": ["Rechazó consejo de ancianos", "Perdió las 10 tribus", "Permitió la idolatría"], "personajes": ["Salomón", "Jeroboam"] },
+      { "nombre": "Asa", "reinado": "910–869 a.C.", "calificacion": 4, "etiqueta": "Fiel", "detalle": "Rey piadoso que eliminó la idolatría y confió en Dios.", "refs": ["1 Reyes 15:9-24"], "eventos": ["Eliminó ídolos", "Confío en Dios contra Etiopía", "Enfermó de sus pies"], "personajes": ["Josafat"] },
+      { "nombre": "Josafat", "reinado": "872–848 a.C.", "calificacion": 4, "etiqueta": "Fiel", "detalle": "Rey justo que envió jueces por todo el reino y confió en Dios en la guerra.", "refs": ["1 Reyes 22", "2 Crónicas 17-20"], "eventos": ["Envió jueces por todo Judá", "Derrotó a Moab confiando en Dios", "Se alió con Acab"], "personajes": ["Asa", "Acab", "Jehú"] },
+      { "nombre": "Ezequías", "reinado": "715–686 a.C.", "calificacion": 5, "etiqueta": "Fiel", "detalle": "Reformador que confió en Dios contra Senaquerib y reformó el culto.", "refs": ["2 Reyes 18-20", "Isaías 36-39"], "eventos": ["Purificó el templo", "Derrotó a Asiria", "Se extendió su vida 15 años", "Mostró sus tesoros a Babilonia"], "personajes": ["Isaías", "Senaquerib", "Manasés"] },
+      { "nombre": "Josías", "reinado": "640–609 a.C.", "calificacion": 5, "etiqueta": "Fiel", "detalle": "El último rey fiel de Judá. Encontró el libro de la ley y renovó la alianza.", "refs": ["2 Reyes 22-23", "2 Crónicas 34-35"], "eventos": ["Encontró el libro de la ley", "Renovó la alianza", "Destruyó los lugares altos", "Murió en batalla"], "personajes": ["Hulda", "Azmón"] }
+    ]
+  }
+]

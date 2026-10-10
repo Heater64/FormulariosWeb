@@ -113,7 +113,7 @@
   height: 28px;
   border-radius: var(--radio-sm);
   background: var(--color-acento-soft);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
   font-weight: 700;
   font-size: var(--texto-xs);
   display: flex;
@@ -209,7 +209,7 @@
   padding: var(--espaciado-sm);
   background: var(--color-acento-soft);
   border-radius: var(--radio-md);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
   font-size: var(--texto-sm);
   font-weight: 600;
 }

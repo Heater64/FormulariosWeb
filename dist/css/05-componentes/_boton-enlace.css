@@ -1,0 +1,23 @@
+.btn-enlace {
+  background: none;
+  border: none;
+  color: var(--color-acento);
+  font: inherit;
+  font-size: inherit;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  transition: color var(--transicion-rapida);
+  min-height: auto;
+}
+
+.btn-enlace:hover {
+  color: var(--color-acento-hover);
+}
+
+.btn-enlace:focus-visible {
+  outline: 2px solid var(--color-borde-foco);
+  outline-offset: 2px;
+  border-radius: var(--radio-sm);
+}

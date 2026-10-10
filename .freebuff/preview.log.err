@@ -1,0 +1,157 @@
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m8  |      const base = 'https://esm.sh/@tiptap';
+9  |      const [core, starterKit, underline, taskList, taskItem, image, placeholder] = await Promise.all([
+10 |        import(base + '/core@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^
+11 |        import(base + '/starter-kit@2.11.0'),
+12 |        import(base + '/extension-underline@2.11.0'),[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m9  |      const [core, starterKit, underline, taskList, taskItem, image, placeholder] = await Promise.all([
+10 |        import(base + '/core@2.11.0'),
+11 |        import(base + '/starter-kit@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+12 |        import(base + '/extension-underline@2.11.0'),
+13 |        import(base + '/extension-task-list@2.11.0'),[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m10 |        import(base + '/core@2.11.0'),
+11 |        import(base + '/starter-kit@2.11.0'),
+12 |        import(base + '/extension-underline@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+13 |        import(base + '/extension-task-list@2.11.0'),
+14 |        import(base + '/extension-task-item@2.11.0'),[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m11 |        import(base + '/starter-kit@2.11.0'),
+12 |        import(base + '/extension-underline@2.11.0'),
+13 |        import(base + '/extension-task-list@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+14 |        import(base + '/extension-task-item@2.11.0'),
+15 |        import(base + '/extension-image@2.11.0'),[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m12 |        import(base + '/extension-underline@2.11.0'),
+13 |        import(base + '/extension-task-list@2.11.0'),
+14 |        import(base + '/extension-task-item@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+15 |        import(base + '/extension-image@2.11.0'),
+16 |        import(base + '/extension-placeholder@2.11.0'),[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m13 |        import(base + '/extension-task-list@2.11.0'),
+14 |        import(base + '/extension-task-item@2.11.0'),
+15 |        import(base + '/extension-image@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+16 |        import(base + '/extension-placeholder@2.11.0'),
+17 |      ]);[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[33m
+[0m14 |        import(base + '/extension-task-item@2.11.0'),
+15 |        import(base + '/extension-image@2.11.0'),
+16 |        import(base + '/extension-placeholder@2.11.0'),
+   |               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+17 |      ]);
+18 |      _modulos = {[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/componentes/editor-tiptap.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[33m
+[0m538|              raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(6, { ancho: '100%' })}</div>`;
+539|            }
+540|            await Promise.all(archivos.map((a) => import(resolver(a))));
+   |                                                         ^^^^^^^^^^^
+541|            const vista = obtener();
+542|            if (!vista || typeof vista.montar !== 'function') {[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[39m
+[2m20:41:52[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[33m
+[0m643|        if (!archivos.length) return;
+644|        const cargar = () => {
+645|          archivos.forEach((a) => { try { import(new URL(a, document.baseURI).href).catch(() => {}); } catch (e) {} });
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+646|        };
+647|        if ('requestIdleCallback' in window) {[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[39m
+[2m20:42:00[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m Failed to load source map for C:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/vendor/capacitor.js.
+Error: An error occurred while trying to read the map file at capacitor.js.map
+Error: ENOENT: no such file or directory, open 'C:\Users\darwi\Documents\Proyectos\FormulariosWeb\js\vendor\capacitor.js.map'
+    at async open (node:internal/fs/promises:640:25)
+    at async Object.readFile (node:internal/fs/promises:1287:14)
+    at async extractSourcemapFromFile (file:///C:/Users/darwi/Documents/Proyectos/FormulariosWeb/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:11154:53)
+    at async loadAndTransform (file:///C:/Users/darwi/Documents/Proyectos/FormulariosWeb/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35807:27)
+[2m20:42:05[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m Failed to load source map for C:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/vendor/lucide.min.js.
+Error: An error occurred while trying to read the map file at lucide.min.js.map
+Error: ENOENT: no such file or directory, open 'C:\Users\darwi\Documents\Proyectos\FormulariosWeb\js\vendor\lucide.min.js.map'
+    at async open (node:internal/fs/promises:640:25)
+    at async Object.readFile (node:internal/fs/promises:1287:14)
+    at async extractSourcemapFromFile (file:///C:/Users/darwi/Documents/Proyectos/FormulariosWeb/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:11154:53)
+    at async loadAndTransform (file:///C:/Users/darwi/Documents/Proyectos/FormulariosWeb/node_modules/vite/dist/node/chunks/dep-Dm0c1Wj2.js:35807:27)
+[2m21:10:36[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[33m
+[0m542|              raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(6, { ancho: '100%' })}</div>`;
+543|            }
+544|            await Promise.all(archivos.map((a) => import(resolver(a))));
+   |                                                         ^^^^^^^^^^^
+545|            const vista = obtener();
+546|            if (!vista || typeof vista.montar !== 'function') {[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[39m
+[2m21:10:36[22m [33m[1m[vite][22m[39m [33m[2m(client)[22m[39m [33mwarning: 
+[36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[33m
+[0m647|        if (!archivos.length) return;
+648|        const cargar = () => {
+649|          archivos.forEach((a) => { try { import(new URL(a, document.baseURI).href).catch(() => {}); } catch (e) {} });
+   |                                                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+650|        };
+651|        if ('requestIdleCallback' in window) {[0m[33m
+The above dynamic import cannot be analyzed by Vite.
+See [34mhttps://github.com/rollup/plugins/tree/master/packages/dynamic-import-vars#limitations[33m for supported dynamic import formats. If this is intended to be left as-is, you can use the /* @vite-ignore */ comment inside the import() call to suppress this warning.
+[33m[39m
+  Plugin: [35mvite:import-analysis[39m
+  File: [36mC:/Users/darwi/Documents/Proyectos/FormulariosWeb/js/core/index.js[39m

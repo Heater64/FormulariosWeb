@@ -12,19 +12,19 @@
   <meta name="color-scheme" content="light dark">
 
   <!-- Open Graph / Twitter: cómo se ve la web al compartir -->
-  <meta name="description" content="FormsBiblicos: estudio bíblico guiado capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta name="description" content="FormsBiblicos: crea exámenes, comparte un enlace individual con cada alumno y corregígelos desde el panel.">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="FormsBiblicos">
-  <meta property="og:title" content="FormsBiblicos — Estudio bíblico guiado">
-  <meta property="og:description" content="Estudia la Biblia capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta property="og:title" content="FormsBiblicos — Exámenes con enlace individual">
+  <meta property="og:description" content="Crea exámenes, comparte un enlace individual con cada alumno y corrígelos desde el panel.">
   <meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
   <meta property="og:image:width" content="1200">
   <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="FormsBiblicos — Estudio bíblico guiado">
+  <meta property="og:image:alt" content="FormsBiblicos — Exámenes">
   <meta property="og:locale" content="es_ES">
   <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FormsBiblicos — Estudio bíblico guiado">
-  <meta name="twitter:description" content="Estudia la Biblia capítulo a capítulo con lectura guiada, memorización con repetición espaciada y exámenes para tu grupo de estudio.">
+  <meta name="twitter:title" content="FormsBiblicos — Exámenes con enlace individual">
+  <meta name="twitter:description" content="Crea exámenes, comparte un enlace individual con cada alumno y corrígelos desde el panel.">
   <meta name="twitter:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
 
   <!-- PWA: instalable como aplicación (manifest + service worker) -->
@@ -40,7 +40,7 @@
   <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,400;0,6..72,500;0,6..72,600;0,6..72,700;1,6..72,400;1,6..72,500&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- ============================================================
        Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
@@ -98,61 +98,26 @@
   <link rel="stylesheet" href="css/04-objects/_grid.css">
   <link rel="stylesheet" href="css/04-objects/_flecha.css">
 
-  <!-- CSS: Components -->
+    <!-- CSS: Components -->
   <link rel="stylesheet" href="css/05-componentes/_boton-primario.css">
   <link rel="stylesheet" href="css/05-componentes/_boton-secundario.css">
+  <link rel="stylesheet" href="css/05-componentes/_boton-enlace.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-navegacion-inferior.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-capitulo.css">
-  <link rel="stylesheet" href="css/05-componentes/_celebracion.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-libro.css">
-  <link rel="stylesheet" href="css/05-componentes/_estudio.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-progreso.css">
-  <link rel="stylesheet" href="css/05-componentes/_barra-accion.css">
   <link rel="stylesheet" href="css/05-componentes/_modal.css">
-  <link rel="stylesheet" href="css/05-componentes/_pregunta-examen.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-pregunta.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
-  <link rel="stylesheet" href="css/05-componentes/_memorizacion-juego.css">
-  <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
-  <link rel="stylesheet" href="css/05-componentes/_update-dialog.css">
-
-  <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
-  <link rel="stylesheet" href="css/05-componentes/_btn-calidad.css">
-  <link rel="stylesheet" href="css/05-componentes/_seccion-admin.css">
   <link rel="stylesheet" href="css/05-componentes/_alerta.css">
-  <link rel="stylesheet" href="css/05-componentes/_zona-peligro.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-crear.css">
   <link rel="stylesheet" href="css/05-componentes/_switch.css">
   <link rel="stylesheet" href="css/05-componentes/_loading.css">
   <link rel="stylesheet" href="css/05-componentes/_sync-indicator.css">
   <link rel="stylesheet" href="css/05-componentes/_animaciones.css">
-
   <link rel="stylesheet" href="css/05-componentes/_skeleton.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-imagen.css">
   <link rel="stylesheet" href="css/05-componentes/_transiciones.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-huecos.css">
-  <link rel="stylesheet" href="css/05-componentes/_perfil.css">
-  <link rel="stylesheet" href="css/05-componentes/_login.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-estadistica.css">
-  <link rel="stylesheet" href="css/05-componentes/_boton-enlace.css">
-  <link rel="stylesheet" href="css/05-componentes/_calificaciones.css">
-  <link rel="stylesheet" href="css/05-componentes/_corregir-examen.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-preguntas.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-examenes.css">
   <link rel="stylesheet" href="css/05-componentes/_empty-state.css">
-  <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
-  <link rel="stylesheet" href="css/05-componentes/_examen-lista.css">
-  <link rel="stylesheet" href="css/05-componentes/_sugerencias.css">
-  <link rel="stylesheet" href="css/05-componentes/_explorar.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-dibujo.css">
-  <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
   <link rel="stylesheet" href="css/05-componentes/_splash.css">
-  <link rel="stylesheet" href="css/05-componentes/_admin-panel.css">
-  <link rel="stylesheet" href="css/05-componentes/_grupos.css">
-  <link rel="stylesheet" href="css/05-componentes/_desafios.css">
-  <link rel="stylesheet" href="css/05-componentes/_notificaciones.css">
   <link rel="stylesheet" href="css/05-componentes/_pwa-install.css">
+
+  <!-- CSS del panel de exámenes (inicio, exámenes, entregas, cuenta) -->
+  <link rel="stylesheet" href="css/05-componentes/_plataforma.css">
 
   <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -187,86 +152,45 @@
   <script src="js/core/eventBus.js" defer></script>
   <script src="js/core/errores.js" defer></script>
   <script src="js/core/router.js" defer></script>
-  <!-- Coordinador único de back: cierra modales/sheets con el back del sistema
-       (navegador, gesto Android y botón físico de la APK) antes de navegar. -->
+  <!-- Coordinador único de back: cierra modales con el back del sistema
+       (navegador y gesto Android) antes de navegar. -->
   <script src="js/core/back-navigation.js" defer></script>
   <!-- Gesto global swipe-derecha para retroceder (como iOS/Android) -->
   <script src="js/core/swipe-back.js" defer></script>
-  <!-- Barra inferior: ocultarse al hacer scroll y con el teclado abierto -->
+  <!-- Barra de navegación: se oculta mientras el teclado está abierto -->
   <script src="js/core/navigation.js" defer></script>
 
   <!-- JS: Configuración de entorno (modo demo, Supabase) — debe cargar antes
        que supabase-client.js y cualquier vista -->
   <script src="js/config/entorno.js" defer></script>
 
-  <!-- Campana de notificaciones de cabecera (sustituye al item de la barra inferior) -->
-  <script src="js/componentes/campana-notificaciones.js" defer></script>
-
-  <!-- JS: Notificaciones push nativas Android (FCM vía Capacitor) -->
-  <script src="js/services/fcm-messaging-adapter.js" defer></script>
-  <script src="js/services/push-notification-service.js" defer></script>
-
   <!-- JS: Data Repositories -->
   <script src="js/datos/supabase-client.js" defer></script>
   <script src="js/datos/auth-repository.js" defer></script>
   <script src="js/datos/examenes-repository.js" defer></script>
-  <script src="js/datos/memorizacion-repository.js" defer></script>
-  <script src="js/datos/sembrador-memorizacion.js" defer></script>
-  <script src="js/datos/notas-repository.js" defer></script>
-  <script src="js/datos/sugerencias-repository.js" defer></script>
+  <script src="js/datos/plataforma-repository.js" defer></script>
   <script src="js/datos/admin-repository.js" defer></script>
-  <script src="js/datos/grupos-repository.js" defer></script>
-  <script src="js/datos/desafios-repository.js" defer></script>
-  <script src="js/datos/notificaciones-repository.js" defer></script>
   <script src="js/datos/sync-queue.js" defer></script>
   <script src="js/utilidades/sync-status.js" defer></script>
   <script src="js/utilidades/connection-indicator.js" defer></script>
   <script src="js/utilidades/animaciones.js" defer></script>
   <script src="js/utilidades/haptica.js" defer></script>
   <script src="js/utilidades/gestos-navegacion.js" defer></script>
-
   <script src="js/utilidades/skeleton.js" defer></script>
   <script src="js/utilidades/memoria.js" defer></script>
   <script src="js/utilidades/accesibilidad.js" defer></script>
-  <script src="js/componentes/editor-imagen.js" defer></script>
-  <script src="js/componentes/editor-dibujo.js" defer></script>
-  <!-- Cargado como módulo: el archivo usa import() dinámico (esm.sh) y Vite le inyecta
-       un import de /@vite/client al inicio; como script clásico lanzaba
-       'Cannot use import statement outside a module' y el editor quedaba roto. -->
-  <script type="module" src="js/componentes/editor-tiptap.js"></script>
-  <script src="js/componentes/version-history.js" defer></script>
 
-  <!-- JS: Core (nuevos) -->
-  <script src="js/core/notifications.js" defer></script>
-  <script src="js/core/notification-service.js" defer></script>
-
-  <!-- JS: Domain Logic -->
-  <script src="js/dominio/repeticion-espaciada.js" defer></script>
+  <!-- JS: Dominio (cálculo y presentación de puntuaciones) -->
   <script src="js/dominio/puntuacion-examen.js" defer></script>
-  <script src="js/dominio/logros.js" defer></script>
-  <script src="js/dominio/maquina-estudio.js" defer></script>
-  <script src="js/dominio/progreso-lectura.js" defer></script>
-  <!-- Motor de ejercicios de memorización (construirSesion/generarEjercicio).
-       Debe cargar ANTES que las vistas que lo usan (vista-memorizacion,
-       vista-grupos retar, vista-desafio revancha): window.ejerciciosMemorizacion
-       se captura al cargar cada vista. Sin este script, "Retar" y la práctica
-       individual fallan con "Cannot read properties of undefined (construirSesion)". -->
-  <script src="js/dominio/ejercicios-memorizacion.js" defer></script>
 
-  <!-- JS: Components -->
-  <script src="js/componentes/editor-huecos.js" defer></script>
-  <script src="js/componentes/profile-editor.js" defer></script>
+  <!-- JS: Componentes compartidos del panel -->
+  <script src="js/componentes/panel-ui.js" defer></script>
   <script src="js/componentes/pwa-install.js" defer></script>
 
-  <!-- JS: Views (las pesadas se cargan bajo demanda desde el router) -->
-  <script src="js/vistas/vista-estudio.js" defer></script>
-  <script src="js/vistas/vista-capitulos.js" defer></script>
-  <script src="js/vistas/vista-sesion-estudio.js" defer></script>
+  <!-- JS: Vistas principales. El editor, las entregas y la cuenta se cargan
+       bajo demanda desde el router. -->
+  <script src="js/vistas/vista-panel.js" defer></script>
   <script src="js/vistas/vista-examenes.js" defer></script>
-  <script src="js/vistas/vista-memorizacion.js" defer></script>
-  <script src="js/vistas/vista-explorar.js" defer></script>
-  <script src="js/vistas/vista-notificaciones.js" defer></script>
-  <script src="js/vistas/vista-perfil.js" defer></script>
 
   <!-- JS: App Shell (module porque usa import() dinámico para vistas lazy;
        como script clásico Vite le inyecta un import de /@vite/client y
@@ -275,14 +199,6 @@
        el último script de la página, así que el orden no cambia. -->
   <script type="module" src="js/core/index.js"></script>
 
-  <!-- JS: Feedback háptico (vive en js/utilidades/haptica.js, auto-inicio) -->
-
-  <!-- JS: Indicadores de conexión y sincronización (auto-inicio en
-       js/utilidades/connection-indicator.js y sync-status.js) -->
-
-  <!-- JS: Teclado → ocultar barra inferior mientras se escribe (vive en
-       js/core/navigation.js, NavigationManager._initTeclado) -->
-
   <!-- PWA: registra el service worker (js/core/sw-register.js). En producción
        (https) activa la instalación y el modo offline; en desarrollo local
        (http) se omite para no interferir con el HMR de Vite. -->
@@ -290,7 +206,7 @@
 </head>
 <body>
   <!-- Splash Screen -->
-  <div id="splashScreen" class="splash-screen" role="status" aria-label="Cargando FormsBiblicos">
+  <div id="splashScreen" class="splash-screen" role="status" aria-label="Cargando la aplicación">
     <div class="splash-screen__logo" aria-hidden="true">
       <img src="assets/iconos/icono.svg" alt="" class="splash-screen__logo-img">
     </div>

@@ -735,7 +735,7 @@
 .btn-toggle-panel--activo {
   background: var(--color-acento-soft);
   border-color: var(--color-acento);
-  color: var(--color-acento);
+  color: var(--color-acento-fuerte);
 }
 
 /* Cabecera del panel lateral con botón cerrar */

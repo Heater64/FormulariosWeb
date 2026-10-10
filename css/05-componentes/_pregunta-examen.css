@@ -85,6 +85,44 @@ select[data-campo="tipo"] {
   min-width: 180px;
 }
 
+/* Selector visual de tipos en editor */
+.selector-tipo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+  gap: var(--espaciado-sm);
+}
+
+.selector-tipo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-md);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  background: var(--color-fondo-tarjeta);
+  text-align: left;
+  cursor: pointer;
+  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida), background var(--transicion-rapida);
+}
+
+.selector-tipo:hover {
+  border-color: var(--color-acento);
+  background: var(--color-acento-soft);
+  box-shadow: 0 0 0 1px var(--color-acento-soft);
+}
+
+.selector-tipo__nombre {
+  font-weight: var(--texto-peso-semibold);
+  font-size: var(--texto-sm);
+  color: var(--color-texto);
+}
+
+.selector-tipo__descripcion {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  line-height: 1.4;
+}
+
 select[data-campo="tipo"]:focus {
   box-shadow: 0 0 0 3px var(--color-acento);
   border-color: var(--color-acento);

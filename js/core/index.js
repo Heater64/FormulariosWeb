@@ -24,12 +24,6 @@
       // Recuperar sesión (async: valida el JWT de Supabase Auth, 028)
       await this._recuperarSesion();
     
-      // Tras restaurar la sesión, registrar push en segundo plano. No bloquea
-      // el montaje de la primera vista y el listener de login cubre el resto.
-      if (window.pushNotificationService) {
-        window.pushNotificationService.iniciar().catch(() => {});
-      }
-
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
     
@@ -69,10 +63,6 @@
         if (document.visibilityState === 'visible') this._refrescarSesionSilenciosa();
       });
 
-      // Sistema de notificaciones centralizado: poller + realtime + recordatorios
-      // (todo delegado a notification-service; ver js/core/notification-service.js)
-      if (window.notificationService) window.notificationService.iniciar();
-
       // Heartbeat: actualizar ultimo_acceso periódicamente
       this._iniciarHeartbeat();
 
@@ -103,30 +93,22 @@
         // Marca del centro: configuracion ya no es legible sin sesión (028)
         this._aplicarMarca();
 
-        // Navegar a /estudio ANTES de esperar el welcome (1200ms): evita que un
+        // Navegar a /inicio ANTES de esperar el welcome (1200ms): evita que un
         // cambio de ruta del usuario durante el arranque sea sobrescrito.
         const esPrimeraVez = !localStorage.getItem('fb_setup_completado') &&
           (!usuario.preferencias || (usuario.preferencias.tema !== null && !usuario.preferencias.tema));
                           
         if (esPrimeraVez) {
-          router.reemplazar('/estudio');
+          router.reemplazar('/inicio');
           setTimeout(() => this._mostrarSetupInicial(usuario), 400);
         } else {
-          router.reemplazar('/estudio');
+          router.reemplazar('/inicio');
         }
 
         if (window._loginUI) {
           await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
         }
 
-        // Notificaciones: arranca poller/realtime/recordatorios tras el login
-        if (window.notificationService) window.notificationService.iniciar();
-
-        // Push nativas Android: registrar el token del dispositivo y, si la
-        // app se abrió pulsando una notificación, navegar al destino.
-        if (window.pushNotificationService) {
-          window.pushNotificationService.iniciar().catch(() => {});
-        }
       });
 
       window.eventBus.suscribir('auth:logout', () => {
@@ -134,8 +116,6 @@
         localStorage.removeItem('fb_recordar_sesion');
         sessionStorage.removeItem('fb_usuario');
         if (window.preferencias) window.preferencias.aplicar();
-        if (window.notificationService) window.notificationService.detener();
-        if (window.pushNotificationService) window.pushNotificationService.detener();
         irAlLogin();
       });
 
@@ -393,10 +373,10 @@
           const loading = window._loginUI.crearLoading('Cargando tu progreso...');
           setTimeout(() => { 
             loading.remove(); 
-            router.reemplazar('/estudio'); 
+            router.reemplazar('/inicio');
           }, 600);
         } else {
-          router.reemplazar('/estudio');
+          router.reemplazar('/inicio');
         }
         return;
       }
@@ -541,16 +521,18 @@
         }
       } catch (e) { /* caché corrupta: usar nombre por defecto */ }
 
-      // DEV: 'Memoria' y 'Explorar' ocultas en la navegación hasta su lanzamiento — quitar el filtro para restaurarlas.
+      // Navegación del panel privado: pocas secciones y siempre las mismas.
       const items = [
-        { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes' },
-        { ruta: '/memorizacion', icono: 'brain', texto: 'Memoria' },
-        { ruta: '/estudio', icono: 'book-open', texto: 'Estudio', centro: true },
-        { ruta: '/explorar', icono: 'compass', texto: 'Explorar' },
-        { ruta: '/perfil', icono: 'user', texto: 'Perfil' }
-      ].filter(i => !['/memorizacion', '/explorar'].includes(i.ruta));
+        { ruta: '/inicio', icono: 'home', texto: 'Inicio' },
+        { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
+        { ruta: '/entregas', icono: 'inbox', texto: 'Entregas' },
+        { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
+      ];
+      const destinoCuenta = '/cuenta';
       const rutaActual = router.pathActual();
-      const esActivo = (r) => rutaActual === r || (r !== '/perfil' && rutaActual.startsWith(r + '/')) || (r === '/perfil' && (rutaActual === '/grupos' || rutaActual.startsWith('/perfil/config/') || rutaActual.startsWith('/perfil/acerca/')));
+      const esActivo = (r) => rutaActual === r
+        || rutaActual.startsWith(r + '/')
+        || (r === '/examenes' && (rutaActual.startsWith('/editor') || rutaActual.startsWith('/corregir')));
 
       // Persistir sección activa en localStorage — fuente única de verdad
       const itemActivo = items.find(i => esActivo(i.ruta));
@@ -586,7 +568,7 @@
           `).join('')}
         </div>
         <div class="barra-nav-inferior__usuario">
-          <a class="barra-nav-inferior__usuario-perfil" href="#!/perfil" data-nav aria-label="Ir a mi perfil">
+          <a class="barra-nav-inferior__usuario-perfil" href="#!${destinoCuenta}" data-nav aria-label="Ir a Mi cuenta">
             ${avatarHtml}
             <span class="barra-nav-inferior__usuario-info">
               <span class="barra-nav-inferior__usuario-nombre">${E(nombre)}</span>
@@ -677,70 +659,23 @@
       router.registrar('/', { 
         montar: () => { 
           const u = store.obtener('usuario'); 
-          u ? router.reemplazar('/estudio') : irAlLogin();
+          u ? router.reemplazar('/inicio') : irAlLogin();
         } 
       });
       // /login ya no es una pantalla del SPA: cualquier navegación a esa ruta
       // (logout, guardia, enlace antiguo guardado) redirige al login normal.
       router.registrar('/login', { montar: () => irAlLogin() });
-      router.registrar('/estudio', window.vistaEstudio);
-
-      router.registrar('/estudio/libro/:libro', window.vistaCapitulos);
-      router.registrar('/estudio/sesion/:libro/:capitulo', window.vistaSesionEstudio);
-      router.registrar('/leer/:libro/:capitulo', window.vistaSesionEstudio);
+      router.registrar('/inicio', window.vistaPanel);
       router.registrar('/examenes', window.vistaExamenes);
-      router.registrar('/memorizacion', window.vistaMemorizacion);
-      router.registrar('/explorar', window.vistaExplorar);
-      router.registrar('/perfil', window.vistaPerfil);
-      router.registrar('/notificaciones', window.vistaNotificaciones);
-      router.registrar('/perfil/config/:seccion', window.vistaPerfil);
-      router.registrar('/perfil/acerca/:seccion', window.vistaPerfil);
-      router.registrar('/perfil/config', { montar: () => router.navegar('/perfil') });
-      router.registrar('/perfil/acerca', { montar: () => router.navegar('/perfil') });
+      router.registrar('/cuenta', this._vistaLazy(['./js/vistas/vista-cuenta.js'], () => window.vistaCuenta));
 
       // ── Vistas pesadas: carga perezosa bajo demanda ──
       // Nota: /editor/nuevo se registra ANTES de /editor/:id para que la ruta
       // exacta no quede capturada por el parámetro (el router usa orden de registro).
-      router.registrar('/mapa', this._vistaLazy(['./js/vistas/vista-mapa.js'], () => window.vistaMapa));
-      router.registrar('/tomar/:id', this._vistaLazy(['./js/vistas/vista-examen-tomar.js'], () => window.vistaExamenTomar));
       router.registrar('/editor/nuevo', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
       router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
-      router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-examen-corregir.js'], () => window.vistaExamenCorregir));
-      router.registrar('/calificaciones', this._vistaLazy(['./js/vistas/vista-calificaciones.js'], () => window.vistaCalificaciones));
-      router.registrar('/grupos', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
-      router.registrar('/grupos/:id', this._vistaLazy(['./js/vistas/vista-grupos.js'], () => window.vistaGrupos));
-      router.registrar('/desafio/:id', this._vistaLazy(['./js/vistas/vista-desafio.js'], () => window.vistaDesafio));
-      router.registrar('/admin', this._vistaLazy(['./js/vistas/admin/admin-comunes.js', './js/vistas/admin/vista-panel-admin.js'], () => window.vistaPanelAdmin));
-
-      // Guardia global: confirmar antes de salir de un desafío ACTIVO (en
-      // juego, cuenta atrás o esperando con el desafío en marcha). Cubre TODAS
-      // las salidas — barra inferior, botón atrás, notificaciones, enlaces —
-      // no solo el botón "Salir" de la vista. La vista marca _salidaConfirmada
-      // cuando su propio diálogo ya confirmó, para no preguntar dos veces.
-      router.registrarGuardia(async (ruta) => {
-        const v = window.vistaDesafio;
-        if (!v || typeof v._hayPartidaActiva !== 'function' || !v._hayPartidaActiva()) return true;
-        if (v._salidaConfirmada) return true;
-        if (ruta === '/desafio/' + v._desafioId) return true;
-        const ok = await window.helpers.confirmar(
-          '¿Seguro que quieres salir? Si sales ahora se contará como abandono.',
-          { titulo: 'Salir del desafío', textoConfirmar: 'Salir' }
-        );
-        if (!ok) {
-          // El hash YA cambió (evento hashchange). Revertirlo SIN disparar otro
-          // hashchange (history.replaceState no emite eventos) para que la
-          // partida siga exactamente donde estaba, sin re-montar la vista.
-          window.history.replaceState(null, '', '#!/desafio/' + v._desafioId);
-          return false;
-        }
-        v._salidaConfirmada = true;
-        // El diálogo promete "se contará como abandono": cumplirlo, igual que
-        // el botón Salir de la vista (si no, el rival quedaría esperando para
-        // siempre, sobre todo en desafíos sin límite de tiempo). Fire-and-forget:
-        // el router navega en paralelo.
-        if (typeof v._abandonarPartida === 'function') v._abandonarPartida();
-        return true;
-      });
+      router.registrar('/entregas', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
+      router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
     },
 
     // Precarga inteligente: cuando el dispositivo queda inactivo tras el
@@ -752,11 +687,8 @@
       if (!usuario) return;
       const rol = usuario.rol;
       const archivos = [];
-      if (rol === 'owner' || rol === 'admin') {
-        archivos.push('./js/vistas/admin/admin-comunes.js', './js/vistas/admin/vista-panel-admin.js');
-      }
       if (rol === 'owner' || rol === 'admin' || rol === 'editor') {
-        archivos.push('./js/vistas/vista-examen-editor.js', './js/vistas/vista-examen-corregir.js', './js/vistas/vista-calificaciones.js');
+        archivos.push('./js/vistas/vista-examen-editor.js', './js/vistas/vista-entregas.js');
       }
       if (!archivos.length) return;
       const cargar = () => {

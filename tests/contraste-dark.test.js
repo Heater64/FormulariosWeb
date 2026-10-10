@@ -20,8 +20,8 @@ function contraste(a, b) {
 }
 
 describe('Contraste AA en modo oscuro (texto sobre relleno de acento)', () => {
-  const ACENTO_DARK = '#7DB7FF';
-  const ACENTO_HOVER_DARK = '#A8D1FF';
+  const ACENTO_DARK = '#3B82F6';
+  const ACENTO_HOVER_DARK = '#60A5FA';
   const TEXTO_DARK = '#0C0A09'; // --color-texto-acento en oscuro
 
   it('blanco sobre el acento oscuro NO cumple AA (motivo del cambio)', () => {
@@ -37,9 +37,9 @@ describe('Contraste AA en modo oscuro (texto sobre relleno de acento)', () => {
   });
 
   it('los estados semánticos luminosos admiten texto oscuro', () => {
-    expect(contraste(TEXTO_DARK, '#5FE0A0')).toBeGreaterThanOrEqual(4.5);
-    expect(contraste(TEXTO_DARK, '#FF8A92')).toBeGreaterThanOrEqual(4.5);
-    expect(contraste(TEXTO_DARK, '#FFD166')).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(TEXTO_DARK, '#4ADE80')).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(TEXTO_DARK, '#F87171')).toBeGreaterThanOrEqual(4.5);
+    expect(contraste(TEXTO_DARK, '#FBBF24')).toBeGreaterThanOrEqual(4.5);
     expect(contraste(TEXTO_DARK, '#72D4FF')).toBeGreaterThanOrEqual(4.5);
   });
 
@@ -48,5 +48,54 @@ describe('Contraste AA en modo oscuro (texto sobre relleno de acento)', () => {
     for (const c of mazos) {
       expect(contraste(TEXTO_DARK, c)).toBeGreaterThanOrEqual(4.5);
     }
+  });
+
+  it('texto oscuro sobre los fundamentos de los temas de cuestionarios cumple AA', () => {
+    const fondos = ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B', '#10B981', '#EF4444', '#06B6D4', '#84CC16'];
+    for (const c of fondos) {
+      expect(contraste(TEXTO_DARK, c)).toBeGreaterThanOrEqual(4.5);
+    }
+  });
+
+  it('el botón de acción sobre el fondo de acento cumple AA', () => {
+    const accion = '#3B82F6';
+    expect(contraste(TEXTO_DARK, accion)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto sobre el botón de acción en hover cumple AA', () => {
+    const hover = '#60A5FA';
+    expect(contraste(TEXTO_DARK, hover)).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el verde semáforo A4C200 cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#4ADE80')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el verde semáforo A4C200 cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#A4C200')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el azul neón 00FFFF cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#00FFFF')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el verde neón 00FF00 cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#00FF00')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el magenta neón FF00FF cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#FF00FF')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el cyan neón FF00FF cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#FF00FF')).toBeGreaterThanOrEqual(4.5);
+  });
+
+  it('el texto oscuro sobre el violeta brillante 8A2BE2 NO cumple AA (debe usarse tono más luminoso)', () => {
+    expect(contraste(TEXTO_DARK, '#8A2BE2')).toBeLessThan(4.5);
+  });
+
+  it('el texto oscuro sobre el borde de enlace #93C5FD cumple AA', () => {
+    expect(contraste(TEXTO_DARK, '#93C5FD')).toBeGreaterThanOrEqual(4.5);
   });
 });

@@ -48,6 +48,12 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(sw).toContain("addEventListener('install'");
     expect(sw).toContain("addEventListener('fetch'");
     expect(swRegister).toContain("serviceWorker.register('/sw.js', { scope: '/' })");
+    // El aviso de actualización debe poder cerrarse (bug: no desaparecía)
+    expect(swRegister).toContain('aria-label');
+    // SKIP_WAITING se envía al SW que está esperando (reg.waiting), nunca al
+    // controller (el viejo, que puede ignorar el mensaje y dejar el aviso pegado)
+    expect(swRegister).toMatch(/reg\.waiting\.postMessage\(/);
+    expect(swRegister).not.toContain('serviceWorker.controller.postMessage');
   });
 
   test('el login público queda dentro del mismo scope standalone que /app', () => {

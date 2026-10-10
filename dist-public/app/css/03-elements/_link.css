@@ -1,0 +1,14 @@
+a {
+  color: var(--color-acento);
+  transition: color var(--transicion-rapida);
+}
+
+a:hover {
+  color: var(--color-acento-hover);
+}
+
+a:focus-visible {
+  outline: 2px solid var(--color-borde-foco);
+  outline-offset: 2px;
+  border-radius: var(--radio-sm);
+}

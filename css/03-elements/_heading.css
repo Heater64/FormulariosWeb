@@ -4,15 +4,17 @@ h1, h2, h3, h4, h5, h6 {
   color: var(--color-texto);
 }
 
-/* Display headings use the serif face — restrained, editorial */
+/* DailyHub: títulos en Inter con peso alto y tracking cerrado */
 h1, h2 {
   font-family: var(--fuente-display);
-  font-weight: 700;
-  letter-spacing: 0;
+  font-weight: 800;
+  letter-spacing: var(--texto-tracking-tight);
 }
 
 h3, h4, h5, h6 {
   font-family: var(--fuente-base);
+  font-weight: 700;
+  letter-spacing: var(--texto-tracking-tight);
 }
 
 h1 { font-size: var(--texto-3xl); }

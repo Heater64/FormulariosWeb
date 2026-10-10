@@ -1,0 +1,156 @@
+/* === TipTap Editor Styles === */
+.tiptap-editor {
+  outline: none;
+  min-height: 200px;
+  padding: var(--espaciado-sm);
+  font: inherit;
+  line-height: 1.7;
+  color: var(--color-texto);
+}
+
+.tiptap-editor:focus {
+  border-color: var(--color-acento);
+  box-shadow: 0 0 0 2px var(--color-acento-soft);
+}
+
+.tiptap-editor p {
+  margin: 0.25em 0;
+}
+
+.tiptap-editor h3 {
+  margin: 0.5em 0 0.25em;
+  font-size: var(--texto-base);
+  font-weight: 600;
+  color: var(--color-texto);
+}
+
+.tiptap-editor ul,
+.tiptap-editor ol {
+  margin: 0.25em 0;
+  padding-left: 1.5em;
+}
+
+.tiptap-editor li {
+  margin-bottom: 0.15em;
+}
+
+.tiptap-editor em {
+  font-style: italic;
+}
+
+.tiptap-editor strong {
+  font-weight: 600;
+}
+
+.tiptap-editor u {
+  text-decoration: underline;
+}
+
+.tiptap-editor p.is-editor-empty:first-child::before {
+  content: attr(data-placeholder);
+  color: var(--color-texto-terciario);
+  pointer-events: none;
+  float: left;
+  height: 0;
+}
+
+/* === Elementos del bloc de notas === */
+
+.tiptap-editor ul[data-type='taskList'] {
+  list-style: none;
+  padding-left: 0;
+}
+
+.tiptap-editor ul[data-type='taskList'] li {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.5em;
+}
+
+.tiptap-editor ul[data-type='taskList'] li > label {
+  margin-top: 0.3em;
+  flex-shrink: 0;
+}
+
+.tiptap-editor ul[data-type='taskList'] li > div {
+  flex: 1;
+  min-width: 0;
+}
+
+.tiptap-editor ul[data-type='taskList'] input[type='checkbox'] {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--color-acento);
+}
+
+.tiptap-editor blockquote {
+  border-left: 3px solid var(--color-acento);
+  margin: 0.75em 0;
+  padding: 0.25em 1em;
+  color: var(--color-texto-secundario);
+  font-style: italic;
+}
+
+.tiptap-editor hr {
+  border: none;
+  border-top: 1px solid var(--color-borde);
+  margin: 1.25em 0;
+}
+
+.tiptap-editor img {
+  max-width: 100%;
+  height: auto;
+  border-radius: var(--radio-md);
+  margin: 0.5em 0;
+}
+
+.tiptap-editor img.ProseMirror-selectednode {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
+.tiptap-editor h1 {
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.25;
+}
+
+.tiptap-editor h2 {
+  font-size: var(--texto-xl);
+  font-weight: 700;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.3;
+}
+
+.tiptap-editor h3 {
+  font-size: var(--texto-lg);
+  font-weight: 600;
+  margin: 0.6em 0 0.3em;
+  line-height: 1.35;
+}
+
+/* === Responsive TipTap === */
+@media (max-width: 480px) {
+  .tiptap-editor {
+    min-height: 140px;
+    padding: var(--espaciado-xs);
+    font-size: var(--texto-base);
+    line-height: 1.6;
+  }
+  .tiptap-editor h3 {
+    font-size: var(--texto-sm);
+  }
+  .tiptap-editor ul,
+  .tiptap-editor ol {
+    padding-left: 1.1em;
+  }
+}
+
+@media (max-width: 360px) {
+  .tiptap-editor {
+    min-height: 120px;
+    padding: var(--espaciado-xs) var(--espaciado-xxs);
+    font-size: var(--texto-sm);
+  }
+}

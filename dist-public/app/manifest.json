@@ -1,0 +1,39 @@
+{
+  "id": "/",
+  "name": "FormsBiblicos",
+  "short_name": "FormsBiblicos",
+  "description": "Crea exámenes, comparte un enlace individual con cada alumno y corrige las respuestas desde el panel",
+  "lang": "es",
+  "dir": "ltr",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "display_override": ["standalone"],
+  "orientation": "portrait-primary",
+  "background_color": "#FAFAF9",
+  "theme_color": "#2563EB",
+  "categories": ["education", "productivity"],
+  "prefer_related_applications": false,
+  "icons": [
+    { "src": "assets/iconos/192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "assets/iconos/512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "assets/iconos/192x192.png", "sizes": "192x192", "type": "image/png", "purpose": "maskable" },
+    { "src": "assets/iconos/512x512.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ],
+  "shortcuts": [
+    {
+      "name": "Mis exámenes",
+      "short_name": "Exámenes",
+      "description": "Ver y crear exámenes",
+      "url": "./index.html#!/examenes",
+      "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
+    },
+    {
+      "name": "Entregas",
+      "short_name": "Entregas",
+      "description": "Revisar y corregir entregas",
+      "url": "./index.html#!/entregas",
+      "icons": [{ "src": "assets/iconos/icono.svg", "sizes": "192x192" }]
+    }
+  ]
+}

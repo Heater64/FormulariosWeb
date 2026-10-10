@@ -309,7 +309,7 @@
 .desafio-estado svg { width: 12px; height: 12px; }
 
 .desafio-estado--ok     { background: var(--color-exito-soft); color: var(--color-exito); }
-.desafio-estado--activo { background: var(--color-acento-soft); color: var(--color-acento); }
+.desafio-estado--activo { background: var(--color-acento-soft); color: var(--color-acento-fuerte); }
 .desafio-estado--espera { background: var(--color-fondo-alt); color: var(--color-texto-terciario); }
 
 /* Lado derecho de la fila de jugador (badge + botón Eliminar) */

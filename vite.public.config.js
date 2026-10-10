@@ -63,7 +63,7 @@ export default defineConfig({
       }
       const offline = join(rootDir, 'public', 'offline.html');
       if (existsSync(offline)) copyFileSync(offline, join(outputDir, 'offline.html'));
-      for (const file of ['theme.js', 'login.js', 'contacto.js', 'legal.js', 'recuperar.js', 'registro.js', 'onboarding.js']) {
+      for (const file of ['theme.js', 'login.js', 'contacto.js', 'legal.js', 'recuperar.js', 'registro.js', 'onboarding.js', 'examen.js']) {
         const publicSource = join(rootDir, 'public-site', file);
         if (existsSync(publicSource)) copyFileSync(publicSource, join(outputDir, file));
       }

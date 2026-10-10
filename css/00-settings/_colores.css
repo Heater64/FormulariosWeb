@@ -29,15 +29,15 @@
   --color-naranja-500: #F97316;
   --color-naranja-600: #EA580C;
   --color-naranja-700: #C2410C;
-  /* ── Warm grays (stone, not slate) ── */
-  --color-gris-50: #FAFAF9;
-  --color-gris-100: #F5F5F4;
-  --color-gris-200: #E7E5E4;
-  --color-gris-300: #D6D3D1;
-  --color-gris-400: #A8A29E;
-  --color-gris-500: #78716C;
-  --color-gris-600: #57534E;
-  --color-gris-700: #44403C;
-  --color-gris-800: #292524;
-  --color-gris-900: #1C1917;
+  /* ── Cool grays (slate, DailyHub) ── */
+  --color-gris-50: #F8FAFC;
+  --color-gris-100: #F1F5F9;
+  --color-gris-200: #E2E8F0;
+  --color-gris-300: #CBD5E1;
+  --color-gris-400: #94A3B8;
+  --color-gris-500: #64748B;
+  --color-gris-600: #475569;
+  --color-gris-700: #334155;
+  --color-gris-800: #1E293B;
+  --color-gris-900: #0F172A;
 }

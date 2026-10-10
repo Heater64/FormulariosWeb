@@ -1,0 +1,190 @@
+.update-dialog-overlay {
+  z-index: 2100;
+}
+
+.update-dialog {
+  position: relative;
+  text-align: center;
+}
+
+.update-dialog__close {
+  position: absolute;
+  top: var(--espaciado-sm);
+  right: var(--espaciado-sm);
+  width: var(--toque-minimo);
+  height: var(--toque-minimo);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 0;
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-2xl);
+  cursor: pointer;
+}
+
+.update-dialog__close:hover,
+.update-dialog__close:focus-visible {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto);
+}
+
+.update-dialog__icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto var(--espaciado-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+  font-size: var(--texto-2xl);
+  font-weight: var(--texto-peso-bold);
+}
+
+.update-dialog__subtitle {
+  margin: calc(var(--espaciado-sm) * -1) 0 var(--espaciado-md);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+}
+
+.update-dialog__versions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--espaciado-xs);
+  margin-bottom: var(--espaciado-md);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+}
+
+.update-dialog__versions strong {
+  color: var(--color-acento);
+}
+
+.update-dialog__mandatory {
+  padding: var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  background: var(--color-aviso-soft);
+  color: var(--color-texto);
+  font-size: var(--texto-sm);
+  line-height: var(--texto-altura-linea-cuerpo);
+  text-align: left;
+}
+
+.update-dialog__notes {
+  margin-top: var(--espaciado-md);
+  text-align: left;
+}
+
+.update-dialog__notes h4 {
+  margin: 0 0 var(--espaciado-xs);
+  font-size: var(--texto-base);
+}
+
+.update-dialog__notes ul {
+  max-height: 180px;
+  margin: 0;
+  padding-left: var(--espaciado-lg);
+  overflow-y: auto;
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  line-height: var(--texto-altura-linea-cuerpo);
+}
+
+.update-dialog__size,
+.update-dialog__message,
+.update-dialog__loading p,
+.update-dialog__progress p {
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  line-height: var(--texto-altura-linea-cuerpo);
+}
+
+.update-dialog__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-lg);
+}
+
+.update-dialog__actions button {
+  min-height: var(--toque-minimo);
+}
+
+.update-dialog__loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--espaciado-sm);
+}
+
+.update-dialog__spinner {
+  width: 32px;
+  height: 32px;
+  border: 3px solid var(--color-acento-soft);
+  border-top-color: var(--color-acento);
+  border-radius: 50%;
+  animation: update-dialog-spin var(--transicion-lenta) linear infinite;
+}
+
+.update-dialog__check {
+  color: var(--color-exito);
+  font-size: var(--texto-3xl);
+  font-weight: var(--texto-peso-bold);
+}
+
+.update-dialog__progress {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: var(--espaciado-xs) var(--espaciado-sm);
+  align-items: center;
+  text-align: left;
+}
+
+.update-dialog__progress progress {
+  width: 100%;
+  height: var(--espaciado-xs);
+  grid-column: 1 / -1;
+  accent-color: var(--color-acento);
+}
+
+.update-dialog__progress p {
+  margin: 0;
+}
+
+.update-dialog__message--error {
+  padding: var(--espaciado-sm);
+  border-radius: var(--radio-md);
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  text-align: left;
+}
+
+.update-dialog__message--error p {
+  margin: 0;
+  color: inherit;
+}
+
+@keyframes update-dialog-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (max-width: 480px) {
+  .update-dialog__actions {
+    flex-direction: column-reverse;
+  }
+
+  .update-dialog__actions button {
+    width: 100%;
+    justify-content: center;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .update-dialog__spinner {
+    animation: none;
+  }
+}

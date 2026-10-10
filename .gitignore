@@ -1,37 +1,16 @@
-# Dependencias
-node_modules/
-yarn.lock
+# Build output for public site
+public-site/dist-public-public/
 
-# Variables de entorno
+# Test results
+test-results/
+
+# Environment / secrets
 .env
 .env.local
-.env.production
+.env.*
 
-# Archivos del sistema
-.DS_Store
-Thumbs.db
+# Local dev logs
 *.log
 
-# Editores
-.vscode/
-.idea/
-*.swp
-*.swo
-*.keystore
-*.jks
-android/release.keystore
-
-# Construcción
-dist/
-dist-public/
-build/
-.next/
-out/
-
-# Vercel
-.vercel/
-
-# Herramientas locales
-.freebuff/
-.vercel
-playwright-mcp/
+# Dependency tree
+node_modules/

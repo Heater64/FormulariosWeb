@@ -1,452 +1,380 @@
-(function() {
+/* ============================================================================
+ * js/vistas/vista-examenes.js — Mis exámenes (panel del administrador)
+ * ----------------------------------------------------------------------------
+ * Lista los exámenes del administrador (borradores, publicados y cerrados),
+ * permite publicar/cerrar, duplicar, eliminar y —sobre todo— generar los
+ * ENLACES INDIVIDUALES de un solo uso que se comparten con cada alumno.
+ *
+ * Los enlaces viven en `examen_enlaces` (migración 056) y se generan en el
+ * servidor: aquí solo se envían nombres y se pinta lo que devuelve la RPC.
+ * ==========================================================================*/
+(function () {
   'use strict';
 
-  const BADGES = {
-    'borrador':   { clase: 'examen-card__badge--borrador', texto: 'Borrador', icono: 'file-edit' },
-    'publicado':  { clase: 'examen-card__badge--publicado', texto: 'Publicado', icono: 'send' },
-    'cerrado':    { clase: 'examen-card__badge--cerrado', texto: 'Cerrado', icono: 'lock' },
-    'archivado':  { clase: 'examen-card__badge--archivado', texto: 'Archivado', icono: 'archive' }
+  const ROLES = ['admin', 'editor', 'owner'];
+  const ESTADOS = {
+    borrador: { texto: 'Borrador', clase: 'adm-badge--borrador' },
+    publicado: { texto: 'Publicado', clase: 'adm-badge--publicado' },
+    cerrado: { texto: 'Cerrado', clase: 'adm-badge--cerrado' }
   };
 
-  const I = (n) => window.Iconos.render(n);
-  const _esc = (s) => window.helpers.escapeHtml(s || '');
-
-  function _tiempoRelativo(fechaStr) {
-    if (!fechaStr) return 'Recientemente';
-    try {
-      const diff = Date.now() - new Date(fechaStr).getTime();
-      const mins = Math.floor(diff / 60000);
-      if (mins < 1) return 'Ahora';
-      if (mins < 60) return `Hace ${mins} min`;
-      const horas = Math.floor(mins / 60);
-      if (horas < 24) return `Hace ${horas}h`;
-      const dias = Math.floor(horas / 24);
-      if (dias < 30) return `Hace ${dias}d`;
-      return window.helpers.formatearFecha(fechaStr);
-    } catch (e) { return 'Recientemente'; }
-  }
+  const esc = (v) => window.panelUI.esc(v);
 
   window.vistaExamenes = {
-    _cleanup: null,
+    _examenes: [],
     _filtro: 'todos',
-    _timerBusqueda: null,
+    _busqueda: '',
+    _timer: null,
 
     async montar(raiz) {
       const usuario = store.obtener('usuario');
-      if (!usuario) { router.navegar('/login'); return; }
-      const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
-      raiz.innerHTML = window.skeleton ? window.skeleton.examenes() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando exámenes...</p></div>';
-
-      try {
-        const [examenes, misIntentos] = await Promise.all([
-          window.examenesRepository.listar(usuario),
-          window.examenesRepository.misIntentos(usuario.id)
-        ]);
-        this._grupoId = usuario.grupo_id;
-        this._alumnos = esProfesor ? await window.examenesRepository.obtenerMiembrosGrupo(usuario.grupo_id, true) : [];
-        this._intentosGrupo = esProfesor ? await window.examenesRepository.obtenerIntentosGrupo(usuario.grupo_id) : [];
-
-        const filtros = esProfesor
-          ? [{ id: 'todos', etiqueta: 'Todos' }, { id: 'publicados', etiqueta: 'Publicados' }, { id: 'borradores', etiqueta: 'Borradores' }]
-          : [{ id: 'todos', etiqueta: 'Todos' }, { id: 'disponibles', etiqueta: 'Disponibles' }, { id: 'completados', etiqueta: 'Completados' }];
-
-        raiz.innerHTML = `
-          <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-            <!-- Header -->
-            <header class="examen-header vista-cabecera">
-              <div class="vista-cabecera__principal">
-                <h1 class="examen-header__titulo">${I('clipboard-check')} Exámenes <button class="info-ayuda" data-guia="examenes" aria-label="Guía de Exámenes">i</button></h1>
-              </div>
-              <div class="examen-header__acciones vista-cabecera__acciones">
-                ${window.campanaNotificaciones ? window.campanaNotificaciones.renderCampana() : ''}
-                ${esProfesor ? `<button class="btn-secundario examen-header__btn" id="btnCalificaciones">${I('bar-chart-2')} Notas</button>` : ''}
-                ${esProfesor ? `<button class="btn-primario examen-header__btn" id="btnNuevoExamen">${I('plus')} Nuevo</button>` : ''}
-              </div>
-            </header>
-
-            <!-- Tab bar -->
-            <div class="examen-tabs" id="filtroExamenes" role="tablist">${filtros.map(f =>
-              `<button class="examen-tab${f.id === this._filtro ? ' examen-tab--activo' : ''}" data-filtro="${f.id}" role="tab" aria-selected="${f.id === this._filtro}">${f.etiqueta}</button>`
-            ).join('')}</div>
-
-            <!-- Search -->
-            <div style="position:relative;margin-bottom:var(--espaciado-md)">
-              <span style="position:absolute;left:12px;top:50%;transform:translateY(-50%);color:var(--color-texto-terciario);display:flex">${I('search')}</span>
-              <input type="text" id="buscarExamen" placeholder="Buscar por título..." style="width:100%;padding:var(--espaciado-sm) var(--espaciado-md) var(--espaciado-sm) 2.4rem;border:1px solid var(--color-borde);border-radius:var(--radio-md);background:var(--color-fondo);color:var(--color-texto);font:inherit;font-size:var(--texto-sm)">
-            </div>
-
-            <!-- Separator -->
-            <hr class="examen-separador">
-
-            <!-- Lista -->
-            <div id="listaExamenes" class="o-pila" style="gap:var(--espaciado-sm)"></div>
-            <div id="listaExamenesVacia" class="empty-state empty-state--compacto" style="display:none">
-              <div class="empty-state__icono">${I('clipboard-check')}</div>
-              <p class="empty-state__descripcion" id="textoVacio">No hay exámenes que coincidan.</p>
-            </div>
-          </div>`;
-
-        if (window.Iconos) window.Iconos.actualizar();
-
-        if (esProfesor) {
-          raiz.querySelector('#btnNuevoExamen').onclick = () => router.navegar('/editor/nuevo');
-          raiz.querySelector('#btnCalificaciones').onclick = () => router.navegar('/calificaciones');
-        }
-
-        window.helpers.registrarGuias(raiz, {
-          examenes: ['Exámenes', esProfesor
-            ? 'Aquí puedes crear, publicar y revisar exámenes para tus alumnos.'
-            : 'Aquí aparecen los exámenes disponibles para ti. Puedes comenzar uno nuevo o revisar tus resultados.',
-            esProfesor ? 'Usa "Nuevo" para crear y "Notas" para ver resultados.' : 'Toca un examen para responderlo.']
-        });
-
-        this._examenes = examenes;
-        this._misIntentos = misIntentos;
-        this._esProfesor = esProfesor;
-
-        // Tab clicks
-        raiz.querySelectorAll('#filtroExamenes .examen-tab').forEach(btn => {
-          btn.onclick = () => {
-            if (this._cleanup) this._cleanup();
-            this._filtro = btn.dataset.filtro;
-            raiz.querySelectorAll('#filtroExamenes .examen-tab--activo').forEach(b => { b.classList.remove('examen-tab--activo'); b.setAttribute('aria-selected', 'false'); });
-            btn.classList.add('examen-tab--activo');
-            btn.setAttribute('aria-selected', 'true');
-            this._renderizarLista();
-          };
-        });
-
-        const buscarInput = raiz.querySelector('#buscarExamen');
-        buscarInput.addEventListener('input', () => {
-          clearTimeout(this._timerBusqueda);
-          this._timerBusqueda = setTimeout(() => this._renderizarLista(), 200);
-        });
-
-        this._renderizarLista();
-      } catch (e) { raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">Error: ${e.message}</p></div>`; }
-    },
-
-    _renderizarLista() {
-      const { _examenes, _misIntentos, _esProfesor, _filtro } = this;
-      const raiz = document.querySelector('#listaExamenes');
-      if (!raiz) return;
-      const vacioDiv = document.querySelector('#listaExamenesVacia');
-      const textoVacio = vacioDiv?.querySelector('#textoVacio');
-      const buscarVal = (document.querySelector('#buscarExamen')?.value || '').toLowerCase().trim();
-
-      let filtrados = _examenes.filter(ex => {
-        if (buscarVal && !ex.titulo.toLowerCase().includes(buscarVal)) return false;
-        if (_filtro === 'todos') return true;
-        const miIntento = _misIntentos.find(i => i.examen_id === ex.id);
-        if (_esProfesor) {
-          if (_filtro === 'publicados') return ex.publicado;
-          if (_filtro === 'borradores') return !ex.publicado;
-          return true;
-        }
-        if (_filtro === 'disponibles') {
-          return ex.publicado && (!miIntento || miIntento.estado === 'en_progreso');
-        }
-        if (_filtro === 'completados') {
-          return miIntento && (miIntento.estado === 'completado' || miIntento.estado === 'calificado');
-        }
-        return true;
-      });
-
-      filtrados.sort((a, b) => new Date(b.creado_en || 0) - new Date(a.creado_en || 0));
-
-      if (filtrados.length === 0) {
-        raiz.innerHTML = '';
-        if (vacioDiv) vacioDiv.style.display = '';
-        if (textoVacio) textoVacio.textContent = buscarVal ? `Sin resultados para "${buscarVal}"` : 'No hay exámenes en esta categoría';
+      if (!usuario || !ROLES.includes((usuario.rol || '').toLowerCase())) {
+        raiz.innerHTML = `<div class="o-contenedor u-mt-4"><div class="adm-aviso adm-aviso--error">Esta sección es solo para el administrador.</div></div>`;
         return;
       }
-      if (vacioDiv) vacioDiv.style.display = 'none';
 
-      raiz.innerHTML = filtrados.map(ex => this._tarjetaExamen(ex)).join('');
-      this._conectarEventos(raiz);
-      if (window.campanaNotificaciones) window.campanaNotificaciones.conectar(document);
-      window.Iconos.actualizar();
+      raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+        <header class="adm-cabecera">
+          <div class="adm-cabecera__principal">
+            <h1 class="adm-cabecera__titulo">Mis exámenes</h1>
+            <p class="adm-cabecera__sub">Crea un examen, genérale un enlace a cada alumno y corrige las respuestas escritas.</p>
+          </div>
+          <div class="adm-cabecera__acciones">
+            <button class="adm-btn adm-btn--principal" id="btnNuevo">Nuevo examen</button>
+          </div>
+        </header>
+        <div id="contenido"></div>
+      </div>`;
+
+      raiz.querySelector('#btnNuevo').addEventListener('click', () => router.navegar('/editor/nuevo'));
+      const contenido = raiz.querySelector('#contenido');
+      contenido.innerHTML = `<p class="adm-cabecera__sub">Cargando…</p>`;
+
+      try {
+        const datos = await window.plataformaRepository.resumen();
+        this._examenes = (datos && datos.examenes) || [];
+      } catch (e) {
+        contenido.innerHTML = `<div class="adm-aviso adm-aviso--error">No se pudieron cargar los exámenes: ${esc(e.message)}</div>`;
+        return;
+      }
+
+      contenido.innerHTML = `
+        <div class="adm-tabs" id="tabs" role="tablist">
+          ${[['todos', 'Todos'], ['borrador', 'Borradores'], ['publicado', 'Publicados'], ['cerrado', 'Cerrados']]
+            .map(([id, texto]) => `<button class="adm-tab${this._filtro === id ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${this._filtro === id}">${texto}</button>`)
+            .join('')}
+        </div>
+        <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
+        <div id="lista" class="adm-lista"></div>`;
+
+      contenido.querySelectorAll('#tabs .adm-tab').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          this._filtro = btn.dataset.filtro;
+          contenido.querySelectorAll('#tabs .adm-tab').forEach((b) => {
+            b.classList.toggle('adm-tab--activo', b === btn);
+            b.setAttribute('aria-selected', String(b === btn));
+          });
+          this._pintarLista();
+        });
+      });
+
+      const buscar = contenido.querySelector('#buscar');
+      buscar.addEventListener('input', () => {
+        clearTimeout(this._timer);
+        this._timer = setTimeout(() => {
+          this._busqueda = buscar.value.trim().toLowerCase();
+          this._pintarLista();
+        }, 180);
+      });
+
+      this._pintarLista();
     },
 
     desmontar() {
-      if (this._cleanup) { this._cleanup(); this._cleanup = null; }
-      if (this._timerBusqueda) { clearTimeout(this._timerBusqueda); this._timerBusqueda = null; }
+      clearTimeout(this._timer);
+      this._timer = null;
     },
 
-    _tarjetaExamen(ex) {
-      const miIntento = this._misIntentos.find(i => i.examen_id === ex.id);
-      const esProfesor = this._esProfesor;
-      const completado = miIntento && (miIntento.estado === 'completado' || miIntento.estado === 'calificado');
-      const enProgreso = miIntento && miIntento.estado === 'en_progreso';
+    _pintarLista() {
+      const lista = document.querySelector('#lista');
+      if (!lista) return;
 
-      // Badge
-      let badge;
-      if (esProfesor) {
-        badge = BADGES[ex.estado || (ex.publicado ? 'publicado' : 'borrador')] || BADGES['borrador'];
-      } else if (completado) {
-        badge = miIntento.corregido
-          ? { clase: 'examen-card__badge--calificado', texto: 'Calificado', icono: 'check-circle' }
-          : { clase: 'examen-card__badge--pendiente', texto: 'Pendiente corrección', icono: 'clock' };
-      } else if (enProgreso) {
-        badge = { clase: 'examen-card__badge--en-progreso', texto: 'En progreso', icono: 'loader' };
-      } else {
-        badge = { clase: 'examen-card__badge--disponible', texto: 'Disponible', icono: 'circle' };
-      }
+      const filtrados = this._examenes.filter((ex) => {
+        if (this._filtro !== 'todos' && ex.estado !== this._filtro) return false;
+        if (this._busqueda && !String(ex.titulo || '').toLowerCase().includes(this._busqueda)) return false;
+        return true;
+      });
 
-      // Stats (teacher only)
-      let statsHtml = '';
-      let footerHtml = '';
-      if (esProfesor) {
-        const ints = this._intentosGrupo.filter(i => i.examen_id === ex.id);
-        const totalAlumnos = this._alumnos.length;
-        const hechos = ints.filter(i => i.estado === 'completado' || i.estado === 'calificado').length;
-        const pendientes = Math.max(0, totalAlumnos - hechos);
-
-        statsHtml = `
-          <div class="examen-card__stats">
-            <span class="examen-card__stat">${I('users')} <b>${totalAlumnos}</b> alumnos</span>
-            ${ex.publicado ? `<span class="examen-card__stat examen-card__stat--exito">${I('check-circle')} <b>${hechos}</b> respondieron</span>` : ''}
-            ${ex.publicado && pendientes > 0 ? `<span class="examen-card__stat examen-card__stat--aviso">${I('clock')} <b>${pendientes}</b> faltan</span>` : ''}
-            <span class="examen-card__stat">${I('save')} ${_tiempoRelativo(ex.actualizado_en || ex.creado_en)}</span>
-          </div>`;
-
-        footerHtml = `
-          <div class="examen-card__footer">
-            <span class="u-fs-xs u-color-texto-terciario">${ex.fecha_limite ? I('calendar') + ' Límite: ' + window.helpers.formatearFecha(ex.fecha_limite) : ''}</span>
-            <button class="btn-corregir btn-corregir-examen" data-id="${ex.id}">${I('check-square')} Corregir</button>
-          </div>`;
-      }
-
-      // Student actions in footer
-      let accionEstudiante = '';
-      if (!esProfesor && ex.publicado) {
-        if (completado) {
-          accionEstudiante = `<button class="examen-card__accion-estudiante examen-card__accion-estudiante--ver btn-ver-resultados-alumno" data-id="${ex.id}">${I('eye')} Ver resultados</button>`;
-        } else if (enProgreso) {
-          accionEstudiante = `<button class="examen-card__accion-estudiante examen-card__accion-estudiante--continuar btn-iniciar-examen" data-id="${ex.id}">${I('play')} Continuar</button>`;
-        } else {
-          accionEstudiante = `<button class="examen-card__accion-estudiante examen-card__accion-estudiante--comenzar btn-iniciar-examen" data-id="${ex.id}">${I('play')} Comenzar</button>`;
-        }
-      }
-
-      // 3-dot menu (teacher only)
-      let menuHtml = '';
-      if (esProfesor) {
-        const items = [
-          { accion: 'editar', icono: 'edit', texto: 'Editar', clase: 'btn-editar-examen' },
-          { accion: 'duplicar', icono: 'copy', texto: 'Duplicar', clase: 'btn-duplicar-examen' },
-          { accion: 'alumnos', icono: 'users', texto: 'Alumnos', clase: 'btn-ver-alumnos-examen' },
-          { accion: 'compartir', icono: 'share-2', texto: 'Compartir', clase: 'btn-compartir-examen' },
-        ];
-        const peligroItems = [
-          { accion: 'eliminar', icono: 'trash-2', texto: 'Eliminar', clase: 'btn-eliminar-examen' }
-        ];
-
-        menuHtml = `
-          <div class="examen-card__menu-wrap">
-            <button class="examen-card__menu-btn examen-menu-toggle" aria-label="Más opciones" aria-expanded="false">⋮</button>
-            <div class="examen-card__menu">
-              ${items.map(i => `<button class="examen-card__menu-item ${i.clase}" data-id="${ex.id}" data-titulo="${_esc(ex.titulo)}">${I(i.icono)} ${i.texto}</button>`).join('')}
-              ${ex.publicado ? '' : `<button class="examen-card__menu-item btn-publicar-examen" data-id="${ex.id}">${I('send')} Publicar</button>`}
-              <hr class="examen-card__menu-sep">
-              ${peligroItems.map(i => `<button class="examen-card__menu-item examen-card__menu-item--peligro ${i.clase}" data-id="${ex.id}" data-titulo="${_esc(ex.titulo)}">${I(i.icono)} ${i.texto}</button>`).join('')}
-            </div>
-          </div>`;
-      }
-
-      // Student footer
-      const footerEstudiante = (!esProfesor && accionEstudiante)
-        ? `<div class="examen-card__footer"><span class="u-fs-xs u-color-texto-terciario">${ex.fecha_limite ? I('calendar') + ' Límite: ' + window.helpers.formatearFecha(ex.fecha_limite) : ''}</span>${accionEstudiante}</div>`
-        : '';
-
-      return `
-        <div class="examen-card" data-examen="${ex.id}">
-          <div class="examen-card__cuerpo">
-            <div class="examen-card__header">
-              <div class="examen-card__info">
-                <h3 class="examen-card__titulo">
-                  ${_esc(ex.titulo)}
-                  <span class="examen-card__badge ${badge.clase}">${I(badge.icono)} ${badge.texto}</span>
-                </h3>
-                ${ex.descripcion ? `<p class="examen-card__desc">${_esc(ex.descripcion)}</p>` : ''}
-              </div>
-              ${menuHtml}
-            </div>
-            ${statsHtml}
-          </div>
-          ${footerHtml}
-          ${footerEstudiante}
+      if (!filtrados.length) {
+        lista.innerHTML = `<div class="adm-vacio">
+          <p class="adm-vacio__titulo">${this._examenes.length ? 'Sin resultados' : 'Todavía no hay exámenes'}</p>
+          <p>${this._examenes.length ? 'Prueba otro filtro o borra la búsqueda.' : 'Crea tu primer examen para empezar.'}</p>
         </div>`;
-    },
+        return;
+      }
 
-    _conectarEventos(raiz) {
-      const esProfesor = this._esProfesor;
-
-      // Student
-      raiz.querySelectorAll('.btn-iniciar-examen').forEach(btn => { btn.onclick = () => router.navegar('/tomar/' + btn.dataset.id); });
-      raiz.querySelectorAll('.btn-ver-resultados-alumno').forEach(btn => { btn.onclick = () => router.navegar('/tomar/' + btn.dataset.id); });
-
-      // Teacher: Corrección
-      raiz.querySelectorAll('.btn-corregir-examen').forEach(btn => { btn.onclick = () => router.navegar('/corregir/' + btn.dataset.id); });
-
-      // Teacher: Editar
-      raiz.querySelectorAll('.btn-editar-examen').forEach(btn => { btn.onclick = () => router.navegar('/editor/' + btn.dataset.id); });
-
-      // Teacher: Publicar
-      raiz.querySelectorAll('.btn-publicar-examen').forEach(btn => {
-        btn.onclick = async () => {
-          const ok = await window.helpers.confirmar('Los alumnos podrán ver y realizar este examen.', { titulo: '¿Publicar este examen?', textoConfirmar: 'Publicar' });
-          if (!ok) return;
-          try {
-            await window.examenesRepository.publicar(btn.dataset.id);
-            window.helpers.mostrarAlerta('Examen publicado.', 'exito');
-            router._ejecutar();
-          } catch (e) { window.helpers.mostrarAlerta('Error al publicar: ' + e.message, 'error'); }
-        };
-      });
-
-      // Teacher: Duplicar
-      raiz.querySelectorAll('.btn-duplicar-examen').forEach(btn => {
-        btn.onclick = async () => {
-          const ok = await window.helpers.confirmar(`Se creará una copia del examen "${btn.dataset.titulo}".`, { titulo: '¿Duplicar examen?', textoConfirmar: 'Duplicar' });
-          if (!ok) return;
-          try {
-            const original = await window.examenesRepository.obtener(btn.dataset.id);
-            if (!original) throw new Error('No se pudo cargar el examen');
-            const copia = { ...original, id: undefined, titulo: `Copia de ${original.titulo}`, publicado: false, estado: 'borrador', creado_en: undefined, actualizado_en: undefined };
-            await window.examenesRepository.guardar(copia);
-            window.helpers.mostrarAlerta('Examen duplicado.', 'exito');
-            router._ejecutar();
-          } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
-        };
-      });
-
-      // Teacher: Eliminar
-      raiz.querySelectorAll('.btn-eliminar-examen').forEach(btn => {
-        btn.onclick = async () => {
-          const ok = await window.helpers.confirmar(`Se eliminará "${btn.dataset.titulo}" y todos los intentos. Esta acción no se puede deshacer.`, { titulo: '¿Eliminar examen?', textoConfirmar: 'Eliminar' });
-          if (!ok) return;
-          try {
-            await window.examenesRepository.eliminar(btn.dataset.id);
-            window.helpers.mostrarAlerta('Examen eliminado.', 'exito');
-            router._ejecutar();
-          } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
-        };
-      });
-
-      // Teacher: Compartir
-      raiz.querySelectorAll('.btn-compartir-examen').forEach(btn => {
-        btn.onclick = () => this._compartir(btn.dataset.id, btn.dataset.titulo);
-      });
-
-      // Teacher: Ver alumnos (nuevo modal)
-      raiz.querySelectorAll('.btn-ver-alumnos-examen').forEach(btn => {
-        btn.onclick = () => this._modalAlumnosEstado(btn.dataset.id, btn.dataset.titulo);
-      });
-
-      // Menu toggles
-      raiz.querySelectorAll('.examen-menu-toggle').forEach(btn => {
-        btn.addEventListener('click', (e) => {
-          e.stopPropagation();
-          const menu = btn.nextElementSibling;
-          const abierto = menu.classList.contains('examen-card__menu--abierto');
-          raiz.querySelectorAll('.examen-card__menu--abierto').forEach(m => m.classList.remove('examen-card__menu--abierto'));
-          raiz.querySelectorAll('.examen-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
-          if (!abierto) {
-            menu.classList.add('examen-card__menu--abierto');
-            btn.setAttribute('aria-expanded', 'true');
-          }
+      lista.innerHTML = filtrados.map((ex) => this._tarjeta(ex)).join('');
+      lista.querySelectorAll('[data-accion]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const menu = btn.closest('details');
+          if (menu) menu.open = false;
+          this._accion(btn.dataset.accion, btn.dataset.id, btn.dataset.titulo);
         });
       });
+    },
 
-      // Close menus on outside click
-      if (!this._closeMenusHandler) {
-        this._closeMenusHandler = (e) => {
-          if (!e.target.closest('.examen-card__menu-wrap')) {
-            const lista = document.querySelector('#listaExamenes');
-            if (lista) {
-              lista.querySelectorAll('.examen-card__menu--abierto').forEach(m => m.classList.remove('examen-card__menu--abierto'));
-              lista.querySelectorAll('.examen-menu-toggle').forEach(t => t.setAttribute('aria-expanded', 'false'));
-            }
+    _tarjeta(ex) {
+      const estado = ESTADOS[ex.estado] || ESTADOS.borrador;
+      const porCorregir = Number(ex.por_corregir) || 0;
+      const numEnlaces = Number(ex.num_enlaces) || 0;
+      const enlacesUsados = Number(ex.enlaces_usados) || 0;
+      const meta = [
+        (Number(ex.num_preguntas) || 0) + ' preguntas',
+        (Number(ex.puntos_totales) || 0) + ' puntos',
+        numEnlaces + ' compartidos · ' + enlacesUsados + ' usados',
+        (Number(ex.num_entregas) || 0) + ' entregas'
+      ];
+      if (ex.nota_media != null) meta.push('media ' + window.panelUI.numero(ex.nota_media));
+
+      const titulo = esc(ex.titulo);
+      const estadoAccion = ex.estado === 'publicado'
+        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="cerrar" data-id="${esc(ex.id)}">Cerrar examen</button>`
+        : ex.estado === 'cerrado'
+          ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">Reabrir examen</button>`
+          : `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">Publicar</button>`;
+
+      return `<article class="adm-fila adm-examen" aria-label="${titulo}">
+        <div class="adm-fila__principal adm-examen__principal">
+          <div class="adm-fila__titulo adm-examen__titulo">
+            <h2>${titulo}</h2>
+            <span class="adm-badge ${estado.clase}">${estado.texto}</span>
+            ${porCorregir > 0 ? `<span class="adm-badge adm-badge--aviso">${porCorregir} por corregir</span>` : ''}
+          </div>
+          <div class="adm-fila__meta adm-examen__meta">
+            ${meta.map((m) => `<span>${esc(m)}</span>`).join('')}
+            <span>Actualizado ${esc(window.panelUI.tiempoRelativo(ex.actualizado_en || ex.creado_en))}</span>
+          </div>
+        </div>
+        <div class="adm-fila__acciones adm-examen__acciones" aria-label="Acciones de ${titulo}">
+          <div class="adm-examen__acciones-principales">
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-accion="compartir" data-id="${esc(ex.id)}" data-titulo="${titulo}">Gestionar enlaces</button>
+            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="editar" data-id="${esc(ex.id)}">Editar</button>
+            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="entregas" data-id="${esc(ex.id)}">Entregas${porCorregir > 0 ? ` · ${porCorregir} por corregir` : ''}</button>
+            ${estadoAccion}
+          </div>
+          <details class="adm-examen__mas">
+            <summary class="adm-btn adm-btn--pequeno" aria-label="Más opciones para ${titulo}">Más opciones <span aria-hidden="true">▾</span></summary>
+            <div class="adm-examen__menu" aria-label="Acciones adicionales">
+              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">Duplicar como borrador</button>
+              <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">Eliminar examen</button>
+            </div>
+          </details>
+        </div>
+      </article>`;
+    },
+
+    async _accion(accion, id, titulo) {
+      if (accion === 'editar') { router.navegar('/editor/' + id); return; }
+      if (accion === 'entregas') { router.navegar('/corregir/' + id); return; }
+      if (accion === 'compartir' || accion === 'compartir-individual') { await this._modalEnlaces(id, titulo); return; }
+
+      if (accion === 'publicar') {
+        const examen = this._examenes.find((item) => String(item.id) === String(id));
+        const reabrir = examen && examen.estado === 'cerrado';
+        const ok = await window.helpers.confirmar(
+          reabrir
+            ? 'El examen volverá a admitir entregas. Las respuestas y calificaciones anteriores se conservarán.'
+            : 'Podrás enviar enlaces individuales y los alumnos podrán responder.',
+          {
+            titulo: reabrir ? '¿Reabrir este examen?' : '¿Publicar este examen?',
+            textoConfirmar: reabrir ? 'Reabrir' : 'Publicar'
           }
-        };
-        document.addEventListener('click', this._closeMenusHandler);
+        );
+        if (!ok) return;
+        const publicado = await this._ejecutar(() => window.plataformaRepository.cambiarEstado(id, 'publicado'), reabrir ? 'Examen reabierto.' : 'Examen publicado.');
+        if (publicado && !reabrir) this._modalEnlaces(id, titulo);
+        return;
       }
-      this._cleanup = () => {
-        if (this._closeMenusHandler) {
-          document.removeEventListener('click', this._closeMenusHandler);
-          this._closeMenusHandler = null;
+
+      if (accion === 'cerrar') {
+        const ok = await window.helpers.confirmar(
+          'Los alumnos ya no podrán entregar el examen. Las entregas recibidas se conservan.',
+          { titulo: '¿Cerrar este examen?', textoConfirmar: 'Cerrar examen' }
+        );
+        if (!ok) return;
+        await this._ejecutar(() => window.plataformaRepository.cambiarEstado(id, 'cerrado'), 'Examen cerrado.');
+        return;
+      }
+
+      if (accion === 'duplicar') {
+        const ok = await window.helpers.confirmar(
+          `Se creará una copia de «${titulo}» como borrador. No se copian los enlaces ni las entregas.`,
+          { titulo: '¿Duplicar examen?', textoConfirmar: 'Duplicar' }
+        );
+        if (!ok) return;
+        await this._ejecutar(async () => {
+          const original = await window.examenesRepository.obtener(id);
+          if (!original) throw new Error('No se pudo cargar el examen original.');
+          const copia = {
+            grupo_id: original.grupo_id,
+            creado_por: original.creado_por,
+            titulo: 'Copia de ' + (original.titulo || 'examen'),
+            descripcion: original.descripcion || '',
+            preguntas: original.preguntas || [],
+            puntos_totales: original.puntos_totales || 0,
+            estado: 'borrador',
+            publicado: false,
+            config: original.config || {}
+          };
+          await window.examenesRepository.guardar(copia);
+        }, 'Examen duplicado como borrador.');
+        return;
+      }
+
+      if (accion === 'eliminar') {
+        const ok = await window.helpers.confirmar(
+          `Se eliminará «${titulo}», sus enlaces y todas sus entregas. Esta acción no se puede deshacer.`,
+          { titulo: '¿Eliminar examen?', textoConfirmar: 'Eliminar' }
+        );
+        if (!ok) return;
+        await this._ejecutar(() => window.examenesRepository.eliminar(id), 'Examen eliminado.');
+      }
+    },
+
+    async _ejecutar(operacion, mensajeExito) {
+      try {
+        await operacion();
+        window.helpers.mostrarAlerta(mensajeExito, 'exito');
+        router._ejecutar();
+        return true;
+      } catch (e) {
+        window.helpers.mostrarAlerta('Error: ' + e.message, 'error');
+        return false;
+      }
+    },
+
+    // ── Enlaces individuales ─────────────────────────────────────────────
+    async _modalEnlaces(examenId, titulo) {
+      const modal = window.panelUI.modal({
+        titulo: 'Enlaces de «' + titulo + '»',
+        cuerpoHtml: `<p class="adm-cabecera__sub">Cada enlace es individual y de un solo uso.</p>
+          <div class="adm-campo">
+            <label class="adm-campo__etiqueta" for="listaAlumnos">Añadir alumnos</label>
+            <textarea class="adm-entrada" id="listaAlumnos" placeholder="Un alumno por línea&#10;Ana Pérez&#10;Luis Gómez, 3º B"></textarea>
+            <p class="adm-campo__ayuda">Puedes escribir «Nombre, Grupo». El grupo es opcional.</p>
+          </div>
+          <div id="errorEnlaces" class="adm-aviso adm-aviso--error" hidden></div>
+          <div id="listaEnlaces"><p class="adm-cabecera__sub">Cargando enlaces…</p></div>`,
+        pieHtml: `<button class="adm-btn" data-rol="cerrar" type="button">Cerrar</button>
+          <button class="adm-btn adm-btn--principal" id="btnGenerar" type="button">Generar enlaces</button>`
+      });
+
+      modal.pie.querySelector('[data-rol="cerrar"]').addEventListener('click', modal.cerrar);
+
+      const error = modal.cuerpo.querySelector('#errorEnlaces');
+      const btnGenerar = modal.pie.querySelector('#btnGenerar');
+
+      const recargar = async () => {
+        const contenedor = modal.cuerpo.querySelector('#listaEnlaces');
+        try {
+          const enlaces = await window.plataformaRepository.listarEnlaces(examenId);
+          contenedor.innerHTML = this._htmlEnlaces(enlaces, titulo);
+          contenedor.querySelectorAll('[data-enlace-accion]').forEach((btn) => {
+            btn.addEventListener('click', () => this._accionEnlace(btn, enlaces, examenId, titulo, recargar));
+          });
+        } catch (e) {
+          contenedor.innerHTML = `<div class="adm-aviso adm-aviso--error">${esc(e.message)}</div>`;
         }
       };
+
+      btnGenerar.addEventListener('click', async () => {
+        const area = modal.cuerpo.querySelector('#listaAlumnos');
+        const alumnos = area.value.split('\n')
+          .map((linea) => linea.trim())
+          .filter(Boolean)
+          .map((linea) => {
+            const [nombre, ...resto] = linea.split(',');
+            return { nombre: nombre.trim(), grupo: resto.join(',').trim() };
+          })
+          .filter((a) => a.nombre);
+
+        error.hidden = true;
+        if (!alumnos.length) {
+          error.textContent = 'Escribe al menos un nombre (uno por línea).';
+          error.hidden = false;
+          return;
+        }
+        btnGenerar.disabled = true;
+        btnGenerar.textContent = 'Generando…';
+        try {
+          await window.plataformaRepository.crearEnlaces(examenId, alumnos);
+          area.value = '';
+          await recargar();
+          window.helpers.mostrarAlerta(alumnos.length + ' enlace(s) generado(s).', 'exito');
+        } catch (e) {
+          error.textContent = e.message;
+          error.hidden = false;
+        } finally {
+          btnGenerar.disabled = false;
+          btnGenerar.textContent = 'Generar enlaces';
+        }
+      });
+
+      await recargar();
     },
 
-    _modalAlumnosEstado(examenId, titulo) {
-      const ints = this._intentosGrupo.filter(i => i.examen_id === examenId);
-      const alumnoIds = new Set(this._alumnos.map(a => a.id));
-      const hechoIds = new Set(ints.filter(i => (i.estado === 'completado' || i.estado === 'calificado') && alumnoIds.has(i.alumno_id)).map(i => i.alumno_id));
-      const total = this._alumnos.length;
-      const hechos = hechoIds.size;
-      const pendientes = total - hechos;
-
-      const filas = this._alumnos.map(a => {
-        const hecho = hechoIds.has(a.id);
-        return `
-          <div class="examen-alumno-fila">
-            <div class="examen-alumno-fila__avatar">
-              ${a.foto_perfil ? `<img src="${_esc(a.foto_perfil)}" alt="" width="44" height="44" loading="lazy" decoding="async">` : (a.nombre_completo || a.username || '?').charAt(0).toUpperCase()}
-            </div>
-            <div class="examen-alumno-fila__info">
-              <div class="examen-alumno-fila__nombre">${_esc(a.nombre_completo || a.username)}</div>
-              ${a.username && a.nombre_completo !== a.username ? `<div class="examen-alumno-fila__username">@${_esc(a.username)}</div>` : ''}
-            </div>
-            <span class="examen-alumno-fila__estado ${hecho ? 'examen-alumno-fila__estado--hecho' : 'examen-alumno-fila__estado--pendiente'}">${hecho ? I('check-circle') + ' Hecho' : I('circle') + ' Pendiente'}</span>
-          </div>`;
-      }).join('');
-
-      const overlay = document.createElement('div');
-      overlay.className = 'examen-alumnos-modal';
-      overlay.innerHTML = `
-        <div class="examen-alumnos-modal__backdrop"></div>
-        <div class="examen-alumnos-modal__contenido">
-          <div class="examen-alumnos-modal__handle"></div>
-          <div class="examen-alumnos-modal__header">
-            <h3 class="examen-alumnos-modal__titulo">${I('users')} Alumnos · ${_esc(titulo)}</h3>
-            <button class="examen-alumnos-modal__cerrar" id="btnCerrarAlumnos" aria-label="Cerrar">✕</button>
-          </div>
-          <div class="examen-alumnos-modal__resumen">
-            <span class="examen-alumnos-modal__resumen-badge examen-alumnos-modal__resumen-badge--hecho">${I('check-circle')} ${hechos} hecho${hechos !== 1 ? 's' : ''}</span>
-            <span class="examen-alumnos-modal__resumen-badge examen-alumnos-modal__resumen-badge--pendiente">${I('circle')} ${pendientes} pendiente${pendientes !== 1 ? 's' : ''}</span>
-          </div>
-          <div class="examen-alumnos-modal__lista">
-            ${filas || '<p class="u-color-texto-terciario u-fs-sm" style="padding:var(--espaciado-md);text-align:center">No hay alumnos en el grupo.</p>'}
-          </div>
+    _htmlEnlaces(enlaces, titulo) {
+      if (!enlaces || !enlaces.length) {
+        return `<div class="adm-vacio"><p class="adm-vacio__titulo">Sin enlaces todavía</p>
+          <p>Escribe los nombres arriba y pulsa «Generar enlaces».</p></div>`;
+      }
+      const usados = enlaces.filter((e) => e.usado).length;
+      return `<div class="adm-seccion__titulo">${enlaces.length} enlace(s) · ${usados} usado(s)</div>
+        <div class="adm-bloque" style="margin-bottom:0">
+          ${enlaces.map((enlace) => `
+            <div class="adm-enlace">
+              <span class="adm-enlace__nombre">${esc(enlace.nombre_alumno)}
+                ${enlace.grupo_alumno ? `<span class="adm-enlace__grupo">· ${esc(enlace.grupo_alumno)}</span>` : ''}
+                ${enlace.usado ? '<span class="adm-badge adm-badge--exito">Entregado</span>' : '<span class="adm-badge adm-badge--borrador">Pendiente</span>'}
+              </span>
+              <span class="adm-enlace__url" title="${esc(window.plataformaRepository.urlEnlace(enlace.token))}">${esc(window.plataformaRepository.urlEnlace(enlace.token))}</span>
+              <span class="adm-enlace__acciones">
+                <button class="adm-btn adm-btn--pequeno" type="button" data-enlace-accion="copiar" data-token="${esc(enlace.token)}">Copiar</button>
+                <button class="adm-btn adm-btn--pequeno" type="button" data-enlace-accion="whatsapp" data-token="${esc(enlace.token)}" data-nombre="${esc(enlace.nombre_alumno)}">WhatsApp</button>
+                <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-enlace-accion="borrar" data-id="${esc(enlace.id)}">Borrar</button>
+              </span>
+            </div>`).join('')}
         </div>`;
-
-      document.body.appendChild(overlay);
-      window.Iconos.actualizar();
-
-      const cerrar = () => {
-        overlay.style.opacity = '0';
-        overlay.style.transition = 'opacity 200ms ease';
-        setTimeout(() => overlay.remove(), 200);
-      };
-      overlay.querySelector('#btnCerrarAlumnos').onclick = cerrar;
-      overlay.querySelector('.examen-alumnos-modal__backdrop').onclick = cerrar;
-      overlay.addEventListener('keydown', (e) => { if (e.key === 'Escape') cerrar(); });
     },
 
-    _compartir(examenId, titulo) {
-      // /o/examen/:id?t=… → tarjeta Open Graph con el título (api/og.js)
-      const url = window.location.origin + '/o/examen/' + encodeURIComponent(examenId) + '?t=' + encodeURIComponent(titulo || 'Examen');
-      const mensaje = '📝 ' + (titulo || 'Examen') + '\n\nRealiza tu examen aquí:\n' + url;
-      const waUrl = 'https://wa.me/?text=' + encodeURIComponent(mensaje);
-      if (navigator.clipboard && navigator.clipboard.writeText) {
-        navigator.clipboard.writeText(url).then(() => {
-          window.helpers.mostrarAlerta('Enlace copiado. Se abre WhatsApp.', 'info');
-          window.open(waUrl, '_blank');
-        }).catch(() => { window.open(waUrl, '_blank'); });
-      } else {
-        window.open(waUrl, '_blank');
+    async _accionEnlace(btn, enlaces, examenId, titulo, recargar) {
+      const accion = btn.dataset.enlaceAccion;
+      const enlace = enlaces.find((e) => e.token === btn.dataset.token || e.id === btn.dataset.id);
+
+      if (accion === 'copiar') {
+        const url = window.plataformaRepository.urlEnlace(btn.dataset.token);
+        const ok = await window.plataformaRepository.copiar(url);
+        window.helpers.mostrarAlerta(ok ? 'Enlace copiado.' : 'No se pudo copiar. Selecciona la URL manualmente.', ok ? 'exito' : 'error');
+        return;
+      }
+
+      if (accion === 'whatsapp' && enlace) {
+        window.plataformaRepository.abrirWhatsApp(window.plataformaRepository.mensajeWhatsApp(enlace, titulo));
+        return;
+      }
+
+      if (accion === 'borrar') {
+        const ok = await window.helpers.confirmar('Se eliminará este enlace. Si ya tiene una entrega, el servidor lo impedirá.', {
+          titulo: '¿Borrar enlace?', textoConfirmar: 'Borrar'
+        });
+        if (!ok) return;
+        try {
+          await window.plataformaRepository.eliminarEnlace(btn.dataset.id);
+          await recargar();
+          window.helpers.mostrarAlerta('Enlace eliminado.', 'exito');
+        } catch (e) {
+          window.helpers.mostrarAlerta(e.message, 'error');
+        }
       }
     }
   };

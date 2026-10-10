@@ -1,13 +1,14 @@
 :root {
+  /* Escala de 4px de DailyHub manteniendo fluidez clamp() */
   --espaciado-2xs: clamp(2px, 0.4vw, 4px);
-  --espaciado-xxs: clamp(4px, 0.6vw, 6px);
-  --espaciado-xs: clamp(8px, 1vw, 10px);
-  --espaciado-sm: clamp(12px, 1.6vw, 14px);
-  --espaciado-md: clamp(16px, 2.2vw, 18px);
-  --espaciado-lg: clamp(22px, 2.8vw, 26px);
-  --espaciado-xl: clamp(30px, 3.4vw, 36px);
-  --espaciado-2xl: clamp(44px, 4.4vw, 52px);
-  --espaciado-3xl: clamp(60px, 5.4vw, 72px);
-  --section-gap: clamp(16px, 2.2vw, 18px);
-  --section-gap-lg: clamp(22px, 2.8vw, 26px);
+  --espaciado-xxs: clamp(3px, 0.5vw, 4px);
+  --espaciado-xs: clamp(7px, 0.9vw, 8px);
+  --espaciado-sm: clamp(11px, 1.4vw, 12px);
+  --espaciado-md: clamp(14px, 1.9vw, 16px);
+  --espaciado-lg: clamp(20px, 2.6vw, 24px);
+  --espaciado-xl: clamp(28px, 3.2vw, 32px);
+  --espaciado-2xl: clamp(36px, 4vw, 40px);
+  --espaciado-3xl: clamp(44px, 4.8vw, 48px);
+  --section-gap: clamp(14px, 1.9vw, 16px);
+  --section-gap-lg: clamp(20px, 2.6vw, 24px);
 }
