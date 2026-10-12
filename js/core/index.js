@@ -526,6 +526,7 @@
         { ruta: '/inicio', icono: 'home', texto: 'Inicio' },
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
         { ruta: '/entregas', icono: 'inbox', texto: 'Entregas' },
+        { ruta: '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones' },
         { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
       ];
       const destinoCuenta = '/cuenta';
@@ -676,6 +677,10 @@
       router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
       router.registrar('/entregas', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
       router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
+      // Evaluaciones: sección que agrupa exámenes en una rejilla de notas.
+      // El listado se registra antes que el detalle por el orden del router.
+      router.registrar('/evaluaciones', this._vistaLazy(['./js/vistas/vista-evaluaciones.js'], () => window.vistaEvaluaciones));
+      router.registrar('/evaluaciones/:id', this._vistaLazy(['./js/vistas/vista-evaluacion-editar.js'], () => window.vistaEvaluacionEditar));
     },
 
     // Precarga inteligente: cuando el dispositivo queda inactivo tras el
@@ -688,7 +693,7 @@
       const rol = usuario.rol;
       const archivos = [];
       if (rol === 'owner' || rol === 'admin' || rol === 'editor') {
-        archivos.push('./js/vistas/vista-examen-editor.js', './js/vistas/vista-entregas.js');
+        archivos.push('./js/vistas/vista-examen-editor.js', './js/vistas/vista-entregas.js', './js/vistas/vista-evaluaciones.js', './js/vistas/vista-evaluacion-editar.js');
       }
       if (!archivos.length) return;
       const cargar = () => {

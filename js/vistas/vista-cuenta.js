@@ -62,6 +62,7 @@
       raiz.innerHTML = `
         <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom));max-width:680px">
           <header class="adm-cabecera">
+            <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('user')}</span>
             <div class="adm-cabecera__principal">
               <h1 class="adm-cabecera__titulo">Mi cuenta</h1>
               <p class="adm-cabecera__sub">Los alumnos no necesitan cuenta: solo usan el enlace que les envías.</p>
@@ -212,6 +213,8 @@
       if (letraInput) letraInput.addEventListener('change', () => {
         aplicarCambios({ letra_grande: letraInput.checked }, 'Tamaño de texto actualizado.');
       });
+
+      if (window.Iconos) window.Iconos.actualizar();
 
       raiz.querySelector('#btnSalir').addEventListener('click', async () => {
         const ok = await window.helpers.confirmar('¿Seguro que quieres cerrar sesión?', {

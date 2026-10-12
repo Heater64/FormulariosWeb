@@ -74,10 +74,15 @@
 
 /* Selector de tipo de pregunta en editor */
 select[data-campo="tipo"] {
-  background: var(--color-acento-soft);
+  background-color: var(--color-acento-soft);
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right var(--espaciado-sm) center;
+  background-size: 12px;
   border: 2px solid var(--color-acento);
   border-radius: var(--radio-md);
   padding: var(--espaciado-xs) var(--espaciado-sm);
+  padding-right: 32px;
   font-weight: 600;
   font-size: var(--texto-sm);
   color: var(--color-texto);

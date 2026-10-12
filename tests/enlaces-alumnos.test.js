@@ -1,9 +1,17 @@
 import { describe, expect, test } from 'vitest';
-import { readFileSync, existsSync } from 'node:fs';
+import { readFileSync, readdirSync, existsSync } from 'node:fs';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const migracion = read('supabase/migraciones/056_enlaces_examen_alumnos.sql');
+// Todas las migraciones juntas: el contrato de "ningún nombre inventado" se
+// comprueba contra el esquema completo, no solo contra la 056 (las RPC de
+// evaluaciones viven en la 060).
+const migracionesTodas = readdirSync(new URL('../supabase/migraciones/', import.meta.url))
+  .filter((f) => f.endsWith('.sql'))
+  .map((f) => read(`supabase/migraciones/${f}`))
+  .join('\n');
 const migracion057 = read('supabase/migraciones/057_resumen_admin_json_preguntas_robusto.sql');
+const migracion063 = read('supabase/migraciones/063_enlace_comunitario.sql');
 const repositorio = read('js/datos/plataforma-repository.js');
 const paginaHtml = read('public-site/examen.html');
 const paginaJs = read('public-site/examen.js');
@@ -15,6 +23,13 @@ const RPC_PUBLICAS = [
   'fb_guardar_borrador_token',
   'fb_entregar_por_token',
   'fb_consultar_entrega'
+];
+
+const RPC_COMUNITARIAS = [
+  'fb_comunitario_iniciar',
+  'fb_comunitario_borrador',
+  'fb_comunitario_entregar',
+  'fb_comunitario_consultar'
 ];
 
 const RPC_ADMIN = [
@@ -155,16 +170,21 @@ describe('enlaces individuales de un solo uso', () => {
     for (const rpc of RPC_ADMIN) {
       expect(repositorio).toContain(`rpc('${rpc}'`);
     }
-    // La página del alumno es autónoma (no carga los bundles de la SPA), así que
-    // llama a sus cinco RPCs directamente sobre el cliente de Supabase.
+    // La página del alumno es autónoma (no carga los bundles de la SPA): llama
+    // a sus RPCs sobre el cliente de Supabase. En el enlace de la clase la
+    // llamada pasa por rpcFlujo, que cambia a la variante de la migración 063.
     for (const rpc of RPC_PUBLICAS) {
-      expect(paginaJs).toContain(`rpc('${rpc}'`);
+      expect(paginaJs).toContain(`('${rpc}'`);
     }
-    // Ninguna capa debe inventar nombres que la migración no declare.
+    for (const rpc of RPC_COMUNITARIAS) {
+      expect(paginaJs).toContain(`, '${rpc}'`);
+    }
+    // Ninguna capa debe inventar nombres que las migraciones no declaren.
     const nombresUsados = [...repositorio.matchAll(/rpc\('([a-z_]+)'/g)].map((m) => m[1])
-      .concat([...paginaJs.matchAll(/rpc\('([a-z_]+)'/g)].map((m) => m[1]));
+      .concat([...paginaJs.matchAll(/rpc(?:Flujo)?\('([a-z_]+)'/g)].map((m) => m[1]))
+      .concat([...paginaJs.matchAll(/rpcFlujo\('[a-z_]+',\s*'([a-z_]+)'/g)].map((m) => m[1]));
     for (const nombre of new Set(nombresUsados)) {
-      expect(migracion).toContain(`FUNCTION public.${nombre}(`);
+      expect(migracionesTodas).toContain(`FUNCTION public.${nombre}(`);
     }
   });
 });
@@ -206,54 +226,77 @@ describe('página pública del alumno', () => {
     expect(paginaJs).toMatch(/\.opciones\[/);
 
     // Y, para que el test siga siendo un guardia de comportamiento y no solo
-    // de forma, verificamos que la página pública puede ejecutarse sin lanzar
-    // al recibir un resultado corregido (Q2) con el cliente suplado.
-    const clienteConResultadoCorregido = {
-      rpc: async (nombre, args) => {
-        if (nombre === 'fb_estado_enlace') {
-          return { data: { titulo: 'Examen de prueba', profesor: 'Profesor', estado: 'publicado', publicado: true, usado: false, total_preguntas: 2, puntos_totales: 2 } };
+    // de forma, ejecutamos la página con el cliente suplado en los DOS estados
+    // posibles del enlace usado y afirmamos lo que ve el alumno en cada uno:
+    //   · calificado  → detalle por pregunta (enunciado, respuesta, ✓/✗…)
+    //   · entregado   → pendiente de corrección, SIN respuesta correcta.
+    const PREGUNTAS = [
+      { id: 'p1', tipo: 'multiple', texto: '¿Pregunta uno?', opciones: ['A', 'B'], puntos: 1, obligatoria: true },
+      { id: 'p2', tipo: 'respuesta_corta', texto: '¿Pregunta dos?', puntos: 1 }
+    ];
+
+    const resultadoCorregido = {
+      estado: 'calificado',
+      nota: 8.5,
+      titulo: 'Examen de prueba',
+      puntuacion: 85,
+      preguntas: PREGUNTAS,
+      detalle: {
+        por_pregunta: {
+          p1: { es_correcta: true, puntos: 1, respuesta_alumno: '0', respuesta_correcta: '0' },
+          p2: { es_correcta: false, puntos: 0, respuesta_alumno: 'Maria', respuesta_correcta: 'Pedro', comentario: 'Falta el contexto.' }
         }
-        if (nombre === 'fb_iniciar_por_token') {
-          return { data: { intento_id: 'i1', reanudado: false, respuestas: {}, alumno_nombre: 'Alumno', preguntas: [{ id: 'p1', tipo: 'multiple', opciones: ['A', 'B'], puntos: 1 }, { id: 'p2', tipo: 'respuesta_corta', puntos: 1 }] } };
-        }
-        if (nombre === 'fb_entregar_por_token') {
-          return { data: { intento_id: 'i1', estado: 'completado', pendientes_correccion: 1 } };
-        }
-        if (nombre === 'fb_consultar_entrega') {
-          return { data: {
-            estado: 'calificado',
-            nota: 8.5,
-            titulo: 'Examen de prueba',
-            puntuacion: 85,
-            preguntas: [{ id: 'p1', tipo: 'multiple', opciones: ['A', 'B'], puntos: 1 }, { id: 'p2', tipo: 'respuesta_corta', puntos: 1 }],
-            detalle: {
-              por_pregunta: {
-                p1: { es_correcta: true, puntos: 1, respuesta_correcta: '0' },
-                p2: { es_correcta: false, puntos: 0, respuesta_correcta: 'Pedro' }
-              }
-            }
-          }};
-        }
-        throw new Error('rpc no esperada: ' + nombre);
       }
     };
 
+    const resultadoPendiente = {
+      estado: 'entregado',
+      titulo: 'Examen de prueba',
+      pendiente_correccion: 1,
+      preguntas: PREGUNTAS
+    };
+
+    function clienteConResultado(consulta) {
+      return {
+        rpc: async (nombre) => {
+          if (nombre === 'fb_estado_enlace') {
+            return { data: { titulo: 'Examen de prueba', profesor: 'Profesor', estado: 'publicado', publicado: true, usado: true, total_preguntas: 2, puntos_totales: 2 } };
+          }
+          if (nombre === 'fb_iniciar_por_token') {
+            return { data: { intento_id: 'i1', reanudado: false, respuestas: {}, alumno_nombre: 'Alumno', preguntas: PREGUNTAS } };
+          }
+          if (nombre === 'fb_entregar_por_token') {
+            return { data: { intento_id: 'i1', estado: 'completado', pendientes_correccion: 1 } };
+          }
+          if (nombre === 'fb_consultar_entrega') {
+            return { data: consulta };
+          }
+          throw new Error('rpc no esperada: ' + nombre);
+        }
+      };
+    }
+
+    async function ejecutarPagina(cliente) {
     const viejoWindow = global.window;
     const viejoDocument = global.document;
+    // Todo texto que la página pinta (textContent / nodos de texto) se acumula
+    // aquí para poder afirmar qué ve el alumno en cada escenario.
+    const textos = [];
 
     function stubDocument() {
       const doc = {
         addEventListener() {},
-        getElementById: () => null,
+        // La página pinta sobre #lienzo (y lee #cabTitulo…): sin un nodo para
+        // cada id, pantallaMensaje revienta con «Cannot set properties of null».
+        getElementById: (id) => doc.createElement('div'),
         querySelector: () => null,
         querySelectorAll: () => [],
         body: { appendChild() {}, insertBefore() {}, removeChild() {}, clientWidth: 0, clientHeight: 0 },
         createElement(tag) {
-          return {
+          const nodo = {
             tagName: tag.toUpperCase(),
             className: '',
             id: '',
-            textContent: '',
             style: { setProperty() {}, removeProperty() {}, cursor: '', border: '', maxWidth: '', margin: '', padding: '' },
             dataset: {},
             classList: { add() {}, remove() {}, toggle() {}, contains() { return false; } },
@@ -286,17 +329,31 @@ describe('página pública del alumno', () => {
             isConnected: false,
             getBoundingClientRect() { return { top: 0, left: 0, width: 0, height: 0 }; },
           };
+          // Cada texto que la página asigna queda registrado en `textos` para
+          // poder afirmar qué ve el alumno sin depender del árbol real.
+          let texto = '';
+          Object.defineProperty(nodo, 'textContent', {
+            get() { return texto; },
+            set(valor) { texto = valor == null ? '' : String(valor); if (texto) textos.push(texto); },
+            enumerable: true,
+            configurable: true
+          });
+          return nodo;
         },
-        createTextNode(text) { return { textContent: text, nodeType: 3 }; },
+        createTextNode(text) {
+          const valor = text == null ? '' : String(text);
+          if (valor) textos.push(valor);
+          return { textContent: valor, nodeType: 3 };
+        },
         readyState: 'complete',
       };
       return doc;
     }
     global.document = stubDocument();
     global.window = Object.assign({
-      location: { pathname: '/e/TEST123', search: '', href: '/e/TEST123' },
+      location: { pathname: '/e/TEST1234567890', search: '', href: '/e/TEST1234567890' },
       document: global.document,
-      supabaseClient: clienteConResultadoCorregido,
+      supabaseClient: cliente,
     }, global.document);
     global.window.addEventListener = () => {};
     global.window.matchMedia = () => ({ matches: false, addListener() {}, removeListener() {} });
@@ -350,10 +407,30 @@ describe('página pública del alumno', () => {
     global.window.ResizeObserver = class { constructor() {} observe() {} unobserve() {} disconnect() {} };
     try {
       new Function(paginaJs)();
+      // La página resuelve las RPCs en microtareas: esperamos a que la cadena
+      // termine (estado → consulta → pintado) antes de desmontar los stubs.
+      await new Promise((resolver) => setTimeout(resolver, 0));
+      await new Promise((resolver) => setTimeout(resolver, 0));
     } finally {
       global.window = viejoWindow;
       try { global.document = viejoDocument; } catch (e) {}
     }
+    return textos.join('\n');
+    }
+
+    const vistaCorregido = await ejecutarPagina(clienteConResultado(resultadoCorregido));
+    // El alumno ve el detalle por pregunta en solo lectura…
+    expect(vistaCorregido).toContain('Tu resultado por pregunta');
+    expect(vistaCorregido).toContain('¿Pregunta uno?');
+    expect(vistaCorregido).toContain('Tu respuesta:');
+    expect(vistaCorregido).toContain('Respuesta correcta:');
+    expect(vistaCorregido).toContain('Puntos:');
+    expect(vistaCorregido).toContain('Comentario del profesor:');
+    expect(vistaCorregido).toContain('Falta el contexto.');
+    // …y la respuesta correcta solo aparece cuando el servidor ya corrigió.
+    const vistaPendiente = await ejecutarPagina(clienteConResultado(resultadoPendiente));
+    expect(vistaPendiente).toContain('Entrega registrada');
+    expect(vistaPendiente).not.toContain('Respuesta correcta:');
   });
 
   function examenJsFueraDeIIFE() {
@@ -363,8 +440,11 @@ describe('página pública del alumno', () => {
   }
 
   test('la entrega se confirma y se guarda en el servidor', () => {
-    expect(paginaJs).toContain("rpc('fb_entregar_por_token'");
-    expect(paginaJs).toContain("rpc('fb_guardar_borrador_token'");
+    expect(paginaJs).toContain(`('fb_entregar_por_token'`);
+    expect(paginaJs).toContain(`('fb_guardar_borrador_token'`);
+    // En el enlace de la clase la entrega y el autoguardado pasan por la 063.
+    expect(paginaJs).toContain(", 'fb_comunitario_entregar'");
+    expect(paginaJs).toContain(", 'fb_comunitario_borrador'");
     expect(paginaJs).toContain('¿Entregar el examen?');
     // Los errores técnicos no se muestran al alumno.
     expect(paginaJs).toContain('mensajePublico');
@@ -401,6 +481,14 @@ describe('página pública del alumno', () => {
       expect(paginaJs).toContain('tarjeta.appendChild(avisoComunitario);');
     });
 
+    test('el aviso advierte que para revisar la nota hay que repetir el mismo nombre', () => {
+      // La identidad del enlace comunitario es lower(btrim(nombre)) (migración
+      // 063): si el alumno escribe otro nombre, no encontrará su examen.
+      expect(paginaJs).toContain(
+        "avisoComunitario.appendChild(document.createTextNode(' Para revisar tu nota tendrás que escribir exactamente el mismo nombre con el que respondas.'));"
+      );
+    });
+
     test('la página oculta mensajes técnicos del servidor al alumno', () => {
       expect(paginaJs).toContain('function mensajePublico(mensaje) {');
       expect(paginaJs).toContain("/schema cache|does not exist|permission denied|JWT|violates|duplicate key|syntax error|relation \"/i.test(texto);");
@@ -415,11 +503,125 @@ describe('página pública del alumno', () => {
       expect(codigo).toContain("inputNombre.setAttribute('aria-describedby', errorId);");
     });
 
-    test('la confirmación de entrega sigue siendo privada y exige respuestas obligatorias', () => {
+    test('las RPC comunitarias existen y se asignan a la app que no paga (anon)', () => {
+    // La migración 063 declara el enlace comunitario: sus cuatro RPCs públicas
+    // se conceden a anon (la página del alumno no tiene sesión) y la de creación
+    // del enlace queda reservada al profesor autenticado.
+    const publicas = [
+      'fb_comunitario_iniciar(TEXT, TEXT, TEXT)',
+      'fb_comunitario_borrador(TEXT, TEXT, JSONB)',
+      'fb_comunitario_entregar(TEXT, TEXT, JSONB)',
+      'fb_comunitario_consultar(TEXT, TEXT)'
+    ];
+    for (const firma of publicas) {
+      expect(migracion063).toContain(`REVOKE ALL ON FUNCTION public.${firma} FROM PUBLIC;`);
+      expect(migracion063).toContain(`GRANT EXECUTE ON FUNCTION public.${firma} TO anon, authenticated;`);
+    }
+    // Los auxiliares privados (buscar enlace y normalizar nombre) jamás salen.
+    expect(migracion063).toContain('REVOKE ALL ON FUNCTION public.fb_comunitario_enlace(TEXT) FROM PUBLIC, anon, authenticated;');
+    expect(migracion063).toContain('REVOKE ALL ON FUNCTION public.fb_nombre_comun(TEXT) FROM PUBLIC, anon, authenticated;');
+    // Crear el enlace de la clase es del profesor: nunca se concede a anon.
+    expect(migracion063).toContain('REVOKE ALL ON FUNCTION public.fb_crear_enlace_comunitario(UUID) FROM PUBLIC, anon;');
+    expect(migracion063).toContain('GRANT EXECUTE ON FUNCTION public.fb_crear_enlace_comunitario(UUID) TO authenticated;');
+    const concesionesAAnon = migracion063
+      .split('\n')
+      .filter((linea) => linea.includes('fb_crear_enlace_comunitario') && /TO anon/.test(linea));
+    expect(concesionesAAnon).toEqual([]);
+  });
+
+  test('la migración 063 define el enlace de la clase y sus RPCs comunitarias', () => {
+    // La 063 añade la marca es_comunitario, la columna del intento, el índice
+    // único que impide dos intentos del mismo alumno y el contexto que la
+    // página usa para saber que el enlace es de toda la clase.
+    expect(migracion063).toContain('ADD COLUMN IF NOT EXISTS es_comunitario BOOLEAN NOT NULL DEFAULT FALSE');
+    expect(migracion063).toContain('ADD COLUMN IF NOT EXISTS enlace_comunitario BOOLEAN NOT NULL DEFAULT FALSE');
+    expect(migracion063).toContain('CREATE UNIQUE INDEX IF NOT EXISTS idx_intento_comunitario_unico');
+    expect(migracion063).toContain('WHERE enlace_id IS NOT NULL AND enlace_comunitario');
+    // El contexto del enlace expresa la bandera que decide el flujo en JS.
+    const contexto = migracion063.slice(migracion063.indexOf('FUNCTION public.fb_contexto_enlace(p_token TEXT)'));
+    expect(contexto).toContain("'comunitario', l.es_comunitario");
+    // La RPC de creación reutiliza el enlace si ya existe y genera token nuevo.
+    const crear = migracion063.slice(migracion063.indexOf('FUNCTION public.fb_crear_enlace_comunitario(p_examen_id UUID)'));
+    expect(crear).toContain('WHERE examen_id = p_examen_id AND es_comunitario');
+    expect(crear).toContain('public.fb_nuevo_token()');
+    expect(crear).toContain('RETURNING * INTO v_row');
+    // La revisión del alumno tras corregir trae preguntas y detalle por
+    // pregunta, igual que fb_consultar_entrega (migración 059).
+    const consulta = migracion063.slice(migracion063.indexOf('FUNCTION public.fb_comunitario_consultar'));
+    expect(consulta).toContain('IF i.corregido THEN');
+    expect(consulta).toContain('public.fb_sanitizar_preguntas(i.preguntas_snapshot)');
+    expect(consulta).toContain("'detalle', jsonb_build_object('por_pregunta', v_detalle)");
+    expect(consulta).toContain('public.fb_respuesta_correcta_visible(');
+    // Antes de corregir no viajan ni el snapshot ni la respuesta correcta.
+    const ramaCorregida = consulta.slice(consulta.indexOf('IF i.corregido THEN'));
+    const ramaEntregada = ramaCorregida.slice(ramaCorregida.indexOf("'estado', 'entregado'"));
+    expect(ramaEntregada).not.toContain("'preguntas'");
+    expect(ramaEntregada).not.toContain("'detalle'");
+    expect(ramaEntregada).not.toContain('respuesta_correcta');
+  });
+
+  test('la confirmación de entrega sigue siendo privada y exige respuestas obligatorias', () => {
       expect(paginaJs).toContain("var pendientes = estado.preguntas.filter(function (p) { return !estaRespondida(p.id); });");
       expect(paginaJs).toContain("var obligatoriasVacias = pendientes.filter(function (p) { return p.obligatoria; });");
       expect(paginaJs).toContain('¿Entregar el examen?');
       expect(paginaJs).toContain('Debes responder las preguntas obligatorias antes de entregar.');
     });
+  });
+});
+
+describe('detalle del resultado por pregunta y ausencia de grupo en el intro', () => {
+  const migracion059 = read('supabase/migraciones/059_detalle_resultado_alumno.sql');
+
+  test('la migración 059 trae preguntas y desglose solo cuando la corrección está cerrada', () => {
+    const inicio = migracion059.indexOf('FUNCTION public.fb_consultar_entrega');
+    expect(inicio).toBeGreaterThan(-1);
+    const cuerpo = migracion059.slice(inicio);
+    const marcaCorregido = cuerpo.indexOf('IF i.corregido THEN');
+    const marcaEntregado = cuerpo.indexOf("'estado', 'entregado'");
+    const finEntregado = cuerpo.indexOf('END;', marcaEntregado);
+    expect(marcaCorregido).toBeGreaterThan(-1);
+    expect(marcaEntregado).toBeGreaterThan(marcaCorregido);
+    expect(finEntregado).toBeGreaterThan(marcaEntregado);
+
+    const ramaCorregida = cuerpo.slice(marcaCorregido, marcaEntregado);
+    const ramaEntregada = cuerpo.slice(marcaEntregado, finEntregado);
+
+    // Solo la rama calificada envía el snapshot (siempre sanitizado) y el desglose.
+    expect(ramaCorregida).toContain('public.fb_sanitizar_preguntas(i.preguntas_snapshot)');
+    expect(ramaCorregida).toContain("'preguntas', v_preguntas");
+    expect(ramaCorregida).toContain("'detalle', jsonb_build_object('por_pregunta', v_detalle)");
+    expect(ramaCorregida).toContain('public.fb_respuesta_correcta_visible(');
+    // Pendiente de corrección: ni preguntas ni desglose, igual que antes.
+    expect(ramaEntregada).not.toContain("'preguntas'");
+    expect(ramaEntregada).not.toContain("'detalle'");
+    expect(ramaEntregada).not.toContain('respuesta_correcta');
+  });
+
+  test('la forma visible de la respuesta correcta no se concede a los roles públicos', () => {
+    expect(migracion059).toContain('REVOKE ALL ON FUNCTION public.fb_respuesta_correcta_visible(TEXT, TEXT, JSONB) FROM PUBLIC, anon, authenticated;');
+    expect(migracion059).toContain('REVOKE ALL ON FUNCTION public.fb_consultar_entrega(TEXT) FROM PUBLIC;');
+    expect(migracion059).toContain('GRANT EXECUTE ON FUNCTION public.fb_consultar_entrega(TEXT) TO anon, authenticated;');
+    // La ampliación no toca los permisos de tablas del examen.
+    expect(migracion059).not.toMatch(/GRANT\s+(SELECT|INSERT|UPDATE|DELETE)/i);
+  });
+
+  test('el resultado pinta ✓/✗ y los puntos que decide el servidor', () => {
+    expect(paginaJs).toContain("nota-pregunta__marca' + (correctaGlobal ? ' nota-pregunta__marca--ok' : ' nota-pregunta__marca--mal')");
+    expect(paginaJs).toContain("correctaGlobal ? '✓' : '✗'");
+    // El parcial de "completar" (0,67) ya no se pinta como 0.
+    expect(paginaJs).toContain('formatearNota(puntosObtenidos)');
+    expect(paginaJs).not.toContain("puntosFinales.appendChild(el('strong', null, '0'));" );
+    expect(paginaHtml).toContain('.nota-pregunta__marca--ok');
+    expect(paginaHtml).toContain('.nota-pregunta__comentario');
+  });
+
+  test('el intro del alumno ya no tiene campo de grupo, ni el build publicado', () => {
+    expect(paginaJs).not.toContain('campoGrupo');
+    expect(paginaJs).not.toContain('Grupo (opcional)');
+    expect(paginaJs).not.toContain('alumno_grupo');
+    expect(paginaHtml).not.toContain('campoGrupo');
+    const build = read('dist-public/examen.js');
+    expect(build).not.toContain('campoGrupo');
+    expect(build).not.toContain('Grupo (opcional)');
   });
 });

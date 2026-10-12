@@ -48,7 +48,7 @@
 
 
 .btn-peligro:hover { background: var(--color-error-hover); }
-.btn-peligro:active { transform: scale(0.99); }
+.btn-peligro:active { transform: scale(0.98); }
 
 .modal-confirm {
   width: 100%;

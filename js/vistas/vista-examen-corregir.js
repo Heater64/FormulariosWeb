@@ -161,8 +161,14 @@
       let correctaHtml = '';
       if (p.tipo === 'completar' && p.huecos && Array.isArray(p.huecos) && p.huecos.length > 0) {
         correctaHtml = `<p class="corregir-pregunta__correcta">Correctas: ${p.huecos.map(h => window.helpers.escapeHtml(h.respuesta_correcta)).join(', ')}</p>`;
-      } else if (p.tipo === 'respuesta_corta' || p.tipo === 'completar') {
-        correctaHtml = `<p class="corregir-pregunta__correcta">Correcta: ${window.helpers.escapeHtml(p.respuesta_correcta)}</p>`;
+      } else if (p.tipo === 'completar') {
+        // Frase con palabras aceptadas (sin huecos marcados): se leen «a o b».
+        const referencias = String(p.respuesta_correcta || '').split('|')
+          .map((s) => s.trim()).filter(Boolean).join(' o ');
+        correctaHtml = referencias
+          ? `<p class="corregir-pregunta__correcta">Correcta: ${window.helpers.escapeHtml(referencias)}</p>` : '';
+      } else if (p.tipo === 'respuesta_corta') {
+        correctaHtml = `<p class="corregir-pregunta__correcta">Correcta: ${window.helpers.escapeHtml(p.respuesta_correcta || '')}</p>`;
       }
 
       const toggleAuto = corr.es_correcta === null ? 'corregir-toggle__btn--auto' : '';
@@ -235,9 +241,24 @@
         btn.onclick = () => {
           const pid = btn.dataset.pid;
           const valor = btn.dataset.valor;
-          if (valor === 'auto') this._correcciones[id][pid].es_correcta = null;
-          else if (valor === 'si') this._correcciones[id][pid].es_correcta = true;
-          else if (valor === 'no') this._correcciones[id][pid].es_correcta = false;
+          const pregunta = this._preguntas.find(p => p.id === pid);
+          const maximos = window.puntuacionExamen.puntosPregunta(pregunta);
+          const corr = this._correcciones[id][pid];
+          // La decisión y los puntos viajan juntos: el servidor puntúa con el
+          // override completo (fb_calcular_puntuacion), así que marcar «Correcta»
+          // sin sus puntos dejaría la pregunta en cero (y «Incorrecta» con puntos).
+          if (valor === 'auto') {
+            corr.es_correcta = null;
+            corr.puntos = this._puntosAuto(id, pid);
+          } else if (valor === 'si') {
+            corr.es_correcta = true;
+            corr.puntos = maximos;
+          } else if (valor === 'no') {
+            corr.es_correcta = false;
+            corr.puntos = 0;
+          }
+          const displayPuntos = raiz.querySelector(`[data-puntos-valor="${pid}"]`);
+          if (displayPuntos) displayPuntos.textContent = corr.puntos;
           this._recalcular(id, raiz);
           const toggle = btn.closest('.corregir-toggle');
           toggle.querySelectorAll('.corregir-toggle__btn').forEach(b => {
@@ -337,6 +358,25 @@
       return {};
     },
 
+    /**
+     * Puntos que daría el cálculo automático de esta pregunta (espejo de
+     * vista-entregas._puntosAuto / fb_calcular_puntuacion) para que el valor
+     * visible coincida con la nota cuando el estado vuelve a «Auto».
+     */
+    _puntosAuto(intentoId, pid) {
+      const p = (this._preguntas || []).find(x => x.id === pid);
+      if (!p) return 0;
+      const pts = window.puntuacionExamen.puntosPregunta(p);
+      const respuestas = this._respuestasDe(intentoId);
+      if (p.tipo === 'completar' && Array.isArray(p.huecos) && p.huecos.length) {
+        const arr = Array.isArray(respuestas[p.id]) ? respuestas[p.id] : [];
+        const h = window.puntuacionExamen._calcularHuecos(arr, p.huecos);
+        return h.total > 0 ? Math.round((h.correctos / h.total) * pts * 100) / 100 : 0;
+      }
+      const ok = window.puntuacionExamen.esCorrectaPregunta(respuestas[p.id], p);
+      return window.puntuacionExamen.evaluarPregunta(ok, pts);
+    },
+
     _fmtFecha(iso) {
       if (!iso) return '';
       const d = new Date(iso);
@@ -352,7 +392,14 @@
         const idx = parseInt(rUser, 10);
         return (p.opciones && p.opciones[idx] !== undefined) ? p.opciones[idx] : String(rUser);
       }
-      if (p.tipo === 'verdadero_falso') return rUser === 'true' ? 'Verdadero' : rUser === 'false' ? 'Falso' : String(rUser);
+      if (p.tipo === 'verdadero_falso') {
+        // Intentos actuales guardan índice 0/1; los antiguos, 'true'/'false'.
+        const opciones = (Array.isArray(p.opciones) && p.opciones.length === 2)
+          ? p.opciones : ['Verdadero', 'Falso'];
+        if (rUser === '0' || rUser === 0 || rUser === 'true') return String(opciones[0]);
+        if (rUser === '1' || rUser === 1 || rUser === 'false') return String(opciones[1]);
+        return String(rUser);
+      }
       if (p.tipo === 'varias_opciones') {
         try { const arr = JSON.parse(rUser); if (Array.isArray(arr)) return arr.map(i => p.opciones?.[i] || i).join(', '); } catch (e) {}
         return String(rUser);

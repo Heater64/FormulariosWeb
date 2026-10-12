@@ -341,19 +341,22 @@ class Router {
     }
   }
 
-  // Títulos únicos por ruta (UX/SEO dentro de la app). La marca del centro
-  // configurada por el propietario (fb_marca) tiene prioridad: si existe,
-  // se mantiene como título en todas las secciones.
+  // Títulos únicos por ruta (UX/SEO dentro de la app). Solo lo importante:
+  // la pestaña nombra la sección, sin repetir la marca en cada vista. La marca
+  // del centro configurada por el propietario (fb_marca) tiene prioridad: si
+  // existe, se mantiene como título en todas las secciones.
   _titulos() {
     return {
-      '/': 'Panel — FormsBiblicos',
-      '/inicio': 'Inicio — FormsBiblicos',
-      '/examenes': 'Exámenes — FormsBiblicos',
-      '/entregas': 'Entregas — FormsBiblicos',
-      '/cuenta': 'Mi cuenta — FormsBiblicos',
-      '/editor/nuevo': 'Nuevo examen — FormsBiblicos',
-      '/editor/:id': 'Editar examen — FormsBiblicos',
-      '/corregir/:id': 'Entregas del examen — FormsBiblicos'
+      '/': 'Inicio',
+      '/inicio': 'Inicio',
+      '/examenes': 'Exámenes',
+      '/entregas': 'Entregas',
+      '/cuenta': 'Cuenta',
+      '/editor/nuevo': 'Nuevo examen',
+      '/editor/:id': 'Editar examen',
+      '/corregir/:id': 'Entregas del examen',
+      '/evaluaciones': 'Evaluaciones',
+      '/evaluaciones/:id': 'Evaluación'
     };
   }
 

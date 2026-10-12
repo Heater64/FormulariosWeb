@@ -26,7 +26,9 @@
     preguntas: [],
     respuestas: {},
     enviando: false,
-    guardadoTimer: null
+    guardadoTimer: null,
+    comunitario: false,
+    nombre: null
   };
 
   // ── Utilidades ────────────────────────────────────────────────────────────
@@ -63,6 +65,18 @@
   function anunciar(texto) {
     var sr = $('estadoSr');
     if (sr) sr.textContent = texto;
+  }
+
+  // Enlace comunitario: la identidad del alumno es su nombre, no un token.
+  // rpcEnlace elige la RPC de siempre o la comunitaria que lleva p_nombre.
+  function rpcFlujo(rpcIndividual, rpcComunitario, args) {
+    if (!estado.comunitario) return rpc(rpcIndividual, args || {});
+    var argsConNombre = { p_nombre: estado.nombre };
+    var clave;
+    for (clave in args || {}) {
+      if (Object.prototype.hasOwnProperty.call(args, clave)) argsConNombre[clave] = args[clave];
+    }
+    return rpc(rpcComunitario, argsConNombre);
   }
 
   function rpc(nombre, args) {
@@ -147,6 +161,8 @@
       var avisoComunitario = el('div', 'aviso aviso--error');
       avisoComunitario.appendChild(el('strong', null, 'Este enlace es público. '));
       avisoComunitario.appendChild(document.createTextNode('Escribe tu nombre para identificarte antes de responder.'));
+      avisoComunitario.appendChild(document.createTextNode(' Responderás y, cuando lo hayas entregado, podrás revisar tu examen en este mismo enlace.'));
+      avisoComunitario.appendChild(document.createTextNode(' Para revisar tu nota tendrás que escribir exactamente el mismo nombre con el que respondas.'));
       tarjeta.appendChild(avisoComunitario);
     }
 
@@ -164,7 +180,9 @@
     inputNombre.autocomplete = 'name';
     inputNombre.maxLength = 120;
     inputNombre.required = true;
-    inputNombre.value = ctx.nombre_alumno || '';
+    // En el enlace de la clase el nombre no lo da el servidor: se recuerda el
+    // último con el que este dispositivo identificó a un alumno (editable).
+    inputNombre.value = nombreRecordado() || ctx.nombre_alumno || '';
     campoNombre.appendChild(inputNombre);
     form.appendChild(campoNombre);
 
@@ -193,7 +211,8 @@
       error.classList.add('oculto');
       btn.disabled = true;
       btn.textContent = 'Abriendo examen…';
-      iniciar(inputNombre.value.trim());
+      if (estado.comunitario) recordarNombre(nombre);
+      iniciar(nombre);
     });
 
     lienzo.appendChild(tarjeta);
@@ -300,7 +319,9 @@
     cont.appendChild(cab);
 
     var texto = el('div', 'pregunta__texto');
-    texto.appendChild(document.createTextNode(pregunta.texto || ('Pregunta ' + (indice + 1))));
+    // En "completar" el enunciado lleva marcadores {0}, {1}…: se pintan como
+    // huecos numerados para que enlacen con los campos "Hueco 1", "Hueco 2".
+    texto.appendChild(document.createTextNode(marcarHuecos(pregunta.texto || ('Pregunta ' + (indice + 1)))));
     if (pregunta.obligatoria) {
       var marca = el('span', 'pregunta__obligatoria');
       marca.textContent = ' *';
@@ -487,10 +508,11 @@
     cont.appendChild(fs);
 
     var jugadorRelacionar = function () {
-      if (contenedorActual === cont && preguntaActual === null) {
-        contenedorActual = cont;
-        preguntaActual = pregunta;
-      }
+      // Guardar SIEMPRE: este manejador es el único sitio donde la respuesta de
+      // «relacionar» pasa a estado.respuestas. Cualquier referencia a variables
+      // inexistentes aquí (restos de una navegación por preguntas ya retirada)
+      // lanzaba ReferenceError antes de guardar: la pregunta se quedaba marcada
+      // como «sin responder» y, siendo obligatoria, bloqueaba la entrega.
       guardarMapaParejas(lista, pregunta, actualizar);
     };
     selects.forEach(function (select) {
@@ -605,7 +627,7 @@
     clearTimeout(estado.guardadoTimer);
     actualizarEstadoGuardado('Guardando…', false);
     estado.guardadoTimer = setTimeout(function () {
-      rpc('fb_guardar_borrador_token', { p_token: estado.token, p_respuestas: estado.respuestas })
+      rpcFlujo('fb_guardar_borrador_token', 'fb_comunitario_borrador', { p_token: estado.token, p_respuestas: estado.respuestas })
         .then(function () { actualizarEstadoGuardado('Borrador guardado', true); })
         .catch(function () { actualizarEstadoGuardado('Sin conexión: reintentaremos', false); });
     }, 900);
@@ -703,7 +725,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Entregando…'; }
     clearTimeout(estado.guardadoTimer);
 
-    return rpc('fb_entregar_por_token', { p_token: estado.token, p_respuestas: estado.respuestas })
+    return rpcFlujo('fb_entregar_por_token', 'fb_comunitario_entregar', { p_token: estado.token, p_respuestas: estado.respuestas })
       .then(function (res) {
         quitarBarra();
         anunciar('Examen entregado correctamente.');
@@ -733,9 +755,7 @@
       ok.appendChild(document.createTextNode('Tu profesor publicará la nota en este enlace.'));
       extra.appendChild(ok);
     }
-    var nota = el('p', 'sub');
-    nota.style.fontSize = 'var(--xs)';
-    nota.textContent = 'Puedes cerrar esta pestaña. Guarda el enlace para consultar tu resultado.';
+    var nota = el('p', 'pie-nota', 'Puedes cerrar esta pestaña. Guarda el enlace para consultar tu resultado.');
     extra.appendChild(nota);
     extra.style.marginTop = 'var(--md)';
 
@@ -782,15 +802,24 @@
           var cab = el('header', 'nota-pregunta__cabecera');
           cab.appendChild(el('span', 'nota-pregunta__n', 'Pregunta ' + (idx + 1)));
           if (pregunta.obligatoria) cab.appendChild(el('span', 'nota-pregunta__oblig', 'Obligatoria'));
+          var marcaPreg = el('span', 'nota-pregunta__marca' + (correctaGlobal ? ' nota-pregunta__marca--ok' : ' nota-pregunta__marca--mal'), correctaGlobal ? '✓' : '✗');
+          cab.appendChild(marcaPreg);
           cab.appendChild(el('span', 'nota-pregunta__pts', maxPuntos + ' pt'));
           bloque.appendChild(cab);
 
           var enunciado = el('p', 'nota-pregunta__enunciado');
-          enunciado.appendChild(document.createTextNode(pregunta.texto || ('Pregunta ' + (idx + 1))));
+          // En "completar" el enunciado lleva marcadores {0}, {1}…: aquí no
+          // hay inputs, así que se pintan numerados como en el examen.
+          var textoEnunciado = marcarHuecos(pregunta.texto || ('Pregunta ' + (idx + 1)));
+          enunciado.appendChild(document.createTextNode(textoEnunciado));
           bloque.appendChild(enunciado);
 
           var respuestaAlumno = extraerRespuestaAlumno(detalle.respuesta_alumno, pregunta);
-          var respuestaCorrecta = detalle.respuesta_correcta != null ? detalle.respuesta_correcta : null;
+          // El servidor manda la respuesta correcta en crudo (índice, JSON…):
+          // se traduce a texto igual que la del alumno para poder compararlas.
+          var respuestaCorrecta = detalle.respuesta_correcta != null
+            ? extraerRespuestaAlumno(detalle.respuesta_correcta, pregunta)
+            : null;
 
           var cuerpo = el('div', 'nota-pregunta__cuerpo');
           var filaRespuesta = el('div', 'nota-pregunta__respuesta');
@@ -805,16 +834,14 @@
             cuerpo.appendChild(filaCorrecta);
           }
 
-          var filaPuntos = el('div', 'nota-pregunta__puntos' + (correctaGlobal ? ' nota-pregunta__puntos--ok' : ''));
+          // Los puntos siempre los decide el servidor (incluido el parcial
+          // de "completar"), así que se pinta tal cual, no "0".
+          var filaPuntos = el('div', 'nota-pregunta__puntos' + (puntosObtenidos >= maxPuntos ? ' nota-pregunta__puntos--ok' : ''));
           filaPuntos.appendChild(el('span', 'nota-pregunta__label', 'Puntos:'));
           var puntosFinales = el('span', 'nota-pregunta__valor');
-          if (correctaGlobal && puntosObtenidos > 0) {
-            puntosFinales.appendChild(el('strong', null, puntosObtenidos));
-            puntosFinales.appendChild(el('span', 'nota-pregunta__max', ' / ' + maxPuntos));
-          } else {
-            puntosFinales.appendChild(el('strong', null, '0'));
-            puntosFinales.appendChild(el('span', 'nota-pregunta__max', ' / ' + maxPuntos));
-          }
+          puntosFinales.appendChild(el('strong', null, formatearNota(puntosObtenidos)));
+          puntosFinales.appendChild(el('span', 'nota-pregunta__max', ' / ' + maxPuntos));
+          filaPuntos.appendChild(puntosFinales);
           cuerpo.appendChild(filaPuntos);
           bloque.appendChild(cuerpo);
 
@@ -848,9 +875,19 @@
           : 'La nota final aparecerá aquí cuando tu profesor termine la corrección.'
       ));
       extra.appendChild(aviso);
+      extra.appendChild(el('p', 'pie-nota', 'Vuelve a este mismo enlace: la nota y el detalle aparecerán aquí solos.'));
       extra.style.marginTop = 'var(--md)';
       pantallaMensaje({ icono: '⏳', titulo: 'Pendiente de corrección', texto: res.titulo || 'Examen', extra: extra });
     }
+  }
+
+  // Un marcador {0} en el enunciado debe leerse junto al campo "Hueco 1":
+  // se dibuja numerado en vez de dejar la llave literal en pantalla.
+  function marcarHuecos(texto) {
+    return String(texto || '').replace(/\{(\d+)\}/g, function (_m, n) {
+      var d = Number(n) + 1;
+      return d <= 10 ? '①②③④⑤⑥⑦⑧⑨⑩'[d - 1] : '[' + d + ']';
+    });
   }
 
   function extraerRespuestaAlumno(respuestaAlumno, pregunta) {
@@ -909,15 +946,36 @@
   }
 
   // ── Arranque ──────────────────────────────────────────────────────────────
+  function recordarNombre(nombre) {
+    try { window.localStorage.setItem('fb_comunitario:' + estado.token, nombre); } catch (e) { /* sin permiso de almacenamiento: se ignora */ }
+  }
+
+  function nombreRecordado() {
+    try { return window.localStorage.getItem('fb_comunitario:' + estado.token) || ''; } catch (e) { return ''; }
+  }
+
+  // Abre el examen en los DOS flujos. El individual lleva solo el token; el
+  // comunitario se identifica por el nombre del alumno (fb_comunitario_iniciar
+  // retoma su intento si ya existía y avisa `entregado` si ya lo entregó).
   function iniciar(nombre) {
-    return rpc('fb_iniciar_por_token', { p_token: estado.token })
+    if (estado.comunitario && nombre) estado.nombre = nombre;
+    var args = { p_token: estado.token };
+    if (estado.comunitario) { args.p_nombre = nombre; args.p_grupo = ''; }
+    return rpcFlujo('fb_iniciar_por_token', 'fb_comunitario_iniciar', args)
       .then(function (res) {
+        if (res.entregado) {
+          // Ya entregó con este nombre: la revisión no es un examen nuevo.
+          return rpcFlujo('fb_consultar_entrega', 'fb_comunitario_consultar', { p_token: estado.token })
+            .then(function (consulta) { pantallaResultado(consulta); });
+        }
         estado.intentoId = res.intento_id;
         estado.preguntas = res.preguntas || [];
         estado.respuestas = res.respuestas || {};
         if (nombre) res.nombre_alumno = nombre;
         estado.contexto = res;
-        cabecera(res.titulo, (res.alumno_nombre ? res.alumno_nombre : '') + (res.alumno_grupo ? ' · ' + res.alumno_grupo : ''), '0/' + estado.preguntas.length);
+        // El campo grupo ya no se pide ni se envía: la cabecera solo muestra
+        // el nombre con el que el alumno se identificó al abrir el enlace.
+        cabecera(res.titulo, res.alumno_nombre || '', '0/' + estado.preguntas.length);
         if (!estado.preguntas.length) {
           pantallaMensaje({ icono: '!', error: true, titulo: 'Examen sin preguntas', texto: 'Avisa a tu profesor: este examen todavía no tiene preguntas.' });
           return;
@@ -944,6 +1002,9 @@
     rpc('fb_estado_enlace', { p_token: estado.token })
       .then(function (ctx) {
         estado.contexto = ctx;
+        // La 063 marca los enlaces de la clase: a partir de ahí la identidad
+        // del alumno es su nombre, no el token individual.
+        estado.comunitario = !!ctx.comunitario;
         cabecera(ctx.titulo, ctx.profesor || '', '');
         if (ctx.usado) return mostrarEntrega();
         if (ctx.cerrado) {
@@ -967,7 +1028,7 @@
   }
 
   function mostrarEntrega() {
-    return rpc('fb_consultar_entrega', { p_token: estado.token })
+    return rpcFlujo('fb_consultar_entrega', 'fb_comunitario_consultar', { p_token: estado.token })
       .then(function (res) {
         if (res.estado === 'en_progreso') {
           return iniciar(res.alumno_nombre);

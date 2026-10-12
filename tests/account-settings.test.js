@@ -107,6 +107,9 @@ describe('interacción de apariencia de Cuenta', () => {
     };
     global.window = {
       panelUI: { esc: (value) => String(value ?? '') },
+      // La vista pinta iconos Lucide en la cabecera; el stub devuelve el mismo
+      // marcado que usa el sistema real de iconos.
+      Iconos: { render: (nombre) => `<i data-lucide="${nombre}"></i>`, actualizar() {} },
       preferencias: {
         guardar: (value) => { preferenciasGuardadas = value; },
         aplicar: () => { temaAplicado = true; }

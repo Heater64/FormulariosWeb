@@ -23,6 +23,26 @@ input:focus, select:focus, textarea:focus {
   box-shadow: 0 0 0 3px var(--color-acento-soft);
 }
 
+/* appearance: none arriba elimina la flecha nativa de los select: se devuelve
+   con un chevron único (--icono-select) para que todos los desplegables de la
+   app se vean iguales en Chrome, Firefox y Safari. Las variantes pill conservan
+   su propio fondo. */
+select {
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right var(--espaciado-md) center;
+  background-size: 14px;
+  padding-right: 42px;
+  cursor: pointer;
+}
+
+input:disabled,
+select:disabled,
+textarea:disabled {
+  opacity: var(--disabled-opacity);
+  cursor: not-allowed;
+}
+
 input::placeholder, textarea::placeholder {
   color: var(--color-texto-terciario);
 }

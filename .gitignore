@@ -14,3 +14,7 @@ test-results/
 
 # Dependency tree
 node_modules/
+
+dist/
+dist-public/
+.tmp

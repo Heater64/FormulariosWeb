@@ -586,9 +586,14 @@
 
 .admin-filtros select {
   padding: var(--espaciado-xs) var(--espaciado-sm);
+  padding-right: 30px;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
-  background: var(--color-fondo-tarjeta);
+  background-color: var(--color-fondo-tarjeta);
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right var(--espaciado-xs) center;
+  background-size: 12px;
   color: var(--color-texto);
   font: inherit;
   font-size: var(--texto-xs);
@@ -1803,7 +1808,11 @@
   padding: 8px 30px 8px 14px;
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-pill);
-  background: var(--color-fondo-tarjeta) url('data:image/svg+xml;utf8,<svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="%23888" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="6 9 12 15 18 9"/></svg>') no-repeat right 12px center;
+  background-color: var(--color-fondo-tarjeta);
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right 12px center;
+  background-size: 12px;
   color: var(--color-texto-secundario);
   font: inherit;
   font-size: var(--texto-xs);

@@ -171,7 +171,9 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
   test('el router del SPA define títulos únicos por ruta', () => {
     const router = read('js/core/router.js');
     expect(router).toContain('_titulos()');
-    expect(router).toContain("'/examenes': 'Exámenes — FormsBiblicos'");
+    expect(router).toContain("'/examenes': 'Exámenes'");
+    // Solo lo importante: la pestaña nombra la sección sin repetir la marca.
+    expect(router).not.toContain('— FormsBiblicos');
     expect(router).toContain('_aplicarTitulo(rutaConfig, params)');
     expect(router).toContain('document.title = plantilla.replace');
   });

@@ -249,17 +249,10 @@ describe('página pública y vista de tomar: contrato con el servidor', () => {
     expect(examenPublicoSource).toContain('renderRelacionar');
     expect(examenPublicoSource).toContain('renderOrdenar');
     expect(examenPublicoSource).toContain('mezclaEstable');
-    // El editor y la página pública comparten el mismo contrato de pregunta.
-    expect(examenPublicoSource).toContain(preguntaPublico.id);
-    expect(examenPublicoSource).toContain(preguntaPublico.tipo);
-  });
-
-  test('la página pública renderiza los widgets de los nuevos tipos', () => {
-    expect(examenPublicoSource).toContain('renderVarias');
-    expect(examenPublicoSource).toContain('renderCompletar');
-    expect(examenPublicoSource).toContain('renderRelacionar');
-    expect(examenPublicoSource).toContain('renderOrdenar');
-    expect(examenPublicoSource).toContain('mezclaEstable');
+    // El editor y la página pública comparten el mismo contrato de pregunta:
+    // la página pública lee id y tipo de cada pregunta del snapshot del servidor.
+    expect(examenPublicoSource).toContain('pregunta.id');
+    expect(examenPublicoSource).toContain('pregunta.tipo');
     // Relacionar sigue en el cliente público con el mismo contrato que el editor:
     // el mapa de parejas se guarda completo (obligatoria = todas las parejas).
     expect(examenPublicoSource).toContain('renderRelacionar');
@@ -334,10 +327,16 @@ describe('página pública y vista de tomar: contrato con el servidor', () => {
       campanaNotificaciones: { renderCampana() { return ''; }, conectar() {} },
       skeleton: { tarjetas: () => '<div class="skel"></div>' },
     };
-    const editor = cargarEnContexto([editorSource]);
-    if (!editor || typeof editor.montar !== 'function') throw new Error('vista-examen-editor no exposito en el contexto');
+    // cargarEnContexto devuelve el window del contexto aislado: el IIFE publica
+    // el objeto en window.vistaExamenEditor.
+    const contexto = cargarEnContexto([editorSource]);
+    const editor = contexto && contexto.vistaExamenEditor;
+    if (!editor || typeof editor.montar !== 'function') throw new Error('vista-examen-editor no expuesto en el contexto');
     try {
-      editor.montar(global.document.body, { id: 'e1' });
+      const montaje = editor.montar(global.document.body, { id: 'e1' });
+      // montar es async: sin dependencias (store, helpers) la promesa se rechaza,
+      // y ese rechazo no debe colgar la suite.
+      if (montaje && typeof montaje.catch === 'function') montaje.catch(() => {});
     } catch (e) {
       // El montado del editor puede fallar por falta de deps; la prueba valida el
       // contrato de relacionar en el lado publico, no el editor completo.
@@ -346,8 +345,6 @@ describe('página pública y vista de tomar: contrato con el servidor', () => {
     expect(examenPublicoSource).toContain('guardarMapaParejas');
     expect(examenPublicoSource).toContain('relacionar__fila');
   });
-
-  test('la vista de tomar usa índices 0/1 en V/F y respeta frases sin marcadores', () => {
 
   test('la vista de tomar usa índices 0/1 en V/F y respeta frases sin marcadores', () => {
     expect(tomarSource).toContain("const actual = rActual === 'true' ? '0'");

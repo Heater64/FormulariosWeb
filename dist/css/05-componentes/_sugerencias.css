@@ -43,8 +43,13 @@
 .sug-form select {
   border-radius: var(--radio-md);
   padding: var(--espaciado-sm);
+  padding-right: 36px;
   border: 1px solid var(--color-borde);
-  background: var(--color-fondo-tarjeta);
+  background-color: var(--color-fondo-tarjeta);
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right var(--espaciado-sm) center;
+  background-size: 14px;
   font: inherit;
   font-size: var(--texto-sm);
   color: var(--color-texto);

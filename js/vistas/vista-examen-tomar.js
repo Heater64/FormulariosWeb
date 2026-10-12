@@ -56,7 +56,7 @@
       if (!usuario) { router.navegar('/login'); return; }
       raiz.innerHTML = window.skeleton ? `<div class="o-contenedor o-pila u-mt-3">${window.skeleton.tarjetas(3, { ancho: '100%' })}</div>` : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando examen...</p></div>';
       try {
-        const examen = await window.examenesRepository.obtener(params.id);
+        let examen = await window.examenesRepository.obtener(params.id);
         if (!examen) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
         const esProfesor = ['admin', 'editor', 'owner'].includes(usuario.rol);
         if (!examen.publicado && !esProfesor) {
@@ -445,7 +445,9 @@
         if (_autoTimer) { clearTimeout(_autoTimer); _autoTimer = null; }
         if (timerInterval) clearInterval(timerInterval);
         document.removeEventListener('keydown', tecladoHandler);
-        raiz.querySelector('#btnEntregar').onclick = null;
+        // La raíz puede haber cambiado (resultados, error) desde el montaje.
+        const btnEntregar = raiz.querySelector('#btnEntregar');
+        if (btnEntregar) btnEntregar.onclick = null;
       };
       actualizarFlagCount();
     },
@@ -914,7 +916,11 @@
         });
         return arr.some(v => v !== '') ? arr : undefined;
       }
-      const inp = cont.querySelector(`[data-pid="${pregunta.id}"]`);
+      // El contenedor de la pregunta (.pregunta-examen) TAMBIÉN lleva data-pid,
+      // así que hay que apuntar al campo concreto: si no, se lee el div y las
+      // respuestas escritas (completar sin marcadores, respuesta_corta y
+      // texto_largo) se pierden silenciosamente al sincronizar.
+      const inp = cont.querySelector(`input[data-pid="${pregunta.id}"], textarea[data-pid="${pregunta.id}"]`);
       return inp ? inp.value : undefined;
     },
 

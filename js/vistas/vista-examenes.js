@@ -35,12 +35,13 @@
 
       raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
         <header class="adm-cabecera">
+          <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('clipboard-list')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo">Mis exámenes</h1>
             <p class="adm-cabecera__sub">Crea un examen, genérale un enlace a cada alumno y corrige las respuestas escritas.</p>
           </div>
           <div class="adm-cabecera__acciones">
-            <button class="adm-btn adm-btn--principal" id="btnNuevo">Nuevo examen</button>
+            <button class="adm-btn adm-btn--principal" id="btnNuevo">${window.Iconos.render('plus')} Nuevo examen</button>
           </div>
         </header>
         <div id="contenido"></div>
@@ -121,6 +122,7 @@
           this._accion(btn.dataset.accion, btn.dataset.id, btn.dataset.titulo);
         });
       });
+      if (window.Iconos) window.Iconos.actualizar();
     },
 
     _tarjeta(ex) {
@@ -138,10 +140,10 @@
 
       const titulo = esc(ex.titulo);
       const estadoAccion = ex.estado === 'publicado'
-        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="cerrar" data-id="${esc(ex.id)}">Cerrar examen</button>`
+        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="cerrar" data-id="${esc(ex.id)}">${window.Iconos.render('lock')} Cerrar examen</button>`
         : ex.estado === 'cerrado'
-          ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">Reabrir examen</button>`
-          : `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">Publicar</button>`;
+          ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">${window.Iconos.render('unlock')} Reabrir examen</button>`
+          : `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">${window.Iconos.render('upload')} Publicar</button>`;
 
       return `<article class="adm-fila adm-examen" aria-label="${titulo}">
         <div class="adm-fila__principal adm-examen__principal">
@@ -157,16 +159,16 @@
         </div>
         <div class="adm-fila__acciones adm-examen__acciones" aria-label="Acciones de ${titulo}">
           <div class="adm-examen__acciones-principales">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-accion="compartir" data-id="${esc(ex.id)}" data-titulo="${titulo}">Gestionar enlaces</button>
-            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="editar" data-id="${esc(ex.id)}">Editar</button>
-            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="entregas" data-id="${esc(ex.id)}">Entregas${porCorregir > 0 ? ` · ${porCorregir} por corregir` : ''}</button>
-            ${estadoAccion}
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-accion="compartir" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('link')} Gestionar enlaces</button>
+            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="editar" data-id="${esc(ex.id)}">${window.Iconos.render('edit-3')} Editar</button>
           </div>
           <details class="adm-examen__mas">
-            <summary class="adm-btn adm-btn--pequeno" aria-label="Más opciones para ${titulo}">Más opciones <span aria-hidden="true">▾</span></summary>
+            <summary class="adm-btn adm-btn--pequeno" aria-label="Más opciones para ${titulo}">${window.Iconos.render('more-horizontal')} Más opciones ${window.Iconos.render('chevron-down')}</summary>
             <div class="adm-examen__menu" aria-label="Acciones adicionales">
-              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">Duplicar como borrador</button>
-              <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">Eliminar examen</button>
+              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="entregas" data-id="${esc(ex.id)}">${window.Iconos.render('inbox')} Entregas${porCorregir > 0 ? ` · ${porCorregir} por corregir` : ''}</button>
+              ${estadoAccion}
+              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('copy')} Duplicar como borrador</button>
+              <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('trash-2')} Eliminar examen</button>
             </div>
           </details>
         </div>
@@ -176,7 +178,8 @@
     async _accion(accion, id, titulo) {
       if (accion === 'editar') { router.navegar('/editor/' + id); return; }
       if (accion === 'entregas') { router.navegar('/corregir/' + id); return; }
-      if (accion === 'compartir' || accion === 'compartir-individual') { await this._modalEnlaces(id, titulo); return; }
+      if (accion === 'compartir') { await this._modalEnlaceComunitario(id, titulo); return; }
+      if (accion === 'compartir-individual') { await this._modalEnlaces(id, titulo); return; }
 
       if (accion === 'publicar') {
         const examen = this._examenes.find((item) => String(item.id) === String(id));
@@ -184,7 +187,7 @@
         const ok = await window.helpers.confirmar(
           reabrir
             ? 'El examen volverá a admitir entregas. Las respuestas y calificaciones anteriores se conservarán.'
-            : 'Podrás enviar enlaces individuales y los alumnos podrán responder.',
+            : 'Se generará un enlace para toda la clase: cada alumno lo abre, escribe su nombre y responde.',
           {
             titulo: reabrir ? '¿Reabrir este examen?' : '¿Publicar este examen?',
             textoConfirmar: reabrir ? 'Reabrir' : 'Publicar'
@@ -192,7 +195,7 @@
         );
         if (!ok) return;
         const publicado = await this._ejecutar(() => window.plataformaRepository.cambiarEstado(id, 'publicado'), reabrir ? 'Examen reabierto.' : 'Examen publicado.');
-        if (publicado && !reabrir) this._modalEnlaces(id, titulo);
+        if (publicado && !reabrir) this._modalEnlaceComunitario(id, titulo);
         return;
       }
 
@@ -253,11 +256,148 @@
       }
     },
 
+    // ── Enlace para toda la clase ──────────────────────────────────────
+    async _modalEnlaceComunitario(examenId, titulo) {
+      const modal = window.panelUI.modal({
+        titulo: 'Enlace para toda la clase',
+        cuerpoHtml: `<p class="adm-cabecera__sub adm-modal__info">Un solo enlace para la clase: cada alumno se identifica con su nombre, responde el examen y, después de entregado, puede revisar su propio examen en este mismo enlace. Para ver su nota tendrá que escribir exactamente el mismo nombre con el que respondió.</p>
+          <div class="adm-edicion" id="enlaceComunitario">
+            <p class="adm-cabecera__sub">
+              <span class="adm-edicion__clave">Enlace de la clase</span> <code id="claveComunitario"></code>
+            </p>
+            <div class="adm-edicion__acciones">
+              <button class="adm-btn adm-btn--principal adm-btn--pequeno" id="btnCopiarComunitario" type="button">Copiar enlace</button>
+              <button class="adm-btn adm-btn--primario adm-btn--pequeno" id="btnWhatsAppComunitario" type="button">Compartir en WhatsApp</button>
+              <button class="adm-btn adm-btn--peligro adm-btn--pequeno" id="btnVaciarComunitario" type="button">Limpiar campos</button>
+            </div>
+            <p class="adm-cabecera__sub adm-edicion__nota" id="textoComunitario">
+              No hay enlace de la clase creado todavía. El botón de abajo genera un enlace para toda la clase.
+            </p>
+            <div class="adm-edicion__acciones">
+              <button class="adm-btn adm-btn--principal adm-btn--pequeno" id="btnCrearEnlaceComunitario" type="button">Generar enlace de la clase</button>
+            </div>
+          </div>
+          <div id="errorComunitario" class="adm-aviso adm-aviso--error" hidden></div>
+          <div class="adm-seccion__cabecera">
+            <span class="adm-seccion__titulo">Enlaces individuales existentes</span>
+          </div>
+          <div id="listaEnlaces"><p class="adm-cabecera__sub">Cargando enlaces…</p></div>`,
+        pieHtml: `<button class="adm-btn" id="btnIndividuales" type="button">Enlaces individuales…</button>
+          <button class="adm-btn" data-rol="cerrar" type="button">Cerrar</button>`
+      });
+      modal.pie.querySelector('[data-rol="cerrar"]').addEventListener('click', modal.cerrar);
+      const error = modal.cuerpo.querySelector('#errorComunitario');
+      const clave = modal.cuerpo.querySelector('#claveComunitario');
+      const boton = {
+        copiar: modal.cuerpo.querySelector('#btnCopiarComunitario'),
+        whatsapp: modal.cuerpo.querySelector('#btnWhatsAppComunitario'),
+        vaciar: modal.cuerpo.querySelector('#btnVaciarComunitario')
+      };
+
+      const mensaje = (fila, texto, tipo) => {
+        const p = modal.cuerpo.querySelector(fila);
+        if (!p || p.children.length) return;
+        if (tipo === 'aviso') {
+          const aviso = el('div', 'aviso ' + (tipo.includes('error') ? 'aviso--error' : 'aviso--ok'), texto);
+          modal.cuerpo.querySelector('#textoComunitario').insertAdjacentElement('afterend', aviso);
+          return;
+        }
+        p.textContent = texto;
+        // El estado se marca en el propio nodo para que el CSS pueda
+        // distinguir «va bien» de «falta el enlace» sin más lógica.
+        if (texto) p.dataset.estado = tipo === 'error' ? 'error' : 'ok';
+        else delete p.dataset.estado;
+      };
+
+      const setClave = (token) => {
+        // La URL completa (origin + /e/ + token): lo que el profesor copia y
+        // comparte tiene que ser pulsable, no una clave suelta.
+        clave.textContent = token ? window.plataformaRepository.urlEnlace(token) : 'Generar enlace de la clase…';
+        if (token) {
+          boton.copiar.disabled = false;
+          boton.whatsapp.disabled = false;
+          boton.vaciar.disabled = false;              mensaje('#textoComunitario', 'Copia el enlace y pásalo a toda la clase. Que cada alumno lo abra en su teléfono, escriba su nombre y responderá. Después de entregar, en el mismo enlace puede revisar su examen; para ver la nota tendrá que repetir exactamente el mismo nombre.', 'exito');
+        } else {
+          boton.copiar.disabled = true;
+          boton.whatsapp.disabled = true;
+          boton.vaciar.disabled = true;
+          mensaje('#textoComunitario', 'No hay enlace de la clase creado todavía. El botón de abajo genera un enlace para toda la clase.', 'error');
+        }
+      };
+
+      const recargar = async () => {
+        const contenedor = modal.cuerpo.querySelector('#listaEnlaces');
+        try {
+          const enlaces = await window.plataformaRepository.listarEnlaces(examenId);
+          const comunitario = enlaces.find((e) => e.comunitario);
+          setClave(comunitario ? comunitario.token : null);
+          // El de la clase ya se muestra arriba: la lista es solo de individuales.
+          const individuales = enlaces.filter((e) => !e.comunitario);
+          if (!individuales.length) contenedor.innerHTML = '<p class="adm-cabecera__sub">Sin enlaces individuales aún.</p>';
+          else contenedor.innerHTML = this._htmlEnlaces(individuales, titulo);
+          contenedor.querySelectorAll('[data-enlace-accion]').forEach((btn) => {
+            btn.addEventListener('click', () => this._accionEnlace(btn, individuales, examenId, titulo, recargar));
+          });
+        } catch (e) {
+          error.textContent = e.message;
+          error.hidden = false;
+          contenedor.innerHTML = `<div class="adm-aviso adm-aviso--error">${esc(e.message)}</div>`;
+        }
+      };
+
+      boton.copiar.addEventListener('click', async () => {
+        if (!clave.textContent.includes('/e/')) { error.textContent = 'Primero genera el enlace de la clase.'; error.hidden = false; return; }
+        const ok = await window.plataformaRepository.copiar(clave.textContent);
+        if (ok) window.helpers.mostrarAlerta('Enlace copiado al portapapeles.', 'exito');
+        else window.helpers.mostrarAlerta('No se pudo copiar. Selecciona la URL manualmente.', 'error');
+      });
+
+      boton.whatsapp.addEventListener('click', async () => {
+        if (!clave.textContent.includes('/e/')) { error.textContent = 'Primero genera el enlace de la clase.'; error.hidden = false; return; }
+        const texto = 'Hola, este es el enlace de la clase para ' + titulo + ':\n'
+          + clave.textContent;
+        await window.plataformaRepository.abrirWhatsApp(texto);
+      });
+
+      boton.vaciar.addEventListener('click', () => {
+        clave.textContent = '';
+        boton.copiar.disabled = true;
+        boton.whatsapp.disabled = true;
+        boton.vaciar.disabled = true;
+        error.hidden = true;
+        mensaje('#textoComunitario', '', 'error');
+      });
+
+      const crear = async () => {
+        error.hidden = true;
+        setClave(null);
+        try {
+          const creado = await window.plataformaRepository.crearEnlaceComunitario(examenId);
+          setClave(creado.token);
+          window.helpers.mostrarAlerta('Enlace de la clase creado.', 'exito');
+          await recargar();
+        } catch (e) {
+          error.textContent = e.message;
+          error.hidden = false;
+        }
+      };
+
+      modal.cuerpo.querySelector('#btnCrearEnlaceComunitario').addEventListener('click', crear);
+      modal.pie.querySelector('#btnIndividuales').addEventListener('click', () => {
+        modal.cerrar();
+        this._modalEnlaces(examenId, titulo);
+      });
+
+      // Al abrir se muestra el estado real: la clave de la clase si ya existe y
+      // la lista de individuales. Sin esto el modal solo cargaba tras «Generar».
+      await recargar();
+    },
+
     // ── Enlaces individuales ─────────────────────────────────────────────
     async _modalEnlaces(examenId, titulo) {
       const modal = window.panelUI.modal({
         titulo: 'Enlaces de «' + titulo + '»',
-        cuerpoHtml: `<p class="adm-cabecera__sub">Cada enlace es individual y de un solo uso.</p>
+        cuerpoHtml: `<p class="adm-cabecera__sub adm-modal__info">Cada enlace es individual y de un solo uso.</p>
           <div class="adm-campo">
             <label class="adm-campo__etiqueta" for="listaAlumnos">Añadir alumnos</label>
             <textarea class="adm-entrada" id="listaAlumnos" placeholder="Un alumno por línea&#10;Ana Pérez&#10;Luis Gómez, 3º B"></textarea>
@@ -278,9 +418,12 @@
         const contenedor = modal.cuerpo.querySelector('#listaEnlaces');
         try {
           const enlaces = await window.plataformaRepository.listarEnlaces(examenId);
-          contenedor.innerHTML = this._htmlEnlaces(enlaces, titulo);
+          // El enlace de la clase no es individual: no se lista ni se puede
+          // borrar desde este diálogo (antes aparecía como fila «Pendiente»).
+          const individuales = enlaces.filter((e) => !e.comunitario);
+          contenedor.innerHTML = this._htmlEnlaces(individuales, titulo);
           contenedor.querySelectorAll('[data-enlace-accion]').forEach((btn) => {
-            btn.addEventListener('click', () => this._accionEnlace(btn, enlaces, examenId, titulo, recargar));
+            btn.addEventListener('click', () => this._accionEnlace(btn, individuales, examenId, titulo, recargar));
           });
         } catch (e) {
           contenedor.innerHTML = `<div class="adm-aviso adm-aviso--error">${esc(e.message)}</div>`;
@@ -329,7 +472,7 @@
           <p>Escribe los nombres arriba y pulsa «Generar enlaces».</p></div>`;
       }
       const usados = enlaces.filter((e) => e.usado).length;
-      return `<div class="adm-seccion__titulo">${enlaces.length} enlace(s) · ${usados} usado(s)</div>
+      return `<div class="adm-seccion__conteo">${enlaces.length} enlace(s) · ${usados} usado(s)</div>
         <div class="adm-bloque" style="margin-bottom:0">
           ${enlaces.map((enlace) => `
             <div class="adm-enlace">

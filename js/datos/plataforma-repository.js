@@ -47,6 +47,14 @@
         const codigo = /^[A-Z0-9]{5}$/.test(String(error.code || '')) ? ` (${error.code})` : '';
         throw new Error(mensaje(error) + codigo);
       }
+      // La sincronización de filas es exclusiva de la hoja de cálculo (064).
+      if (nombre === 'fb_evaluacion_alumnos_guardar' && (error.code === 'PGRST202' || error.code === '42883')) {
+        throw new Error('Falta aplicar la migración 064_evaluacion_hoja_calculo.sql en Supabase. Ejecútala en el SQL Editor y vuelve a cargar la sección.');
+      }
+      // Las RPC de evaluaciones vienen de la migración 060.
+      if (nombre.indexOf('fb_evaluacion') === 0 && (error.code === 'PGRST202' || error.code === '42883')) {
+        throw new Error('Falta aplicar la migración 060_evaluaciones.sql (y sus actualizaciones 064_evaluacion_hoja_calculo.sql y 065_evaluacion_secciones_paginadas.sql) en Supabase. Ejecútalas en el SQL Editor y vuelve a cargar la sección.');
+      }
       throw new Error(mensaje(error));
     }
     return data;
@@ -97,6 +105,44 @@
       return base + '/e/' + encodeURIComponent(token);
     },
 
+    // ── Enlaces comunitarios (063): un solo enlace para toda la clase */
+    crearEnlaceComunitario(examenId) {
+      return rpc('fb_crear_enlace_comunitario', { p_examen_id: examenId });
+    },
+
+    /** Estado inicial del enlace, indicando si es de la clase (comunitario). */
+    estadoComunitario(token) {
+      return rpc('fb_estado_enlace', { p_token: token });
+    },
+
+    /** Abre (o retoma) el examen de un alumno mediante su nombre. */
+    comunitarioIniciar(token, nombre, grupo) {
+      return rpc('fb_comunitario_iniciar', {
+        p_token: token, p_nombre: nombre, p_grupo: grupo || ''
+      });
+    },
+
+    /** Borrador de un alumno identificado por nombre. */
+    comunitarioBorrador(token, nombre, respuestas) {
+      return rpc('fb_comunitario_borrador', {
+        p_token: token, p_nombre: nombre, p_respuestas: respuestas
+      });
+    },
+
+    /** Entrega de un alumno identificado por nombre. */
+    comunitarioEntregar(token, nombre, respuestas) {
+      return rpc('fb_comunitario_entregar', {
+        p_token: token, p_nombre: nombre, p_respuestas: respuestas
+      });
+    },
+
+    /** Resultado (revisión) del alumno identificado por nombre. */
+    comunitarioConsultar(token, nombre) {
+      return rpc('fb_comunitario_consultar', {
+        p_token: token, p_nombre: nombre
+      });
+    },
+
     /** Mensaje listo para pegar en WhatsApp (uno por alumno). */
     mensajeWhatsApp(alumno, titulo) {
       const nombre = (alumno && alumno.nombre_alumno) ? alumno.nombre_alumno.split(' ')[0] : '';
@@ -118,6 +164,80 @@
         }
       } catch (e) { /* sin permiso de portapapeles: se ignora */ }
       return false;
+    },
+
+    // ── Evaluaciones (migración 060) ─────────────────────────────────────
+    listarEvaluaciones() {
+      return rpc('fb_evaluaciones_listar');
+    },
+
+    crearEvaluacion(nombre, descripcion, fecha) {
+      return rpc('fb_evaluacion_crear', {
+        p_nombre: nombre, p_descripcion: descripcion || '', p_fecha: fecha || null
+      });
+    },
+
+    actualizarEvaluacion(id, nombre, descripcion, fecha, notaMax) {
+      const args = {
+        p_id: id, p_nombre: nombre, p_descripcion: descripcion || '', p_fecha: fecha || null
+      };
+      // Rango de la evaluación (migración 064). Si no se envía, el servidor
+      // conserva el valor que ya tiene, así que este llamador sigue válido.
+      if (notaMax !== undefined) args.p_nota_max = notaMax;
+      return rpc('fb_evaluacion_actualizar', args);
+    },
+
+    eliminarEvaluacion(id) {
+      return rpc('fb_evaluacion_eliminar', { p_id: id });
+    },
+
+    /**
+     * Sincroniza la lista visible y ordenada de filas de alumnos.
+     * `alumnos` debe ser SIEMPRE la lista completa que se ve en la rejilla:
+     * el servidor oculta lo que falte y borra sus notas manuales.
+     */
+    guardarAlumnosEvaluacion(id, alumnos) {
+      return rpc('fb_evaluacion_alumnos_guardar', { p_id: id, p_alumnos: alumnos || [] });
+    },
+
+    /** Sincroniza las columnas de la rejilla con la lista del editor. */
+    guardarColumnasEvaluacion(id, columnas) {
+      return rpc('fb_evaluacion_columnas_guardar', { p_id: id, p_columnas: columnas || [] });
+    },
+
+    /** Nota escrita a mano; `null` devuelve la celda al valor automático. */
+    guardarCeldaEvaluacion(id, columnaId, alumno, nota) {
+      return rpc('fb_evaluacion_celda_guardar', {
+        p_id: id, p_columna_id: columnaId, p_alumno: alumno, p_nota: nota
+      });
+    },
+
+    /**
+     * Rejilla completa de una evaluación.
+     *
+     * `columnasPorSeccion` (065) pide al servidor el troceado en secciones
+     * que cabe en la pantalla. Si el servidor todavía no tiene la 065, el
+     * primer intento falla y se reintenta con la firma antigua (solo p_id):
+     * la vista sigue funcionando y calcula las secciones por su cuenta.
+     */
+    obtenerEvaluacion(id, columnasPorSeccion) {
+      const conSeccion = Number.isFinite(columnasPorSeccion);
+      const primera = conSeccion
+        ? rpc('fb_evaluacion_obtener', { p_id: id, p_columnas_por_seccion: columnasPorSeccion })
+        : rpc('fb_evaluacion_obtener', { p_id: id });
+      if (!conSeccion) return primera;
+      return primera.catch((e) => {
+        if (e && /Falta aplicar la migración/.test(e.message || '')) {
+          return rpc('fb_evaluacion_obtener', { p_id: id });
+        }
+        throw e;
+      });
+    },
+
+    importarEvaluacion(id, celdas, finales) {
+      return rpc('fb_evaluacion_importar', {
+        p_id: id, p_celdas: celdas || [], p_finales: finales || []
+      });
     }
   };
 })();

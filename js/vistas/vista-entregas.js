@@ -50,6 +50,7 @@
     async _pintarListado(raiz) {
       raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
         <header class="adm-cabecera">
+          <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('inbox')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo">Entregas</h1>
             <p class="adm-cabecera__sub">Elige un examen para ver quién ha respondido y corregir lo que falta.</p>
@@ -92,7 +93,7 @@
             <div class="adm-fila__meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>
           </div>
           <div class="adm-fila__acciones">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">Ver entregas</button>
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('eye')} Ver entregas</button>
           </div>
         </div>`;
       }).join('')}</div>`;
@@ -100,19 +101,21 @@
       contenido.querySelectorAll('[data-ir]').forEach((btn) => {
         btn.addEventListener('click', () => router.navegar(btn.dataset.ir));
       });
+      if (window.Iconos) window.Iconos.actualizar();
     },
 
     // ── Entregas de un examen (/corregir/:id) ─────────────────────────────
     async _pintarExamen(raiz) {
       raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
         <header class="adm-cabecera">
+          <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('clipboard-check')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo" id="tituloExamen">Entregas</h1>
             <p class="adm-cabecera__sub" id="subExamen">Cargando…</p>
           </div>
           <div class="adm-cabecera__acciones">
-            <button class="adm-btn" id="btnVolver">Volver</button>
-            <button class="adm-btn" id="btnEditar">Editar examen</button>
+            <button class="adm-btn" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
+            <button class="adm-btn" id="btnEditar">${window.Iconos.render('edit-3')} Editar examen</button>
           </div>
         </header>
         <div id="contenido"></div>
@@ -169,7 +172,11 @@
         else if (entrega.puntuacion != null) meta.push('Test ' + window.panelUI.numero(entrega.puntuacion) + ' %');
 
         const accion = entrega.estado === 'en_progreso' ? 'Sin entregar' : (entrega.corregido ? 'Revisar' : 'Corregir');
-        return `<div class="adm-fila">
+        // Filete lateral por estado: se escanear la lista sin leer el badge.
+        const estadoFila = entrega.estado === 'en_progreso'
+          ? ' adm-fila--inactiva'
+          : (entrega.corregido ? ' adm-fila--exito' : ' adm-fila--aviso');
+        return `<div class="adm-fila${estadoFila}">
           <div class="adm-fila__principal">
             <div class="adm-fila__titulo">${esc(nombre)} ${estadoBadge(entrega)}</div>
             <div class="adm-fila__meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>
@@ -177,7 +184,7 @@
           <div class="adm-fila__acciones">
             ${entrega.estado === 'en_progreso'
               ? '<span class="adm-cabecera__sub">Aún no ha entregado</span>'
-              : `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(entrega.intento_id)}">${accion}</button>`}
+              : `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(entrega.intento_id)}">${window.Iconos.render(entrega.corregido ? 'eye' : 'clipboard-check')} ${accion}</button>`}
           </div>
         </div>`;
       }).join('')}</div>`;
@@ -185,6 +192,7 @@
       contenedor.querySelectorAll('[data-abrir]').forEach((btn) => {
         btn.addEventListener('click', () => this._abrirCorreccion(btn.dataset.abrir));
       });
+      if (window.Iconos) window.Iconos.actualizar();
     },
 
     // ── Corrección de una entrega ─────────────────────────────────────────
@@ -242,7 +250,8 @@
           const esCorrecta = btn.dataset.decision === 'correcta';
           const pregunta = entrega.preguntas.find((p) => p.id === id);
           const puntosMax = Number(pregunta.puntos) || 0;
-          decisiones[id] = { es_correcta: esCorrecta, puntos: esCorrecta ? puntosMax : 0 };
+          // Se conserva el comentario que haya escrito el profesor para esa pregunta.
+          decisiones[id] = Object.assign({}, decisiones[id], { es_correcta: esCorrecta, puntos: esCorrecta ? puntosMax : 0 });
           const bloque = cuerpo.querySelector(`[data-bloque="${id}"]`);
           if (bloque) {
             bloque.classList.toggle('adm-respuesta--correcta', esCorrecta);
@@ -263,6 +272,16 @@
           const valor = Math.max(0, Number(input.value) || 0);
           decisiones[id] = Object.assign({}, decisiones[id], { puntos: valor });
           this._actualizarResumen(cuerpo, entrega, decisiones);
+        });
+      });
+
+      // Comentario por pregunta: viaja dentro del mapa de corrección que se
+      // guarda con fb_corregir_entrega (p_correccion) y el alumno lo ve en su
+      // resultado junto a la respuesta.
+      cuerpo.querySelectorAll('[data-comentario]').forEach((input) => {
+        input.addEventListener('input', () => {
+          const id = input.dataset.comentario;
+          decisiones[id] = Object.assign({}, decisiones[id], { comentario: input.value });
         });
       });
 
@@ -338,6 +357,8 @@
       const pendientes = entrega.preguntas.filter((p) => !this._esTest(p.tipo) && !(decisiones[p.id] && decisiones[p.id].es_correcta != null)).length;
       caja.textContent = 'Nota provisional: ' + window.panelUI.numero((obtenidos / total) * 10) + ' / 10'
         + (pendientes ? ' · faltan ' + pendientes + ' por decidir' : ' · lista para guardar');
+      // Al cerrar todas las decisiones la caja pasa de aviso a confirmación.
+      caja.classList.toggle('correccion-resumen--lista', pendientes === 0);
     },
 
     /**
@@ -417,6 +438,21 @@
       return { alumno: respuesta == null || respuesta === '' ? 'Sin responder' : String(respuesta), correcta: '' };
     },
 
+    /**
+     * Comentario del profesor para UNA pregunta. Vive en el mapa de corrección
+     * (fb_corregir_entrega lo guarda entero) y por eso el mismo texto aparece
+     * al reabrir la corrección y en el resultado del alumno.
+     */
+    _htmlComentarioPregunta(p, decisiones) {
+      const d = decisiones[p.id] || {};
+      return `<div class="adm-respuesta__comentario">
+        <label class="adm-campo__etiqueta" for="comentario_${esc(p.id)}">Comentario para esta pregunta (opcional)</label>
+        <input class="adm-entrada" id="comentario_${esc(p.id)}" type="text" maxlength="500"
+          data-comentario="${esc(p.id)}" value="${esc(d.comentario || '')}"
+          placeholder="Ej.: Buen razonamiento; repasa el versículo">
+      </div>`;
+    },
+
     _htmlCorreccion(entrega, decisiones) {
       const filas = entrega.preguntas.map((p, i) => {
         const respuesta = entrega.respuestas ? entrega.respuestas[p.id] : undefined;
@@ -433,6 +469,7 @@
               ${formateo.correcta ? ' · Respuesta correcta: ' + esc(formateo.correcta) : ''}
               · la califica el servidor
             </p>
+            ${this._htmlComentarioPregunta(p, decisiones)}
           </div>`;
         }
 
@@ -455,13 +492,14 @@
             <input class="adm-entrada adm-entrada--corta" id="puntos_${esc(p.id)}" type="number" min="0" step="0.5"
               data-puntos="${esc(p.id)}" value="${esc(d.puntos != null ? d.puntos : '')}">
           </div>
+          ${this._htmlComentarioPregunta(p, decisiones)}
         </div>`;
       }).join('');
 
       const yaCorregida = entrega.corregido;
       return `${yaCorregida ? `<div class="adm-aviso adm-aviso--exito">Entrega calificada con nota ${esc(window.panelUI.numero(entrega.nota))}/10. Puedes reajustar la corrección.</div>` : ''}
         <div id="errorCorreccion" class="adm-aviso adm-aviso--error" hidden></div>
-        <p class="adm-cabecera__sub" id="resumenNota"></p>
+        <p class="adm-cabecera__sub correccion-resumen" id="resumenNota"></p>
         ${filas}
         <div class="adm-campo">
           <label class="adm-campo__etiqueta" for="observaciones">Comentario para el alumno (opcional)</label>

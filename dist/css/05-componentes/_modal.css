@@ -80,8 +80,15 @@
   width: 100%;
 }
 
+/* Mismo chevron que el resto de select de la app (no el nativo del SO). */
 .modal-formulario__campo select {
-  appearance: auto;
+  appearance: none;
+  -webkit-appearance: none;
+  background-image: var(--icono-select);
+  background-repeat: no-repeat;
+  background-position: right var(--espaciado-sm) center;
+  background-size: 14px;
+  padding-right: 38px;
   cursor: pointer;
 }
 

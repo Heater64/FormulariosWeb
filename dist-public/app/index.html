@@ -1,194 +1,0 @@
-<!DOCTYPE html>
-<html lang="es">
-<head>
-    <script src="./js/vendor/capacitor.js" defer></script><script src="./js/core/version.js" defer></script>
-  <meta charset="UTF-8">
-  <!-- viewport-fit=cover: aprovecha la pantalla completa (edge-to-edge) con
-       safe-area insets. interactive-widget=resizes-content: el teclado virtual
-       de Android redimensiona la viewport para que el campo activo quede
-       visible (sin esto el teclado tapa inputs). Sin maximum-scale ni
-       user-scalable=no: el zoom por pellizco debe funcionar (WCAG 1.4.4). -->
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover, interactive-widget=resizes-content">
-  <meta name="theme-color" content="#FFFFFF">
-  <meta name="color-scheme" content="light dark">
-
-  <!-- Open Graph / Twitter: cómo se ve la web al compartir -->
-  <meta name="description" content="FormsBiblicos: crea exámenes, comparte un enlace individual con cada alumno y corregígelos desde el panel.">
-  <meta property="og:type" content="website">
-  <meta property="og:site_name" content="FormsBiblicos">
-  <meta property="og:title" content="FormsBiblicos — Exámenes con enlace individual">
-  <meta property="og:description" content="Crea exámenes, comparte un enlace individual con cada alumno y corrígelos desde el panel.">
-  <meta property="og:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
-  <meta property="og:image:width" content="1200">
-  <meta property="og:image:height" content="630">
-  <meta property="og:image:alt" content="FormsBiblicos — Exámenes">
-  <meta property="og:locale" content="es_ES">
-  <meta name="twitter:card" content="summary_large_image">
-  <meta name="twitter:title" content="FormsBiblicos — Exámenes con enlace individual">
-  <meta name="twitter:description" content="Crea exámenes, comparte un enlace individual con cada alumno y corrígelos desde el panel.">
-  <meta name="twitter:image" content="https://formularios-web-flax.vercel.app/og-1200x630.png">
-
-  <!-- PWA: instalable como aplicación (manifest + service worker) -->
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-  <meta name="apple-mobile-web-app-title" content="FormsBiblicos">
-  <link rel="apple-touch-icon" href="/app/assets/180x180-ZW1afQkM.png">
-  <link rel="manifest" href="/app/manifest.json">
-
-  <!-- Preconexiones: abre sockets antes de que se pidan los recursos externos -->
-  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
-  <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
-
-  <!-- ============================================================
-       Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
-       Lee preferencias de localStorage sincrónicamente y aplica
-       data-theme + un fondo inicial, antes de que se renderice el
-       CSS. Archivo EXTERNO (js/core/theme-init.js) y bloqueante: la
-       CSP de producción no permite scripts inline, así que no pueden
-       ser <script> incrustados.
-       ============================================================ -->
-  <script src="js/core/theme-init.js"></script>
-
-  <!-- ============================================================
-       Captura global de errores (corre antes que cualquier script):
-       alimenta el buffer que procesa error-recovery.js (primer
-       script diferido). Sin esto, un error en el arranque pasaría
-       desapercibido y la app podría quedarse en blanco. Externo
-       (js/core/error-capture.js) por la CSP de producción.
-       ============================================================ -->
-  <script src="js/core/error-capture.js"></script>
-  <script src="js/services/sentry-loader.js"></script>
-
-  <!-- Default body bg usando los tokens: una vez CSS se carga,
-       el body toma --color-fondo. Mientras tanto, html.style.backgroundColor
-       (definido arriba) mantiene el fondo correcto. -->
-  <style>
-    body { background: var(--color-fondo, #FFFFFF); color: var(--color-texto, #0F172A); }
-  </style>
-
-  <title>FormsBiblicos</title>
-  <link rel="icon" href="/app/assets/icono-B6kL4YiL.svg" type="image/svg+xml">
-  <link rel="icon" href="/app/assets/32x32-_-9RqDSm.png" type="image/png" sizes="32x32">
-  <link rel="icon" href="/app/assets/16x16-CM_bkbzx.png" type="image/png" sizes="16x16">
-
-  <!-- CSS: Settings -->
-
-  <!-- CSS: Generic -->
-
-  <!-- CSS: Elements -->
-
-  <!-- CSS: Objects -->
-
-    <!-- CSS: Components -->
-
-  <!-- CSS del panel de exámenes (inicio, exámenes, entregas, cuenta) -->
-
-  <!-- CSS: Utilities (cargan al final para poder usar !important) -->
-
-  <!-- ============================================================
-       JS: todos los scripts son diferidos (defer) para que la
-       descarga no bloquee el renderizado. Se ejecutan en orden
-       tras parsear el HTML, justo antes de DOMContentLoaded.
-       error-recovery.js va PRIMERO para capturar errores de los
-       demás. Las vistas pesadas se cargan bajo demanda (lazy)
-       desde el router, no aquí.
-       ============================================================ -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/vendor/lucide.min.js" defer></script>
-
-  <!-- JS: Autorrecuperación (primero: registra handlers de error antes que el resto) -->
-  <script src="js/utilidades/error-recovery.js" defer></script>
-
-  <!-- JS: Utilities -->
-  <script src="js/utilidades/dom-helpers.js" defer></script>
-  <script src="js/utilidades/sanitizacion.js" defer></script>
-  <script src="js/utilidades/iconos.js" defer></script>
-  <script src="js/utilidades/storage.js" defer></script>
-  <script src="js/utilidades/preferencias.js" defer></script>
-  <script src="js/datos/cache-datos.js" defer></script>
-
-  <!-- JS: Core -->
-  <script src="js/core/store.js" defer></script>
-  <script src="js/core/eventBus.js" defer></script>
-  <script src="js/core/errores.js" defer></script>
-  <script src="js/core/router.js" defer></script>
-  <!-- Coordinador único de back: cierra modales con el back del sistema
-       (navegador y gesto Android) antes de navegar. -->
-  <script src="js/core/back-navigation.js" defer></script>
-  <!-- Gesto global swipe-derecha para retroceder (como iOS/Android) -->
-  <script src="js/core/swipe-back.js" defer></script>
-  <!-- Barra de navegación: se oculta mientras el teclado está abierto -->
-  <script src="js/core/navigation.js" defer></script>
-
-  <!-- JS: Configuración de entorno (modo demo, Supabase) — debe cargar antes
-       que supabase-client.js y cualquier vista -->
-  <script src="js/config/entorno.js" defer></script>
-
-  <!-- JS: Data Repositories -->
-  <script src="js/datos/supabase-client.js" defer></script>
-  <script src="js/datos/auth-repository.js" defer></script>
-  <script src="js/datos/examenes-repository.js" defer></script>
-  <script src="js/datos/plataforma-repository.js" defer></script>
-  <script src="js/datos/admin-repository.js" defer></script>
-  <script src="js/datos/sync-queue.js" defer></script>
-  <script src="js/utilidades/sync-status.js" defer></script>
-  <script src="js/utilidades/connection-indicator.js" defer></script>
-  <script src="js/utilidades/animaciones.js" defer></script>
-  <script src="js/utilidades/haptica.js" defer></script>
-  <script src="js/utilidades/gestos-navegacion.js" defer></script>
-  <script src="js/utilidades/skeleton.js" defer></script>
-  <script src="js/utilidades/memoria.js" defer></script>
-  <script src="js/utilidades/accesibilidad.js" defer></script>
-
-  <!-- JS: Dominio (cálculo y presentación de puntuaciones) -->
-  <script src="js/dominio/puntuacion-examen.js" defer></script>
-
-  <!-- JS: Componentes compartidos del panel -->
-  <script src="js/componentes/panel-ui.js" defer></script>
-  <script src="js/componentes/pwa-install.js" defer></script>
-
-  <!-- JS: Vistas principales. El editor, las entregas y la cuenta se cargan
-       bajo demanda desde el router. -->
-  <script src="js/vistas/vista-panel.js" defer></script>
-  <script src="js/vistas/vista-examenes.js" defer></script>
-
-  <!-- JS: App Shell (module porque usa import() dinámico para vistas lazy;
-       como script clásico Vite le inyecta un import de /@vite/client y
-       el navegador lanza "Cannot use import statement outside a module".
-       Los módulos se ejecutan en orden tras los scripts defer, y este es
-       el último script de la página, así que el orden no cambia. -->
-
-  <!-- PWA: registra el service worker (js/core/sw-register.js). En producción
-       (https) activa la instalación y el modo offline; en desarrollo local
-       (http) se omite para no interferir con el HMR de Vite. -->
-  <script src="js/core/sw-register.js" defer></script>
-  <script type="module" crossorigin src="/app/assets/index-Czo9lbRK.js"></script>
-  <link rel="stylesheet" crossorigin href="/app/assets/index-tu7G7Z-K.css">
-</head>
-<body>
-  <!-- Splash Screen -->
-  <div id="splashScreen" class="splash-screen" role="status" aria-label="Cargando la aplicación">
-    <div class="splash-screen__logo" aria-hidden="true">
-      <img src="/app/assets/icono-B6kL4YiL.svg" alt="" class="splash-screen__logo-img">
-    </div>
-    <h1 class="splash-screen__title">FormsBiblicos</h1>
-    <div class="splash-screen__progress"><div class="splash-screen__bar"></div></div>
-    <p class="splash-screen__status" id="splashStatus">Cargando…</p>
-  </div>
-
-  <!-- Online/Offline Indicator -->
-  <div id="connectionIndicator" class="connection-indicator u-oculto" aria-live="polite" aria-atomic="true">
-    <span class="connection-indicator__dot" aria-hidden="true"></span>
-    <span class="connection-indicator__text">Conectado</span>
-  </div>
-
-  <!-- Sync Status Indicator (se crea dinámicamente via JS) -->
-
-  <main id="app-root"></main>
-  <nav id="barra-navegacion" class="barra-nav-inferior"></nav>
-</body>
-</html>

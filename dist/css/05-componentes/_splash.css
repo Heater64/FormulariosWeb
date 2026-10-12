@@ -51,7 +51,10 @@
   font-family: var(--fuente-display);
   font-size: var(--texto-2xl);
   font-weight: 800;
-  color: var(--color-texto);
+  /* Fijos (no tokens): el splash fuerza fondo blanco siempre, así que el
+     texto debe quedar oscuro aunque el tema guardado sea oscuro (con
+     --color-texto el título salía blanco sobre blanco e invisible). */
+  color: #0f172a;
   margin: 0;
   letter-spacing: -0.01em;
   animation: splash-text-in var(--transicion-normal) 0.2s forwards;
@@ -82,7 +85,8 @@
 /* ===== STATUS TEXT ===== */
 .splash-screen__status {
   font-size: var(--texto-xs);
-  color: var(--color-texto-terciario);
+  /* Mismo motivo que el título: fondo blanco forzado → gris fijo legible. */
+  color: #5e6d84;
   margin: 0;
   animation: splash-text-in var(--transicion-normal) 0.5s forwards;
   opacity: 0;

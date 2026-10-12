@@ -14,14 +14,15 @@
     return usuario && ROLES.includes((usuario.rol || '').toLowerCase());
   }
 
-  function stat(valor, etiqueta, clase) {
+  function stat(valor, etiqueta, clase, icono) {
     return `<div class="adm-stat${clase ? ' ' + clase : ''}">
+      <span class="adm-stat__icono" aria-hidden="true">${window.Iconos.render(icono)}</span>
       <span class="adm-stat__valor">${window.panelUI.esc(valor)}</span>
       <span class="adm-stat__etiqueta">${window.panelUI.esc(etiqueta)}</span>
     </div>`;
   }
 
-  function filaExamen(ex) {
+  function filaExamen(ex, contexto) {
     const porCorregir = Number(ex.por_corregir) || 0;
     const meta = [
       (Number(ex.num_preguntas) || 0) + ' preguntas',
@@ -45,11 +46,10 @@
         <div class="adm-fila__meta">${meta.map((m) => `<span>${window.panelUI.esc(m)}</span>`).join('')}</div>
       </div>
       <div class="adm-fila__acciones">
-        ${porCorregir > 0
-          ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">Corregir</button>`
-          : ''}
-        <button class="adm-btn adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">Entregas</button>
-        <button class="adm-btn adm-btn--pequeno" data-ir="/editor/${esc(ex.id)}">Editar</button>
+        ${contexto === 'pendientes'
+          ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('clipboard-check')} Corregir</button>`
+          : `<button class="adm-btn adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('inbox')} Entregas</button>`}
+        <button class="adm-btn adm-btn--pequeno" data-ir="/editor/${esc(ex.id)}">${window.Iconos.render('edit-3')} Editar</button>
       </div>
     </div>`;
   }
@@ -87,20 +87,21 @@
       raiz.innerHTML = `
         <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <header class="adm-cabecera">
+            <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('house')}</span>
             <div class="adm-cabecera__principal">
               <h1 class="adm-cabecera__titulo">Hola${nombre ? ', ' + window.panelUI.esc(nombre) : ''}</h1>
               <p class="adm-cabecera__sub">Crea exámenes, comparte un enlace con cada alumno y corrige las respuestas escritas.</p>
             </div>
             <div class="adm-cabecera__acciones">
-              <button class="adm-btn adm-btn--principal" id="btnNuevo">Nuevo examen</button>
+              <button class="adm-btn adm-btn--principal" id="btnNuevo">${window.Iconos.render('plus')} Nuevo examen</button>
             </div>
           </header>
 
           <div class="adm-rejilla">
-            ${stat(examenes.length, 'Exámenes', 'adm-stat--acento')}
-            ${stat(publicados, 'Publicados', 'adm-stat--exito')}
-            ${stat(totalEntregas, 'Entregas recibidas')}
-            ${stat(porCorregir, 'Respuestas por corregir', porCorregir > 0 ? 'adm-stat--aviso' : '')}
+            ${stat(examenes.length, 'Exámenes', 'adm-stat--acento', 'clipboard-list')}
+            ${stat(publicados, 'Publicados', 'adm-stat--exito', 'check-circle')}
+            ${stat(totalEntregas, 'Entregas recibidas', '', 'inbox')}
+            ${stat(porCorregir, 'Respuestas por corregir', porCorregir > 0 ? 'adm-stat--aviso' : '', 'alert-triangle')}
           </div>
 
           <section class="adm-seccion">
@@ -120,14 +121,14 @@
       const pendientes = raiz.querySelector('#listaPendientes');
       if (pendientes) {
         pendientes.innerHTML = conPendientes.length
-          ? `<div class="adm-lista">${conPendientes.map(filaExamen).join('')}</div>`
-          : `<div class="adm-aviso adm-aviso--exito">Todo corregido. No hay respuestas pendientes.</div>`;
+          ? `<div class="adm-lista">${conPendientes.map((e) => filaExamen(e, 'pendientes')).join('')}</div>`
+          : `<div class="adm-aviso adm-aviso--exito adm-aviso--destacado">Todo corregido. No hay respuestas pendientes.</div>`;
       }
 
       const todos = raiz.querySelector('#listaTodos');
       if (todos) {
         todos.innerHTML = examenes.length
-          ? `<div class="adm-lista">${examenes.slice(0, 6).map(filaExamen).join('')}</div>`
+          ? `<div class="adm-lista">${examenes.slice(0, 6).map((e) => filaExamen(e, 'todos')).join('')}</div>`
           : `<div class="adm-vacio">
               <p class="adm-vacio__titulo">Todavía no hay exámenes</p>
               <p>Crea tu primer examen y comparte los enlaces con tus alumnos.</p>
@@ -139,6 +140,7 @@
       raiz.querySelectorAll('[data-ir]').forEach((btn) => {
         btn.addEventListener('click', () => router.navegar(btn.dataset.ir));
       });
+      if (window.Iconos) window.Iconos.actualizar();
     }
   };
 

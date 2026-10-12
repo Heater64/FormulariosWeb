@@ -1,9 +1,9 @@
 /* ==============================================================================
  * public-site/examen.js — página pública del alumno (sin cuenta)
- * ----------------------------------------------------------------------------
+ * -----------------------------------------------------------------------------
  * El alumno llega por un enlace individual (/e/<token>). Esta página:
  *   1. valida el enlace contra el servidor (fb_estado_enlace),
- *   2. pide nombre obligatoriamente y grupo (opcional),
+ *   2. pide nombre obligatoriamente,
  *   3. inicia/retoma el único intento del enlace (fb_iniciar_por_token),
  *   4. autoguarda el borrador (fb_guardar_borrador_token),
  *   5. entrega y muestra el resultado (fb_entregar_por_token / fb_consultar_entrega).
@@ -11,7 +11,11 @@
  * NUNCA decide permisos, notas ni envíos: todo eso lo valida el servidor. Esta
  * página solo pinta lo que las RPCs devuelven, y las RPCs no devuelven
  * respuestas correctas ni notas de otros alumnos.
- * ============================================================================*/
+ *
+ * SIN CAMBIOS DISTINTOS A Q1/Q2: el campo grupo ya no se pide ni se envía;
+ * cuando el intento está calificado, se muestra el detalle por pregunta del
+ * modal de corrección, en modo solo lectura.
+ * ==============================================================================*/
 (function () {
   'use strict';
 
@@ -22,7 +26,9 @@
     preguntas: [],
     respuestas: {},
     enviando: false,
-    guardadoTimer: null
+    guardadoTimer: null,
+    comunitario: false,
+    nombre: null
   };
 
   // ── Utilidades ────────────────────────────────────────────────────────────
@@ -36,10 +42,14 @@
   }
 
   function tokenDeUrl() {
-    var m = /\/e\/([A-Za-z0-9_-]{10,})/.exec(window.location.pathname || '');
-    if (m) return m[1];
-    var q = new URLSearchParams(window.location.search);
-    return q.get('t') || q.get('token') || '';
+    var m = /\/(?:e\/|examen\.html\?t=)([A-Za-z0-9_-]{10,})/.exec(window.location.pathname + window.location.search || '') ||
+            /\/(?:e\/|examen\.html\?t=)([A-Za-z0-9_-]{10,})/.exec(window.location.href || '') ||
+            /\/e\/([A-Za-z0-9_-]{10,})/.exec(window.location.pathname || '') ||
+            /\/e\/([A-Za-z0-9_-]{10,})/.exec(window.location.href || '') ||
+            new RegExp('(?:e/|examen\\.html\\?t=)([A-Za-z0-9_-]{10,})').exec(window.location.search || '') ||
+            /\/(?:e\/|examen\.html\?t=)([A-Za-z0-9_-]{10,})/.exec(window.location.href || '') ||
+            [null, ''];
+    return (m && m[1]) ? m[1] : null;
   }
 
   // PostgREST devuelve el texto del RAISE junto al SQLSTATE. Nos quedamos con la
@@ -57,6 +67,18 @@
     if (sr) sr.textContent = texto;
   }
 
+  // Enlace comunitario: la identidad del alumno es su nombre, no un token.
+  // rpcEnlace elige la RPC de siempre o la comunitaria que lleva p_nombre.
+  function rpcFlujo(rpcIndividual, rpcComunitario, args) {
+    if (!estado.comunitario) return rpc(rpcIndividual, args || {});
+    var argsConNombre = { p_nombre: estado.nombre };
+    var clave;
+    for (clave in args || {}) {
+      if (Object.prototype.hasOwnProperty.call(args, clave)) argsConNombre[clave] = args[clave];
+    }
+    return rpc(rpcComunitario, argsConNombre);
+  }
+
   function rpc(nombre, args) {
     var sb = window.supabaseClient;
     if (!sb) return Promise.reject(new Error('No se pudo conectar con el servidor. Recarga la página e inténtalo de nuevo.'));
@@ -67,11 +89,11 @@
   }
 
   // ── Cabecera y progreso ───────────────────────────────────────────────────
-  function cabecera(titulo, sub, estadoTexto) {
+  function cabecera(titulo, sub) {
     var nombre = titulo || 'Examen';
     $('cabTitulo').textContent = nombre;
     $('cabSub').textContent = sub || '';
-    $('cabEstado').textContent = estadoTexto || '';
+    $('cabEstado').textContent = '';
     document.title = nombre === 'Examen' ? 'Examen' : nombre + ' — Examen';
   }
 
@@ -139,6 +161,8 @@
       var avisoComunitario = el('div', 'aviso aviso--error');
       avisoComunitario.appendChild(el('strong', null, 'Este enlace es público. '));
       avisoComunitario.appendChild(document.createTextNode('Escribe tu nombre para identificarte antes de responder.'));
+      avisoComunitario.appendChild(document.createTextNode(' Responderás y, cuando lo hayas entregado, podrás revisar tu examen en este mismo enlace.'));
+      avisoComunitario.appendChild(document.createTextNode(' Para revisar tu nota tendrás que escribir exactamente el mismo nombre con el que respondas.'));
       tarjeta.appendChild(avisoComunitario);
     }
 
@@ -156,23 +180,11 @@
     inputNombre.autocomplete = 'name';
     inputNombre.maxLength = 120;
     inputNombre.required = true;
-    inputNombre.value = ctx.nombre_alumno || '';
+    // En el enlace de la clase el nombre no lo da el servidor: se recuerda el
+    // último con el que este dispositivo identificó a un alumno (editable).
+    inputNombre.value = nombreRecordado() || ctx.nombre_alumno || '';
     campoNombre.appendChild(inputNombre);
     form.appendChild(campoNombre);
-
-    var campoGrupo = el('div', 'campo');
-    var etiquetaGrupo = el('label', null, 'Grupo (opcional)');
-    etiquetaGrupo.setAttribute('for', 'grupoAlumno');
-    campoGrupo.appendChild(etiquetaGrupo);
-    var inputGrupo = el('input');
-    inputGrupo.type = 'text';
-    inputGrupo.id = 'grupoAlumno';
-    inputGrupo.name = 'grupo';
-    inputGrupo.maxLength = 80;
-    inputGrupo.value = ctx.grupo_alumno || '';
-    campoGrupo.appendChild(inputGrupo);
-    campoGrupo.appendChild(el('p', 'ayuda', 'Ej.: 3º B, Grupo de los martes…'));
-    form.appendChild(campoGrupo);
 
     var error = el('div', 'aviso aviso--error oculto');
     error.setAttribute('role', 'alert');
@@ -199,7 +211,8 @@
       error.classList.add('oculto');
       btn.disabled = true;
       btn.textContent = 'Abriendo examen…';
-      iniciar(inputNombre.value.trim(), inputGrupo.value.trim());
+      if (estado.comunitario) recordarNombre(nombre);
+      iniciar(nombre);
     });
 
     lienzo.appendChild(tarjeta);
@@ -224,9 +237,6 @@
     return [];
   }
 
-  // Mezcla estable por pregunta: el mismo enlace muestra siempre el mismo
-  // orden (al retomar el borrador no cambia nada bajo el alumno), pero
-  // distinto al orden de edición del profesor para «relacionar» y «ordenar».
   function mezclaEstable(id, n) {
     var orden = [];
     var i;
@@ -244,7 +254,6 @@
       orden[i] = orden[j];
       orden[j] = tmp;
     }
-    // Si la mezcla casualmente sale igual al orden original, gira un paso.
     if (n > 1 && orden.every(function (v, k) { return v === k; })) orden.push(orden.shift());
     return orden;
   }
@@ -256,12 +265,9 @@
     if (Array.isArray(valor)) {
       var conValor = valor.filter(function (v) { return String(v == null ? '' : v).trim() !== ''; });
       if (!conValor.length) return false;
-      // Array numérico (varias_opciones / ordenar): basta con que haya algo.
-      // Array de texto (huecos de completar): todos los huecos deben ir llenos.
       var soloNumeros = valor.every(function (v) { return typeof v === 'number'; });
       return soloNumeros ? true : conValor.length === valor.length;
     }
-    // Mapa de parejas (relacionar): solo se guarda cuando ya está completo.
     if (typeof valor === 'object') {
       var claves = Object.keys(valor);
       return claves.length > 0 && claves.every(function (k) { return typeof valor[k] === 'number'; });
@@ -313,7 +319,9 @@
     cont.appendChild(cab);
 
     var texto = el('div', 'pregunta__texto');
-    texto.appendChild(document.createTextNode(pregunta.texto || ('Pregunta ' + (indice + 1))));
+    // En "completar" el enunciado lleva marcadores {0}, {1}…: se pintan como
+    // huecos numerados para que enlacen con los campos "Hueco 1", "Hueco 2".
+    texto.appendChild(document.createTextNode(marcarHuecos(pregunta.texto || ('Pregunta ' + (indice + 1)))));
     if (pregunta.obligatoria) {
       var marca = el('span', 'pregunta__obligatoria');
       marca.textContent = ' *';
@@ -322,7 +330,6 @@
     }
     cont.appendChild(texto);
 
-    // Cada interacción del alumno se propaga por esta vía común.
     var actualizar = function () {
       marcarRespondida(cont, pregunta);
       actualizarProgreso();
@@ -342,13 +349,10 @@
     return cont;
   }
 
-  // Respuesta única (incluye V/F legado, que llega sin opciones configuradas).
   function renderOpciones(cont, pregunta, indice, actualizar) {
     var opciones = opcionesDe(pregunta);
     if (!opciones.length && pregunta.tipo === 'verdadero_falso') opciones = ['Verdadero', 'Falso'];
     var fs = el('fieldset');
-    // El nombre accesible del grupo va oculto a la vista pero no a lectores
-    // de pantalla: display:none eliminaría el nombre del árbol accesible.
     var leyenda = el('legend', 'u-solo-lectores-pantalla', 'Pregunta ' + (indice + 1) + (pregunta.obligatoria ? ' (obligatoria)' : ' (opcional)'));
     fs.appendChild(leyenda);
     var lista = el('div', 'opciones');
@@ -376,7 +380,6 @@
     }
   }
 
-  // Varios de los anteriores pueden ser válidos (array de índices marcados).
   function renderVarias(cont, pregunta, actualizar) {
     var opciones = opcionesDe(pregunta);
     var guardadas = Array.isArray(estado.respuestas[pregunta.id]) ? estado.respuestas[pregunta.id] : [];
@@ -409,9 +412,6 @@
     }
   }
 
-  // Frase con hueco(s): con huecos en el enunciado se abre un campo por hueco
-  // (respuesta = array de textos); sin marcadores, un solo campo que el
-  // servidor compara contra las palabras aceptadas («a|b|c»).
   function renderCompletar(cont, pregunta, actualizar) {
     var huecos = Array.isArray(pregunta.huecos) ? pregunta.huecos : [];
     if (!huecos.length) {
@@ -444,8 +444,6 @@
     });
   }
 
-  // Una línea; el servidor normaliza mayúsculas/espacios y el profesor la
-  // corrige a mano con la respuesta de referencia del examen.
   function renderRespuestaCorta(cont, pregunta, actualizar) {
     textoSimple(cont, pregunta, 'Escribe tu respuesta en una línea…', actualizar);
   }
@@ -470,8 +468,6 @@
     cont.appendChild(input);
   }
 
-  // Parejas: la columna derecha se muestra en orden estable (mezclaEstable)
-  // y la respuesta es el mapa {posición izquierda: índice de la derecha}.
   function renderRelacionar(cont, pregunta, actualizar) {
     var opciones = opcionesDe(pregunta);
     var mitad = Math.floor(opciones.length / 2);
@@ -511,32 +507,27 @@
     fs.appendChild(lista);
     cont.appendChild(fs);
 
-    var revisar = function () {
-      var mapa = {};
-      var completo = true;
-      selects.forEach(function (select, i) {
-        if (select.value === '') { completo = false; return; }
-        mapa[i] = Number(select.value);
-      });
-      // Solo se guarda el mapa completo: así «obligatoria» significa todas.
-      if (completo) estado.respuestas[pregunta.id] = mapa;
-      else delete estado.respuestas[pregunta.id];
-      actualizar();
+    var jugadorRelacionar = function () {
+      // Guardar SIEMPRE: este manejador es el único sitio donde la respuesta de
+      // «relacionar» pasa a estado.respuestas. Cualquier referencia a variables
+      // inexistentes aquí (restos de una navegación por preguntas ya retirada)
+      // lanzaba ReferenceError antes de guardar: la pregunta se quedaba marcada
+      // como «sin responder» y, siendo obligatoria, bloqueaba la entrega.
+      guardarMapaParejas(lista, pregunta, actualizar);
     };
-    selects.forEach(function (select) { select.addEventListener('change', revisar); });
+    selects.forEach(function (select) {
+      select.addEventListener('change', jugadorRelacionar);
+      select.addEventListener('input', jugadorRelacionar);
+    });
 
     if (mitad < 2) {
       cont.appendChild(el('div', 'aviso aviso--error', 'Esta pregunta no tiene parejas configuradas. Avisa a tu profesor.'));
     }
   }
 
-  // Secuencia: los elementos llegan desordenados (orden estable) y el alumno
-  // los reordena con ▲▼. La respuesta es el array de índices en su orden
-  // escogido; el orden correcto es el de edición del profesor (0,1,2…).
   function renderOrdenar(cont, pregunta, actualizar) {
     var opciones = opcionesDe(pregunta);
     var previa = estado.respuestas[pregunta.id];
-    // El orden solo se guarda al mover algo: hasta entonces sigue sin responder.
     var guardado = (Array.isArray(previa) && previa.length === opciones.length)
       ? previa.slice()
       : mezclaEstable(pregunta.id, opciones.length);
@@ -591,7 +582,6 @@
     }
   }
 
-  // Desarrollo (texto_largo) y tipos legados sin widget específico.
   function renderDesarrollo(cont, pregunta, actualizar) {
     var idArea = 'a_' + pregunta.id;
     var etiqueta = el('label', 'pregunta__etiqueta', 'Tu respuesta');
@@ -637,7 +627,7 @@
     clearTimeout(estado.guardadoTimer);
     actualizarEstadoGuardado('Guardando…', false);
     estado.guardadoTimer = setTimeout(function () {
-      rpc('fb_guardar_borrador_token', { p_token: estado.token, p_respuestas: estado.respuestas })
+      rpcFlujo('fb_guardar_borrador_token', 'fb_comunitario_borrador', { p_token: estado.token, p_respuestas: estado.respuestas })
         .then(function () { actualizarEstadoGuardado('Borrador guardado', true); })
         .catch(function () { actualizarEstadoGuardado('Sin conexión: reintentaremos', false); });
     }, 900);
@@ -709,6 +699,20 @@
     cancelar.focus();
   }
 
+  // Mapa de parejas (relacionar): se guarda el mapa completo para que la
+  // obligatoriedad de esta pregunta equivalga a completar todas las parejas.
+  function guardarMapaParejas(lista, pregunta, actualizar) {
+    var mapa = {};
+    var completo = true;
+    var selects = lista.querySelectorAll('select');
+    selects.forEach(function (select, i) {
+      if (select.value === '') { completo = false; return; }
+      mapa[i] = Number(select.value);
+    });
+    if (completo) estado.respuestas[pregunta.id] = mapa; else delete estado.respuestas[pregunta.id];
+    actualizar();
+  }
+
   function quitarBarra() {
     var barra = document.querySelector('.barra-envio');
     if (barra) barra.remove();
@@ -721,7 +725,7 @@
     if (btn) { btn.disabled = true; btn.textContent = 'Entregando…'; }
     clearTimeout(estado.guardadoTimer);
 
-    return rpc('fb_entregar_por_token', { p_token: estado.token, p_respuestas: estado.respuestas })
+    return rpcFlujo('fb_entregar_por_token', 'fb_comunitario_entregar', { p_token: estado.token, p_respuestas: estado.respuestas })
       .then(function (res) {
         quitarBarra();
         anunciar('Examen entregado correctamente.');
@@ -751,9 +755,7 @@
       ok.appendChild(document.createTextNode('Tu profesor publicará la nota en este enlace.'));
       extra.appendChild(ok);
     }
-    var nota = el('p', 'sub');
-    nota.style.fontSize = 'var(--xs)';
-    nota.textContent = 'Puedes cerrar esta pestaña. Guarda el enlace para consultar tu resultado.';
+    var nota = el('p', 'pie-nota', 'Puedes cerrar esta pestaña. Guarda el enlace para consultar tu resultado.');
     extra.appendChild(nota);
     extra.style.marginTop = 'var(--md)';
 
@@ -766,30 +768,102 @@
   }
 
   function pantallaResultado(res) {
+    var estadoResultado = res.estado;
+    var preguntasSnapshot = (res.preguntas && Array.isArray(res.preguntas)) ? res.preguntas : null;
+    var correccion = res.correccion || {};
+    var preguntasParaMostrar = estadoResultado === 'calificado' && preguntasSnapshot ? preguntasSnapshot : null;
+    var detallePorPregunta = estadoResultado === 'calificado' && res.detalle && res.detalle.por_pregunta ? res.detalle.por_pregunta : null;
     var extra = el('div');
-    if (res.estado === 'calificado') {
-      var marca = el('div');
-      marca.style.marginBottom = 'var(--md)';
-      var valorNota = el('span', 'nota', formatearNota(res.nota));
+
+    if (estadoResultado === 'calificado') {
+      var marca = el('div', 'nota-marca');
+      var valorNota = el('span', 'nota-marca__nota', formatearNota(res.nota || 0));
       marca.appendChild(valorNota);
-      marca.appendChild(el('span', 'nota__sobre', 'sobre 10'));
+      var sobre = el('span', 'nota-marca__sobre', 'sobre 10');
+      marca.appendChild(sobre);
       extra.appendChild(marca);
 
-      if (res.puntuacion != null) {
-        var lista = el('ul', 'detalle');
-        var filaPct = el('li');
-        filaPct.appendChild(el('span', null, 'Aciertos'));
-        filaPct.appendChild(el('strong', null, Math.round(Number(res.puntuacion)) + ' %'));
-        lista.appendChild(filaPct);
-        extra.appendChild(lista);
+      var lista = el('ul', 'nota-detalle');
+      var filaPct = el('li', 'nota-detalle__item');
+      filaPct.appendChild(el('span', 'nota-detalle__key', 'Aciertos'));
+      filaPct.appendChild(el('strong', 'nota-detalle__val', Math.round(Number(res.puntuacion || 0)) + ' %'));
+      lista.appendChild(filaPct);
+      extra.appendChild(lista);
+
+      if (detallePorPregunta && preguntasParaMostrar) {
+        var preguntasDetalle = el('section', 'nota-preguntas');
+        preguntasDetalle.appendChild(el('h2', 'nota-preguntas__titulo', 'Tu resultado por pregunta'));
+        preguntasParaMostrar.forEach(function (pregunta, idx) {
+          var detalle = detallePorPregunta[pregunta.id] || {};
+          var correctaGlobal = detalle.es_correcta === true;
+          var puntosObtenidos = detalle.puntos != null ? Number(detalle.puntos) : 0;
+          var maxPuntos = Number(pregunta.puntos) || 1;
+          var bloque = el('article', 'nota-pregunta');
+          var cab = el('header', 'nota-pregunta__cabecera');
+          cab.appendChild(el('span', 'nota-pregunta__n', 'Pregunta ' + (idx + 1)));
+          if (pregunta.obligatoria) cab.appendChild(el('span', 'nota-pregunta__oblig', 'Obligatoria'));
+          var marcaPreg = el('span', 'nota-pregunta__marca' + (correctaGlobal ? ' nota-pregunta__marca--ok' : ' nota-pregunta__marca--mal'), correctaGlobal ? '✓' : '✗');
+          cab.appendChild(marcaPreg);
+          cab.appendChild(el('span', 'nota-pregunta__pts', maxPuntos + ' pt'));
+          bloque.appendChild(cab);
+
+          var enunciado = el('p', 'nota-pregunta__enunciado');
+          // En "completar" el enunciado lleva marcadores {0}, {1}…: aquí no
+          // hay inputs, así que se pintan numerados como en el examen.
+          var textoEnunciado = marcarHuecos(pregunta.texto || ('Pregunta ' + (idx + 1)));
+          enunciado.appendChild(document.createTextNode(textoEnunciado));
+          bloque.appendChild(enunciado);
+
+          var respuestaAlumno = extraerRespuestaAlumno(detalle.respuesta_alumno, pregunta);
+          // El servidor manda la respuesta correcta en crudo (índice, JSON…):
+          // se traduce a texto igual que la del alumno para poder compararlas.
+          var respuestaCorrecta = detalle.respuesta_correcta != null
+            ? extraerRespuestaAlumno(detalle.respuesta_correcta, pregunta)
+            : null;
+
+          var cuerpo = el('div', 'nota-pregunta__cuerpo');
+          var filaRespuesta = el('div', 'nota-pregunta__respuesta');
+          filaRespuesta.appendChild(el('span', 'nota-pregunta__label', 'Tu respuesta:'));
+          filaRespuesta.appendChild(el('span', 'nota-pregunta__valor', respuestaAlumno));
+          cuerpo.appendChild(filaRespuesta);
+
+          if (respuestaCorrecta != null) {
+            var filaCorrecta = el('div', 'nota-pregunta__respuesta' + (correctaGlobal ? ' nota-pregunta__respuesta--correcta' : ''));
+            filaCorrecta.appendChild(el('span', 'nota-pregunta__label', 'Respuesta correcta:'));
+            filaCorrecta.appendChild(el('span', 'nota-pregunta__valor', respuestaCorrecta));
+            cuerpo.appendChild(filaCorrecta);
+          }
+
+          // Los puntos siempre los decide el servidor (incluido el parcial
+          // de "completar"), así que se pinta tal cual, no "0".
+          var filaPuntos = el('div', 'nota-pregunta__puntos' + (puntosObtenidos >= maxPuntos ? ' nota-pregunta__puntos--ok' : ''));
+          filaPuntos.appendChild(el('span', 'nota-pregunta__label', 'Puntos:'));
+          var puntosFinales = el('span', 'nota-pregunta__valor');
+          puntosFinales.appendChild(el('strong', null, formatearNota(puntosObtenidos)));
+          puntosFinales.appendChild(el('span', 'nota-pregunta__max', ' / ' + maxPuntos));
+          filaPuntos.appendChild(puntosFinales);
+          cuerpo.appendChild(filaPuntos);
+          bloque.appendChild(cuerpo);
+
+          if (detalle.comentario) {
+            var obs = el('div', 'nota-pregunta__comentario');
+            obs.appendChild(el('strong', null, 'Comentario del profesor: '));
+            obs.appendChild(document.createTextNode(detalle.comentario));
+            bloque.appendChild(obs);
+          }
+
+          preguntasDetalle.appendChild(bloque);
+        });
+        extra.appendChild(preguntasDetalle);
       }
+
       if (res.observaciones) {
-        var obs = el('div', 'aviso aviso--ok');
-        obs.appendChild(el('strong', null, 'Comentario del profesor: '));
-        obs.appendChild(document.createTextNode(res.observaciones));
-        obs.style.marginTop = 'var(--md)';
-        extra.appendChild(obs);
+        var obsGlobal = el('div', 'nota-observaciones');
+        obsGlobal.appendChild(el('strong', null, 'Comentario del profesor: '));
+        obsGlobal.appendChild(document.createTextNode(res.observaciones));
+        extra.appendChild(obsGlobal);
       }
+
       extra.style.marginTop = 'var(--md)';
       pantallaMensaje({ icono: '✓', titulo: 'Resultado', texto: res.titulo || 'Examen', extra: extra });
     } else {
@@ -801,9 +875,68 @@
           : 'La nota final aparecerá aquí cuando tu profesor termine la corrección.'
       ));
       extra.appendChild(aviso);
+      extra.appendChild(el('p', 'pie-nota', 'Vuelve a este mismo enlace: la nota y el detalle aparecerán aquí solos.'));
       extra.style.marginTop = 'var(--md)';
       pantallaMensaje({ icono: '⏳', titulo: 'Pendiente de corrección', texto: res.titulo || 'Examen', extra: extra });
     }
+  }
+
+  // Un marcador {0} en el enunciado debe leerse junto al campo "Hueco 1":
+  // se dibuja numerado en vez de dejar la llave literal en pantalla.
+  function marcarHuecos(texto) {
+    return String(texto || '').replace(/\{(\d+)\}/g, function (_m, n) {
+      var d = Number(n) + 1;
+      return d <= 10 ? '①②③④⑤⑥⑦⑧⑨⑩'[d - 1] : '[' + d + ']';
+    });
+  }
+
+  function extraerRespuestaAlumno(respuestaAlumno, pregunta) {
+    if (respuestaAlumno == null || respuestaAlumno === '') return 'Sin respuesta';
+    var tipo = pregunta && pregunta.tipo || 'multiple';
+    if (tipo === 'multiple' || tipo === 'opcion_unica' || tipo === 'verdadero_falso') {
+      var indice = Number(respuestaAlumno);
+      var opciones = Array.isArray(pregunta.opciones) ? pregunta.opciones : [];
+      if (opciones.length && !isNaN(indice) && indice >= 0 && indice < opciones.length) {
+        return opciones[indice];
+      }
+      return respuestaAlumno;
+    }
+    if (tipo === 'varias_opciones') {
+      var indices = Array.isArray(respuestaAlumno) ? respuestaAlumno : [];
+      var opciones = Array.isArray(pregunta.opciones) ? pregunta.opciones : [];
+      var partes = indices.map(function (idx) {
+        if (!isNaN(idx) && idx >= 0 && idx < opciones.length) return opciones[idx];
+        return '…';
+      });
+      return partes.length ? partes.join(' · ') : 'Sin respuesta';
+    }
+    if (tipo === 'relacionar' && typeof respuestaAlumno === 'object' && !Array.isArray(respuestaAlumno)) {
+      var izq = Array.isArray(pregunta.opciones) ? pregunta.opciones.slice(0, Math.floor(pregunta.opciones.length / 2)) : [];
+      var der = Array.isArray(pregunta.opciones) ? pregunta.opciones.slice(Math.floor(pregunta.opciones.length / 2)) : [];
+      var parejas = [];
+      Object.keys(respuestaAlumno).forEach(function (izqIdx) {
+        var derIdx = Number(respuestaAlumno[izqIdx]);
+        var izqTexto = izq[Number(izqIdx)];
+        var derTexto = der[derIdx];
+        if (izqTexto != null && derTexto != null) {
+          parejas.push(izqTexto + ' → ' + derTexto);
+        }
+      });
+      return parejas.length ? parejas.join(' · ') : 'Sin respuesta';
+    }
+    if (tipo === 'ordenar') {
+      var lista = Array.isArray(respuestaAlumno) ? respuestaAlumno : [];
+      var opciones = Array.isArray(pregunta.opciones) ? pregunta.opciones : [];
+      if (lista.length === opciones.length && lista.every(function (v) { return typeof v === 'number'; })) {
+        var ordenado = lista.map(function (idx) { return opciones[idx]; });
+        return ordenado.join(' · ');
+      }
+      return respuestaAlumno;
+    }
+    if (tipo === 'completar' && Array.isArray(respuestaAlumno)) {
+      return respuestaAlumno.join(' / ');
+    }
+    return respuestaAlumno;
   }
 
   function formatearNota(nota) {
@@ -813,16 +946,36 @@
   }
 
   // ── Arranque ──────────────────────────────────────────────────────────────
-  function iniciar(nombre, grupo) {
-    return rpc('fb_iniciar_por_token', { p_token: estado.token })
+  function recordarNombre(nombre) {
+    try { window.localStorage.setItem('fb_comunitario:' + estado.token, nombre); } catch (e) { /* sin permiso de almacenamiento: se ignora */ }
+  }
+
+  function nombreRecordado() {
+    try { return window.localStorage.getItem('fb_comunitario:' + estado.token) || ''; } catch (e) { return ''; }
+  }
+
+  // Abre el examen en los DOS flujos. El individual lleva solo el token; el
+  // comunitario se identifica por el nombre del alumno (fb_comunitario_iniciar
+  // retoma su intento si ya existía y avisa `entregado` si ya lo entregó).
+  function iniciar(nombre) {
+    if (estado.comunitario && nombre) estado.nombre = nombre;
+    var args = { p_token: estado.token };
+    if (estado.comunitario) { args.p_nombre = nombre; args.p_grupo = ''; }
+    return rpcFlujo('fb_iniciar_por_token', 'fb_comunitario_iniciar', args)
       .then(function (res) {
+        if (res.entregado) {
+          // Ya entregó con este nombre: la revisión no es un examen nuevo.
+          return rpcFlujo('fb_consultar_entrega', 'fb_comunitario_consultar', { p_token: estado.token })
+            .then(function (consulta) { pantallaResultado(consulta); });
+        }
         estado.intentoId = res.intento_id;
         estado.preguntas = res.preguntas || [];
         estado.respuestas = res.respuestas || {};
         if (nombre) res.nombre_alumno = nombre;
-        if (grupo) res.grupo_alumno = grupo;
         estado.contexto = res;
-        cabecera(res.titulo, (res.alumno_nombre ? res.alumno_nombre : '') + (res.alumno_grupo ? ' · ' + res.alumno_grupo : ''), '0/' + estado.preguntas.length);
+        // El campo grupo ya no se pide ni se envía: la cabecera solo muestra
+        // el nombre con el que el alumno se identificó al abrir el enlace.
+        cabecera(res.titulo, res.alumno_nombre || '', '0/' + estado.preguntas.length);
         if (!estado.preguntas.length) {
           pantallaMensaje({ icono: '!', error: true, titulo: 'Examen sin preguntas', texto: 'Avisa a tu profesor: este examen todavía no tiene preguntas.' });
           return;
@@ -849,6 +1002,9 @@
     rpc('fb_estado_enlace', { p_token: estado.token })
       .then(function (ctx) {
         estado.contexto = ctx;
+        // La 063 marca los enlaces de la clase: a partir de ahí la identidad
+        // del alumno es su nombre, no el token individual.
+        estado.comunitario = !!ctx.comunitario;
         cabecera(ctx.titulo, ctx.profesor || '', '');
         if (ctx.usado) return mostrarEntrega();
         if (ctx.cerrado) {
@@ -872,11 +1028,10 @@
   }
 
   function mostrarEntrega() {
-    return rpc('fb_consultar_entrega', { p_token: estado.token })
+    return rpcFlujo('fb_consultar_entrega', 'fb_comunitario_consultar', { p_token: estado.token })
       .then(function (res) {
         if (res.estado === 'en_progreso') {
-          // El alumno abrió el examen antes y no entregó: retoma donde estaba.
-          return iniciar(res.alumno_nombre, res.alumno_grupo);
+          return iniciar(res.alumno_nombre);
         }
         if (res.estado === 'calificado' || res.estado === 'entregado') {
           return pantallaResultado(res);
@@ -888,7 +1043,6 @@
       });
   }
 
-  // Guardar el borrador si el alumno cierra pestaña con cambios recientes.
   window.addEventListener('beforeunload', function (evento) {
     if (!estado.intentoId || estado.enviando) return;
     if (!estado.guardadoTimer) return;
