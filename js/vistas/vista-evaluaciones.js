@@ -13,6 +13,7 @@
 
   const ROLES = ['admin', 'editor', 'owner'];
   const esc = (v) => window.panelUI.esc(v);
+  const I = (n) => window.Iconos ? window.Iconos.render(n) : '';
 
   function esAdmin() {
     const usuario = store.obtener('usuario');
@@ -53,10 +54,19 @@
         return;
       }
 
+      // Estado de búsqueda (como en exámenes).
+      this._busqueda = '';
+      this._timer = null;
+
       // Si el usuario navegó mientras cargaba, no pintar sobre el DOM viejo.
       if (!contenido.isConnected) return;
       this._pintarLista(contenido);
       if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    desmontar() {
+      clearTimeout(this._timer);
+      this._timer = null;
     },
 
     _pintarLista(contenido) {
@@ -68,7 +78,12 @@
         return;
       }
 
-      contenido.innerHTML = `<div class="adm-lista">${this._lista.map((ev) => {
+      contenido.innerHTML = `
+        <div class="adm-busqueda-wrap">
+          <span class="admin-buscar__icono" aria-hidden="true">${I('search')}</span>
+          <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar evaluaciones">
+        </div>
+        <div class="adm-lista">${this._lista.filter((ev) => !this._busqueda || String(ev.titulo || '').toLowerCase().includes(this._busqueda)).map((ev) => {
         const meta = [];
         if (ev.fecha) meta.push(window.panelUI.fechaCorta(ev.fecha));
         meta.push((Number(ev.num_columnas) || 0) + ' columna(s)');
@@ -80,12 +95,23 @@
             ${ev.descripcion ? `<div class="adm-fila__meta"><span>${esc(ev.descripcion)}</span></div>` : ''}
           </div>
           <div class="adm-fila__acciones">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(ev.id)}">${window.Iconos.render('table-2')} Ver rejilla</button>
-            <button class="adm-btn adm-btn--pequeno" data-editar="${esc(ev.id)}">${window.Iconos.render('edit-3')} Editar datos</button>
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(ev.id)}">${window.Iconos.render('table-2')} Abrir</button>
+            <button class="adm-btn adm-btn--pequeno" data-editar="${esc(ev.id)}">${window.Iconos.render('edit-3')} Editar</button>
             <button class="adm-btn adm-btn--peligro adm-btn--pequeno" data-eliminar="${esc(ev.id)}">${window.Iconos.render('trash-2')} Eliminar</button>
           </div>
         </div>`;
       }).join('')}</div>`;
+
+      const buscar = contenido.querySelector('#buscar');
+      if (buscar) {
+        buscar.addEventListener('input', () => {
+          clearTimeout(this._timer);
+          this._timer = setTimeout(() => {
+            this._busqueda = buscar.value.trim().toLowerCase();
+            this._pintarLista(contenido);
+          }, 180);
+        });
+      }
 
       contenido.querySelectorAll('[data-abrir]').forEach((btn) => {
         btn.addEventListener('click', () => router.navegar('/evaluaciones/' + btn.dataset.abrir));

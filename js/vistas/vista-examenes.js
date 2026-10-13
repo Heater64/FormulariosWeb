@@ -19,6 +19,7 @@
   };
 
   const esc = (v) => window.panelUI.esc(v);
+  const I = (n) => window.Iconos ? window.Iconos.render(n) : '';
 
   window.vistaExamenes = {
     _examenes: [],
@@ -65,7 +66,10 @@
             .map(([id, texto]) => `<button class="adm-tab${this._filtro === id ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${this._filtro === id}">${texto}</button>`)
             .join('')}
         </div>
-        <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
+        <div class="adm-busqueda-wrap">
+          <span class="admin-buscar__icono" aria-hidden="true">${I('search')}</span>
+          <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
+        </div>
         <div id="lista" class="adm-lista"></div>`;
 
       contenido.querySelectorAll('#tabs .adm-tab').forEach((btn) => {
@@ -154,7 +158,7 @@
           </div>
           <div class="adm-fila__meta adm-examen__meta">
             ${meta.map((m) => `<span>${esc(m)}</span>`).join('')}
-            <span>Actualizado ${esc(window.panelUI.tiempoRelativo(ex.actualizado_en || ex.creado_en))}</span>
+            <span class="adm-fila__meta__actualizado">Actualizado ${esc(window.panelUI.tiempoRelativo(ex.actualizado_en || ex.creado_en))}</span>
           </div>
         </div>
         <div class="adm-fila__acciones adm-examen__acciones" aria-label="Acciones de ${titulo}">

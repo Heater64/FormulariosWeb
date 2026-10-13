@@ -50,6 +50,40 @@
 .btn-peligro:hover { background: var(--color-error-hover); }
 .btn-peligro:active { transform: scale(0.98); }
 
+/*
+ * Diálogo de confirmación: aquí el destructivo convive con «Cancelar», así que
+ * baja su tono. Relleno rojo claro + contorno rojo oscuro para destacar por
+ * CONTRASTE (no por masa de color), el mismo alto y peso que su vecino y ancho
+ * al contenido para que la fila no la domine.
+ * El ancho solo se ajusta en fila: en móvil _modal.css apila a columna y ambos
+ * van a todo el ancho, así que esa regla debe seguir ganando.
+ */
+@media (min-width: 481px) {
+  .modal-confirm__acciones .btn-peligro {
+    width: auto;
+    justify-content: center;
+  }
+}
+
+.modal-confirm__acciones .btn-peligro {
+  background: var(--color-error-soft);
+  color: var(--color-error);
+  /* Réplica la métrica de .btn-secundario. Sin esto, a ≤480px el media query
+     de _zona-peligro recorta el padding y el botón cae a 44px mientras
+     «Cancelar» se queda en los 48px de --toque-minimo. */
+  padding: var(--btn-padding);
+  min-height: var(--toque-minimo);
+  /* 1px, igual que «Cancelar»: el grosor también es parte de "igual de grande". */
+  border: 1px solid color-mix(in srgb, var(--color-error) 80%, black);
+  font-weight: 600;
+  transition: background var(--transicion-rapida), color var(--transicion-rapida),
+    border-color var(--transicion-rapida), transform var(--transicion-rapida);
+}
+
+.modal-confirm__acciones .btn-peligro:hover {
+  background: color-mix(in srgb, var(--color-error) 20%, var(--color-error-soft));
+}
+
 .modal-confirm {
   width: 100%;
   max-width: 440px;

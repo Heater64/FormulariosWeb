@@ -213,25 +213,11 @@
     },
 
     /**
-     * Rejilla completa de una evaluación.
-     *
-     * `columnasPorSeccion` (065) pide al servidor el troceado en secciones
-     * que cabe en la pantalla. Si el servidor todavía no tiene la 065, el
-     * primer intento falla y se reintenta con la firma antigua (solo p_id):
-     * la vista sigue funcionando y calcula las secciones por su cuenta.
+     * Rejilla completa de una evaluación (todas las columnas; la vista
+     * gestiona el scroll, sin troceado del servidor).
      */
-    obtenerEvaluacion(id, columnasPorSeccion) {
-      const conSeccion = Number.isFinite(columnasPorSeccion);
-      const primera = conSeccion
-        ? rpc('fb_evaluacion_obtener', { p_id: id, p_columnas_por_seccion: columnasPorSeccion })
-        : rpc('fb_evaluacion_obtener', { p_id: id });
-      if (!conSeccion) return primera;
-      return primera.catch((e) => {
-        if (e && /Falta aplicar la migración/.test(e.message || '')) {
-          return rpc('fb_evaluacion_obtener', { p_id: id });
-        }
-        throw e;
-      });
+    obtenerEvaluacion(id) {
+      return rpc('fb_evaluacion_obtener', { p_id: id });
     },
 
     importarEvaluacion(id, celdas, finales) {

@@ -258,18 +258,14 @@
     _volcarPromesa: null,
     _estado: 'ok',           // 'ok' | 'guardando' | 'error'
     _errorGuardado: null,
-    // Secciones paginadas (migración 065): se ve UNA sección de columnas a la vez.
-    _secciones: [],          // [{ indice, columna_ids }]
-    _seccion: 0,             // sección activa (0-based)
-    _tam: 3,                 // columnas por sección en uso
-    _alRedimensionar: null,
-    _temporizadorResize: 0,
+    _desmontado: false,      // al salir se anula el pintado para no pisar la vista siguiente
 
     async montar(raiz, params) {
       if (!esAdmin()) {
         raiz.innerHTML = `<div class="o-contenedor u-mt-4"><div class="adm-aviso adm-aviso--error">Esta sección es solo para el administrador.</div></div>`;
         return;
       }
+      this._desmontado = false;
       this._id = (params && params.id) || null;
       this._datos = null;
       this._examenes = [];
@@ -279,9 +275,6 @@
       this._cola = new Map();
       this._estado = 'ok';
       this._errorGuardado = null;
-      this._secciones = [];
-      this._seccion = 0;
-      this._tam = 3;
 
       raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
         <header class="adm-cabecera">
@@ -309,11 +302,9 @@
       raiz.querySelector('#btnAnadir').addEventListener('click', () => {
         const alumnos = (this._datos && this._datos.alumnos) || [];
         const columnas = (this._datos && this._datos.columnas) || [];
-        // «Añadir columna» entra al final de la sección que se está viendo.
-        const indice = Math.min(columnas.length, (this._seccion + 1) * this._tam);
         this._abrirMenu(raiz.querySelector('#btnAnadir'), [
           { texto: 'Añadir alumno', icono: 'user-plus', accion: () => this._anadirFila(alumnos.length) },
-          { texto: 'Añadir columna', icono: 'columns-3', accion: () => this._anadirColumna(indice) }
+          { texto: 'Añadir columna', icono: 'columns-3', accion: () => this._anadirColumna(columnas.length) }
         ]);
       });
       raiz.querySelector('#btnMas').addEventListener('click', () => {
@@ -328,32 +319,20 @@
       });
       this._pintarEstado();
 
-      // Con la rejilla paginada, un cambio de tamaño puede cambiar cuántas
-      // columnas caben en una sección: se repinta (sin pisar ediciones).
-      this._alRedimensionar = () => {
-        if (this._temporizadorResize) clearTimeout(this._temporizadorResize);
-        this._temporizadorResize = setTimeout(() => {
-          this._temporizadorResize = 0;
-          if (!this._datos || this._editando) return;
-          if (this._tamSeccion() !== this._tam) this._pintar();
-        }, 180);
-      };
-      window.addEventListener('resize', this._alRedimensionar);
-
       await this._cargar(raiz);
       if (window.Iconos) window.Iconos.actualizar();
     },
 
-    /** El router avisa al salir: se suelta el listener de tamaño y, si queda
-     *  algo pendiente de guardar, se intenta volcar ya (no se pierde nada). */
+    /** El router avisa al salir: si queda algo pendiente de guardar, se
+     *  intenta volcar ya (no se pierde nada). _desmontado anula todo pintado
+     *  posterior para no pisar la vista siguiente, aunque el vuelco siga su
+     *  curso en segundo plano. */
     desmontar() {
-      if (this._alRedimensionar) {
-        window.removeEventListener('resize', this._alRedimensionar);
-        this._alRedimensionar = null;
-      }
-      if (this._temporizadorResize) {
-        clearTimeout(this._temporizadorResize);
-        this._temporizadorResize = 0;
+      this._desmontado = true;
+      if (this._temporizador) {
+        // El debounce no debe disparar un vuelco contra un DOM ya desmontado.
+        clearTimeout(this._temporizador);
+        this._temporizador = 0;
       }
       if (this._cola && this._cola.size && !this._volcarPromesa) {
         try { this._volcar(); } catch (e) { /* el estado de error queda visible */ }
@@ -364,7 +343,7 @@
       const contenido = raiz.querySelector('#contenido');
       try {
         const datos = this._normalizarDatos(
-          await window.plataformaRepository.obtenerEvaluacion(this._id, this._tamSeccion())
+          await window.plataformaRepository.obtenerEvaluacion(this._id)
         );
         this._datos = datos;
         // El resumen da los exámenes (títulos, borradores) para las cabeceras
@@ -390,7 +369,7 @@
     async _refrescar() {
       try {
         const datos = this._normalizarDatos(
-          await window.plataformaRepository.obtenerEvaluacion(this._id, this._tamSeccion())
+          await window.plataformaRepository.obtenerEvaluacion(this._id)
         );
         this._datos = datos;
         for (const pendiente of this._cola.values()) {
@@ -507,7 +486,7 @@
     /**
      * Defensa contra servidores antiguos: la 060-064 traía las columnas solo
      * con el alias `columna_id`; la vista trabaja con `id`. Se completan ambos
-     * para que las celdas, los menús y las secciones funcionen igual.
+     * para que las celdas y los menús funcionen igual.
      */
     _normalizarDatos(datos) {
       if (datos && Array.isArray(datos.columnas)) {
@@ -519,119 +498,9 @@
       return datos;
     },
 
-    // ── Secciones: una pantalla de columnas a la vez ──────────────────────
-    /**
-     * Cuántas columnas caben en pantalla. Con los anchos fijos de CSS
-     * (Alumno 148 + Resultado final 104 + columnas de 116) el cuelgue es
-     * directo: de 1 columna en móvil a 8 en escritorio. Sin layout (tests)
-     * se mantiene el último tamaño conocido.
-     */
-    _tamSeccion() {
-      if (typeof document === 'undefined') return this._tam || 3;
-      const caja = document.querySelector('#app-root #contenido');
-      const ancho = (caja && caja.clientWidth) || 0;
-      if (ancho <= 0) return this._tam || 3;
-      const fijas = 316;   // Alumno (148) + «+» (52) + Resultado final (104) + aire
-      const anchoCol = 116; // columna de datos + margen
-      return Math.max(1, Math.min(8, Math.floor((ancho - fijas) / anchoCol)));
-    },
-
-    /** Agrupa las columnas en secciones de `tam`, en su orden de la rejilla. */
-    _calcularSecciones(columnas, tam) {
-      const t = Math.max(1, Math.floor(tam) || 3);
-      const secciones = [];
-      (columnas || []).forEach((c, i) => {
-        const idx = Math.floor(i / t);
-        if (!secciones[idx]) secciones[idx] = { indice: idx, columna_ids: [] };
-        secciones[idx].columna_ids.push(c.id);
-      });
-      return secciones;
-    },
-
-    _seccionDeColumna(indice) {
-      return Math.floor(indice / (this._tam || 3));
-    },
-
-    /** Sección activa + grupos a mostrar: manda el servidor (065) si su
-     *  troceado coincide con el tamaño pedido; si no, la vista calcula los
-     *  grupos con el mismo criterio (servidor sin la 065 o resize). */
-    _prepararSecciones(datos) {
-      const columnas = (datos && datos.columnas) || [];
-      const tam = this._tamSeccion();
-      this._tam = tam;
-      const local = this._calcularSecciones(columnas, tam);
-      const servidor = datos && Array.isArray(datos.secciones) ? datos.secciones : null;
-      const compatible = !!servidor && servidor.length === local.length
-        && servidor.every((s, i) => (s.columna_ids || []).length === (local[i].columna_ids || []).length);
-      this._secciones = compatible ? servidor : local;
-      let activa = this._leerSeccion();
-      if (activa < 0 || activa >= this._secciones.length) activa = 0;
-      this._seccion = activa;
-    },
-
-    /** La sección abierta se recuerda por evaluación (no al revés). */
-    _leerSeccion() {
-      try {
-        return Number(localStorage.getItem('fb_evaluacion_seccion_' + this._id)) || 0;
-      } catch (e) { return 0; }
-    },
-
-    _guardarSeccion(indice) {
-      try {
-        localStorage.setItem('fb_evaluacion_seccion_' + this._id, String(indice));
-      } catch (e) { /* almacenamiento no disponible: no es esencial */ }
-    },
-
-    /** Cambia de sección sin repintar: solo alterna las celdas visibles. */
-    _irSeccion(n) {
-      const total = (this._secciones || []).length;
-      if (total <= 1) return;
-      const idx = Math.max(0, Math.min(total - 1, n));
-      if (idx === this._seccion) return;
-      this._seccion = idx;
-      this._guardarSeccion(idx);
-      this._aplicarSeccion();
-    },
-
-    /** Exactamente UNA sección visible: se ocultan/muestran celdas por
-     *  data-seccion y se sincroniza el mini-mapa. */
-    _aplicarSeccion() {
-      if (typeof document === 'undefined') return;
-      const raiz = document.querySelector('#app-root');
-      if (!raiz) return;
-      raiz.querySelectorAll('.eval-tabla [data-seccion]').forEach((el) => {
-        if (Number(el.dataset.seccion) === this._seccion) el.removeAttribute('hidden');
-        else el.setAttribute('hidden', '');
-      });
-      // El «+» de columnas añade al final de la sección visible.
-      const mas = raiz.querySelector('[data-anadir-col]');
-      if (mas) {
-        const columnas = (this._datos && this._datos.columnas) || [];
-        mas.dataset.anadirCol = String(Math.min(columnas.length, (this._seccion + 1) * this._tam));
-      }
-      const total = (this._secciones || []).length;
-      raiz.querySelectorAll('.eval-minimapa__punto').forEach((punto) => {
-        const activo = Number(punto.dataset.seccionI) === this._seccion;
-        punto.classList.toggle('eval-minimapa__punto--activo', activo);
-        punto.setAttribute('aria-selected', activo ? 'true' : 'false');
-      });
-      const texto = raiz.querySelector('.eval-minimapa__texto');
-      if (texto) texto.textContent = 'Sección ' + (this._seccion + 1) + ' de ' + total;
-      const anterior = raiz.querySelector('[data-seccion-anterior]');
-      const siguiente = raiz.querySelector('[data-seccion-siguiente]');
-      if (anterior) anterior.disabled = this._seccion === 0;
-      if (siguiente) siguiente.disabled = this._seccion === total - 1;
-    },
-
-    /** Gesto horizontal de deslizar: cambia de sección. Devuelve true si lo hizo. */
-    _gesto(dx, dy) {
-      if (Math.abs(dx) < 56 || Math.abs(dx) <= Math.abs(dy)) return false;
-      this._irSeccion(this._seccion + (dx < 0 ? 1 : -1));
-      return true;
-    },
-
     // ── Pintado de la hoja ────────────────────────────────────────────────
     _pintar() {
+      if (this._desmontado) return; // la vista ya no es la nuestra: no pisar
       const d = this._datos;
       const contenido = document.querySelector('#app-root #contenido');
       if (!contenido) return;
@@ -642,15 +511,10 @@
       if (titulo) titulo.textContent = ev.titulo || 'Evaluación';
       const columnas = d.columnas || [];
       const alumnos = d.alumnos || [];
-      // Grupos de columnas (065): antes de pintar ya se sabe qué sección se ve.
-      this._prepararSecciones(d);
-      const tam = this._tam;
-      const visibles = columnas.filter((c, i) => this._seccionDeColumna(i) === this._seccion).length;
       if (sub) {
         sub.textContent = (ev.fecha ? window.panelUI.fechaCorta(ev.fecha) + ' · ' : '')
           + columnas.length + ' columna(s) · ' + alumnos.length + ' alumno(s)'
           + ' · rango 0-' + this._rangoNota()
-          + ' · sección ' + (this._secciones.length ? (this._seccion + 1) + '/' + this._secciones.length : '—')
           + (ev.descripcion ? ' · ' + ev.descripcion : '');
       }
       this._pintarEstado();
@@ -672,17 +536,14 @@
       const indiceNuevaFila = this._filaNueva;
 
       // Cabeceras: nombre editable en línea cuando _colEditando coincide.
-      // Cada columna lleva data-seccion: solo la sección activa se muestra.
-      const cabeceras = columnas.map((c, i) => {
+      const cabeceras = columnas.map((c) => {
         const examen = this._examenDe(c);
         const borrador = c.tipo === 'examen' && examen && examen.estado !== 'publicado';
         const renombrando = this._colEditando === c.id;
-        const sec = this._seccionDeColumna(i);
-        const oculta = sec === this._seccion ? '' : ' hidden';
         const nombreHtml = renombrando
           ? `<input class="eval-col__input" value="${esc(c.nombre)}" maxlength="160" aria-label="Nombre de la columna ${esc(c.nombre)}">`
           : `<span class="eval-tabla__col-nombre">${esc(c.nombre)}</span>`;
-        return `<th scope="col" class="eval-tabla__col" data-col="${esc(c.id)}" data-seccion="${sec}"${oculta}>
+        return `<th scope="col" class="eval-tabla__col" data-col="${esc(c.id)}">
           ${nombreHtml}
           <span class="eval-tabla__col-badges">
             <span class="adm-badge adm-badge--borrador">${c.tipo === 'examen' ? 'Examen' : 'Manual'}</span>
@@ -695,13 +556,11 @@
       }).join('');
 
       const filas = alumnos.map((alumno, indice) => {
-        const celdasHtml = columnas.map((c, i) => {
+        const celdasHtml = columnas.map((c) => {
           const celda = celdasMap.get(clave(alumno) + '|' + c.id);
           const nota = celda && celda.nota != null ? Number(celda.nota) : null;
           const manual = !!(celda && celda.manual);
-          const sec = this._seccionDeColumna(i);
-          const oculta = sec === this._seccion ? '' : ' hidden';
-          return `<td data-alumno="${esc(alumno)}" data-col="${esc(c.id)}" data-seccion="${sec}"${oculta}>${this._htmlCelda(nota, manual, alumno, c.nombre)}</td>`;
+          return `<td data-alumno="${esc(alumno)}" data-col="${esc(c.id)}">${this._htmlCelda(nota, manual, alumno, c.nombre)}</td>`;
         }).join('');
         const final = finalesMap.get(clave(alumno));
         const media = this._mediaAlumno(alumno);
@@ -731,11 +590,7 @@
           <th scope="row" class="eval-tabla__alumno">
             <input class="eval-alumno-input" type="text" placeholder="Nombre y apellidos" maxlength="200" autocomplete="off" aria-label="Nombre del nuevo alumno">
           </th>
-          ${columnas.map((c, i) => {
-            const sec = this._seccionDeColumna(i);
-            const oculta = sec === this._seccion ? '' : ' hidden';
-            return `<td class="eval-tabla__col eval-tabla__relleno" data-seccion="${sec}"${oculta}></td>`;
-          }).join('')}
+          ${columnas.map(() => '<td class="eval-tabla__col eval-tabla__relleno"></td>').join('')}
           <td class="eval-tabla__col--anadir eval-tabla__relleno"></td>
           <td class="eval-tabla__espaciador" aria-hidden="true"></td>
           <td class="eval-tabla__final eval-tabla__relleno"></td>
@@ -746,19 +601,14 @@
       const scrollIzq = contenedorAntes ? contenedorAntes.scrollLeft : 0;
       const scrollArr = contenedorAntes ? contenedorAntes.scrollTop : 0;
 
-      const totalSecciones = this._secciones.length;
-      const conSecciones = totalSecciones > 1;
-      // El «+» de columnas entra al final de la sección visible.
-      const indiceAnadirCol = Math.min(columnas.length, (this._seccion + 1) * tam);
-
       contenido.innerHTML = `<div class="eval-rejilla">
         <table class="eval-tabla">
-          <caption class="eval-tabla__caption">Hoja de notas: pulsa una celda para escribir la nota; cada fila y columna tiene un menú «⋯» para añadir o eliminar. La hoja se muestra por secciones de columnas: desliza o usa el mini-mapa para cambiar.</caption>
+          <caption class="eval-tabla__caption">Hoja de notas: pulsa una celda para escribir la nota; cada fila y columna tiene un menú «⋯» para añadir o eliminar. Desliza la hoja en horizontal para ver todas las columnas.</caption>
           <thead><tr>
             <th scope="col" class="eval-tabla__alumno">Alumno</th>
             ${cabeceras}
             <th scope="col" class="eval-tabla__col eval-tabla__col--anadir">
-              <button type="button" class="eval-mas" data-anadir-col="${indiceAnadirCol}" aria-label="Añadir columna" title="Añadir columna">+</button>
+              <button type="button" class="eval-mas" data-anadir-col="${columnas.length}" aria-label="Añadir columna" title="Añadir columna">+</button>
             </th>
             <th scope="col" class="eval-tabla__espaciador" aria-hidden="true"></th>
             <th scope="col" class="eval-tabla__final">Resultado final</th>
@@ -769,19 +619,13 @@
               <th scope="row" class="eval-tabla__alumno">
                 <button type="button" class="eval-mas eval-mas--fila" data-anadir-fila="${alumnos.length}">${window.Iconos.render('plus')} Añadir alumno</button>
               </th>
-              <td class="eval-tabla__relleno" colspan="${visibles + 1}"></td>
+              <td class="eval-tabla__relleno" colspan="${columnas.length + 1}"></td>
               <td class="eval-tabla__espaciador" aria-hidden="true"></td>
               <td class="eval-tabla__final eval-tabla__relleno"></td>
             </tr>
           </tbody>
         </table>
       </div>
-      ${conSecciones ? `<div class="eval-minimapa" role="tablist" aria-label="Secciones de la hoja">
-        <button type="button" class="eval-minimapa__flecha" data-seccion-anterior aria-label="Sección anterior">‹</button>
-        ${this._secciones.map((s, i) => `<button type="button" role="tab" class="eval-minimapa__punto${i === this._seccion ? ' eval-minimapa__punto--activo' : ''}" data-seccion-i="${i}" aria-selected="${i === this._seccion}" aria-label="Sección ${i + 1} de ${totalSecciones}" title="Sección ${i + 1}"></button>`).join('')}
-        <button type="button" class="eval-minimapa__flecha" data-seccion-siguiente aria-label="Sección siguiente">›</button>
-        <span class="eval-minimapa__texto" aria-live="polite">Sección ${this._seccion + 1} de ${totalSecciones}</span>
-      </div>` : ''}
       <p class="eval-leyenda">
         <span class="eval-leyenda__grupo"><span class="eval-leyenda__punto eval-leyenda__punto--auto"></span> valor automático del examen</span>
         <span class="eval-leyenda__grupo"><span class="eval-leyenda__punto eval-leyenda__punto--manual"></span> escrita a mano (no se recalcula)</span>
@@ -808,31 +652,6 @@
         });
         contenedor.scrollLeft = scrollIzq;
         contenedor.scrollTop = scrollArr;
-        // Deslizar (táctil) cambia de sección: horizontal manda sobre vertical.
-        let toqueX = 0;
-        let toqueY = 0;
-        contenedor.addEventListener('touchstart', (evento) => {
-          const t = evento.touches && evento.touches[0];
-          if (!t) return;
-          toqueX = t.clientX;
-          toqueY = t.clientY;
-        }, { passive: true });
-        contenedor.addEventListener('touchend', (evento) => {
-          const t = evento.changedTouches && evento.changedTouches[0];
-          if (!t) return;
-          this._gesto(t.clientX - toqueX, t.clientY - toqueY);
-        }, { passive: true });
-      }
-
-      // Mini-mapa de secciones (ratón y táctil).
-      const minimapa = contenido.querySelector('.eval-minimapa');
-      if (minimapa) {
-        minimapa.addEventListener('click', (evento) => {
-          const punto = evento.target.closest('[data-seccion-i]');
-          if (punto) { this._irSeccion(Number(punto.dataset.seccionI)); return; }
-          if (evento.target.closest('[data-seccion-anterior]')) { this._irSeccion(this._seccion - 1); return; }
-          if (evento.target.closest('[data-seccion-siguiente]')) { this._irSeccion(this._seccion + 1); }
-        });
       }
 
       // Renombrar columna en línea.
@@ -872,15 +691,12 @@
         }
       }
 
-      // Sincroniza visibilidad, «+» y mini-mapa con la sección activa.
-      this._aplicarSeccion();
-
       if (window.Iconos) window.Iconos.actualizar();
     },
 
     /** Estado de guardado en la cabecera (visible, con reintento). */
     _pintarEstado() {
-      if (typeof document === 'undefined') return;
+      if (typeof document === 'undefined' || this._desmontado) return;
       const caja = document.querySelector('#estadoGuardado');
       if (!caja) return;
       if (this._estado === 'guardando') {
@@ -988,6 +804,13 @@
       const cerrar = async (guardar) => {
         if (cerrado) return;
         if (guardar) {
+          // Un <input type=number> con texto no numérico expone value='' (no el
+          // texto); sin este check se leería como «vacío» y se BORRARÍA la celda.
+          if (input.validity && input.validity.badInput) {
+            marcarError('Escribe un número, por ejemplo 7,5.');
+            input.focus();
+            return;
+          }
           // Como Excel: un valor fuera de rango no se cierra; se corrige o se
           // cancela con Escape (así no se pierde lo que se escribió).
           const r = this._validarNotaTexto(input.value);
@@ -1695,10 +1518,13 @@
           const sinDatos = preparado.columnasSinDatos.length
             ? `<p class="adm-cabecera__sub">Columnas de la evaluación sin datos en el archivo (quedan vacías): ${preparado.columnasSinDatos.map(esc).join(', ')}</p>`
             : '';
+          const fueraRango = preparado.descartadas
+            ? `<p class="adm-aviso adm-aviso--error">${preparado.descartadas} celda(s) con nota fuera del rango 0-${this._rangoNota()} se ignorarán.</p>`
+            : '';
           preview.innerHTML = `<div class="adm-aviso adm-aviso--exito">
               <strong>${esc(archivo.name)}</strong> · ${preparado.alumnos} alumno(s) ·
               ${preparado.columnas + preparado.columnasNuevas.length} columna(s) del archivo${preparado.columnasNuevas.length ? ` (${preparado.columnasNuevas.length} nueva(s))` : ''} · ${preparado.finales.length} nota(s) final(es).
-            </div>${nuevas}${sinDatos}`;
+            </div>${nuevas}${sinDatos}${fueraRango}`;
           boton.disabled = !preparado.alumnos;
         } catch (e) {
           preview.innerHTML = '';
@@ -1750,8 +1576,13 @@
       const existentes = (this._datos.columnas || []).map((c) => ({
         id: c.id || null, tipo: c.tipo || 'manual', examen_id: c.examen_id || null, nombre: c.nombre
       }));
+      // Un reintento tras fallo parcial puede encontrar ya creadas algunas de
+      // las «nuevas» (el nombre ya está en la evaluación): no se duplican.
+      const nombres = new Set(existentes.map((c) => clave(c.nombre)));
+      const faltantes = preparado.columnasNuevas.filter((n) => !nombres.has(clave(n)));
+      if (!faltantes.length) return this._datos.columnas || [];
       const lista = existentes.concat(
-        preparado.columnasNuevas.map((nombre) => ({ id: null, tipo: 'manual', examen_id: null, nombre }))
+        faltantes.map((nombre) => ({ id: null, tipo: 'manual', examen_id: null, nombre }))
       );
       const guardadas = await window.plataformaRepository.guardarColumnasEvaluacion(this._id, lista);
       const columnas = (guardadas && guardadas.columnas) || [];
@@ -1824,6 +1655,7 @@
       const finales = [];
       const alumnos = new Set();
       const indiceCelda = new Map(); // alumno|columna → posición en celdas
+      let descartadas = 0;           // celdas/finales con nota fuera de rango
       for (let f = 1; f < filas.length; f++) {
         const fila = filas[f] || [];
         const alumno = String(fila[0] == null ? '' : fila[0]).trim();
@@ -1831,7 +1663,8 @@
         alumnos.add(alumno);
         Object.keys(porIndice).forEach((i) => {
           const nota = notaDe(fila[Number(i)]);
-          if (nota == null || nota < 0 || nota > max) return;
+          if (nota == null) return;
+          if (nota < 0 || nota > max) { descartadas++; return; }
           const columnaId = porIndice[i].id;
           const previa = indiceCelda.get(alumno + '|' + columnaId);
           // Con columnas repetidas en el archivo manda la última nota.
@@ -1843,12 +1676,13 @@
           }
         });
         const final = notaDe(fila[ultima]);
-        if (final != null && final >= 0 && final <= max) finales.push({ alumno, nota: final });
+        if (final != null && (final < 0 || final > max)) descartadas++;
+        else if (final != null) finales.push({ alumno, nota: final });
       }
       if (!alumnos.size) throw new Error('No se reconoció ningún alumno en la primera columna.');
       return {
         celdas, finales, alumnos: alumnos.size,
-        columnas: usadas.size, columnasNuevas, columnasSinDatos
+        columnas: usadas.size, columnasNuevas, columnasSinDatos, descartadas
       };
     },
 
@@ -1861,10 +1695,16 @@
       const celdasMap = this._celdasMap();
       const finalesMap = this._finalesMap();
       const coma = (v) => (v == null ? '' : String(v).replace('.', ','));
+      // Escapa un campo CSV: si lleva «;», comilla o salto de línea va entre
+      // comillas dobles (RFC 4180), si no Excel lo partiría en trozos.
+      const campo = (v) => {
+        const s = v == null ? '' : String(v);
+        return /[;"\r\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+      };
 
-      const lineas = [['Alumno'].concat(columnas.map((c) => c.nombre)).concat(['Nota final']).join(';')];
+      const lineas = [['Alumno'].concat(columnas.map((c) => campo(c.nombre))).concat(['Nota final']).join(';')];
       alumnos.forEach((alumno) => {
-        const fila = [alumno];
+        const fila = [campo(alumno)];
         columnas.forEach((c) => {
           const celda = celdasMap.get(clave(alumno) + '|' + c.id);
           fila.push(coma(celda && celda.nota != null ? Number(celda.nota) : null));

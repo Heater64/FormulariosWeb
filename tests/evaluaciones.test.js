@@ -294,9 +294,9 @@ describe('migración 065: la rejilla se pagina por secciones', () => {
     const concesiones = migracion065.split('\n')
       .filter((l) => l.includes('fb_evaluacion_obtener') && /TO anon/.test(l));
     expect(concesiones).toEqual([]);
-    // La vista mantiene el mismo contrato de visibilidad con una sola sección.
-    expect(vistaRejilla).toContain('_aplicarSeccion()');
-    expect(vistaRejilla).toContain('_calcularSecciones');
+    // La vista ya no consume el troceado: pinta una sola hoja con scroll.
+    expect(vistaRejilla).not.toContain('eval-minimapa');
+    expect(vistaRejilla).not.toContain('_aplicarSeccion');
   });
 });
 
@@ -377,38 +377,15 @@ describe('capa de datos de evaluaciones', () => {
       .rejects.toThrow('064_evaluacion_hoja_calculo.sql');
   });
 
-  test('obtenerEvaluacion pide el troceado en secciones y si no lo entiende, reintenta', async () => {
-    // Con tamaño: lleva el parámetro de la 065.
+  test('obtenerEvaluacion pide la rejilla completa en UNA sola llamada', async () => {
+    // Sin troceado: un único `fb_evaluacion_obtener` con p_id (064 y 065).
     const llamadas = [];
     const repo = cargarRepositorio(llamadas);
-    await repo.obtenerEvaluacion('ev1', 4);
-    expect(llamadas[0]).toEqual({
-      nombre: 'fb_evaluacion_obtener',
-      args: { p_id: 'ev1', p_columnas_por_seccion: 4 }
-    });
-
-    // Sin tamaño (otros llamadores): igual que siempre, solo p_id.
     await repo.obtenerEvaluacion('ev1');
-    expect(llamadas[1].args).toEqual({ p_id: 'ev1' });
-
-    // Servidor sin la 065: el primer intento falla y se repite con la firma
-    // antigua; la vista calcula las secciones por su cuenta.
-    let intentos = 0;
-    const antiguo = {
-      supabaseClient: {
-        rpc: async () => {
-          intentos++;
-          if (intentos === 1) {
-            return { data: null, error: { code: 'PGRST202', message: 'Could not find the function public.fb_evaluacion_obtener' } };
-          }
-          return { data: { evaluacion: { titulo: 'Ev' }, secciones: [] }, error: null };
-        }
-      }
-    };
-    new Function('window', repositorio)(antiguo);
-    const datos = await antiguo.plataformaRepository.obtenerEvaluacion('ev1', 2);
-    expect(intentos).toBe(2);
-    expect(datos.evaluacion.titulo).toBe('Ev');
+    expect(llamadas).toEqual([{
+      nombre: 'fb_evaluacion_obtener',
+      args: { p_id: 'ev1' }
+    }]);
   });
 });
 
@@ -689,8 +666,24 @@ describe('vista de la rejilla', () => {
     expect(celdas.every((c) => String(c.columna_id).indexOf('nueva:') !== 0)).toBe(true);
 
     // Si el servidor no confirma las columnas, se avisa en vez de importar a ciegas.
+    // El reintento real ocurre con los datos SIN actualizar (el RPC falló antes
+    // de la línea que fija this._datos.columnas), así que se simula ese estado.
+    vista._datos.columnas = [];
     window.plataformaRepository.guardarColumnasEvaluacion = vi.fn(async () => ({}));
     await expect(vista._crearColumnasImportadas(preparado)).rejects.toThrow(/Vuelve a importar/);
+
+    // Un reintento tras un RPC que SÍ dejó las columnas creadas no debe
+    // duplicarlas: se detectan por nombre y no se vuelven a enviar.
+    vista._datos.columnas = [
+      { id: 'id0', nombre: 'EXAMEN 29', tipo: 'manual', examen_id: null },
+      { id: 'id1', nombre: 'EXAMEN 30', tipo: 'manual', examen_id: null }
+    ];
+    window.plataformaRepository.guardarColumnasEvaluacion = vi.fn(async () => {
+      throw new Error('no debe llamarse de nuevo');
+    });
+    const columnasRetry = await vista._crearColumnasImportadas(preparado);
+    expect(window.plataformaRepository.guardarColumnasEvaluacion).not.toHaveBeenCalled();
+    expect(columnasRetry.map((c) => c.id)).toEqual(['id0', 'id1']);
   });
 
   test('al importar sobre columnas existentes se conservan id y orden y se añaden las nuevas', async () => {

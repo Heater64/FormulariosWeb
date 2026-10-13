@@ -60,7 +60,7 @@
       const inicial = nombre.charAt(0).toUpperCase();
 
       raiz.innerHTML = `
-        <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom));max-width:680px">
+        <div class="o-contenedor o-contenedor--ancho" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
           <header class="adm-cabecera">
             <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('user')}</span>
             <div class="adm-cabecera__principal">
