@@ -1,0 +1,63 @@
+<article class="adm-pregunta">
+  <div class="adm-pregunta__cabecera">
+    <span class="adm-pregunta__numero">Pregunta 1</span>
+    <div class="adm-pregunta__acciones">
+      <button class="adm-btn adm-btn--pequeno" type="button" data-q="0" data-q-accion="subir" disabled aria-label="Subir pregunta">↑</button>
+      <button class="adm-btn adm-btn--pequeno" type="button" data-q="0" data-q-accion="bajar" aria-label="Bajar pregunta">↓</button>
+      <button class="adm-btn adm-btn--pequeno" type="button" data-q="0" data-q-accion="duplicar">Duplicar</button>
+      <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-q="0" data-q-accion="eliminar">Eliminar</button>
+    </div>
+  </div>
+
+  <div class="adm-campo">
+    <label class="adm-campo__etiqueta" for="tipo_0">Tipo</label>
+    <select class="adm-entrada" id="tipo_0" data-q="0" data-campo="tipo">
+      <option value="multiple" selected>Opción múltiple</option>
+      <option value="verdadero_falso">Verdadero o falso</option>
+      <option value="completar">Completar una frase</option>
+      <option value="respuesta_corta">Respuesta corta</option>
+      <option value="texto_largo">Respuesta desarrollada</option>
+      <option value="varias_opciones">Varias respuestas</option>
+      <option value="relacionar">Relacionar columnas</option>
+      <option value="ordenar">Ordenar elementos</option>
+    </select>
+  </div>
+
+  <div class="adm-campo">
+    <label class="adm-campo__etiqueta" for="texto_0">Enunciado</label>
+    <textarea class="adm-entrada" id="texto_0" data-q="0" data-campo="texto" data-campo-pregunta="texto" placeholder="Escribe la pregunta…">¿Quién escribió la mayoría de los Salmos?</textarea>
+  </div>
+
+  <div style="display:flex;gap:var(--espaciado-md);flex-wrap:wrap;align-items:flex-end">
+    <div class="adm-campo" style="margin-bottom:0">
+      <label class="adm-campo__etiqueta" for="puntos_0">Puntos</label>
+      <input class="adm-entrada adm-entrada--corta" id="puntos_0" type="number" min="0" step="0.5" value="1" data-q="0" data-campo="puntos">
+    </div>
+    <div class="adm-campo" style="margin-bottom:0">
+      <label class="adm-campo__etiqueta" for="obligatoria_0">
+        <input type="checkbox" id="obligatoria_0" data-q="0" data-campo="obligatoria" checked>
+        Obligatoria
+      </label>
+    </div>
+  </div>
+
+  <div style="margin-top:var(--espaciado-sm)">
+    <span class="adm-campo__etiqueta">Opciones (marca la correcta)</span>
+    <div class="adm-opcion">
+      <input class="adm-opcion__radio" type="radio" name="correcta_0" value="0" checked aria-label="Marcar opción 1 como la correcta">
+      <input class="adm-entrada" type="text" value="David" placeholder="Opción 1" data-q="0" data-campo="opcion" data-opcion-val="0" aria-label="Texto de la opción 1">
+      <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-q="0" data-q-accion="quitarOpcion" data-opcion="0" aria-label="Quitar opción 1">✕</button>
+    </div>
+    <div class="adm-opcion">
+      <input class="adm-opcion__radio" type="radio" name="correcta_0" value="1" aria-label="Marcar opción 2 como la correcta">
+      <input class="adm-entrada" type="text" value="Salomón" placeholder="Opción 2" data-q="0" data-campo="opcion" data-opcion-val="1" aria-label="Texto de la opción 2">
+      <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-q="0" data-q-accion="quitarOpcion" data-opcion="1" aria-label="Quitar opción 2">✕</button>
+    </div>
+    <div class="adm-opcion">
+      <input class="adm-opcion__radio" type="radio" name="correcta_0" value="2" aria-label="Marcar opción 3 como la correcta">
+      <input class="adm-entrada" type="text" value="Pablo" placeholder="Opción 3" data-q="0" data-campo="opcion" data-opcion-val="2" aria-label="Texto de la opción 3">
+      <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-q="0" data-q-accion="quitarOpcion" data-opcion="2" aria-label="Quitar opción 3">✕</button>
+    </div>
+    <button class="adm-btn adm-btn--pequeno" type="button" data-q="0" data-q-accion="anadirOpcion">Añadir opción</button>
+  </div>
+</article>

@@ -122,7 +122,10 @@
       </div>`;
 
       raiz.querySelector('#btnVolver').addEventListener('click', () => router.navegar('/entregas'));
-      raiz.querySelector('#btnEditar').addEventListener('click', () => router.navegar('/editor/' + this._examenId));
+      raiz.querySelector('#btnEditar').addEventListener('click', async () => {
+        if (!(await window.helpers.confirmarEdicion())) return;
+        router.navegar('/editor/' + this._examenId);
+      });
       const contenido = raiz.querySelector('#contenido');
 
       try {

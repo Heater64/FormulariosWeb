@@ -136,18 +136,23 @@
       return el;
     },
 
+    // Diálogo de confirmación. Opciones: titulo, textoConfirmar, textoCancelar
+    // y peligroso (por defecto true → tono rojo). Reserva el rojo para acciones
+    // destructivas (eliminar, cerrar, salir); para el resto pasa
+    // peligroso:false y el botón de confirmar, el borde superior de la tarjeta
+    // y el título salen en el color de acento (clase .modal-confirm--seguro).
     confirmar(mensaje, opciones = {}) {
       return new Promise(resolve => {
         const overlay = document.createElement('div');
         overlay.className = 'modal-overlay';
         const tituloId = 'modal-titulo-' + Date.now();
         overlay.innerHTML = `
-          <div class="modal-confirm" role="dialog" aria-modal="true" aria-labelledby="${tituloId}">
+          <div class="modal-confirm${opciones.peligroso === false ? ' modal-confirm--seguro' : ''}" role="dialog" aria-modal="true" aria-labelledby="${tituloId}">
             <h3 class="modal-confirm__titulo" id="${tituloId}">${window.Iconos ? window.Iconos.render('alert-triangle') : '⚠️'} ${window.helpers.escapeHtml(opciones.titulo || '¿Confirmar?')}</h3>
             <p class="modal-confirm__mensaje">${window.helpers.escapeHtml(mensaje)}</p>
             <div class="modal-confirm__acciones">
               <button class="btn-secundario" data-cancelar>${opciones.textoCancelar || 'Cancelar'}</button>
-              <button class="btn-peligro" data-confirmar>${opciones.textoConfirmar || 'Confirmar'}</button>
+              <button class="${opciones.peligroso === false ? 'btn-primario' : 'btn-peligro'}" data-confirmar>${opciones.textoConfirmar || 'Confirmar'}</button>
             </div>
           </div>`;
         document.body.appendChild(overlay);
@@ -171,6 +176,18 @@
         setTimeout(() => overlay.querySelector('[data-cancelar]')?.focus(), 50);
       });
     },
+    // Pregunta compartida de «Editar examen»: desde Inicio, Exámenes, Entregas,
+    // Evaluaciones o el panel del admin, abrir el editor saca al profesor de
+    // donde está, así que todas usan la misma tarjeta y el mismo tono.
+    confirmarEdicion() {
+      return window.helpers.confirmar('¿Segura que quieres editar?', {
+        titulo: 'Editar examen',
+        textoConfirmar: 'Sí',
+        textoCancelar: 'No',
+        peligroso: false
+      });
+    },
+
     mostrarGuia(titulo, texto, ejemplo, extra) {
       const overlay = document.createElement('div');
       overlay.className = 'guia-overlay';

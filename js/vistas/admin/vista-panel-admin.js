@@ -1665,7 +1665,12 @@
       r.querySelector('#filtroExamenEstado')?.addEventListener('change', (e) => { this._filtroExamenEstado = e.target.value; this._renderizar(raiz); });
       r.querySelector('#filtroExamenGrupo')?.addEventListener('change', (e) => { this._filtroExamenGrupo = e.target.value; this._renderizar(raiz); });
 
-      r.querySelectorAll('.btn-editar-examen').forEach(btn => { btn.onclick = () => window.adminComunes.irSpa('/editor/' + btn.dataset.id); });
+      r.querySelectorAll('.btn-editar-examen').forEach(btn => {
+        btn.onclick = async () => {
+          if (!(await window.helpers.confirmarEdicion())) return;
+          window.adminComunes.irSpa('/editor/' + btn.dataset.id);
+        };
+      });
 
       r.querySelectorAll('.btn-duplicar-examen').forEach(btn => {
         btn.onclick = async () => {

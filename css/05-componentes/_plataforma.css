@@ -253,6 +253,48 @@
   color: var(--color-acento);
   box-shadow: var(--sombra-sm);
 }
+
+/* ── Riel con indicador deslizante (Mis exámenes) ──
+   El segmento activo deja de saltar: la píldora blanca es ahora un elemento
+   propio que se desplaza de un filtro al siguiente. Los botones van sin fondo
+   —el indicador queda detrás del texto—, así que el aspecto del activo no
+   cambia: solo se mueve. */
+.adm-tabs--deslizante { position: relative; }
+
+.adm-tabs__indicador {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 0;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill, 999px);
+  background: var(--color-fondo-tarjeta);
+  box-shadow: var(--sombra-sm);
+  pointer-events: none;
+  transition: transform var(--transicion-normal), width var(--transicion-normal), height var(--transicion-normal);
+}
+
+.adm-tabs--deslizante .adm-tab {
+  position: relative;
+  z-index: 1;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: none;
+}
+
+.adm-tabs--deslizante .adm-tab--activo { color: var(--color-acento); }
+
+@media (hover: hover) {
+  /* Sin píldora propia al pasar el ratón: la que se mueve es la del
+     indicador, y un segundo fondo compitiendo rompería la animación. */
+  .adm-tabs--deslizante .adm-tab:hover {
+    background: transparent;
+    border-color: transparent;
+    color: var(--color-texto);
+  }
+  /* El activo conserva su acento: su píldora es la que está debajo. */
+  .adm-tabs--deslizante .adm-tab--activo:hover { color: var(--color-acento); }
+}
 .adm-buscador {
   width: 100%;
   min-height: var(--toque-minimo, 48px);
@@ -759,6 +801,37 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
 .adm-opcion__radio { flex: 0 0 auto; width: 20px; height: 20px; accent-color: var(--color-acento); }
 .adm-opcion .adm-entrada { flex: 1 1 auto; }
 
+/* ── Editor de examen: refinamientos (solo los usa esta vista) ──────────────
+   Nada de esto cambia lo que se puede hacer: solo dónde se mira y cuánto
+   ocupa. Todo apunta a clases que únicamente pinta el editor, así que el
+   resto del panel se queda igual. */
+
+/* La cabecera cierra la pregunta: una línea fina separa el número y sus
+   acciones del cuerpo, para no perderse en un examen largo. */
+.adm-pregunta__cabecera {
+  padding-bottom: var(--espaciado-xs);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+/* Más aire entre preguntas que dentro de ellas: cada bloque se lee como una
+   unidad y se ve de un vistazo dónde acaba. */
+.adm-pregunta {
+  margin-bottom: var(--espaciado-md);
+}
+
+/* «Quitar» de cada fila (opción, pareja, palabra, elemento): cuadrado y del
+   alto del campo de al lado. La fila se lee como una banda y el ✕ deja de ser
+   un blanco de 25px en un móvil.
+   Solo se ajusta el ancho del botón, que no empuja nada: la fila cede ese
+   espacio al campo de texto, que sigue flexible. El encabezado (número y
+   ↑ ↓) se deja como estaba: ensancharlo empujaba la cabecera a dos líneas en
+   pantallas de 320px. */
+.adm-pregunta [data-q-accion^="quitar"] {
+  min-width: var(--toque-minimo, 48px);
+  min-height: var(--toque-minimo, 48px);
+  padding-inline: 0;
+}
+
 /* ── Enlaces individuales ── */
 .adm-enlace {
   display: flex;
@@ -959,8 +1032,18 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
 #claveComunitario:empty { display: none; }
 
 .adm-edicion__acciones { display: flex; flex-wrap: wrap; gap: var(--espaciado-xs); }
-/* «Limpiar campos» usa el estilo de peligro del panel: en rojo se ve de
-   un vistazo que vacía lo que hay en pantalla (no borra el enlace). */
+/* «Limpiar campos» vacía lo que hay en pantalla (no borra el enlace), así que
+   usa el estilo de peligro del panel. Con el contorno suave de serie apenas se
+   distinguía de los botones de al lado: aquí el contorno va en rojo pleno para
+   que se lea como peligroso sin rellenarlo, y así la fila sigue mandando al
+   botón principal. */
+.adm-edicion__acciones .adm-btn--peligro {
+  border-color: var(--color-error);
+}
+/* Sin esto, .adm-btn:hover (misma especificidad) dejaría el contorno gris. */
+.adm-edicion__acciones .adm-btn--peligro:hover {
+  border-color: var(--color-error);
+}
 
 /* Indicación de estado: discreta cuando va bien, alerta si falta el enlace. */
 .adm-edicion__nota {
@@ -1036,6 +1119,52 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
   .adm-modal__pie > .adm-btn { flex: 1 1 auto; }
 }
 
+/* ── Cabecera del editor de exámenes en móvil ──
+   Con las tres acciones apiladas a ancho completo, la cabecera se comía casi
+   media pantalla (284px de 667px a 375px) y, como es fija, seguía ahí durante
+   todo el examen. Aquí las acciones van en UNA fila —«Volver» a su ancho y los
+   dos guardados a partes iguales— y las etiquetas largas se cambian por las
+   cortas, que es lo que permite que quepan sin partirse en dos líneas. */
+.adm-cabecera--editor .adm-cabecera__etiqueta-corta { display: none; }
+
+@media (max-width: 600px) {
+  .adm-cabecera--editor {
+    align-items: center;
+    gap: var(--espaciado-xxs);
+    padding-block: var(--espaciado-xs);
+    margin-bottom: var(--espaciado-md);
+  }
+  .adm-cabecera--editor .adm-cabecera__titulo { font-size: var(--texto-xl); }
+  .adm-cabecera--editor .adm-cabecera__sub {
+    margin-top: 2px;
+    font-size: var(--texto-xs);
+    line-height: 1.4;
+  }
+  .adm-cabecera--editor .adm-cabecera__acciones {
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr);
+    gap: var(--espaciado-xxs);
+  }
+  .adm-cabecera--editor .adm-cabecera__acciones > .adm-btn {
+    width: auto;
+    min-height: var(--toque-minimo, 48px);
+    padding-inline: var(--espaciado-sm);
+    white-space: nowrap;
+  }
+  .adm-cabecera--editor .adm-cabecera__etiqueta-larga { display: none; }
+  .adm-cabecera--editor .adm-cabecera__etiqueta-corta { display: inline; }
+
+  /* Las flechas de orden eran el blanco más pequeño del editor (25×40). A
+     estos anchos la fila de acciones ya baja a su propia línea, así que
+     agrandarlas no añade filas: solo permite pulsarlas con el pulgar. */
+  .adm-pregunta__acciones [data-q-accion="subir"],
+  .adm-pregunta__acciones [data-q-accion="bajar"] {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+
 @media (min-width: 361px) and (max-width: 600px) {
   .adm-tabs { flex-wrap: nowrap; overflow-x: auto; padding: 3px; scrollbar-width: none; }
   .adm-tabs::-webkit-scrollbar { display: none; }
@@ -1055,7 +1184,8 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
 }
 
 /* Selector visual de tipos de pregunta (editor de exámenes).
-   Cada tarjeta muestra nombre, descripción, ejemplo y si se corrige sola. */
+   Cada tarjeta muestra el nombre del formato y si se corrige sola: sin
+   descripción ni ejemplo, que el nombre ya basta para elegir. */
 .selector-tipo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -1090,19 +1220,6 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
   font-weight: var(--texto-peso-semibold);
   font-size: var(--texto-sm);
   color: var(--color-texto);
-}
-
-.selector-tipo__descripcion {
-  font-size: var(--texto-xs);
-  color: var(--color-texto-secundario);
-  line-height: 1.4;
-}
-
-.selector-tipo__ejemplo {
-  font-size: var(--texto-xs);
-  font-style: italic;
-  color: var(--color-texto-secundario);
-  line-height: 1.4;
 }
 
 .selector-tipo__correccion {
@@ -1306,6 +1423,7 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
 @media (prefers-reduced-motion: reduce) {
   .adm-btn,
   .adm-tab,
+  .adm-tabs__indicador,
   .adm-switch,
   .adm-switch::after,
   .adm-bloque,

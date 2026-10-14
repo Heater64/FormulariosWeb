@@ -49,7 +49,7 @@
         ${contexto === 'pendientes'
           ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('clipboard-check')} Corregir</button>`
           : `<button class="adm-btn adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('inbox')} Entregas</button>`}
-        <button class="adm-btn adm-btn--pequeno" data-ir="/editor/${esc(ex.id)}">${window.Iconos.render('edit-3')} Editar</button>
+        <button class="adm-btn adm-btn--pequeno" data-ir="/editor/${esc(ex.id)}" data-confirmar-edicion>${window.Iconos.render('edit-3')} Editar</button>
       </div>
     </div>`;
   }
@@ -138,7 +138,17 @@
       const btnNuevo = raiz.querySelector('#btnNuevo');
       if (btnNuevo) btnNuevo.addEventListener('click', () => router.navegar('/editor/nuevo'));
       raiz.querySelectorAll('[data-ir]').forEach((btn) => {
-        btn.addEventListener('click', () => router.navegar(btn.dataset.ir));
+        btn.addEventListener('click', async () => {
+          // «Editar» saca al usuario del panel hacia el editor del examen: un
+          // clic sin querer no debe abrirlo. Entregas/Corregir solo navegan.
+          if (btn.hasAttribute('data-confirmar-edicion')) {
+            // La tarjeta vive en helpers.confirmarEdicion: la comparten todas
+            // las pantallas que ofrecen «Editar».
+            const ok = await window.helpers.confirmarEdicion();
+            if (!ok) return;
+          }
+          router.navegar(btn.dataset.ir);
+        });
       });
       if (window.Iconos) window.Iconos.actualizar();
     }

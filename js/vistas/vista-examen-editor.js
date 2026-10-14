@@ -20,8 +20,8 @@
  * `respuesta_correcta` de un test es el ÍNDICE (texto) de la opción marcada,
  * tal como lo compara fb_respuesta_correcta en la BD.
  *
- * El botón «Añadir pregunta» abre un selector visual (panelUI.modal) con
- * nombre, descripción, ejemplo y tipo de corrección de cada formato.
+ * El botón «Añadir pregunta» abre un selector visual (panelUI.modal) con el
+ * nombre de cada formato y si se corrige sola.
  * =========================================================================*/
 (function () {
   'use strict';
@@ -368,15 +368,19 @@
 
       raiz.innerHTML = `
         <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(120px + env(safe-area-inset-bottom))">
-          <header class="adm-cabecera">
+          <header class="adm-cabecera adm-cabecera--editor">
             <div class="adm-cabecera__principal">
               <h1 class="adm-cabecera__titulo">${ex.id ? 'Editar examen' : 'Nuevo examen'} ${estado}</h1>
               <p class="adm-cabecera__sub" id="subTotal"></p>
             </div>
             <div class="adm-cabecera__acciones">
               <button class="adm-btn" id="btnVolver">Volver</button>
-              <button class="adm-btn" id="btnGuardar">Guardar borrador</button>
-              <button class="adm-btn adm-btn--principal" id="btnPublicarEditor">${ex.publicado ? 'Guardar y cerrar' : 'Guardar y publicar'}</button>
+              <button class="adm-btn" id="btnGuardar" aria-label="Guardar como borrador">
+                <span class="adm-cabecera__etiqueta-larga">Guardar borrador</span><span class="adm-cabecera__etiqueta-corta">Guardar</span>
+              </button>
+              <button class="adm-btn adm-btn--principal" id="btnPublicarEditor" aria-label="${ex.publicado ? 'Guardar y cerrar' : 'Guardar y publicar'}">
+                <span class="adm-cabecera__etiqueta-larga">${ex.publicado ? 'Guardar y cerrar' : 'Guardar y publicar'}</span><span class="adm-cabecera__etiqueta-corta">${ex.publicado ? 'Cerrar' : 'Publicar'}</span>
+              </button>
             </div>
           </header>
 
@@ -417,8 +421,11 @@
     },
 
     /**
-     * Selector visual de tipos: tarjetas con nombre, descripción, ejemplo y
-     * el tipo de corrección de cada formato (patrón .selector-tipo de CSS).
+     * Selector visual de tipos: cada tarjeta es el nombre del formato y una
+     * etiqueta con su tipo de corrección (patrón .selector-tipo de CSS).
+     * Sin descripción ni ejemplo: el nombre ya identifica el tipo y así la
+     * lista se lee de un vistazo (el catálogo TIPOS conserva ambos por si se
+     * muestran en otro sitio).
      */
     _mostrarSelectorTipo() {
       const modal = window.panelUI.modal({
@@ -432,8 +439,6 @@
             ${TIPOS.map((t) => `
               <button type="button" class="selector-tipo" data-tipo="${t.valor}">
                 <span class="selector-tipo__nombre">${esc(t.nombre)}</span>
-                <span class="selector-tipo__descripcion">${esc(t.descripcion)}</span>
-                <span class="selector-tipo__ejemplo">Ej.: ${esc(t.ejemplo)}</span>
                 <span class="selector-tipo__correccion ${t.automatica ? 'selector-tipo__correccion--auto' : ''}">
                   ${t.automatica ? 'Corrección automática' : 'Corrección manual'}
                 </span>
@@ -1069,6 +1074,6 @@
  *   · relacionar      — parejas de columnas, corrección automática
  *   · ordenar         — secuencia de elementos, corrección automática
  *
- * El botón «Añadir pregunta» abre el selector visual con descripción y ejemplo
- * de cada tipo (panelUI.modal + tarjetas .selector-tipo).
+ * El botón «Añadir pregunta» abre el selector visual con el nombre de cada
+ * tipo y si se corrige sola (panelUI.modal + tarjetas .selector-tipo).
  */

@@ -40,6 +40,51 @@ describe('vista-examen-editor: sintaxis y tipos', () => {
   });
 });
 
+describe('cabecera del editor en móvil', () => {
+  const css = read('css/05-componentes/_plataforma.css');
+
+  test('las acciones llevan etiqueta larga y corta, con su nombre accesible', () => {
+    expect(editorSource).toContain('class="adm-cabecera adm-cabecera--editor"');
+
+    // Guardar borrador: la etiqueta corta es la que se ve en móvil.
+    expect(editorSource).toContain('id="btnGuardar" aria-label="Guardar como borrador"');
+    expect(editorSource).toMatch(/adm-cabecera__etiqueta-larga">Guardar borrador<\/span><span class="adm-cabecera__etiqueta-corta">Guardar</);
+
+    // Guardar y publicar / Guardar y cerrar según el estado del examen.
+    expect(editorSource).toMatch(/aria-label="\$\{ex\.publicado \? 'Guardar y cerrar' : 'Guardar y publicar'\}"/);
+    expect(editorSource).toMatch(/adm-cabecera__etiqueta-corta">\$\{ex\.publicado \? 'Cerrar' : 'Publicar'\}/);
+  });
+
+  test('la etiqueta corta solo sustituye a la larga en móvil', () => {
+    const oculta = css.indexOf('.adm-cabecera--editor .adm-cabecera__etiqueta-corta { display: none; }');
+    const visible = css.indexOf('.adm-cabecera--editor .adm-cabecera__etiqueta-corta { display: inline; }');
+
+    expect(oculta).toBeGreaterThan(-1);
+    expect(visible).toBeGreaterThan(oculta);
+    // El cambio va dentro del corte de móvil: en escritorio no se toca.
+    expect(css.slice(css.lastIndexOf('@media', visible), visible)).toContain('max-width: 600px');
+    expect(css.indexOf('.adm-cabecera--editor .adm-cabecera__etiqueta-larga { display: none; }')).toBeGreaterThan(oculta);
+  });
+
+  test('en móvil las tres acciones van en una fila en vez de apiladas', () => {
+    const grid = css.indexOf('grid-template-columns: auto minmax(0, 1fr) minmax(0, 1fr)');
+    expect(grid).toBeGreaterThan(-1);
+    expect(css.slice(css.lastIndexOf('@media', grid), grid)).toContain('max-width: 600px');
+
+    // El apilado a ancho completo sigue siendo el de las demás vistas.
+    expect(css).toContain('.adm-cabecera__acciones > .adm-btn { width: 100%; }');
+  });
+
+  test('las flechas de orden del editor tienen blanco táctil en móvil', () => {
+    const flechas = css.indexOf('.adm-pregunta__acciones [data-q-accion="subir"]');
+    expect(flechas).toBeGreaterThan(-1);
+    const bloque = css.slice(css.lastIndexOf('@media', flechas), flechas);
+    expect(bloque).toContain('max-width: 600px');
+    expect(css.slice(flechas, flechas + 220)).toContain('min-width: 44px');
+    expect(css.slice(flechas, flechas + 220)).toContain('min-height: 44px');
+  });
+});
+
 describe('normalización de preguntas legadas', () => {
   test('verdadero/falso legado ("true"/"false") pasa a índice 0/1 con opciones', () => {
     const [vf] = editor._normalizar([{ tipo: 'verdadero_falso', texto: 'Afirmación', respuesta_correcta: 'true' }]);

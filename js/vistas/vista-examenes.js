@@ -61,7 +61,8 @@
       }
 
       contenido.innerHTML = `
-        <div class="adm-tabs" id="tabs" role="tablist">
+        <div class="adm-tabs adm-tabs--deslizante" id="tabs" role="tablist">
+          <span class="adm-tabs__indicador" aria-hidden="true"></span>
           ${[['todos', 'Todos'], ['borrador', 'Borradores'], ['publicado', 'Publicados'], ['cerrado', 'Cerrados']]
             .map(([id, texto]) => `<button class="adm-tab${this._filtro === id ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${this._filtro === id}">${texto}</button>`)
             .join('')}
@@ -72,13 +73,27 @@
         </div>
         <div id="lista" class="adm-lista"></div>`;
 
-      contenido.querySelectorAll('#tabs .adm-tab').forEach((btn) => {
+      const tabs = contenido.querySelector('#tabs');
+      // El indicador se coloca al pintar y se recoloca cuando la fila puede
+      // reordenarse: al cambiar de ancho los filtros envuelven a otra línea, y
+      // con la tipografía aún cargando los anchos todavía bailan.
+      const recolocarIndicador = () => {
+        if (contenido.isConnected === false) return;
+        this._colocarIndicador(tabs);
+      };
+      recolocarIndicador();
+      if (document.fonts && document.fonts.ready) document.fonts.ready.then(recolocarIndicador);
+      window.addEventListener('resize', recolocarIndicador);
+      this._recolocarIndicador = recolocarIndicador;
+
+      tabs.querySelectorAll('.adm-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
           this._filtro = btn.dataset.filtro;
-          contenido.querySelectorAll('#tabs .adm-tab').forEach((b) => {
+          tabs.querySelectorAll('.adm-tab').forEach((b) => {
             b.classList.toggle('adm-tab--activo', b === btn);
             b.setAttribute('aria-selected', String(b === btn));
           });
+          recolocarIndicador();
           this._pintarLista();
         });
       });
@@ -98,6 +113,38 @@
     desmontar() {
       clearTimeout(this._timer);
       this._timer = null;
+      if (this._recolocarIndicador) {
+        window.removeEventListener('resize', this._recolocarIndicador);
+        this._recolocarIndicador = null;
+      }
+    },
+
+    /**
+     * Coloca la píldora del riel sobre el filtro activo. Se lee la geometría
+     * real (offsetLeft/Top/Width/Height respecto al riel) en vez de calcularla,
+     * porque los filtros tienen anchos distintos y en pantallas estrechas
+     * envuelven a una segunda línea. El primer salto va sin transición: si no,
+     * al entrar en la vista la píldora se vería deslizarse desde la esquina.
+     */
+    _colocarIndicador(tabs) {
+      if (!tabs) return;
+      const indicador = tabs.querySelector('.adm-tabs__indicador');
+      const activo = tabs.querySelector('.adm-tab--activo');
+      if (!indicador || !activo) return;
+
+      const primeraVez = !indicador.dataset.colocado;
+      if (primeraVez) indicador.style.transition = 'none';
+
+      indicador.style.width = `${activo.offsetWidth}px`;
+      indicador.style.height = `${activo.offsetHeight}px`;
+      indicador.style.transform = `translate(${activo.offsetLeft}px, ${activo.offsetTop}px)`;
+
+      if (primeraVez) {
+        // Fuerza a pintar con la transición apagada antes de devolvérsela.
+        void indicador.offsetWidth;
+        indicador.style.transition = '';
+        indicador.dataset.colocado = '1';
+      }
     },
 
     _pintarLista() {
@@ -180,7 +227,11 @@
     },
 
     async _accion(accion, id, titulo) {
-      if (accion === 'editar') { router.navegar('/editor/' + id); return; }
+      if (accion === 'editar') {
+        if (!(await window.helpers.confirmarEdicion())) return;
+        router.navegar('/editor/' + id);
+        return;
+      }
       if (accion === 'entregas') { router.navegar('/corregir/' + id); return; }
       if (accion === 'compartir') { await this._modalEnlaceComunitario(id, titulo); return; }
       if (accion === 'compartir-individual') { await this._modalEnlaces(id, titulo); return; }

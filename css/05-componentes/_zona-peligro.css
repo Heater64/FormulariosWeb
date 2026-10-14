@@ -105,6 +105,22 @@
   align-items: center;
   gap: var(--espaciado-xs);}
 
+/*
+ * Variante no destructiva del diálogo (helpers.confirmar con peligroso:false,
+ * p. ej. «¿Segura que quieres editar?»). El borde superior y el título —y con
+ * él su icono— dejan el rojo y toman el acento: el rojo se reserva para lo que
+ * borra, cierra o sale, no para confirmar una navegación.
+ * Doble clase en el contorno para ganar a `.modal-confirm` de este mismo
+ * archivo, que fija `border-top`.
+ */
+.modal-confirm.modal-confirm--seguro {
+  border-top-color: var(--color-acento);
+}
+
+.modal-confirm--seguro .modal-confirm__titulo {
+  color: var(--color-acento);
+}
+
 
 
 .modal-confirm__mensaje {

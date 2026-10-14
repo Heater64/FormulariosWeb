@@ -266,6 +266,12 @@ describe('examen completo: crear (8 tipos) → responder → corregir → revisa
       expect(modal, `selector de tipo abierto para ${tipo}`).toBeTruthy();
       const tarjeta = modal.querySelector(`.selector-tipo[data-tipo="${tipo}"]`);
       expect(tarjeta, `tarjeta del tipo ${tipo}`).toBeTruthy();
+      // La tarjeta muestra solo el nombre del tipo y su tipo de corrección.
+      expect(tarjeta.querySelector('.selector-tipo__nombre').textContent.trim().length, `nombre del tipo ${tipo}`).toBeGreaterThan(0);
+      expect(tarjeta.querySelector('.selector-tipo__ejemplo'), `sin ejemplo en ${tipo}`).toBeNull();
+      expect(tarjeta.querySelector('.selector-tipo__descripcion'), `sin descripción en ${tipo}`).toBeNull();
+      expect(tarjeta.textContent, `sin ejemplo en ${tipo}`).not.toContain('Ej.:');
+      expect(['Corrección automática', 'Corrección manual'], `corrección indicada en ${tipo}`).toContain(tarjeta.querySelector('.selector-tipo__correccion').textContent.trim());
       tarjeta.click();
       expect(w.document.querySelector('.adm-modal'), 'el modal se cierra').toBeNull();
     };
