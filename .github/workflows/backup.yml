@@ -62,7 +62,7 @@ jobs:
           rm -rf backup-out backup-encrypted
 
       - name: Upload encrypted artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: formsbiblicos-backup-${{ github.run_id }}
           path: |
