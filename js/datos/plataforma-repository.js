@@ -62,8 +62,24 @@
 
   window.plataformaRepository = {
     // ── Panel del administrador ───────────────────────────────────────────
-    resumen() {
-      return rpc('fb_resumen_admin');
+    /**
+     * Resumen del panel sin los exámenes de la papelera. La RPC normaliza
+     * cualquier estado que no conozca a 'borrador', así que un examen
+     * archivado volvería a colarse en las listas y en los contadores; se
+     * ocultan aquí, en el único punto por el que pasan panel, exámenes,
+     * entregas y evaluaciones.
+     */
+    async resumen() {
+      const datos = await rpc('fb_resumen_admin');
+      const examenes = (datos && Array.isArray(datos.examenes)) ? datos.examenes : [];
+      const repo = window.examenesRepository;
+      if (!examenes.length || !repo || typeof repo.idsEnPapelera !== 'function') return datos;
+      const enPapelera = await repo.idsEnPapelera();
+      if (!enPapelera.length) return datos;
+      const ocultos = new Set(enPapelera);
+      return Object.assign({}, datos, {
+        examenes: examenes.filter((examen) => !ocultos.has(String(examen.id)))
+      });
     },
 
     crearEnlaces(examenId, alumnos) {

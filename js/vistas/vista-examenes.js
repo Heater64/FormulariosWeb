@@ -23,6 +23,9 @@
 
   window.vistaExamenes = {
     _examenes: [],
+    _papelera: [],
+    _copias: [],
+    _borradoresLocales: [],
     _filtro: 'todos',
     _busqueda: '',
     _timer: null,
@@ -59,11 +62,31 @@
         contenido.innerHTML = `<div class="adm-aviso adm-aviso--error">No se pudieron cargar los exámenes: ${esc(e.message)}</div>`;
         return;
       }
+      // La papelera vive solo aquí: no hay entrada en la barra lateral. Se
+      // carga junto al listado para poder mostrar su contador en la pestaña.
+      this._papelera = await window.examenesRepository.listarPapelera().catch(() => []);
+      // Copias de exámenes que este navegador guardó y que ya no existen en la
+      // nube: la última red si algo se borró por otra vía o desde otro equipo.
+      this._copias = await window.examenesRepository.copiasLocales().catch(() => []);
+      // Borradores del editor que nunca llegaron a la nube (o quedaron a medias
+      // al cerrar la app). Es la red que evita perder un examen recién creado.
+      const enPapelera = new Set(this._papelera.map((examen) => String(examen.id)));
+      this._borradoresLocales = window.borradoresEditor
+        ? window.borradoresEditor.listarPendientes().filter((borrador) => {
+          const id = borrador.examen && borrador.examen.id;
+          return !id || !enPapelera.has(String(id));
+        })
+        : [];
 
+      const filtros = [
+        ['todos', 'Todos'], ['borrador', 'Borradores'], ['publicado', 'Publicados'],
+        ['cerrado', 'Cerrados'],
+        ['papelera', this._papelera.length ? `Papelera (${this._papelera.length})` : 'Papelera']
+      ];
       contenido.innerHTML = `
         <div class="adm-tabs adm-tabs--deslizante" id="tabs" role="tablist">
           <span class="adm-tabs__indicador" aria-hidden="true"></span>
-          ${[['todos', 'Todos'], ['borrador', 'Borradores'], ['publicado', 'Publicados'], ['cerrado', 'Cerrados']]
+          ${filtros
             .map(([id, texto]) => `<button class="adm-tab${this._filtro === id ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${this._filtro === id}">${texto}</button>`)
             .join('')}
         </div>
@@ -72,6 +95,13 @@
           <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
         </div>
         <div id="lista" class="adm-lista"></div>`;
+
+      // Los borradores locales van fuera de #lista para que cambiar de pestaña
+      // no los oculte: son trabajo del usuario pendiente de recuperar.
+      if (this._borradoresLocales.length) {
+        contenido.insertAdjacentHTML('afterbegin', this._htmlBorradoresLocales());
+        this._conectarBorradoresLocales(contenido);
+      }
 
       const tabs = contenido.querySelector('#tabs');
       // El indicador se coloca al pintar y se recoloca cuando la fila puede
@@ -151,6 +181,11 @@
       const lista = document.querySelector('#lista');
       if (!lista) return;
 
+      if (this._filtro === 'papelera') {
+        this._pintarPapelera(lista);
+        return;
+      }
+
       const filtrados = this._examenes.filter((ex) => {
         if (this._filtro !== 'todos' && ex.estado !== this._filtro) return false;
         if (this._busqueda && !String(ex.titulo || '').toLowerCase().includes(this._busqueda)) return false;
@@ -174,6 +209,209 @@
         });
       });
       if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    // ── Borradores locales del editor ────────────────────────────────────
+    _htmlBorradoresLocales() {
+      if (!this._borradoresLocales.length) return '';
+      const filas = this._borradoresLocales.map((borrador) => {
+        const resumen = window.borradorExamen.resumenBorrador(borrador);
+        const id = resumen.id ? esc(resumen.id) : '';
+        const titulo = esc(resumen.titulo || 'Examen sin título');
+        const preguntas = `${resumen.preguntas} pregunta${resumen.preguntas === 1 ? '' : 's'}`;
+        return `<div class="adm-borradores-locales__fila">
+          <div class="adm-borradores-locales__datos">
+            <div class="adm-borradores-locales__titulo">${titulo}</div>
+            <div class="adm-borradores-locales__meta">${preguntas} · Guardado ${esc(window.panelUI.tiempoRelativo(resumen.guardadoEn))}</div>
+          </div>
+          <div class="adm-borradores-locales__acciones">
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-borrador-local="continuar" data-id="${id}">
+              ${I('cloud')} Continuar
+            </button>
+            <button class="adm-btn adm-btn--pequeno" type="button" data-borrador-local="descartar" data-id="${id}">Descartar</button>
+          </div>
+        </div>`;
+      }).join('');
+
+      return `<section class="adm-borradores-locales" aria-label="Borradores sin terminar en este dispositivo">
+        <p class="adm-seccion__titulo">Borradores sin terminar en este dispositivo</p>
+        ${filas}
+      </section>`;
+    },
+
+    _conectarBorradoresLocales(contenedor) {
+      contenedor.querySelectorAll('[data-borrador-local]').forEach((btn) => {
+        btn.addEventListener('click', () => this._accionBorradorLocal(btn.dataset.borradorLocal, btn.dataset.id));
+      });
+    },
+
+    async _accionBorradorLocal(accion, id) {
+      if (accion === 'continuar') {
+        // Un borrador sin id nunca llegó a la nube: retomarlo equivale a crear
+        // un examen nuevo, así que sigue siendo un solo clic.
+        if (!id) {
+          router.navegar('/editor/nuevo');
+          return;
+        }
+        // Abrir un examen existente cambia de vista: misma tarjeta de siempre.
+        if (!(await window.helpers.confirmarEdicion())) return;
+        router.navegar('/editor/' + id);
+        return;
+      }
+      if (accion !== 'descartar') return;
+
+      const borrador = this._borradoresLocales.find((item) => {
+        const resumen = window.borradorExamen.resumenBorrador(item);
+        return String(resumen.id || '') === String(id || '');
+      });
+      const resumen = borrador ? window.borradorExamen.resumenBorrador(borrador) : { titulo: '' };
+      const ok = await window.helpers.confirmar(
+        `Se eliminarán los cambios sin guardar de «${resumen.titulo || 'Examen sin título'}» en este dispositivo.`,
+        { titulo: '¿Descartar borrador?', textoConfirmar: 'Descartar' }
+      );
+      if (!ok) return;
+      window.borradoresEditor.eliminar(id || 'nuevo');
+      this._borradoresLocales = window.borradoresEditor.listarPendientes();
+      router._ejecutar();
+    },
+
+    /** Pestaña Papelera: restaurar o borrar definitivamente. */
+    _pintarPapelera(contenedor) {
+      // El buscador también filtra la papelera, pero «Vaciar papelera» vacía
+      // TODO lo archivado: por eso el contador y el botón miran la lista
+      // completa y solo la lista visible respeta la búsqueda.
+      const total = this._papelera.length;
+      const visibles = this._busqueda
+        ? this._papelera.filter((ex) => String(ex.titulo || '').toLowerCase().includes(this._busqueda))
+        : this._papelera;
+      const cabecera = `<div class="adm-papelera__cabecera">
+        <p class="adm-cabecera__sub" style="margin:0">${total
+          ? `${total} ${total === 1 ? 'examen' : 'exámenes'} en la papelera. Se pueden restaurar; vaciarla los borra para siempre.`
+          : 'La papelera está vacía.'}</p>
+        <button class="adm-btn adm-btn--peligro adm-btn--pequeno" type="button" id="btnVaciarPapelera" ${total ? '' : 'disabled'}>
+          ${I('trash-2')} Vaciar papelera
+        </button>
+      </div>`;
+
+      if (!total) {
+        contenedor.innerHTML = `${cabecera}
+          <div class="adm-vacio">
+            <p class="adm-vacio__titulo">Nada por aquí</p>
+            <p>Los exámenes que borres aparecerán en la papelera y podrás recuperarlos.</p>
+          </div>`;
+      } else if (!visibles.length) {
+        contenedor.innerHTML = `${cabecera}
+          <div class="adm-vacio">
+            <p class="adm-vacio__titulo">Sin resultados</p>
+            <p>Ningún examen de la papelera coincide con la búsqueda.</p>
+          </div>`;
+      } else {
+        contenedor.innerHTML = `${cabecera}<div class="adm-lista">${visibles.map((ex) => this._tarjetaPapelera(ex)).join('')}</div>`;
+      }
+
+      if (this._copias.length) contenedor.insertAdjacentHTML('beforeend', this._htmlCopias());
+
+      contenedor.querySelectorAll('[data-papelera-accion]').forEach((btn) => {
+        btn.addEventListener('click', () => this._accionPapelera(btn.dataset.papeleraAccion, btn.dataset.id));
+      });
+      contenedor.querySelectorAll('[data-copia-accion]').forEach((btn) => {
+        btn.addEventListener('click', () => this._accionCopia(btn.dataset.copiaId));
+      });
+      const vaciar = contenedor.querySelector('#btnVaciarPapelera');
+      if (vaciar) vaciar.addEventListener('click', () => this._accionPapelera('vaciar'));
+      if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    /**
+     * Copias que este navegador guardó de exámenes que ya no están en la nube.
+     * No se ofrecen solas: recrear algo que el profesor borró a propósito
+     * también sería molesto, así que la recuperación siempre es un clic suyo.
+     */
+    _htmlCopias() {
+      const filas = this._copias.map(({ examen, guardadoEn }) => {
+        const estado = ESTADOS[examen.estado] || ESTADOS.borrador;
+        const titulo = esc(examen.titulo || 'Examen sin título');
+        const preguntas = Array.isArray(examen.preguntas) ? examen.preguntas.length : 0;
+        const meta = [
+          `${preguntas} pregunta${preguntas === 1 ? '' : 's'}`,
+          `${Number(examen.puntos_totales) || 0} puntos`,
+          guardadoEn ? `Copia guardada ${esc(window.panelUI.tiempoRelativo(guardadoEn))}` : 'Copia de este dispositivo'
+        ];
+        return `<article class="adm-fila adm-examen adm-examen--copia" aria-label="${titulo}">
+          <div class="adm-fila__principal adm-examen__principal">
+            <div class="adm-fila__titulo adm-examen__titulo">
+              <h2>${titulo}</h2>
+              <span class="adm-badge adm-badge--cerrado">Copia local</span>
+              <span class="adm-badge ${estado.clase}">Antes: ${estado.texto}</span>
+            </div>
+            <div class="adm-fila__meta adm-examen__meta">
+              ${meta.map((m) => `<span>${m}</span>`).join('')}
+            </div>
+          </div>
+          <div class="adm-fila__acciones adm-examen__acciones">
+            <div class="adm-examen__acciones-principales">
+              <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-copia-accion="recuperar" data-copia-id="${esc(examen.id)}">
+                ${I('rotate-ccw')} Recuperar como borrador
+              </button>
+            </div>
+          </div>
+        </article>`;
+      }).join('');
+
+      return `<section class="adm-seccion adm-seccion--copias" aria-label="Copias locales de exámenes">
+        <div class="adm-seccion__cabecera">
+          <span class="adm-seccion__titulo">Copias en este dispositivo</span>
+        </div>
+        <p class="adm-cabecera__sub">Estos exámenes se abrieron en este navegador y ya no están en la nube. Se recuperan como borrador, sin sus enlaces ni entregas.</p>
+        <div class="adm-lista">${filas}</div>
+      </section>`;
+    },
+
+    async _accionCopia(id) {
+      const copia = this._copias.find((item) => String(item.examen.id) === String(id));
+      if (!copia) return;
+      const preguntas = Array.isArray(copia.examen.preguntas) ? copia.examen.preguntas.length : 0;
+      const ok = await window.helpers.confirmar(
+        `Se recreará «${copia.examen.titulo || 'Examen sin título'}» como borrador con sus ${preguntas} pregunta${preguntas === 1 ? '' : 's'}. Los enlaces y las entregas antiguas no vuelven.`,
+        { titulo: '¿Recuperar esta copia?', textoConfirmar: 'Recuperar', peligroso: false }
+      );
+      if (!ok) return;
+      await this._ejecutar(() => window.examenesRepository.recuperarCopia(copia.examen), 'Examen recuperado como borrador.');
+    },
+
+    _tarjetaPapelera(ex) {
+      const previa = (ex.config && ex.config.papelera) || {};
+      const estadoPrevio = ESTADOS[previa.estado_previo] || ESTADOS.borrador;
+      const titulo = esc(ex.titulo || 'Examen sin título');
+      const preguntas = Array.isArray(ex.preguntas) ? ex.preguntas.length : 0;
+      const meta = [
+        `${preguntas} pregunta${preguntas === 1 ? '' : 's'}`,
+        `${Number(ex.puntos_totales) || 0} puntos`,
+        `Eliminado ${esc(window.panelUI.tiempoRelativo(previa.eliminado_en || ex.actualizado_en))}`
+      ];
+
+      return `<article class="adm-fila adm-examen adm-examen--papelera" aria-label="${titulo}">
+        <div class="adm-fila__principal adm-examen__principal">
+          <div class="adm-fila__titulo adm-examen__titulo">
+            <h2>${titulo}</h2>
+            <span class="adm-badge adm-badge--papelera">En papelera</span>
+            <span class="adm-badge ${estadoPrevio.clase}">Antes: ${estadoPrevio.texto}</span>
+          </div>
+          <div class="adm-fila__meta adm-examen__meta">
+            ${meta.map((m) => `<span>${m}</span>`).join('')}
+          </div>
+        </div>
+        <div class="adm-fila__acciones adm-examen__acciones">
+          <div class="adm-examen__acciones-principales">
+            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-papelera-accion="restaurar" data-id="${esc(ex.id)}">
+              ${I('rotate-ccw')} Restaurar
+            </button>
+            <button class="adm-btn adm-btn--peligro adm-btn--pequeno" type="button" data-papelera-accion="borrar" data-id="${esc(ex.id)}" data-titulo="${titulo}">
+              ${I('trash-2')} Eliminar definitivamente
+            </button>
+          </div>
+        </div>
+      </article>`;
     },
 
     _tarjeta(ex) {
@@ -291,11 +529,55 @@
 
       if (accion === 'eliminar') {
         const ok = await window.helpers.confirmar(
-          `Se eliminará «${titulo}», sus enlaces y todas sus entregas. Esta acción no se puede deshacer.`,
-          { titulo: '¿Eliminar examen?', textoConfirmar: 'Eliminar' }
+          `«${titulo}» se moverá a la papelera. Podrás restaurarlo cuando quieras; sus enlaces dejan de funcionar mientras esté ahí.`,
+          { titulo: '¿Mover a la papelera?', textoConfirmar: 'Mover a la papelera', peligroso: false }
         );
         if (!ok) return;
-        await this._ejecutar(() => window.examenesRepository.eliminar(id), 'Examen eliminado.');
+        await this._ejecutar(() => window.examenesRepository.moverAPapelera(id), 'Examen movido a la papelera.');
+      }
+    },
+
+    /** Restaurar, borrar definitivamente o vaciar la papelera. */
+    async _accionPapelera(accion, id) {
+      const examen = this._papelera.find((item) => String(item.id) === String(id));
+      const titulo = examen ? examen.titulo : 'este examen';
+
+      if (accion === 'restaurar') {
+        const ok = await window.helpers.confirmar(
+          `«${titulo}» volverá a tus exámenes con el estado que tenía antes de borrarse.`,
+          { titulo: '¿Restaurar examen?', textoConfirmar: 'Restaurar', peligroso: false }
+        );
+        if (!ok) return;
+        await this._ejecutar(() => window.examenesRepository.restaurar(id), 'Examen restaurado.');
+        return;
+      }
+
+      if (accion === 'borrar') {
+        const ok = await window.helpers.confirmar(
+          `Se eliminará «${titulo}» para siempre, junto con sus enlaces y todas sus entregas. Esta acción no se puede deshacer.`,
+          { titulo: '¿Eliminar definitivamente?', textoConfirmar: 'Eliminar para siempre' }
+        );
+        if (!ok) return;
+        await this._ejecutar(() => window.examenesRepository.eliminarDefinitivo(id), 'Examen eliminado definitivamente.');
+        return;
+      }
+
+      if (accion === 'vaciar') {
+        const total = this._papelera.length;
+        if (!total) return;
+        const cuerpo = (total === 1
+          ? 'Se eliminará para siempre 1 examen de la papelera'
+          : `Se eliminarán para siempre ${total} exámenes de la papelera`)
+          + ', con sus enlaces y todas sus entregas. Esta acción no se puede deshacer.';
+        const ok = await window.helpers.confirmar(cuerpo,
+          { titulo: '¿Vaciar la papelera?', textoConfirmar: `Eliminar ${total === 1 ? 'el examen' : 'todo'}` }
+        );
+        if (!ok) return;
+        await this._ejecutar(async () => {
+          const borrados = await window.examenesRepository.vaciarPapelera();
+          this._papelera = [];
+          return borrados;
+        }, 'Papelera vacía.');
       }
     },
 

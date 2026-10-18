@@ -296,6 +296,24 @@
     _guardando: false,
     tipos: TIPOS,
 
+    // ── Autoguardado ───────────────────────────────────────────────────────
+    _rev: 0,                    // sube con cada cambio; detecta ediciones durante un guardado
+    _sucio: false,              // hay cambios sin sincronizar con la nube
+    _estadoGuardado: 'inactivo', // inactivo | guardando | guardado | local | error
+    _claveBorrador: 'nuevo',
+    _baseEn: null,              // versión del servidor sobre la que se edita
+    _localTimer: null,
+    _nubeTimer: null,
+    _guardadoPromesa: null,
+    _guardadoPendiente: false,
+    _borradorRestaurado: false,
+    _borradorGuardadoEn: null,
+    _descartando: false,
+    _salidaAutorizada: false,
+    _saliendo: false,
+    _ultimoErrorGuardado: '',
+    _desregistrarGuardia: null,
+
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
       if (!usuario || !ROLES.includes((usuario.rol || '').toLowerCase())) {
@@ -305,6 +323,16 @@
 
       const id = params && params.id;
       const editando = id && id !== 'nuevo';
+      this._claveBorrador = editando ? String(id) : 'nuevo';
+      this._rev = 0;
+      this._sucio = false;
+      this._borradorRestaurado = false;
+      this._descartando = false;
+      this._salidaAutorizada = false;
+      this._saliendo = false;
+      this._guardadoPendiente = false;
+      this._guardando = false;
+      this._ultimoErrorGuardado = '';
       raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="adm-cabecera__sub">Cargando…</p></div>`;
 
       let examen;
@@ -334,6 +362,7 @@
           estado: examen.estado || 'borrador',
           publicado: !!examen.publicado,
           config: examen.config || {},
+          actualizado_en: examen.actualizado_en || null,
           preguntas: normalizar(preguntas)
         };
         if (!examen.preguntas.length) examen.preguntas = [preguntaTest()];
@@ -349,14 +378,74 @@
           preguntas: [preguntaTest()]
         };
       }
+
+      // Recuperación: si este dispositivo conserva cambios sin sincronizar, se
+      // cargan automáticamente (con aviso) para que un cierre inesperado no
+      // borre nada a medio editar.
+      const borrador = window.borradoresEditor ? window.borradoresEditor.obtener(this._claveBorrador) : null;
+      if (borrador && window.borradorExamen && window.borradorExamen.necesitaRestauracion(borrador)) {
+        examen = this._examenDesdeBorrador(borrador, examen);
+        this._borradorRestaurado = true;
+        this._borradorGuardadoEn = borrador.guardadoEn || null;
+      }
+
+      // Un examen en la papelera no se edita por URL directa: primero se
+      // restaura desde Mis exámenes, para no resucitarlo sin querer.
+      if (examen.estado === 'archivado') {
+        raiz.innerHTML = `<div class="o-contenedor u-mt-4">
+          <div class="adm-aviso adm-aviso--info">Este examen está en la papelera. Restáuralo desde Mis exámenes para volver a editarlo.</div>
+          <button class="adm-btn adm-btn--principal" id="btnIrPapelera" type="button">Ir a Mis exámenes</button>
+        </div>`;
+        raiz.querySelector('#btnIrPapelera').addEventListener('click', () => router.navegar('/examenes'));
+        return;
+      }
+
       this._examen = examen;
+      this._baseEn = (this._borradorRestaurado && borrador && borrador.baseEn) || examen.actualizado_en || null;
+      this._estadoGuardado = this._borradorRestaurado ? 'local' : (examen.id ? 'guardado' : 'inactivo');
 
       this._pintar(raiz);
+      this._registrarGuardia();
+      this._conectarCicloVida();
     },
 
     desmontar() {
+      // Último volcado: localStorage es síncrono, así que se completa aunque
+      // la pestaña se esté cerrando. La nube se intenta sin bloquear.
+      if (this._examen && this._sucio && !this._descartando) {
+        this._guardarBorradorLocal();
+        if (this._puedeGuardarEnNube()) this._autoguardar().catch(() => {});
+      }
+      this._limpiarTimers();
+      this._desconectarCicloVida();
+      this._quitarGuardia();
       this._examen = null;
       this._guardando = false;
+      this._guardadoPromesa = null;
+      this._borradorRestaurado = false;
+    },
+
+    /** Reconstruye el examen en memoria desde una instantánea local. */
+    _examenDesdeBorrador(borrador, examenServidor) {
+      const guardado = (borrador && borrador.examen) || {};
+      let preguntas = guardado.preguntas;
+      if (typeof preguntas === 'string') {
+        try { preguntas = JSON.parse(preguntas); } catch (e) { preguntas = []; }
+      }
+      const examen = {
+        id: guardado.id || (examenServidor && examenServidor.id) || undefined,
+        grupo_id: guardado.grupo_id || (examenServidor && examenServidor.grupo_id) || null,
+        creado_por: guardado.creado_por || (examenServidor && examenServidor.creado_por) || null,
+        titulo: guardado.titulo || '',
+        descripcion: guardado.descripcion || '',
+        estado: guardado.estado || 'borrador',
+        publicado: !!guardado.publicado,
+        config: guardado.config || {},
+        actualizado_en: (examenServidor && examenServidor.actualizado_en) || null,
+        preguntas: normalizar(preguntas)
+      };
+      if (!examen.preguntas.length) examen.preguntas = [preguntaTest()];
+      return examen;
     },
 
     // ── Pintado ───────────────────────────────────────────────────────────
@@ -365,24 +454,41 @@
       const estado = ex.estado === 'publicado'
         ? '<span class="adm-badge adm-badge--publicado">Publicado</span>'
         : (ex.estado === 'cerrado' ? '<span class="adm-badge adm-badge--cerrado">Cerrado</span>' : '<span class="adm-badge adm-badge--borrador">Borrador</span>');
+      const esBorrador = !ex.id || ex.estado === 'borrador';
+      const etiquetaGuardar = esBorrador ? 'Guardar borrador' : 'Guardar cambios';
+      const ariaGuardar = esBorrador ? 'Guardar como borrador' : 'Guardar cambios sin cambiar el estado';
 
       raiz.innerHTML = `
         <div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(120px + env(safe-area-inset-bottom))">
           <header class="adm-cabecera adm-cabecera--editor">
             <div class="adm-cabecera__principal">
-              <h1 class="adm-cabecera__titulo">${ex.id ? 'Editar examen' : 'Nuevo examen'} ${estado}</h1>
+              <div class="adm-editor__titulo-fila">
+                <h1 class="adm-cabecera__titulo">${ex.id ? 'Editar examen' : 'Nuevo examen'} ${estado}</h1>
+                <div class="adm-editor__guardado-wrap">
+                  <span class="adm-editor__estado" id="estadoGuardado" role="status" aria-live="polite"></span>
+                  <button class="adm-btn adm-btn--pequeno" id="btnReintentarGuardado" type="button" hidden>Reintentar</button>
+                </div>
+              </div>
               <p class="adm-cabecera__sub" id="subTotal"></p>
+              ${ex.id && ex.estado !== 'borrador'
+                ? `<p class="adm-campo__ayuda" id="notaEstado">Este examen está ${ex.estado === 'publicado' ? 'publicado' : 'cerrado'}: «Guardar cambios» no altera su estado.</p>`
+                : ''}
             </div>
             <div class="adm-cabecera__acciones">
               <button class="adm-btn" id="btnVolver">Volver</button>
-              <button class="adm-btn" id="btnGuardar" aria-label="Guardar como borrador">
-                <span class="adm-cabecera__etiqueta-larga">Guardar borrador</span><span class="adm-cabecera__etiqueta-corta">Guardar</span>
+              <button class="adm-btn" id="btnGuardar" aria-label="${ariaGuardar}">
+                <span class="adm-cabecera__etiqueta-larga">${etiquetaGuardar}</span><span class="adm-cabecera__etiqueta-corta">Guardar</span>
               </button>
               <button class="adm-btn adm-btn--principal" id="btnPublicarEditor" aria-label="${ex.publicado ? 'Guardar y cerrar' : 'Guardar y publicar'}">
                 <span class="adm-cabecera__etiqueta-larga">${ex.publicado ? 'Guardar y cerrar' : 'Guardar y publicar'}</span><span class="adm-cabecera__etiqueta-corta">${ex.publicado ? 'Cerrar' : 'Publicar'}</span>
               </button>
             </div>
           </header>
+
+          ${this._borradorRestaurado ? `<div class="adm-aviso adm-aviso--info" id="avisoBorrador">
+            <span>Recuperamos tu borrador sin guardar${this._borradorGuardadoEn ? ` de ${esc(window.panelUI.tiempoRelativo(this._borradorGuardadoEn))}` : ''}. Revísalo antes de salir.</span>
+            <button class="adm-btn adm-btn--pequeno" id="btnDescartarBorrador" type="button">Descartar cambios recuperados</button>
+          </div>` : ''}
 
           <div id="aviso" class="adm-aviso adm-aviso--error" hidden></div>
 
@@ -407,17 +513,30 @@
           </section>
         </div>`;
 
-      raiz.querySelector('#btnVolver').addEventListener('click', () => router.navegar('/examenes'));
-      raiz.querySelector('#titulo').addEventListener('input', (e) => { this._examen.titulo = e.target.value; });
-      raiz.querySelector('#descripcion').addEventListener('input', (e) => { this._examen.descripcion = e.target.value; });
+      raiz.querySelector('#btnVolver').addEventListener('click', async () => {
+        if (await this._confirmarSalida()) router.navegar('/examenes');
+      });
+      raiz.querySelector('#titulo').addEventListener('input', (e) => {
+        this._examen.titulo = e.target.value;
+        this._marcarCambio();
+      });
+      raiz.querySelector('#descripcion').addEventListener('input', (e) => {
+        this._examen.descripcion = e.target.value;
+        this._marcarCambio();
+      });
       raiz.querySelector('#btnAddPregunta').addEventListener('click', () => {
         this._sincronizarCampos();
         this._mostrarSelectorTipo();
       });
       raiz.querySelector('#btnGuardar').addEventListener('click', () => this._guardar(false));
       raiz.querySelector('#btnPublicarEditor').addEventListener('click', () => this._guardar(true));
+      const reintentar = raiz.querySelector('#btnReintentarGuardado');
+      if (reintentar) reintentar.addEventListener('click', () => { if (this._examen) this._autoguardar(); });
+      const descartar = raiz.querySelector('#btnDescartarBorrador');
+      if (descartar) descartar.addEventListener('click', () => this._descartarBorrador());
 
       this._pintarPreguntas();
+      this._actualizarEstadoGuardado();
     },
 
     /**
@@ -454,6 +573,7 @@
           this._sincronizarCampos();
           this._examen.preguntas.push(preguntaPorTipo(btn.dataset.tipo));
           modal.cerrar();
+          this._marcarCambio();
           this._pintarPreguntas();
           const tarjetas = document.querySelectorAll('#preguntas .adm-pregunta');
           if (tarjetas.length) {
@@ -494,6 +614,7 @@
           if (!p) return;
           this._aplicarCampo(p, campo, nodo);
           this._actualizarTotal();
+          this._marcarCambio();
         });
       });
 
@@ -714,6 +835,7 @@
       }
       this._examen.preguntas[idx] = reemplazo;
       this._sincronizarCampos();
+      this._marcarCambio();
       this._pintarPreguntas();
     },
 
@@ -821,6 +943,7 @@
         p.respuesta_correcta = JSON.stringify(p.opciones.map((_, n) => n));
       }
 
+      this._marcarCambio();
       this._pintarPreguntas();
     },
 
@@ -856,7 +979,312 @@
       sub.textContent = `${this._examen.preguntas.length} preguntas · ${total} puntos · ${auto} con corrección automática · ${manual} a corrección manual`;
     },
 
+    // ── Autoguardado local + nube ─────────────────────────────────────────
+    /** Marca cambios y programa los dos guardados (local rápido, nube lenta). */
+    _marcarCambio() {
+      if (!this._examen) return;
+      this._rev += 1;
+      this._sucio = true;
+      this._estadoGuardado = 'guardando';
+      this._actualizarEstadoGuardado();
+
+      if (this._localTimer) clearTimeout(this._localTimer);
+      this._localTimer = setTimeout(() => {
+        this._localTimer = null;
+        if (this._examen && this._sucio) this._guardarBorradorLocal();
+      }, 400);
+
+      if (this._nubeTimer) clearTimeout(this._nubeTimer);
+      this._nubeTimer = setTimeout(() => {
+        this._nubeTimer = null;
+        this._autoguardar();
+      }, 2500);
+    },
+
+    /** Instantánea síncrona en localStorage (segura dentro de pagehide). */
+    _guardarBorradorLocal(opciones) {
+      if (!this._examen || !window.borradoresEditor || !window.borradorExamen) return false;
+      const pendiente = !opciones || opciones.pendiente !== false;
+      const borrador = window.borradorExamen.crearInstantanea(this._examen, {
+        baseEn: this._baseEn,
+        rev: this._rev,
+        pendiente
+      });
+      borrador.clave = window.borradorExamen.clave(this._claveBorrador);
+      const guardado = window.borradoresEditor.guardar(borrador);
+      if (guardado && pendiente) this._estadoGuardado = this._guardadoPromesa ? 'guardando' : 'local';
+      return guardado;
+    },
+
+    /** ¿Reúne lo mínimo para que el borrador tenga sentido en la nube? */
+    _puedeGuardarEnNube() {
+      if (!this._examen || !window.examenesRepository) return false;
+      if (typeof navigator !== 'undefined' && navigator.onLine === false) return false;
+      if (!window.supabaseClient) return false;
+      try {
+        this._datosParaGuardar();
+        return true;
+      } catch (e) {
+        return false;
+      }
+    },
+
+    /** Una sola petición en vuelo; si llegan cambios durante el guardado, se repite. */
+    async _autoguardar() {
+      if (!this._examen || !this._sucio) return null;
+      if (!this._puedeGuardarEnNube()) {
+        this._estadoGuardado = 'local';
+        this._actualizarEstadoGuardado();
+        return null;
+      }
+      if (this._guardadoPromesa) {
+        this._guardadoPendiente = true;
+        return this._guardadoPromesa;
+      }
+
+      const rev = this._rev;
+      const ex = this._examen;
+      this._guardando = true;
+      this._estadoGuardado = 'guardando';
+      this._actualizarEstadoGuardado();
+
+      this._guardadoPromesa = (async () => {
+        try {
+          const datos = this._datosParaGuardar();
+          const { grupoId, usuario } = await this._asegurarGrupo();
+          const guardado = await window.examenesRepository.guardar({
+            id: ex.id,
+            grupo_id: grupoId,
+            creado_por: ex.creado_por || usuario.id,
+            titulo: String(ex.titulo).trim(),
+            descripcion: String(ex.descripcion || '').trim(),
+            preguntas: datos.preguntas,
+            puntos_totales: datos.total,
+            estado: ex.estado || 'borrador',
+            publicado: !!ex.publicado,
+            config: ex.config || {}
+          });
+
+          ex.id = guardado.id;
+          ex.grupo_id = guardado.grupo_id;
+          ex.creado_por = guardado.creado_por;
+          ex.estado = guardado.estado || ex.estado;
+          ex.publicado = !!guardado.publicado;
+          this._baseEn = guardado.actualizado_en || new Date().toISOString();
+          ex.actualizado_en = guardado.actualizado_en || this._baseEn;
+
+          this._adoptarIdDeServidor(guardado.id);
+
+          const sigueSucio = this._rev !== rev;
+          this._sucio = sigueSucio;
+          this._guardarBorradorLocal({ pendiente: sigueSucio });
+          this._estadoGuardado = sigueSucio ? 'guardando' : 'guardado';
+          this._ultimoErrorGuardado = '';
+        } catch (e) {
+          this._estadoGuardado = 'error';
+          this._ultimoErrorGuardado = e && e.message ? e.message : 'No se pudo guardar el borrador.';
+        } finally {
+          this._guardando = false;
+          this._guardadoPromesa = null;
+          this._actualizarEstadoGuardado();
+          if (this._guardadoPendiente) {
+            this._guardadoPendiente = false;
+            if (this._examen) this._autoguardar();
+          }
+        }
+      })();
+
+      return this._guardadoPromesa;
+    },
+
+    /**
+     * Adopta el id que asigna el servidor: mueve la clave del borrador local y
+     * cambia /editor/nuevo por /editor/<id> sin remontar la vista. Sin esto,
+     * una recarga abría un examen nuevo vacío aunque el trabajo estuviera
+     * guardado (el borrador quedaba bajo una clave que la ruta ya no busca).
+     */
+    _adoptarIdDeServidor(id) {
+      if (!id) return;
+      if (String(this._claveBorrador) === 'nuevo') {
+        if (window.borradoresEditor) window.borradoresEditor.migrar('nuevo', String(id));
+        this._claveBorrador = String(id);
+      }
+      if (router && typeof router.pathActual === 'function' && router.pathActual() === '/editor/nuevo') {
+        if (typeof router.reemplazarRutaActual === 'function') {
+          router.reemplazarRutaActual('/editor/' + id);
+        }
+      }
+    },
+
+    /** Pinta el chip de nube con su icono Lucide y, si falló, el reintento. */
+    _actualizarEstadoGuardado() {
+      const nodo = document.querySelector('#estadoGuardado');
+      if (!nodo) return;
+      const estados = {
+        inactivo: { icono: 'cloud-check', texto: 'Sin cambios' },
+        guardado: { icono: 'cloud-check', texto: 'Guardado' },
+        guardando: { icono: 'loader-circle', texto: 'Guardando…' },
+        local: { icono: 'cloud', texto: 'Solo en este dispositivo' },
+        error: { icono: 'cloud-off', texto: 'No se pudo guardar' }
+      };
+      const info = estados[this._estadoGuardado] || estados.inactivo;
+      nodo.dataset.estado = this._estadoGuardado;
+      nodo.innerHTML = `${window.Iconos ? window.Iconos.render(info.icono) : ''}<span>${info.texto}</span>`;
+      const cuando = this._baseEn ? window.panelUI.tiempoRelativo(this._baseEn) : '';
+      nodo.title = this._estadoGuardado === 'error'
+        ? (this._ultimoErrorGuardado || 'No se pudo guardar en la nube. Se conserva en este dispositivo.')
+        : (cuando ? `Última sincronización: ${cuando}` : 'Tu borrador se guarda automáticamente');
+
+      const reintentar = document.querySelector('#btnReintentarGuardado');
+      if (reintentar) reintentar.hidden = this._estadoGuardado !== 'error';
+      if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    /** Descarta la recuperación y vuelve a la versión guardada en el servidor. */
+    async _descartarBorrador() {
+      const ok = await window.helpers.confirmar(
+        'Se perderán los cambios recuperados de este dispositivo. Volverás a la última versión guardada.',
+        { titulo: '¿Descartar cambios recuperados?', textoConfirmar: 'Descartar' }
+      );
+      if (!ok) return;
+      this._descartando = true;
+      this._sucio = false;
+      if (window.borradoresEditor) window.borradoresEditor.eliminar(this._claveBorrador);
+      this._borradorRestaurado = false;
+      window.helpers.mostrarAlerta('Cambios recuperados descartados.', 'exito');
+      router._ejecutar();
+    },
+
+    /** Tarjeta de confirmación al salir (Volver, atrás del navegador o gesto). */
+    async _confirmarSalida() {
+      if (this._salidaAutorizada) return true;
+      if (this._saliendo) return false;
+      this._saliendo = true;
+      try {
+        const mensaje = this._estadoGuardado === 'error'
+          ? 'No se pudo guardar en la nube, pero tu trabajo queda en este dispositivo y podrás retomarlo desde Mis exámenes.'
+          : 'Tu borrador se guarda automáticamente. Si sales, podrás retomarlo desde Mis exámenes.';
+        const ok = await window.helpers.confirmar(mensaje, {
+          titulo: '¿Salir del editor?',
+          textoConfirmar: 'Salir',
+          textoCancelar: 'Seguir editando',
+          peligroso: false
+        });
+        if (!ok) return false;
+
+        this._salidaAutorizada = true;
+        if (this._examen && this._sucio) {
+          this._guardarBorradorLocal();
+          if (this._puedeGuardarEnNube()) {
+            // No bloquear la salida más de 3 s por una red lenta.
+            await Promise.race([
+              this._autoguardar().catch(() => null),
+              new Promise((resolver) => setTimeout(resolver, 3000))
+            ]);
+          }
+        }
+        return true;
+      } finally {
+        this._saliendo = false;
+      }
+    },
+
+    _registrarGuardia() {
+      if (!router || typeof router.registrarGuardia !== 'function') return;
+      this._quitarGuardia();
+      this._desregistrarGuardia = router.registrarGuardia(async (ruta) => {
+        const rutaEditor = String(this._claveBorrador) === 'nuevo'
+          ? '/editor/nuevo'
+          : `/editor/${this._claveBorrador}`;
+        // Remontar la misma ruta (descartar, recargar) no es salir.
+        if (ruta === rutaEditor) return true;
+        if (await this._confirmarSalida()) return true;
+        router.revertirNavegacion(rutaEditor);
+        return false;
+      });
+    },
+
+    _quitarGuardia() {
+      if (typeof this._desregistrarGuardia === 'function') this._desregistrarGuardia();
+      this._desregistrarGuardia = null;
+    },
+
+    /**
+     * Red de seguridad del cierre: `pagehide` y `visibilitychange` se disparan
+     * en el móvil al mandar la app a segundo plano o al matarla, y la escritura
+     * local es síncrona. No se usa beforeunload para no encadenar dos avisos.
+     */
+    _conectarCicloVida() {
+      this._desconectarCicloVida();
+      this._alOcultar = () => {
+        if (!this._examen || !this._sucio) return;
+        this._guardarBorradorLocal();
+        if (this._puedeGuardarEnNube()) this._autoguardar().catch(() => {});
+      };
+      this._alReconectar = () => {
+        if (this._examen && this._sucio) this._autoguardar();
+      };
+      this._alVolverVisible = () => {
+        if (typeof document !== 'undefined' && document.visibilityState === 'hidden') this._alOcultar();
+      };
+      document.addEventListener('visibilitychange', this._alVolverVisible);
+      window.addEventListener('pagehide', this._alOcultar);
+      window.addEventListener('online', this._alReconectar);
+    },
+
+    _desconectarCicloVida() {
+      if (this._alVolverVisible && typeof document !== 'undefined') document.removeEventListener('visibilitychange', this._alVolverVisible);
+      if (this._alOcultar) window.removeEventListener('pagehide', this._alOcultar);
+      if (this._alReconectar) window.removeEventListener('online', this._alReconectar);
+      this._alOcultar = null;
+      this._alReconectar = null;
+      this._alVolverVisible = null;
+    },
+
+    _limpiarTimers() {
+      if (this._localTimer) clearTimeout(this._localTimer);
+      if (this._nubeTimer) clearTimeout(this._nubeTimer);
+      this._localTimer = null;
+      this._nubeTimer = null;
+    },
+
     // ── Validación y guardado ─────────────────────────────────────────────
+    /**
+     * Valida y devuelve las preguntas listas para guardar. Las mismas reglas
+     * valen para el guardado manual y para el automático: así el autoguardado
+     * nunca publica un examen a medias ni crea filas basura.
+     */
+    _datosParaGuardar() {
+      const ex = this._examen;
+      if (String(ex.titulo || '').trim().length < 3) {
+        throw new Error('Escribe un título para el examen.');
+      }
+      const preguntas = this._construirPreguntas();
+      const total = preguntas.reduce((suma, p) => suma + p.puntos, 0);
+      if (total <= 0) {
+        throw new Error('El examen necesita puntuación: asigna puntos a las preguntas.');
+      }
+      return { preguntas, total };
+    },
+
+    /** Grupo de trabajo, creando el del profesor si aún no existe. */
+    async _asegurarGrupo() {
+      const usuarioActual = store.obtener('usuario');
+      let grupoId = this._examen.grupo_id;
+      let usuario = usuarioActual;
+      if (!grupoId) {
+        try {
+          const actualizado = await window.authRepository.asegurarGrupo(usuario);
+          usuario = actualizado;
+          grupoId = usuario.grupo_id;
+        } catch (e) {
+          throw new Error('No se pudo preparar tu espacio de trabajo. Inténtalo de nuevo.');
+        }
+      }
+      if (!grupoId) throw new Error('No se pudo preparar tu espacio de trabajo. Inténtalo de nuevo.');
+      return { grupoId, usuario };
+    },
+
     _construirPreguntas() {
       return this._examen.preguntas.map((p, i) => {
         const texto = String(p.texto || '').trim();
@@ -966,28 +1394,27 @@
       if (this._guardando) return;
       this._sincronizarCampos();
       this._mostrarError('');
+      // El guardado manual sustituye al automático pendiente.
+      this._limpiarTimers();
 
       const ex = this._examen;
-      if (String(ex.titulo || '').trim().length < 3) {
-        this._mostrarError('Escribe un título para el examen.');
-        return;
-      }
-
-      let preguntas;
+      let datos;
       try {
-        preguntas = this._construirPreguntas();
+        datos = this._datosParaGuardar();
       } catch (e) {
         this._mostrarError(e.message);
+        // Aun sin poder guardar en la nube, el trabajo queda a salvo aquí.
+        this._guardarBorradorLocal();
+        this._estadoGuardado = 'local';
+        this._actualizarEstadoGuardado();
         return;
       }
-
-      const total = preguntas.reduce((s, p) => s + p.puntos, 0);
-      if (total <= 0) {
-        this._mostrarError('El examen necesita puntuación: asigna puntos a las preguntas.');
-        return;
-      }
+      const preguntas = datos.preguntas;
+      const total = datos.total;
 
       this._guardando = true;
+      this._estadoGuardado = 'guardando';
+      this._actualizarEstadoGuardado();
       const btnGuardar = document.querySelector('#btnGuardar');
       const btnPublicar = document.querySelector('#btnPublicarEditor');
       [btnGuardar, btnPublicar].forEach((b) => { if (b) b.disabled = true; });
@@ -995,22 +1422,7 @@
       try {
         // El examen siempre pertenece a una clase propia del administrador.
         const usuarioActual = store.obtener('usuario');
-        let grupoId = ex.grupo_id;
-        let usuario = usuarioActual;
-
-        if (!grupoId) {
-          try {
-            const actualizado = await window.authRepository.asegurarGrupo(usuario);
-            usuario = actualizado;
-            grupoId = usuario.grupo_id;
-          } catch (e) {
-            throw new Error('No se pudo preparar tu espacio de trabajo. Inténtalo de nuevo.');
-          }
-        }
-
-        if (!grupoId) {
-          throw new Error('No se pudo preparar tu espacio de trabajo. Inténtalo de nuevo.');
-        }
+        const { grupoId, usuario } = await this._asegurarGrupo();
 
         const guardado = await window.examenesRepository.guardar({
           id: ex.id,
@@ -1030,6 +1442,16 @@
         ex.creado_por = guardado.creado_por;
         ex.estado = guardado.estado;
         ex.publicado = guardado.publicado;
+        this._baseEn = guardado.actualizado_en || new Date().toISOString();
+        ex.actualizado_en = this._baseEn;
+
+        // El guardado manual también deja limpia la red de seguridad local.
+        this._adoptarIdDeServidor(guardado.id);
+        this._sucio = false;
+        this._borradorRestaurado = false;
+        this._borradorGuardadoEn = null;
+        this._estadoGuardado = 'guardado';
+        this._guardarBorradorLocal({ pendiente: false });
 
         if (publicar) {
           if (ex.estado === 'publicado') {
@@ -1039,6 +1461,7 @@
             await window.plataformaRepository.cambiarEstado(ex.id, 'publicado');
             window.helpers.mostrarAlerta('Examen publicado. Ya puedes enviar los enlaces.', 'exito');
           }
+          this._salidaAutorizada = true;
           router.navegar('/examenes');
           return;
         }
@@ -1047,11 +1470,15 @@
         const raiz = document.querySelector('#app-root');
         if (raiz) this._pintar(raiz);
       } catch (e) {
+        this._estadoGuardado = 'error';
+        this._ultimoErrorGuardado = e.message;
+        this._actualizarEstadoGuardado();
         this._mostrarError(e.message);
         window.helpers.mostrarAlerta('No se pudo guardar: ' + e.message, 'error');
       } finally {
         this._guardando = false;
         [btnGuardar, btnPublicar].forEach((b) => { if (b) b.disabled = false; });
+        this._actualizarEstadoGuardado();
       }
     },
 

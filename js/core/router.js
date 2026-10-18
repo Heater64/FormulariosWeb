@@ -379,6 +379,42 @@ class Router {
     window.history.back();
   }
 
+  /**
+   * Sustituye la ruta actual sin remontar la vista. Se usa cuando una vista
+   * "crea" su recurso y pasa a tener id (p. ej. /editor/nuevo → /editor/<id>):
+   * la URL y la pila interna quedan correctas para una recarga o un back.
+   */
+  reemplazarRutaActual(ruta) {
+    const destino = String(ruta || '');
+    if (!destino) return;
+    try {
+      window.history.replaceState(window.history.state, '', `#!${destino}`);
+    } catch (e) { /* URL restringida: la vista sigue funcionando */ }
+    if (this._historial.length) this._historial[this._historial.length - 1] = destino;
+    else this._historial.push(destino);
+  }
+
+  /**
+   * Deshace una navegación que una guardia acaba de bloquear. El hash ya
+   * cambió (back del navegador, gesto o un enlace interno), así que hay que
+   * devolver la URL SIN volver a montar la vista y reparar la pila interna,
+   * que registró el destino antes de consultar las guardias.
+   */
+  revertirNavegacion(ruta) {
+    const destino = String(ruta || '');
+    if (!destino) return;
+    try {
+      window.history.replaceState(window.history.state, '', `#!${destino}`);
+    } catch (e) { /* URL restringida: la vista sigue montada igualmente */ }
+
+    if (this._historial[this._historial.length - 1] !== destino) {
+      const indice = this._historial.lastIndexOf(destino);
+      if (indice >= 0) this._historial.splice(indice + 1);
+      else this._historial.push(destino);
+    }
+    this._direccion = 'atras';
+  }
+
   // ── Utilidades de navegación ──
   get direccion() { return this._direccion; }
   get historialLength() { return this._historial.length; }

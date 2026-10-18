@@ -133,6 +133,55 @@ describe('guardias de navegación', () => {
     expect(montada).toBe(true);
   });
 
+  test('revertir una navegación bloqueada devuelve la URL y repara el historial', () => {
+    const router = window.router;
+    router._historial.push('/inicio');
+    router._historial.push('/editor/ex-1');
+    location.hash = '#!/examenes';
+
+    // El stub de history no navega: se registra la URL que pide el router.
+    const original = global.history.replaceState;
+    const urls = [];
+    global.history.replaceState = (estado, titulo, url) => { urls.push(url); location.hash = url; };
+    try {
+      router.revertirNavegacion('/editor/ex-1');
+    } finally {
+      global.history.replaceState = original;
+    }
+
+    expect(urls).toEqual(['#!/editor/ex-1']);
+    expect(location.hash).toBe('#!/editor/ex-1');
+    expect(router._historial).toEqual(['/inicio', '/editor/ex-1']);
+    expect(router.direccion).toBe('atras');
+  });
+
+  test('reemplazarRutaActual cambia la URL y la última entrada sin remontar', () => {
+    const router = window.router;
+    router._historial.push('/editor/nuevo');
+
+    const original = global.history.replaceState;
+    let url = '';
+    global.history.replaceState = (estado, titulo, destino) => { url = destino; location.hash = destino; };
+    try {
+      router.reemplazarRutaActual('/editor/uuid-1');
+    } finally {
+      global.history.replaceState = original;
+    }
+
+    expect(url).toBe('#!/editor/uuid-1');
+    expect(router._historial).toEqual(['/editor/uuid-1']);
+  });
+
+  test('revertir a una ruta que ya no está en el historial la vuelve a dejar activa', () => {
+    const router = window.router;
+    router._historial.push('/editor/nuevo');
+    router._historial.push('/inicio');
+
+    router.revertirNavegacion('/editor/nuevo');
+
+    expect(router._historial[router._historial.length - 1]).toBe('/editor/nuevo');
+  });
+
   test('una guardia async puede preguntar al usuario y bloquear si cancela', async () => {
     const router = window.router;
     let montada = false;

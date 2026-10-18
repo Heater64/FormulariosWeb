@@ -9,9 +9,12 @@
       }
       try {
         const esAlumno = (usuario.rol || '').toLowerCase() === 'usuario';
+        // La papelera es un estado más del examen ('archivado'), no una tabla
+        // aparte: las listas normales lo excluyen y solo se ve en /examenes.
         const respuesta = esAlumno
           ? await sb().rpc('listar_examenes_alumno', { p_grupo_id: usuario.grupo_id })
-          : await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id).order('creado_en', { ascending: false });
+          : await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id)
+            .neq('estado', 'archivado').order('creado_en', { ascending: false });
         if (respuesta.error) throw respuesta.error;
         const lista = respuesta.data || [];
         await window.cacheDatos.set(`examenes:grupo:${usuario.grupo_id}`, lista);
@@ -79,7 +82,9 @@
     },
     async listarExamenesSueltos(grupoId) {
       if (!sb()) return [];
-      const { data } = await sb().from('examenes_personalizados').select('*').eq('grupo_id', grupoId).is('evaluacion_id', null).order('creado_en', { ascending: false });
+      const { data } = await sb().from('examenes_personalizados').select('*').eq('grupo_id', grupoId)
+        .is('evaluacion_id', null).neq('estado', 'archivado')
+        .order('creado_en', { ascending: false });
       return data || [];
     },
     async obtener(id) {
@@ -110,6 +115,212 @@
       if (!sb()) throw new Error('Sin conexión');
       await sb().from('examenes_personalizados').delete().eq('id', id);
     },
+
+    // ── Papelera ──────────────────────────────────────────────────────────
+    // Borrado suave con el estado 'archivado' (ya admitido por el CHECK de la
+    // tabla): no hace falta migración y todas las RPC del alumno exigen
+    // estado='publicado' + publicado=true, así que un examen en la papelera
+    // deja de estar accesible por sus enlaces al instante.
+    // El estado anterior se guarda en config.papelera para poder restaurarlo.
+    _configConPapelera(actual) {
+      const config = (actual && actual.config && typeof actual.config === 'object' && !Array.isArray(actual.config))
+        ? Object.assign({}, actual.config)
+        : {};
+      const previa = (config.papelera && typeof config.papelera === 'object') ? config.papelera : {};
+      const usuario = (window.store && typeof window.store.obtener === 'function')
+        ? window.store.obtener('usuario')
+        : null;
+      config.papelera = {
+        estado_previo: previa.estado_previo || actual.estado || 'borrador',
+        publicado_previo: typeof previa.publicado_previo === 'boolean' ? previa.publicado_previo : !!actual.publicado,
+        eliminado_en: new Date().toISOString(),
+        eliminado_por: (usuario && usuario.id) || null
+      };
+      return config;
+    },
+
+    /** Mueve un examen a la papelera. No borra la fila ni sus entregas. */
+    async moverAPapelera(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const actual = await this.obtener(id);
+      if (!actual) throw new Error('No se encontró el examen.');
+      if (actual.estado === 'archivado') return actual;
+      const { data, error } = await sb().from('examenes_personalizados')
+        .update({
+          estado: 'archivado',
+          publicado: false,
+          config: this._configConPapelera(actual),
+          actualizado_en: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (window.cacheDatos) await window.cacheDatos.set(`examen:${id}`, data);
+      return data;
+    },
+
+    /** Devuelve el examen a su estado anterior (nunca a 'archivado'). */
+    async restaurar(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const actual = await this.obtener(id);
+      if (!actual || actual.estado !== 'archivado') throw new Error('El examen no está en la papelera.');
+      const config = (actual.config && typeof actual.config === 'object' && !Array.isArray(actual.config))
+        ? Object.assign({}, actual.config)
+        : {};
+      const previa = (config.papelera && typeof config.papelera === 'object') ? config.papelera : {};
+      delete config.papelera;
+      const estado = ['borrador', 'publicado', 'cerrado'].includes(previa.estado_previo)
+        ? previa.estado_previo
+        : 'borrador';
+      const { data, error } = await sb().from('examenes_personalizados')
+        .update({
+          estado,
+          publicado: estado === 'publicado',
+          config,
+          actualizado_en: new Date().toISOString()
+        })
+        .eq('id', id)
+        .select()
+        .single();
+      if (error) throw error;
+      if (window.cacheDatos) await window.cacheDatos.set(`examen:${id}`, data);
+      return data;
+    },
+
+    /** La papelera es del grupo del profesor; sin grupo (owner) se ve todo. */
+    _grupoActual() {
+      const usuario = (window.store && typeof window.store.obtener === 'function')
+        ? window.store.obtener('usuario')
+        : null;
+      return (usuario && usuario.grupo_id) || null;
+    },
+
+    /** Exámenes en la papelera del profesor (solo su grupo / owner). */
+    async listarPapelera() {
+      if (!sb()) return [];
+      const grupoId = this._grupoActual();
+      try {
+        let consulta = sb().from('examenes_personalizados').select('*').eq('estado', 'archivado');
+        // Solo la papelera del grupo activo: RLS permite ver exámenes de
+        // cualquier grupo donde el profesor sea editor.
+        if (grupoId) consulta = consulta.eq('grupo_id', grupoId);
+        const { data, error } = await consulta.order('actualizado_en', { ascending: false });
+        if (error) throw error;
+        return data || [];
+      } catch (e) {
+        return [];
+      }
+    },
+
+    /**
+     * IDs en la papelera. La RPC fb_resumen_admin normaliza cualquier estado
+     * desconocido a 'borrador', así que el resumen no puede distinguirlos:
+     * esta consulta directa permite ocultarlos del panel y de sus contadores.
+     */
+    async idsEnPapelera() {
+      if (!sb()) return [];
+      const grupoId = this._grupoActual();
+      try {
+        let consulta = sb().from('examenes_personalizados').select('id').eq('estado', 'archivado');
+        if (grupoId) consulta = consulta.eq('grupo_id', grupoId);
+        const { data, error } = await consulta;
+        if (error) throw error;
+        return (data || []).map((fila) => String(fila.id));
+      } catch (e) {
+        return [];
+      }
+    },
+
+    /** Borrado definitivo de UN examen de la papelera (enlaces y entregas caen en cascada). */
+    async eliminarDefinitivo(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      const grupoId = this._grupoActual();
+      let consulta = sb().from('examenes_personalizados').delete()
+        .eq('id', id)
+        .eq('estado', 'archivado');
+      if (grupoId) consulta = consulta.eq('grupo_id', grupoId);
+      const { error } = await consulta;
+      if (error) throw error;
+      if (window.cacheDatos) await window.cacheDatos.set(`examen:${id}`, null);
+    },
+
+    /** Vacía la papelera: borra definitivamente todo lo archivado del grupo. */
+    async vaciarPapelera() {
+      if (!sb()) throw new Error('Sin conexión');
+      const ids = await this.idsEnPapelera();
+      if (!ids.length) return 0;
+      const { error } = await sb().from('examenes_personalizados').delete().in('id', ids);
+      if (error) throw error;
+      if (window.cacheDatos) {
+        await Promise.all(ids.map((id) => window.cacheDatos.set(`examen:${id}`, null)));
+      }
+      return ids.length;
+    },
+    // ── Recuperación desde la caché del dispositivo ──────────────────────
+    // La caché guarda el examen completo (preguntas incluidas) cada vez que se
+    // lee del servidor, y `list()` no descarta las entradas caducadas: si un
+    // examen se borró por error (o por otra vía) todavía se puede reconstruir
+    // desde el navegador donde se abrió. Es la única red que queda cuando la
+    // fila ya no existe en Supabase y no hay copia de seguridad.
+    async copiasLocales() {
+      if (!window.cacheDatos || typeof window.cacheDatos.list !== 'function') return [];
+      const items = await window.cacheDatos.list('examen:');
+      const copias = items
+        .filter((item) => item && item.valor && typeof item.valor === 'object' && item.valor.id)
+        .map((item) => ({
+          examen: item.valor,
+          guardadoEn: item.ts ? new Date(item.ts).toISOString() : null
+        }));
+      if (!copias.length) return [];
+
+      // Solo interesan las que ya no están en el servidor: las que siguen
+      // vivas (incluidas las de la papelera) se gestionan desde la lista.
+      let vivos = null;
+      if (sb()) {
+        try {
+          const { data, error } = await sb().from('examenes_personalizados').select('id');
+          if (!error) vivos = new Set((data || []).map((fila) => String(fila.id)));
+        } catch (e) { /* sin conexión: se muestran todas las copias */ }
+      }
+      if (!vivos) return copias;
+      return copias.filter((copia) => !vivos.has(String(copia.examen.id)));
+    },
+
+    /**
+     * Recrea en la nube una copia de la caché, siempre como borrador: un
+     * examen recuperado no debe reabrir sus enlaces antiguos sin revisarlo.
+     */
+    async recuperarCopia(examen) {
+      if (!sb()) throw new Error('Sin conexión');
+      if (!examen || !examen.id) throw new Error('La copia no es válida.');
+      const usuario = (window.store && typeof window.store.obtener === 'function')
+        ? window.store.obtener('usuario')
+        : null;
+      const grupoId = examen.grupo_id || (usuario && usuario.grupo_id) || null;
+      if (!grupoId) throw new Error('No se pudo determinar tu grupo de trabajo.');
+      const config = (examen.config && typeof examen.config === 'object' && !Array.isArray(examen.config))
+        ? Object.assign({}, examen.config)
+        : {};
+      delete config.papelera;
+      const { data, error } = await sb().from('examenes_personalizados').upsert({
+        id: examen.id,
+        grupo_id: grupoId,
+        creado_por: examen.creado_por || (usuario && usuario.id) || null,
+        titulo: String(examen.titulo || '').trim() || 'Examen recuperado',
+        descripcion: examen.descripcion || '',
+        preguntas: Array.isArray(examen.preguntas) ? examen.preguntas : [],
+        puntos_totales: Number(examen.puntos_totales) || 0,
+        estado: 'borrador',
+        publicado: false,
+        config,
+        actualizado_en: new Date().toISOString()
+      }, { onConflict: 'id' }).select().single();
+      if (error) throw error;
+      if (window.cacheDatos) await window.cacheDatos.set(`examen:${data.id}`, data);
+      return data;
+    },
+
     async publicar(id) {
       if (!sb()) throw new Error('Sin conexión');
       const { data: ex } = await sb().from('examenes_personalizados').select('grupo_id, titulo, publicado').eq('id', id).single();

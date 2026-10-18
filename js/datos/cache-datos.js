@@ -128,10 +128,15 @@
       // 4. Limpiar claves temporales de localStorage (mantener sesión y preferencias)
       try {
         const clavesPreservar = new Set(['fb_usuario', 'fb_recordar_sesion', 'fb_setup_completado', 'fb_examenes_vistos']);
+        // Los borradores del editor son trabajo del usuario, no caché: limpiar
+        // la caché no debe borrar un examen a medio escribir.
+        const PREFIJO_BORRADORES = 'fb_editor_borrador:';
         const clavesBorrar = [];
         for (let i = 0; i < localStorage.length; i++) {
           const k = localStorage.key(i);
-          if (k && k.startsWith('fb_') && !clavesPreservar.has(k)) clavesBorrar.push(k);
+          if (!k || !k.startsWith('fb_')) continue;
+          if (clavesPreservar.has(k) || k.startsWith(PREFIJO_BORRADORES)) continue;
+          clavesBorrar.push(k);
         }
         clavesBorrar.forEach(k => localStorage.removeItem(k));
       } catch (e) {}

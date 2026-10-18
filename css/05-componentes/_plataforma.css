@@ -571,6 +571,143 @@
 .adm-badge--aviso { background: var(--color-aviso-soft); color: var(--color-aviso); }
 .adm-badge--exito { background: var(--color-exito-soft); color: var(--color-exito); }
 .adm-badge--error { background: var(--color-error-soft); color: var(--color-error); }
+.adm-badge--papelera { background: var(--color-aviso-soft); color: var(--color-aviso); }
+
+/* ── Estado del autoguardado en el editor ── */
+.adm-editor__titulo-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+.adm-editor__guardado-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+}
+
+/* .adm-btn fija display: inline-flex y gana al [hidden] del navegador. */
+.adm-editor__guardado-wrap [hidden] { display: none; }
+
+.adm-editor__estado {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 9px;
+  border-radius: var(--radio-pill, 999px);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-semibold);
+  line-height: 1.35;
+  white-space: nowrap;
+}
+
+.adm-editor__estado svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+}
+
+.adm-editor__estado[data-estado="guardado"] { background: var(--color-exito-soft); color: var(--color-exito); }
+.adm-editor__estado[data-estado="guardando"] { background: var(--color-info-soft); color: var(--color-info); }
+.adm-editor__estado[data-estado="local"] { background: var(--color-fondo-alt); color: var(--color-texto-secundario); }
+.adm-editor__estado[data-estado="error"] { background: var(--color-error-soft); color: var(--color-error); }
+
+.adm-editor__estado[data-estado="guardando"] svg {
+  animation: adm-editor-girar 1s linear infinite;
+}
+
+@keyframes adm-editor-girar {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-editor__estado[data-estado="guardando"] svg { animation: none; }
+}
+
+#avisoBorrador {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+}
+
+/* ── Borradores sin terminar en Mis exámenes ── */
+.adm-borradores-locales {
+  margin-bottom: var(--espaciado-md);
+}
+
+.adm-borradores-locales__fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-sm);
+  border: 1px solid var(--color-aviso);
+  border-radius: var(--radio-md, 12px);
+  background: var(--color-aviso-soft);
+}
+
+.adm-borradores-locales__datos {
+  min-width: 0;
+}
+
+.adm-borradores-locales__titulo {
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto);
+}
+
+.adm-borradores-locales__meta {
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+}
+
+.adm-borradores-locales__acciones {
+  display: flex;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+@media (max-width: 600px) {
+  .adm-borradores-locales__acciones { width: 100%; }
+  .adm-borradores-locales__acciones .adm-btn { flex: 1 1 auto; }
+}
+
+/* ── Papelera de exámenes ── */
+.adm-papelera__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  margin-bottom: var(--espaciado-md);
+}
+
+.adm-papelera__cabecera .adm-cabecera__sub {
+  flex: 1 1 240px;
+}
+
+@media (max-width: 600px) {
+  .adm-papelera__cabecera .adm-btn {
+    width: 100%;
+  }
+}
+
+/* Copias de la caché local: van después de la papelera y separadas de ella,
+   porque no son exámenes borrados sino restos de este navegador. */
+.adm-seccion--copias {
+  margin-top: var(--espaciado-xl);
+  padding-top: var(--espaciado-md);
+  border-top: 1px solid var(--color-borde);
+}
+.adm-seccion--copias .adm-seccion__cabecera {
+  border-top: none;
+  padding-top: 0;
+}
 
 /* ── Estado vacío ── */
 .adm-vacio {

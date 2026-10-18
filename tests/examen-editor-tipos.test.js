@@ -46,9 +46,12 @@ describe('cabecera del editor en móvil', () => {
   test('las acciones llevan etiqueta larga y corta, con su nombre accesible', () => {
     expect(editorSource).toContain('class="adm-cabecera adm-cabecera--editor"');
 
-    // Guardar borrador: la etiqueta corta es la que se ve en móvil.
-    expect(editorSource).toContain('id="btnGuardar" aria-label="Guardar como borrador"');
-    expect(editorSource).toMatch(/adm-cabecera__etiqueta-larga">Guardar borrador<\/span><span class="adm-cabecera__etiqueta-corta">Guardar</);
+    // Guardar: «Guardar borrador» en borradores; en publicados/cerrados el
+    // mismo botón dice «Guardar cambios» y conserva el estado del examen.
+    expect(editorSource).toContain('id="btnGuardar" aria-label="${ariaGuardar}"');
+    expect(editorSource).toContain("const esBorrador = !ex.id || ex.estado === 'borrador';");
+    expect(editorSource).toContain("const etiquetaGuardar = esBorrador ? 'Guardar borrador' : 'Guardar cambios';");
+    expect(editorSource).toMatch(/adm-cabecera__etiqueta-larga">\$\{etiquetaGuardar\}<\/span><span class="adm-cabecera__etiqueta-corta">Guardar</);
 
     // Guardar y publicar / Guardar y cerrar según el estado del examen.
     expect(editorSource).toMatch(/aria-label="\$\{ex\.publicado \? 'Guardar y cerrar' : 'Guardar y publicar'\}"/);
@@ -73,6 +76,21 @@ describe('cabecera del editor en móvil', () => {
 
     // El apilado a ancho completo sigue siendo el de las demás vistas.
     expect(css).toContain('.adm-cabecera__acciones > .adm-btn { width: 100%; }');
+  });
+
+  test('la cabecera muestra el estado del autoguardado y la salida pide confirmación', () => {
+    expect(editorSource).toContain('id="estadoGuardado" role="status" aria-live="polite"');
+    expect(editorSource).toContain("guardado: { icono: 'cloud-check', texto: 'Guardado' }");
+    expect(editorSource).toContain("guardando: { icono: 'loader-circle', texto: 'Guardando…' }");
+    expect(editorSource).toContain("local: { icono: 'cloud', texto: 'Solo en este dispositivo' }");
+    expect(editorSource).toContain("error: { icono: 'cloud-off', texto: 'No se pudo guardar' }");
+    // La salida pasa por la tarjeta y por la guardia del router (back/gesto).
+    expect(editorSource).toContain('async _confirmarSalida()');
+    expect(editorSource).toContain('_registrarGuardia()');
+    expect(editorSource).toContain('registrarGuardia');
+    // Red de seguridad ante cierre o app en segundo plano.
+    expect(editorSource).toContain("'pagehide'");
+    expect(editorSource).toContain("'visibilitychange'");
   });
 
   test('las flechas de orden del editor tienen blanco táctil en móvil', () => {
