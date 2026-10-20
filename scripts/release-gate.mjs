@@ -32,8 +32,8 @@ let appManifest = null;
 try { publicManifest = JSON.parse(publicManifestText); } catch {}
 try { appManifest = JSON.parse(appManifestText); } catch {}
 
-ok(Boolean(publicManifest && publicManifest.start_url === '/' && publicManifest.scope === '/' && publicManifest.display === 'standalone'), 'Manifest publico preparado para PWA standalone');
-ok(Boolean(appManifest && appManifest.start_url === '/' && appManifest.scope === '/' && appManifest.display === 'standalone'), 'Manifest de app preparado para PWA standalone');
+ok(Boolean(publicManifest && publicManifest.start_url === '/app/' && publicManifest.scope === '/' && publicManifest.display === 'standalone'), 'Manifest publico abre la SPA y conserva scope standalone');
+ok(Boolean(appManifest && appManifest.start_url === '/app/' && appManifest.scope === '/' && appManifest.display === 'standalone'), 'Manifest de app abre la SPA y conserva scope standalone');
 ok(existsSync(join(root, 'public/sw.js')), 'Service Worker presente');
 ok(existsSync(join(root, 'public/offline.html')), 'Fallback offline presente');
 ok(existsSync(join(root, 'vercel.json')), 'Configuracion Vercel presente');

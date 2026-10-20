@@ -63,7 +63,7 @@ if (existsSync(manifestPath)) {
   let manifest;
   try { manifest = JSON.parse(readFileSync(manifestPath, 'utf8')); } catch {}
   check(manifest?.display === 'standalone', 'Manifest usa display standalone');
-  check(manifest?.start_url === '/' && manifest?.scope === '/', 'Manifest conserva scope raiz');
+  check(manifest?.start_url === '/app/' && manifest?.scope === '/', 'Manifest abre la SPA dentro del scope raiz');
 }
 
 const assets = filesUnder('assets');

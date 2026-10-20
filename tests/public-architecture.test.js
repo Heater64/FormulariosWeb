@@ -44,6 +44,7 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(appHtml).toContain('js/core/sw-register.js');
     expect(read('js/core/sw-register.js')).toContain('serviceWorker.register');
     expect(manifest.display).toBe('standalone');
+    expect(manifest.start_url).toBe('/app/');
     expect(manifest.icons.length).toBeGreaterThan(0);
     expect(sw).toContain("addEventListener('install'");
     expect(sw).toContain("addEventListener('fetch'");
@@ -56,9 +57,10 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(swRegister).not.toContain('serviceWorker.controller.postMessage');
   });
 
-  test('el login público queda dentro del mismo scope standalone que /app', () => {
+  test('la PWA abre la SPA dentro del mismo scope standalone', () => {
     expect(publicHtml).toContain('<link rel="manifest" href="/manifest.json">');
-    expect(publicManifest.start_url).toBe('/');
+    // La PWA debe reabrir la SPA que restaura la sesión, no la landing pública.
+    expect(publicManifest.start_url).toBe('/app/');
     expect(publicManifest.scope).toBe('/');
     expect(publicManifest.display).toBe('standalone');
     expect(publicManifest.icons.length).toBeGreaterThan(0);
