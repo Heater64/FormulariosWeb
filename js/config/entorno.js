@@ -18,6 +18,11 @@
     supabaseUrl: env.SUPABASE_URL || 'https://josxcvncescqqlajahkh.supabase.co',
     supabaseAnonKey: env.SUPABASE_ANON_KEY || 'sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8',
 
+    // Clave pública VAPID para Web Push en la PWA (pública por diseño; la
+    // privada vive solo como secreto de la Edge Function enviar-push).
+    // Vacía = los avisos de navegador no se ofrecen.
+    vapidPublicKey: env.VAPID_PUBLIC_KEY || '',
+
     // Modo demo: por defecto DESACTIVADO en cualquier build. Solo se habilita
     // cuando la plataforma de despliegue inyecta window.ENV.MODO_DEMO === true
     // (nunca hardcodeado en el código de las vistas).

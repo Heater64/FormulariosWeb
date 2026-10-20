@@ -866,6 +866,9 @@
 
       extra.style.marginTop = 'var(--md)';
       pantallaMensaje({ icono: '✓', titulo: 'Resultado', texto: res.titulo || 'Examen', extra: extra });
+      var lienzo = $('lienzo');
+      lienzo.classList.remove('lienzo--estrecho', 'lienzo--centrado');
+      lienzo.classList.add('lienzo--correccion');
     } else {
       var aviso = el('div', 'aviso aviso--warn');
       aviso.appendChild(el('strong', null, 'Entrega registrada. '));
@@ -997,6 +1000,9 @@
         texto: 'Este enlace no incluye el identificador del examen. Pide a tu profesor que te lo envíe de nuevo.'
       });
       return;
+    }
+    if (window.PwaPill) {
+      window.PwaPill.montar({ contenedor: document.getElementById('lienzo'), id: estado.token, esExamen: true });
     }
 
     rpc('fb_estado_enlace', { p_token: estado.token })

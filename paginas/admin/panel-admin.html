@@ -3,8 +3,16 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="theme-color" content="#FFFFFF">
   <title>FormsBiblicos — Centro de Administración</title>
   <link rel="icon" href="../../assets/iconos/icono.svg" type="image/svg+xml">
+  <!-- Preconexiones: se abren los sockets antes de pedir los recursos externos
+       (CDN de Supabase y el propio backend). Mismo patrón que index.html. -->
+  <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
+  <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
+  <!-- Tema inicial (bloqueante, pre-CSS): igual que en index.html, evita el
+       flash de tema y aplica data-theme desde localStorage antes de pintar. -->
+  <script src="../../js/core/theme-init.js"></script>
   <!-- CSS: Settings -->
   <link rel="stylesheet" href="../../css/00-settings/_tokens.css">
   <link rel="stylesheet" href="../../css/00-settings/_colores.css">
@@ -36,29 +44,37 @@
   <link rel="stylesheet" href="../../css/05-componentes/_alerta.css">
   <link rel="stylesheet" href="../../css/05-componentes/_skeleton.css">
   <link rel="stylesheet" href="../../css/05-componentes/_admin-panel.css">
+  <link rel="stylesheet" href="../../css/05-componentes/_barra-navegacion-inferior.css">
   <!-- CSS: Utilities -->
   <link rel="stylesheet" href="../../css/06-utilidades/_utilidades.css">
   <link rel="stylesheet" href="../../css/06-utilidades/_accesibilidad.css">
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <script src="../../js/vendor/lucide.min.js"></script>
-  <script src="../../js/core/store.js"></script>
-  <script src="../../js/core/eventBus.js"></script>
-  <script src="../../js/core/router.js"></script>
-  <script src="../../js/datos/supabase-client.js"></script>
-  <script src="../../js/datos/auth-repository.js"></script>
-  <script src="../../js/datos/admin-repository.js"></script>
-  <script src="../../js/datos/memorizacion-repository.js"></script>
-  <script src="../../js/datos/sugerencias-repository.js"></script>
-  <script src="../../js/utilidades/dom-helpers.js"></script>
-  <script src="../../js/utilidades/iconos.js"></script>
-  <script src="../../js/utilidades/skeleton.js"></script>
-  <script src="../../js/dominio/progreso-lectura.js"></script>
-  <script src="../../js/dominio/repeticion-espaciada.js"></script>
-  <script src="../../js/componentes/profile-editor.js"></script>
-  <script src="../../js/vistas/admin/admin-comunes.js"></script>
-  <script src="../../js/vistas/admin/vista-panel-admin.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
+  <script src="../../js/vendor/lucide.min.js" defer></script>
+  <script src="../../js/core/store.js" defer></script>
+  <script src="../../js/core/eventBus.js" defer></script>
+  <script src="../../js/core/router.js" defer></script>
+  <script src="../../js/config/entorno.js" defer></script>
+  <script src="../../js/core/errores.js" defer></script>
+  <script src="../../js/datos/supabase-client.js" defer></script>
+  <script src="../../js/datos/auth-repository.js" defer></script>
+  <script src="../../js/datos/admin-repository.js" defer></script>
+  <script src="../../js/datos/examenes-repository.js" defer></script>
+  <script src="../../js/datos/memorizacion-repository.js" defer></script>
+  <script src="../../js/datos/sugerencias-repository.js" defer></script>
+  <script src="../../js/utilidades/preferencias.js" defer></script>
+  <script src="../../js/utilidades/dom-helpers.js" defer></script>
+  <script src="../../js/utilidades/iconos.js" defer></script>
+  <script src="../../js/utilidades/skeleton.js" defer></script>
+  <script src="../../js/dominio/progreso-lectura.js" defer></script>
+  <script src="../../js/dominio/repeticion-espaciada.js" defer></script>
+  <script src="../../js/componentes/profile-editor.js" defer></script>
+  <script src="../../js/vistas/admin/admin-comunes.js" defer></script>
+  <script src="../../js/vistas/admin/vista-panel-admin.js" defer></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // Aplicar el tema y ajustes del usuario (oscuro, contraste, texto
+      // grande) igual que en el SPA; sin esto la página ignora sus ajustes.
+      if (window.preferencias) window.preferencias.aplicar();
       // Restaurar sesión persistida (la guarda el SPA en localStorage/sessionStorage)
       const guardado = localStorage.getItem('fb_usuario') || sessionStorage.getItem('fb_usuario');
       if (guardado) {
@@ -72,14 +88,58 @@
       }
       // El botón "← Volver" de la vista usa router.navegar; en esta página standalone
       // no hay rutas registradas, así que redirigimos al SPA manualmente.
-      window.vistaPanelAdmin._volverAlSpa = () => {
-        window.location.href = '../../index.html#!/perfil';
+      // Se vuelve al origen (?origen=cuenta|perfil); por defecto a la cuenta.
+      // La lista blanca evita redirecciones abiertas vía query manipulado.
+      // Barra de navegación con los mismos ítems que el SPA según el rol. Los
+      // enlaces van al SPA (index.html); owner y admin aterrizan aquí en "Inicio".
+      const renderizarNav = (usuario) => {
+        const nav = document.getElementById('barra-navegacion');
+        if (!nav) return;
+        const E = (v) => window.helpers.escapeHtml(v == null ? '' : String(v));
+        let marca = 'FormsBiblicos';
+        try {
+          const c = JSON.parse(localStorage.getItem('fb_marca') || 'null');
+          if (c && c.marca_nombre) marca = c.marca_nombre;
+        } catch (e) { /* caché corrupta: nombre por defecto */ }
+        const SPA = '../../index.html#!';
+        const rol = (usuario.rol || '').trim().toLowerCase();
+        const items = rol === 'owner'
+          ? [
+              { ruta: 'panel-admin.html', icono: 'settings', texto: 'Panel de admin', activo: true },
+              { ruta: SPA + '/cuenta', icono: 'user', texto: 'Cuenta' }
+            ]
+          : [
+              { ruta: SPA + '/inicio', icono: 'home', texto: 'Inicio' },
+              { ruta: SPA + '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
+              { ruta: SPA + '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones' },
+              { ruta: SPA + '/entregas', icono: 'inbox', texto: 'Entregas' },
+              { ruta: SPA + '/cuenta', icono: 'user', texto: 'Cuenta' }
+            ];
+        nav.innerHTML = `
+          <div class="barra-nav-inferior__marca">
+            <span class="barra-nav-inferior__logo" aria-hidden="true"><img src="../../assets/iconos/icono.svg" alt="" class="barra-nav-inferior__logo-img"></span>
+            <span class="barra-nav-inferior__marca-nombre">${E(marca)}</span>
+          </div>
+          <div class="barra-nav-inferior__items" role="tablist" aria-label="Navegación principal">
+            ${items.map((i) => `<a href="${E(i.ruta)}" class="barra-nav-inferior__item${i.activo ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" role="tab" aria-selected="${!!i.activo}" aria-label="${E(i.texto)}"><span class="barra-nav-inferior__icono">${window.Iconos.render(i.icono)}</span><span class="barra-nav-inferior__texto">${E(i.texto)}</span></a>`).join('')}
+          </div>`;
+        nav.style.display = '';
       };
-      window.vistaPanelAdmin.montar(document.getElementById('app-root'));
+      renderizarNav(usuario);
+      const _origen = new URLSearchParams(window.location.search).get('origen');
+      const _destino = _origen === 'perfil' ? 'perfil' : 'cuenta';
+      window.vistaPanelAdmin._volverAlSpa = () => {
+        window.location.href = '../../index.html#!/' + _destino;
+      };
+      // Reenviar el query (?tab=...&mazo=...) como contexto para que los
+      // deep links (p. ej. desde Memorización) abran la pestaña indicada.
+      const query = new URLSearchParams(window.location.search);
+      window.vistaPanelAdmin.montar(document.getElementById('app-root'), { query });
     });
   </script>
 </head>
 <body>
+  <nav id="barra-navegacion" class="barra-nav-inferior"></nav>
   <main id="app-root"></main>
 </body>
 </html>

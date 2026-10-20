@@ -33,6 +33,7 @@
   window.vistaEntregas = {
     _examenId: null,
     _entregas: [],
+    _alumnos: [],
     _examenTitulo: '',
 
     async montar(raiz, params) {
@@ -53,7 +54,7 @@
           <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('inbox')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo">Entregas</h1>
-            <p class="adm-cabecera__sub">Elige un examen para ver quién ha respondido y corregir lo que falta.</p>
+            <p class="adm-cabecera__sub">Elige un examen para ver quién ha respondido, quién falta y corregir lo que falta.</p>
           </div>
         </header>
         <div id="contenido"><p class="adm-cabecera__sub">Cargando…</p></div>
@@ -70,7 +71,15 @@
       }
 
       const conEntregas = examenes.filter((ex) => Number(ex.num_entregas) > 0);
-      if (!conEntregas.length) {
+      // Seguimiento de la clase: exámenes ofrecidos que nadie ha entregado
+      // todavía. Solo publicado/cerrado: un borrador nunca se ofreció.
+      let numAlumnosClase = null;
+      try {
+        const usuariosClase = await window.adminRepository.listarUsuarios() || [];
+        numAlumnosClase = usuariosClase.filter((u) => u.rol === 'usuario' && u.activo !== false).length;
+      } catch (e) { numAlumnosClase = null; }
+      const sinEntregas = examenes.filter((ex) => Number(ex.num_entregas) === 0 && (ex.estado === 'publicado' || ex.estado === 'cerrado'));
+      if (!conEntregas.length && !sinEntregas.length) {
         contenido.innerHTML = `<div class="adm-vacio">
           <p class="adm-vacio__titulo">Todavía no hay entregas</p>
           <p>Publica un examen y comparte los enlaces con tus alumnos.</p>
@@ -78,7 +87,22 @@
         return;
       }
 
-      contenido.innerHTML = `<div class="adm-lista">${conEntregas.map((ex) => {
+      const metaSinEntregas = numAlumnosClase == null || numAlumnosClase === 0
+        ? 'Nadie ha entregado aún'
+        : numAlumnosClase + ' alumno(s) en clase · faltan todos';
+      const htmlSinEntregas = sinEntregas.length ? `<h2 class="adm-seccion__titulo" style="margin-top:var(--espaciado-lg)">Sin entregas todavía (${sinEntregas.length})</h2>
+        <div class="adm-lista">${sinEntregas.map((ex) => `
+          <div class="adm-fila">
+            <div class="adm-fila__principal">
+              <div class="adm-fila__titulo">${esc(ex.titulo)}</div>
+              <div class="adm-fila__meta"><span>${esc(metaSinEntregas)}</span></div>
+            </div>
+            <div class="adm-fila__acciones">
+              <button class="adm-btn adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('eye')} Ver seguimiento</button>
+            </div>
+          </div>`).join('')}</div>` : '';
+
+      contenido.innerHTML = (conEntregas.length ? `<div class="adm-lista">${conEntregas.map((ex) => {
         const porCorregir = Number(ex.por_corregir) || 0;
         const meta = [
           (Number(ex.num_entregas) || 0) + ' entregas',
@@ -96,7 +120,7 @@
             <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('eye')} Ver entregas</button>
           </div>
         </div>`;
-      }).join('')}</div>`;
+      }).join('')}</div>` : '') + htmlSinEntregas;
 
       contenido.querySelectorAll('[data-ir]').forEach((btn) => {
         btn.addEventListener('click', () => router.navegar(btn.dataset.ir));
@@ -129,11 +153,14 @@
       const contenido = raiz.querySelector('#contenido');
 
       try {
-        const [entregas, resumen] = await Promise.all([
+        const [entregas, resumen, usuarios] = await Promise.all([
           window.plataformaRepository.listarEntregas(this._examenId),
-          window.plataformaRepository.resumen().catch(() => null)
+          window.plataformaRepository.resumen().catch(() => null),
+          // Seguimiento de la clase: solo cuentas de alumno activas.
+          window.adminRepository.listarUsuarios().catch(() => [])
         ]);
         this._entregas = entregas || [];
+        this._alumnos = (usuarios || []).filter((u) => u.rol === 'usuario' && u.activo !== false);
         const examen = resumen && (resumen.examenes || []).find((e) => e.id === this._examenId);
         this._examenTitulo = examen ? examen.titulo : 'Examen';
       } catch (e) {
@@ -148,10 +175,11 @@
       const sub = raiz.querySelector('#subExamen');
       if (!titulo || !sub || !contenido.isConnected) return;
 
+      const faltan = this._faltan();
       titulo.textContent = this._examenTitulo;
       sub.textContent = this._entregas.length
-        ? `${this._entregas.length} entrega(s) · ${porCorregir} sin corregir`
-        : 'Sin entregas todavía';
+        ? `${this._entregas.length} entrega(s) · ${porCorregir} sin corregir` + (faltan.length ? ` · ${faltan.length} sin entregar` : '')
+        : ('Sin entregas todavía' + (faltan.length ? ` · faltan ${faltan.length}` : ''));
 
       this._pintarEntregas(contenido);
     },
@@ -162,13 +190,15 @@
           <p class="adm-vacio__titulo">Nadie ha entregado este examen</p>
           <p>Cuando un alumno use su enlace, aparecerá aquí.</p>
         </div>`;
-        return;
-      }
-
-      contenedor.innerHTML = `<div class="adm-lista">${this._entregas.map((entrega) => {
-        const nombre = entrega.alumno_nombre || 'Sin nombre';
+      } else {
+        contenedor.innerHTML = `<div class="adm-lista">${this._entregas.map((entrega) => {
+        // El intento hecho dentro de la app ya trae cuenta (alumno_id): si la
+        // fila aún no tiene nombre escrito, se muestra el de la cuenta para
+        // que nunca salga «Sin nombre» sin registro de quién rindió.
+        const nombre = entrega.alumno_nombre || entrega.alumno_asignado || 'Sin nombre';
         const meta = [];
         if (entrega.alumno_grupo) meta.push(entrega.alumno_grupo);
+        if (entrega.alumno_asignado && entrega.alumno_asignado !== nombre) meta.push('Asignado a ' + entrega.alumno_asignado);
         if (entrega.fecha_completado) meta.push('Entregado ' + window.panelUI.tiempoRelativo(entrega.fecha_completado));
         else meta.push('Empezado ' + window.panelUI.tiempoRelativo(entrega.fecha_inicio));
         if (entrega.corregido) meta.push('Nota ' + window.panelUI.numero(entrega.nota) + '/10');
@@ -185,17 +215,150 @@
             <div class="adm-fila__meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>
           </div>
           <div class="adm-fila__acciones">
+            <button class="adm-btn adm-btn--pequeno" type="button" data-asignar="${esc(entrega.intento_id)}">${window.Iconos.render('link')} ${entrega.alumno_id ? 'Cambiar cuenta' : 'Asignar a usuario'}</button>
             ${entrega.estado === 'en_progreso'
               ? '<span class="adm-cabecera__sub">Aún no ha entregado</span>'
               : `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(entrega.intento_id)}">${window.Iconos.render(entrega.corregido ? 'eye' : 'clipboard-check')} ${accion}</button>`}
           </div>
         </div>`;
       }).join('')}</div>`;
+      }
+      // Seguimiento de la clase: quién falta por entregar (y aviso si hay
+      // entregas sin asignar a una cuenta).
+      contenedor.insertAdjacentHTML('beforeend', this._htmlFaltan());
 
       contenedor.querySelectorAll('[data-abrir]').forEach((btn) => {
         btn.addEventListener('click', () => this._abrirCorreccion(btn.dataset.abrir));
       });
+      contenedor.querySelectorAll('[data-asignar]').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const entrega = this._entregas.find((t) => t.intento_id === btn.dataset.asignar);
+          if (entrega) this._abrirAsignacion(entrega);
+        });
+      });
       if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    // ── Asignar la entrega a la cuenta de un alumno ───────────────────────
+    /**
+     * Vincula un intento hecho por enlace con una cuenta de alumno (069).
+     * En cuanto la cuenta está fijada, el alumno ve esta nota en «Mis notas»
+     * al iniciar sesión; nadie más la ve. Si el nombre escrito en el enlace
+     * coincide con una cuenta, esa cuenta se preselecciona como sugerencia.
+     */
+    async _abrirAsignacion(entrega) {
+      let usuarios = [];
+      try {
+        usuarios = ((await window.adminRepository.listarUsuarios()) || [])
+          .filter((u) => u.rol === 'usuario' && u.activo !== false);
+      } catch (e) {
+        window.helpers.mostrarAlerta('No se pudieron cargar las cuentas: ' + e.message, 'error');
+        return;
+      }
+      const normalizar = (v) => String(v || '').trim().toLowerCase();
+      const nombre = normalizar(entrega.alumno_nombre);
+      const sugerido = nombre
+        ? usuarios.find((u) => normalizar(u.nombre_completo) === nombre || normalizar(u.username) === nombre) || null
+        : null;
+      const actual = entrega.alumno_id || null;
+      const opciones = ['<option value="">Sin asignar (solo el enlace)</option>'].concat(usuarios.map((u) => {
+        const seleccionada = actual ? u.id === actual : (sugerido && u.id === sugerido.id);
+        return `<option value="${esc(u.id)}"${seleccionada ? ' selected' : ''}>${esc(u.nombre_completo || u.username || u.id)}</option>`;
+      })).join('');
+      const avisoSugerencia = !actual && sugerido
+        ? `<p class="adm-campo__ayuda">${window.Iconos.render('info')} El nombre del enlace coincide con esta cuenta, así que aparece preseleccionada.</p>`
+        : '';
+      const modal = window.panelUI.modal({
+        titulo: 'Asignar a usuario',
+        cuerpoHtml: `<p>Entrega de <strong>${esc(entrega.alumno_nombre || entrega.alumno_asignado || 'Sin nombre')}</strong>. La cuenta elegida verá esta nota en «Mis notas» al iniciar sesión; nadie más.</p>
+          ${avisoSugerencia}
+          <div id="avisoAsignacion" class="adm-aviso adm-aviso--error" hidden></div>
+          <label>Cuenta de alumno<select id="cuentaAlumno">${opciones}</select></label>`,
+        pieHtml: `<button class="adm-btn" type="button" id="asignarCancelar">Cancelar</button>
+          <button class="adm-btn adm-btn--principal" type="button" id="asignarGuardar">Guardar</button>`
+      });
+      modal.pie.querySelector('#asignarCancelar').addEventListener('click', modal.cerrar);
+      const boton = modal.pie.querySelector('#asignarGuardar');
+      boton.addEventListener('click', async () => {
+        const id = modal.cuerpo.querySelector('#cuentaAlumno').value || null;
+        boton.disabled = true;
+        try {
+          const res = await window.plataformaRepository.asignarIntentoAlumno(entrega.intento_id, id);
+          // Refleja el cambio en la fila sin recargar toda la lista.
+          entrega.alumno_id = res ? res.alumno_id : id;
+          entrega.alumno_asignado = res ? res.alumno_asignado : null;
+          modal.cerrar();
+          if (res && res.ya_tenia_intento) {
+            window.helpers.mostrarAlerta('Cuenta asignada, pero ese alumno ya tenía otro intento de este examen: «Mis notas» mostrará ambos.', 'exito');
+          } else {
+            window.helpers.mostrarAlerta(id
+              ? 'Cuenta asignada: el alumno verá esta nota en «Mis notas».'
+              : 'Cuenta desasignada: la entrega queda solo en el enlace.', 'exito');
+          }
+          this._repintarLista();
+        } catch (e) {
+          boton.disabled = false;
+          const aviso = modal.cuerpo.querySelector('#avisoAsignacion');
+          aviso.textContent = e.message;
+          aviso.hidden = false;
+        }
+      });
+    },
+
+    /** Repinta la lista de entregas desde el estado en memoria. */
+    _repintarLista() {
+      const raiz = document.querySelector('#app-root');
+      const contenido = raiz && raiz.querySelector('#contenido');
+      if (contenido) this._pintarEntregas(contenido);
+    },
+
+    // ── Seguimiento de la clase: quién falta por entregar ───────────────
+    /**
+     * Una entrega cuenta para el alumno si trae su cuenta o si el nombre
+     * escrito en el enlace coincide con el suyo (aunque aún no esté
+     * asignada): así «faltan» nunca reclama a quien ya respondió; solo
+     * queda asignar esa entrega a su cuenta para que la vea en «Mis notas».
+     */
+    _alumnoHaEntregado(alumno) {
+      const normalizar = (v) => String(v || '').trim().toLowerCase();
+      const nombres = [alumno.nombre_completo, alumno.username].map(normalizar).filter(Boolean);
+      return (this._entregas || []).some((t) => {
+        if (t.alumno_id && t.alumno_id === alumno.id) return true;
+        const escrito = normalizar(t.alumno_nombre);
+        return escrito !== '' && nombres.indexOf(escrito) !== -1;
+      });
+    },
+
+    /** Alumnos de la clase (cuentas activas) sin entrega de este examen. */
+    _faltan() {
+      return (this._alumnos || []).filter((a) => !this._alumnoHaEntregado(a));
+    },
+
+    /** Sección «Faltan por entregar» (vacía si la clase no tiene alumnos). */
+    _htmlFaltan() {
+      const alumnos = this._alumnos || [];
+      if (!alumnos.length) return '';
+      const faltan = alumnos.filter((a) => !this._alumnoHaEntregado(a));
+      const sinAsignar = (this._entregas || []).filter((t) => !t.alumno_id).length;
+      const avisoSinAsignar = sinAsignar > 0
+        ? `<p class="adm-campo__ayuda">${window.Iconos.render('info')} Hay ${sinAsignar} entrega(s) sin asignar a una cuenta: asígnalas para que aparezcan en «Mis notas».</p>`
+        : '';
+      if (!faltan.length) {
+        return `<section aria-label="Seguimiento de la clase" style="margin-top:var(--espaciado-md)">
+          <div class="adm-aviso adm-aviso--exito">${window.Iconos.render('check')} Toda la clase ha entregado este examen.</div>
+          ${avisoSinAsignar}
+        </section>`;
+      }
+      return `<section aria-label="Seguimiento de la clase" style="margin-top:var(--espaciado-md)">
+        <h2 class="adm-seccion__titulo">${window.Iconos.render('users')} Faltan por entregar (${faltan.length})</h2>
+        ${avisoSinAsignar}
+        <div class="adm-lista">${faltan.map((a) => `
+          <div class="adm-fila">
+            <div class="adm-fila__principal">
+              <div class="adm-fila__titulo">${esc(window.helpers.nombreAlumno(a))}</div>
+            </div>
+          </div>`).join('')}</div>
+      </section>`;
     },
 
     // ── Corrección de una entrega ─────────────────────────────────────────
@@ -236,7 +399,7 @@
       });
 
       const modal = window.panelUI.modal({
-        titulo: (entrega.alumno_nombre || 'Alumno') + (entrega.alumno_grupo ? ' · ' + entrega.alumno_grupo : ''),
+        titulo: (entrega.alumno_nombre || entrega.alumno_asignado || 'Alumno') + (entrega.alumno_grupo ? ' · ' + entrega.alumno_grupo : ''),
         cuerpoHtml: this._htmlCorreccion(entrega, decisiones),
         pieHtml: `<button class="adm-btn" type="button" data-rol="cerrar">Cerrar</button>
           <button class="adm-btn adm-btn--principal" type="button" id="btnGuardarCorreccion">Guardar corrección</button>`,

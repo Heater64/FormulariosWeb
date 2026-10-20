@@ -401,7 +401,7 @@ describe('examen completo: crear (8 tipos) → responder → corregir → revisa
     await esperar(() => pareja(0) === 0);
     expect(pareja(1)).toBe(1);
 
-    await esperar(() => /8\/8 respondidas/.test(raiz.querySelector('#contadorProgreso').textContent));
+    await esperar(() => /8 de 8 respondidas/.test(raiz.querySelector('#contadorProgreso').textContent));
 
     raiz.querySelector('#btnEntregar').click();
     const confirmar = await esperar(() => w.document.querySelector('.modal-overlay [data-confirmar]'));
@@ -517,46 +517,42 @@ describe('examen completo: crear (8 tipos) → responder → corregir → revisa
     await montarEn(w.vistaExamenTomar, { id: BD.examen.id });
 
     expect(BD.llamadas.resultado, 'el resultado se pide al servidor tras corregir').toBe(1);
-    expect(raiz.querySelector('.resultado-hero__nota').textContent).toBe('8.8');
+    expect(raiz.querySelector('.correccion-marca__nota').textContent).toBe('8,75');
+    expect(raiz.querySelector('.correccion-detalle__val').textContent).toBe('88 %');
 
-    const stats = raiz.querySelectorAll('.resultado-stat__valor');
-    expect(stats[0].textContent).toBe('7');    // correctas
-    expect(stats[1].textContent).toBe('1');    // incorrectas
-    expect(stats[2].textContent).toBe('88%');  // precisión
-
-    const tarjetas = raiz.querySelectorAll('.resultado-pregunta');
+    const tarjetas = raiz.querySelectorAll('.correccion-pregunta');
     expect(tarjetas).toHaveLength(8);
-    expect(Array.from(tarjetas).filter((t) => t.className.includes('--ok'))).toHaveLength(7);
-    expect(Array.from(tarjetas).filter((t) => t.className.includes('--ko'))).toHaveLength(1);
+    expect(raiz.querySelectorAll('.correccion-pregunta__marca--ok')).toHaveLength(7);
+    expect(raiz.querySelectorAll('.correccion-pregunta__marca--mal')).toHaveLength(1);
 
     const idx = (tipo) => preguntasGuardadas.findIndex((p) => p.tipo === tipo);
 
     // La incorrecta (varias_opciones) muestra la respuesta del alumno Y la correcta
     const varias = tarjetas[idx('varias_opciones')];
-    expect(varias.className).toContain('resultado-pregunta--ko');
+    expect(varias.querySelector('.correccion-pregunta__marca--mal')).not.toBeNull();
     expect(varias.textContent).toContain('Sabiduría');
     expect(varias.textContent).toContain('Respuesta correcta');
     expect(varias.textContent).toContain('Sabiduría, Consejo');
 
     // Cada tipo se lee en formato legible
     expect(tarjetas[idx('verdadero_falso')].textContent).toContain('Falso');
-    expect(tarjetas[idx('verdadero_falso')].className).toContain('--ok');
+    expect(tarjetas[idx('verdadero_falso')].querySelector('.correccion-pregunta__marca--ok')).not.toBeNull();
     expect(tarjetas[idx('multiple')].textContent).toContain('Génesis');
     expect(tarjetas[idx('relacionar')].textContent).toContain('Moisés → Éxodo');
     expect(tarjetas[idx('ordenar')].textContent).toContain('Génesis → Éxodo → Levítico');
-    expect(tarjetas[idx('ordenar')].textContent).toContain('1/1 pts');
+    expect(tarjetas[idx('ordenar')].querySelector('.correccion-pregunta__puntos').textContent).toContain('1 / 1');
     expect(tarjetas[idx('completar')].textContent).toContain('verdad');
     expect(tarjetas[idx('respuesta_corta')].textContent).toContain('Belén');
     expect(tarjetas[idx('texto_largo')].textContent).toContain('prójimo');
 
     // Los comentarios del profesor se ven: el general y el de cada pregunta
-    expect(raiz.querySelector('.resultado-obs__texto').textContent)
+    expect(raiz.querySelector('.correccion-observaciones').textContent)
       .toContain('Has mejorado respecto a la entrega anterior.');
-    expect(tarjetas[idx('varias_opciones')].querySelector('.resultado-pregunta__comentario').textContent)
+    expect(tarjetas[idx('varias_opciones')].querySelector('.correccion-pregunta__comentario').textContent)
       .toContain('Había dos opciones correctas');
-    expect(tarjetas[idx('texto_largo')].querySelector('.resultado-pregunta__comentario').textContent)
+    expect(tarjetas[idx('texto_largo')].querySelector('.correccion-pregunta__comentario').textContent)
       .toContain('Buen desarrollo');
-    expect(tarjetas[idx('multiple')].querySelector('.resultado-pregunta__comentario'), 'sin comentario no se pinta')
+    expect(tarjetas[idx('multiple')].querySelector('.correccion-pregunta__comentario'), 'sin comentario no se pinta')
       .toBeNull();
   });
 

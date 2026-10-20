@@ -95,7 +95,7 @@
 
         // Navegar a /inicio ANTES de esperar el welcome (1200ms): evita que un
         // cambio de ruta del usuario durante el arranque sea sobrescrito.
-        const esPrimeraVez = !localStorage.getItem('fb_setup_completado') &&
+        const esPrimeraVez = !localStorage.getItem('fb_setup_completado:' + usuario.id) &&
           (!usuario.preferencias || (usuario.preferencias.tema !== null && !usuario.preferencias.tema));
                           
         if (esPrimeraVez) {
@@ -276,7 +276,7 @@
         try { 
           await window.supabaseClient.from('perfiles').update({ preferencias: JSON.stringify(prefs) }).eq('id', usuario.id); 
         } catch (e) {}
-        localStorage.setItem('fb_setup_completado', 'true');
+        localStorage.setItem('fb_setup_completado:' + usuario.id, 'true');
         overlay.remove();
         window.helpers.mostrarAlerta('Preferencias guardadas.', 'exito');
       };
@@ -407,6 +407,12 @@
           if (window.helpers) window.helpers.mostrarAlerta('Tu cuenta ha sido desactivada.', 'error');
           return;
         }
+        // Modo mantenimiento: cerrar la sesión de cualquiera que no sea owner.
+        if (servidor.rol !== 'owner' && window.authRepository && await window.authRepository.mantenimientoActivo(sb)) {
+          await window.authRepository.cerrarSesion();
+          if (window.helpers) window.helpers.mostrarAlerta('La aplicación está en mantenimiento. Inténtalo más tarde.', 'error');
+          return;
+        }
         // Fusionar: el servidor gana en rol/activo/grupo_id y datos de perfil.
         // Así un `rol` forjado en localStorage se corrige en cuanto hay conexión.
         // Los campos que el servidor devuelve null NO pisan los locales (p.ej.
@@ -505,6 +511,19 @@
         document.body.classList.add('fb-sin-nav');
         return;
       }
+      // Examen en curso (alumno): sin navegación hasta entregar. El examen es
+      // de intento único y la barra distraería o sacaría al alumno a mitad;
+      // la propia vista de examen ofrece «Salir» (guarda borrador) y al
+      // entregar se vuelve a la lista, donde la barra reaparece sola.
+      const rutaActualNav = router.pathActual();
+      const esAlumnoExamen = (usuario.rol || '').trim().toLowerCase() === 'usuario'
+        && typeof rutaActualNav === 'string' && rutaActualNav.startsWith('/tomar/');
+      if (esAlumnoExamen) {
+        nav.innerHTML = '';
+        nav.style.display = 'none';
+        document.body.classList.add('fb-sin-nav');
+        return;
+      }
       nav.style.display = '';
       document.body.classList.remove('fb-sin-nav');
 
@@ -522,13 +541,26 @@
       } catch (e) { /* caché corrupta: usar nombre por defecto */ }
 
       // Navegación del panel privado: pocas secciones y siempre las mismas.
-      const items = [
-        { ruta: '/inicio', icono: 'home', texto: 'Inicio' },
-        { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
-        { ruta: '/entregas', icono: 'inbox', texto: 'Entregas' },
-        { ruta: '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones' },
+      // El alumno solo ve su inicio (notas) y su cuenta.
+      const esAlumno = (usuario.rol || '').trim().toLowerCase() === 'usuario';
+      const itemsAlumno = [
+        { ruta: '/inicio', icono: 'home', texto: 'Mis notas' },
         { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
       ];
+      const itemsAdmin = [
+        { ruta: '/inicio', icono: 'home', texto: 'Inicio' },
+        { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
+        { ruta: '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones' },
+        { ruta: '/entregas', icono: 'inbox', texto: 'Entregas' },
+        { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
+      ];
+      // Owner solo ve el panel de administración y su cuenta.
+      const esOwner = (usuario.rol || '').trim().toLowerCase() === 'owner';
+      const itemsOwner = [
+        { ruta: '/admin', icono: 'settings', texto: 'Panel de admin' },
+        { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
+      ];
+      const items = esAlumno ? itemsAlumno : (esOwner ? itemsOwner : itemsAdmin);
       const destinoCuenta = '/cuenta';
       const rutaActual = router.pathActual();
       const esActivo = (r) => rutaActual === r
@@ -666,7 +698,31 @@
       // /login ya no es una pantalla del SPA: cualquier navegación a esa ruta
       // (logout, guardia, enlace antiguo guardado) redirige al login normal.
       router.registrar('/login', { montar: () => irAlLogin() });
-      router.registrar('/inicio', window.vistaPanel);
+      // /admin no es una vista del SPA: el panel vive en la página standalone
+      // (tiene su propia sesión y montaje). Sin esta ruta, el botón "Centro
+      // de Administración" del perfil caía en "Página no encontrada".
+      // Se reenvía el query (?tab=...&mazo=...) para no romper deep links.
+      router.registrar('/admin', {
+        montar: (raiz, contexto) => {
+          const q = contexto && contexto.query ? new URLSearchParams(contexto.query).toString() : '';
+          window.location.href = 'paginas/admin/panel-admin.html' + (q ? '?' + q : '');
+        }
+      });
+      // /inicio depende del rol: el alumno ve sus notas; el owner entra a la
+      // administración general (página standalone); admin y editor ven el
+      // resumen de inicio, no el panel de administración.
+      const misNotas = this._vistaLazy(['./js/vistas/vista-mis-notas.js'], () => window.vistaMisNotas);
+      router.registrar('/inicio', {
+        montar: (raiz, params) => {
+          const rol = ((store.obtener('usuario') || {}).rol || '').trim().toLowerCase();
+          if (rol === 'usuario') return misNotas.montar(raiz, params);
+          if (rol === 'owner') {
+            window.location.href = 'paginas/admin/panel-admin.html';
+            return undefined;
+          }
+          return window.vistaPanel.montar(raiz, params);
+        }
+      });
       router.registrar('/examenes', window.vistaExamenes);
       router.registrar('/cuenta', this._vistaLazy(['./js/vistas/vista-cuenta.js'], () => window.vistaCuenta));
 
@@ -677,6 +733,8 @@
       router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
       router.registrar('/entregas', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
       router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
+      // Vista del alumno con su corrección (aciertos/fallos). Enlazada desde «Mis exámenes».
+      router.registrar('/tomar/:id', this._vistaLazy(['./js/vistas/vista-examen-tomar.js'], () => window.vistaExamenTomar));
       // Evaluaciones: sección que agrupa exámenes en una rejilla de notas.
       // El listado se registra antes que el detalle por el orden del router.
       router.registrar('/evaluaciones', this._vistaLazy(['./js/vistas/vista-evaluaciones.js'], () => window.vistaEvaluaciones));

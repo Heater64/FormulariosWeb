@@ -64,9 +64,11 @@
         p_grupo_id: grupo_id || null
       });
       if (error) {
-        if (/ya existe|duplicate|unique/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
-        if (error) throw new Error(_traducir(error));
+        if (/ya existe|duplicate|unique/i.test(error.message || '')) throw new Error('Ese nombre de usuario ya existe.');
+        if (/No autorizado|admin de una clase|admin de clase/i.test(error.message || '')) throw new Error('Tu cuenta no puede crear usuarios así: revisa que tengas clase asignada y que el rol y el grupo sean de tu clase.');
+        throw new Error(_traducir(error));
       }
+      if (rol === 'admin' && grupo_id) await this.asignarClaseAAdmin(data, grupo_id);
       return { id: data };
     },
     async toggleActivo(usuarioId, activo) {
@@ -74,10 +76,20 @@
       const { error } = await sb().rpc('admin_toggle_activo', { p_usuario_id: usuarioId, p_activo: !!activo });
       if (error) if (error) throw new Error(_traducir(error));
     },
-    async cambiarRol(usuarioId, rol) {
+    async cambiarRol(usuarioId, rol, grupoId) {
       if (!sb()) throw new Error('Sin conexión');
       const { error } = await sb().rpc('admin_cambiar_rol', { p_usuario_id: usuarioId, p_rol: rol });
+      if (!error && rol === 'admin' && grupoId) await this.asignarClaseAAdmin(usuarioId, grupoId);
       if (error) if (error) throw new Error(_traducir(error));
+    },
+    // admin_actualizar_usuario/admin_crear_usuario solo fijan perfiles.grupo_id.
+    // La pertenencia (miembros_grupo) que usan las políticas RLS de la clase la
+    // escribe admin_asignar_clase_a_admin (070); sin esta llamada el admin no ve
+    // los datos de su clase aunque aparezca asignado en el panel.
+    async asignarClaseAAdmin(adminId, grupoId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const { error } = await sb().rpc('admin_asignar_clase_a_admin', { p_admin_id: adminId, p_grupo_id: grupoId });
+      if (error) throw new Error(_traducir(error));
     },
     // actorId se mantiene por compatibilidad con el panel; la RPC hace toda la
     // limpieza de FKs y reasigna los exámenes al owner autenticado.
@@ -113,6 +125,7 @@
         if (/ya existe|duplicate|unique/i.test(error.message)) throw new Error('Ese nombre de usuario ya existe.');
         if (error) throw new Error(_traducir(error));
       }
+      if (rol === 'admin' && grupo_id) await this.asignarClaseAAdmin(usuarioId, grupo_id);
     },
     async listarExamenes(actor) {
       if (!sb()) return [];
@@ -233,8 +246,9 @@
       return mapa;
     },
     async guardarConfiguracion(clave, valor) {
-      if (!sb()) return;
-      await sb().from('configuracion').upsert({ clave, valor, actualizado_en: new Date().toISOString() }, { onConflict: 'clave' });
+      if (!sb()) throw new Error('Sin conexión');
+      const { error } = await sb().from('configuracion').upsert({ clave, valor, actualizado_en: new Date().toISOString() }, { onConflict: 'clave' });
+      if (error) throw new Error(_traducir(error));
     },
 
     // ============================================================
@@ -306,15 +320,44 @@
       }
       return data;
     },
-    async eliminarExamen(id) {
+    // Papelera de exámenes (igual que en Mis exámenes): el borrado es suave
+    // (estado 'archivado') y solo desde la papelera se borra definitivamente.
+    // Delega en examenesRepository para no duplicar la lógica de
+    // config.papelera (cargado en paginas/admin/panel-admin.html).
+    _repoExamenes() {
+      if (!window.examenesRepository) throw new Error('Módulo de exámenes no disponible. Recarga el panel.');
+      return window.examenesRepository;
+    },
+    async moverExamenAPapelera(id) {
       if (!sb()) throw new Error('Sin conexión');
-      const { error } = await sb().from('examenes_personalizados').delete().eq('id', id);
-      if (error) throw error;
+      return this._repoExamenes().moverAPapelera(id);
+    },
+    async restaurarExamen(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      return this._repoExamenes().restaurar(id);
+    },
+    async eliminarExamenDefinitivo(id) {
+      if (!sb()) throw new Error('Sin conexión');
+      return this._repoExamenes().eliminarDefinitivo(id);
     },
 
     // ============================================================
     // NUEVO PANEL: Backups (tabla `backups`, migración 022)
     // ============================================================
+    // Comprueba la conexión real: una consulta mínima medida en ms y la sesión activa.
+    async comprobarSupabase() {
+      const inicio = performance.now();
+      if (!sb()) return { ok: false, latenciaMs: 0, error: 'Sin cliente Supabase' };
+      try {
+        const { error } = await sb().from('perfiles').select('id').limit(1);
+        const latenciaMs = Math.round(performance.now() - inicio);
+        if (error) return { ok: false, latenciaMs, error: _traducir(error) };
+        const { data: sesion } = await sb().auth.getSession();
+        return { ok: true, latenciaMs, sesionActiva: !!sesion?.session };
+      } catch (e) {
+        return { ok: false, latenciaMs: Math.round(performance.now() - inicio), error: e.message };
+      }
+    },
     async listarBackups() {
       if (!sb()) return [];
       try {
@@ -362,37 +405,51 @@
     },
     async restaurarBackup(id, actorId) {
       if (!sb()) throw new Error('Sin conexión');
-      const { data: b } = await sb().from('backups').select('*').eq('id', id).single();
-      if (!b || !b.snapshot) throw new Error('Copia no encontrada');
-      const s = b.snapshot || {};
+      const { data: b, error } = await sb().from('backups').select('*').eq('id', id).single();
+      if (error || !b || !b.snapshot) throw new Error('Copia no encontrada');
+      return this.restaurarSnapshot(b.snapshot, b.nombre, actorId);
+    },
+    // Restaura grupos y exámenes de un snapshot. Los perfiles se omiten: el RLS
+    // (028) no permite escribirlos desde el cliente y no hay RPC de restauración.
+    // Cada fila se comprueba: los fallos se devuelven en `errores`, no se tragan.
+    async restaurarSnapshot(snapshot, nombre, actorId) {
+      if (!sb()) throw new Error('Sin conexión');
+      const s = snapshot || {};
       const grupos = Array.isArray(s.grupos) ? s.grupos : [];
       const perfiles = Array.isArray(s.perfiles) ? s.perfiles : [];
       const examenes = Array.isArray(s.examenes) ? s.examenes : [];
-      // Restaurar grupos (upsert)
+      const errores = [];
+      let gruposOk = 0;
+      let examenesOk = 0;
       for (const g of grupos) {
         if (!g || !g.id) continue;
-        try { await sb().from('grupos').upsert({
+        const { error } = await sb().from('grupos').upsert({
           id: g.id,
           nombre: g.nombre || 'Grupo',
           descripcion: g.descripcion || '',
           admin_id: g.admin_id || null,
           creado_en: g.creado_en || new Date().toISOString()
-        }); } catch (e) {}
+        });
+        if (error) errores.push(`Grupo "${g.nombre || g.id}": ${_traducir(error)}`);
+        else gruposOk++;
       }
-      // ponytail: con el RLS cerrado (028) el cliente ya NO puede INSERT/upsert
-      // en perfiles (sin política de INSERT). Restaurar los perfiles requiere una
-      // RPC SECURITY DEFINER nueva (admin_restaurar_perfiles); hasta entonces se
-      // avisa y NO se omiten en silencio (evita falsa sensación de restauración).
-      if (perfiles.length) {
-        throw new Error('La restauración de perfiles requiere una RPC de admin pendiente (028). Grupos y exámenes sí se restauran.');
-      }
-      // Restaurar exámenes (upsert)
       for (const ex of examenes) {
         if (!ex || !ex.id) continue;
-        try { await sb().from('examenes_personalizados').upsert(ex); } catch (e) {}
+        const { error } = await sb().from('examenes_personalizados').upsert(ex);
+        if (error) errores.push(`Examen "${ex.titulo || ex.id}": ${_traducir(error)}`);
+        else examenesOk++;
       }
-      await this.registrarAuditoria('backup:restaurar', `Copia "${b.nombre}" restaurada (${perfiles.length} perfiles, ${grupos.length} grupos, ${examenes.length} exámenes)`, actorId);
-      return { perfiles: perfiles.length, grupos: grupos.length, examenes: examenes.length };
+      const resumen = {
+        grupos: gruposOk,
+        gruposTotal: grupos.length,
+        examenes: examenesOk,
+        examenesTotal: examenes.length,
+        perfilesOmitidos: perfiles.length,
+        errores
+      };
+      const detalle = `${gruposOk}/${grupos.length} grupos, ${examenesOk}/${examenes.length} exámenes, ${perfiles.length} perfiles omitidos` + (errores.length ? `, ${errores.length} errores` : '');
+      await this.registrarAuditoria('backup:restaurar', `Copia "${nombre || 'sin nombre'}" restaurada (${detalle})`, actorId);
+      return resumen;
     },
 
     // ============================================================
@@ -467,7 +524,8 @@
     },
     async limpiarSugerenciasRechazadas(actorId) {
       if (!sb()) throw new Error('Sin conexión');
-      const { data } = await sb().from('sugerencias').delete().eq('estado', 'rechazada').select('id');
+      const { data, error } = await sb().from('sugerencias').delete().eq('estado', 'rechazada').select('id');
+      if (error) throw new Error(_traducir(error));
       const n = (data || []).length;
       await this.registrarAuditoria('config:limpiar', `Sugerencias rechazadas eliminadas (${n})`, actorId);
       return n;
@@ -475,7 +533,9 @@
     async limpiarIntentosViejos(actorId) {
       if (!sb()) throw new Error('Sin conexión');
       const hace90 = new Date(Date.now() - 90 * 86400000).toISOString();
-      const { data } = await sb().from('intentos_examen_personalizado').delete().lt('creado_en', hace90).eq('estado', 'pendiente').select('id');
+      // Solo intentos 'pendiente' (nunca iniciados). 'en_progreso' no se toca.
+      const { data, error } = await sb().from('intentos_examen_personalizado').delete().lt('creado_en', hace90).eq('estado', 'pendiente').select('id');
+      if (error) throw new Error(_traducir(error));
       const n = (data || []).length;
       await this.registrarAuditoria('config:limpiar', `Intentos pendientes antiguos eliminados (${n})`, actorId);
       return n;

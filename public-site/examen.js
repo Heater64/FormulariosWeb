@@ -1001,6 +1001,9 @@
       });
       return;
     }
+    if (window.PwaPill) {
+      window.PwaPill.montar({ contenedor: document.getElementById('lienzo'), id: estado.token, esExamen: true });
+    }
 
     rpc('fb_estado_enlace', { p_token: estado.token })
       .then(function (ctx) {

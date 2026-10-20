@@ -36,6 +36,8 @@
 <script src="../js/core/errores.js" defer></script>
 <script src="../js/datos/supabase-client.js" defer></script>
 <script src="../js/datos/auth-repository.js" defer></script>
+<script src="../js/componentes/login-form.js" defer></script>
+<script src="../js/componentes/pwa-pill.js" defer></script>
 <script src="./login.js" defer></script>
 <style>
   *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
@@ -186,7 +188,7 @@
   }
 
   @media (min-width: 880px) {
-    .hero__layout { grid-template-columns: 5fr 4fr; gap: var(--2xl); }
+    .hero__layout { gap: var(--2xl); }
     .hero { padding: var(--3xl) var(--lg) var(--2xl); }
   }
 
@@ -194,67 +196,10 @@
 
   .hero__titulo {
     font-family: var(--fuente-display);
-    font-size: clamp(1.8rem, 8vw, 3.8rem);
+    font-size: clamp(1.4rem, 5vw, 2rem);
     font-weight: 800; line-height: 1.08; letter-spacing: -0.02em;
+    text-align: center;
     margin-bottom: var(--sm);
-  }
-
-  .hero__titulo em {
-    font-style: italic; font-weight: 500; color: var(--accento);
-    position: relative;
-  }
-
-  .hero__titulo em::after {
-    content: ''; position: absolute; bottom: 2px; left: 0; width: 100%; height: 8px;
-    background: var(--acento-glow); border-radius: 4px; z-index: -1;
-    transform: skewX(-3deg);
-  }
-
-  .hero__sub {
-    font-size: clamp(0.9rem, 2.5vw, 1.05rem);
-    color: var(--texto-sec); line-height: 1.65;
-    max-width: 48ch;
-  }
-
-  /* ── Versículo del día ── */
-  .versiculo {
-    position: relative;
-    background: var(--tarjeta); border: 1px solid var(--borde);
-    border-radius: var(--radio-lg); padding: var(--md);
-    box-shadow: var(--sombra-md);
-    display: flex; flex-direction: column; justify-content: center;
-  }
-  @media (min-width: 880px) {
-    .versiculo { padding: var(--xl); border-radius: var(--radio-xl); }
-  }
-
-  .versiculo__etiqueta {
-    font-size: var(--xxs); font-weight: 600; text-transform: uppercase;
-    letter-spacing: 0.1em; color: var(--accento); margin-bottom: var(--xs);
-    display: flex; align-items: center; gap: 6px;
-  }
-
-  .versiculo__etiqueta::before {
-    content: ''; width: 8px; height: 8px; border-radius: 50%;
-    background: var(--accento); animation: pulse 2s ease-in-out infinite;
-  }
-
-  @keyframes pulse {
-    0%, 100% { opacity: 1; transform: scale(1); }
-    50% { opacity: 0.5; transform: scale(0.8); }
-  }
-
-  .versiculo__texto {
-    font-family: var(--fuente-display);
-    font-size: clamp(0.95rem, 2.5vw, 1.35rem);
-    font-weight: 400; font-style: italic; line-height: 1.55;
-    color: var(--texto); margin-bottom: var(--xs);
-  }
-
-  .versiculo__ref {
-    font-family: var(--fuente-body); font-size: var(--xs);
-    font-weight: 600; color: var(--texto-ter);
-    letter-spacing: 0.02em;
   }
 
   /* ── LOGIN SECTION ── */
@@ -349,6 +294,50 @@
     animation: shake 0.4s var(--ease);
   }
   .login-card .error-msg.visible { display: flex; }
+  .login-card .campo__control { position: relative; }
+  .login-card .campo__control .campo__input { padding-left: 44px; }
+  .login-card .campo__control--toggle .campo__input { padding-right: 52px; }
+  .login-card .campo__icono {
+    position: absolute; left: 14px; top: 50%; transform: translateY(-50%);
+    width: 18px; height: 18px; color: var(--texto-ter); pointer-events: none;
+    transition: color var(--fast);
+  }
+  .login-card .campo__control:focus-within .campo__icono { color: var(--accento); }
+  .login-card .campo__input[aria-invalid="true"] { border-color: var(--error); }
+  .login-card .campo__input[aria-invalid="true"]:focus { box-shadow: 0 0 0 3px var(--error-soft); }
+  .login-card .campo__toggle {
+    position: absolute; right: 4px; top: 50%; transform: translateY(-50%);
+    display: flex; align-items: center; justify-content: center;
+    width: 40px; height: 40px; padding: 0; background: none; border: 0;
+    border-radius: var(--radio-sm); color: var(--texto-ter); cursor: pointer;
+    transition: color var(--fast), background var(--fast);
+  }
+  .login-card .campo__toggle:hover { color: var(--accento); background: var(--fondo-alt); }
+  .login-card .campo__toggle:focus-visible { outline: 2px solid var(--accento); outline-offset: 2px; }
+  .login-card .campo__toggle[aria-pressed="true"] { color: var(--accento); }
+  .login-card .campo__toggle .icono-ocultar,
+  .login-card .campo__toggle[aria-pressed="true"] .icono-mostrar { display: none; }
+  .login-card .campo__toggle[aria-pressed="true"] .icono-ocultar { display: block; }
+  .login-card__olvido {
+    display: flex; justify-content: flex-end; margin: -4px 0 var(--md);
+    font-size: var(--sm);
+  }
+  .login-card__olvido a {
+    color: var(--accento); text-decoration: none; font-weight: 600;
+    transition: color var(--fast);
+  }
+  .login-card__olvido a:hover { color: var(--accento-hover); text-decoration: underline; text-underline-offset: 3px; }
+  .login-card .btn-login-submit[aria-busy="true"]::after {
+    content: ''; display: inline-block; width: 14px; height: 14px; margin-left: 10px;
+    vertical-align: -2px; border: 2px solid currentColor; border-right-color: transparent;
+    border-radius: 50%; animation: fb-girar 0.7s linear infinite;
+  }
+  @keyframes fb-girar { to { transform: rotate(360deg); } }
+  @keyframes shake {
+    0%, 100% { transform: translateX(0); }
+    25% { transform: translateX(-4px); }
+    75% { transform: translateX(4px); }
+  }
 
   .login-card .btn-login-submit {
     width: 100%; padding: 12px var(--md);
@@ -382,18 +371,6 @@
   }
   :root[data-theme="dark"] .login-card .btn-login-submit { color: #0C0A09; }
   :root[data-theme="dark"] .login-card .btn-login-submit:hover { background: #60A5FA; color: #0C0A09; }
-
-  .login-card__footer {
-    text-align: center; margin-top: var(--lg);
-    font-size: var(--xs); color: var(--texto-ter);
-    padding-top: var(--md); border-top: 1px solid var(--borde);
-  }
-
-  .login-card__footer a {
-    color: var(--accento); text-decoration: none; font-weight: 600;
-    transition: color var(--fast);
-  }
-  .login-card__footer a:hover { color: var(--accento-hover); }
 
   /* ── CÓMO FUNCIONA ── */
   .como-funciona {
@@ -511,8 +488,8 @@
   html.fb-pwa .hero,
   html.fb-pwa .como-funciona,
   html.fb-pwa .faq,
-  html.fb-pwa .footer,
-  html.fb-pwa .login-card__footer { display: none; }
+  html.fb-pwa .footer { display: none; }
+
 
   /* La PWA empieza directamente en el acceso: no mostramos una segunda
      barra de navegación encima de la pantalla de login. */
@@ -539,13 +516,6 @@
     animation: fadeSlideUp 0.6s var(--ease-in) both;
   }
   .hero__contenido > *:nth-child(1) { animation-delay: 0ms; }
-  .hero__contenido > *:nth-child(2) { animation-delay: 80ms; }
-  .hero__contenido > *:nth-child(3) { animation-delay: 160ms; }
-
-  .versiculo {
-    animation: fadeSlideUp 0.6s var(--ease-in) both;
-    animation-delay: 240ms;
-  }
 
   .login-card {
     animation: fadeSlideUp 0.5s var(--ease-in) both;
@@ -625,7 +595,7 @@
     <span class="header__texto">FormsBiblicos</span>
   </a>
   <nav class="header__nav" aria-label="Navegación principal">
-    <button class="btn-login-nav" type="button">Iniciar sesión</button>
+    <button class="btn-login-nav" type="button" data-ir-login>Iniciar sesión</button>
   </nav>
 </header>
 
@@ -633,50 +603,14 @@
 <section class="hero">
   <div class="hero__layout">
     <div class="hero__contenido">
-      <h1 class="hero__titulo">Estudia la Biblia,<br><em>capítulo a capítulo.</em></h1>
-      <p class="hero__sub">Lectura guiada, memorización con repetición espaciada y evaluaciones personalizadas para tu grupo de estudio bíblico.</p>
-    </div>
-
-    <div class="versiculo">
-      <span class="versiculo__etiqueta">Versículo del día</span>
-      <p class="versiculo__texto">"Estudia para presentarte ante Dios aprobado, como obrero que no tiene de qué avergonzarse, que usa bien la palabra de verdad."</p>
-      <span class="versiculo__ref">2 Timoteo 2:15</span>
+      <h1 class="hero__titulo">FormsBiblicos</h1>
     </div>
   </div>
 </section>
 
 <!-- FORMULARIO LOGIN -->
 <section class="login-section" id="login">
-  <div class="login-card">
-    <div class="login-card__icono">
-      <img src="/assets/iconos/icono.svg" alt="" class="login-card__icono-img">
-    </div>
-    <h2 class="login-card__titulo">Iniciar sesión</h2>
-    <p class="login-card__sub">Accede con tu cuenta de grupo de estudio.</p>
-
-    <div class="error-msg" id="errorLoginHero">
-      <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 8v4"/><path d="M12 16h.01"/></svg>
-      <span id="errorLoginHeroTexto"></span>
-    </div>
-
-    <form id="loginFormHero" novalidate>
-      <div class="campo">
-        <label class="campo__label" for="loginUser">Correo o usuario</label>
-        <input class="campo__input" type="text" id="loginUser" placeholder="tu@correo.com o usuario" autocomplete="username" required>
-      </div>
-      <div class="campo">
-        <label class="campo__label" for="loginPassHero">Contraseña</label>
-        <input class="campo__input" type="password" id="loginPassHero" placeholder="Tu contraseña" autocomplete="current-password" required>
-      </div>
-      <button type="submit" class="btn-login-submit">Iniciar sesión</button>
-    </form>
-
-    <p class="login-card__footer">
-      <a href="recuperar.html">He olvidado mi contraseña</a><br>
-      ¿No tienes cuenta? <a href="registro.html">Crea una cuenta institucional</a><br>
-      ¿Ya perteneces a un grupo? <a href="contacto.html">Contacta a tu administrador</a>
-    </p>
-  </div>
+  <div id="loginFormMount"></div>
 </section>
 
 <!-- CÓMO FUNCIONA -->
@@ -686,23 +620,23 @@
     <div class="pasos">
       <div class="paso">
         <span class="paso__numero">①</span>
-        <h3 class="paso__titulo">Estudia</h3>
-        <p class="paso__desc">Lee capítulos de la Biblia con preguntas guiadas.</p>
+        <h3 class="paso__titulo">Crea</h3>
+        <p class="paso__desc">Crea exámenes a partir de tus libros y capítulos.</p>
       </div>
       <div class="paso">
         <span class="paso__numero">②</span>
-        <h3 class="paso__titulo">Memoriza</h3>
-        <p class="paso__desc">Guarda versículos y repasa con repetición espaciada.</p>
+        <h3 class="paso__titulo">Comparte</h3>
+        <p class="paso__desc">Comparte un enlace individual con cada alumno.</p>
       </div>
       <div class="paso">
         <span class="paso__numero">③</span>
-        <h3 class="paso__titulo">Examínate</h3>
-        <p class="paso__desc">Responde exámenes creados por tus profesores.</p>
+        <h3 class="paso__titulo">Responde</h3>
+        <p class="paso__desc">Tus alumnos responden el examen desde cualquier dispositivo.</p>
       </div>
       <div class="paso">
         <span class="paso__numero">④</span>
-        <h3 class="paso__titulo">Progresa</h3>
-        <p class="paso__desc">Sigue tu avance con estadísticas y logros.</p>
+        <h3 class="paso__titulo">Corrige</h3>
+        <p class="paso__desc">Revisa las entregas, corrige y evalúa desde el panel.</p>
       </div>
     </div>
   </div>
@@ -729,8 +663,8 @@
     </details>
 
     <details class="faq__item">
-      <summary class="faq__pregunta">¿Qué libros hay?</summary>
-      <p class="faq__respuesta">Todos los libros del Antiguo y Nuevo Testamento, organizados por capítulos.</p>
+      <summary class="faq__pregunta">¿Qué puedo hacer?</summary>
+      <p class="faq__respuesta">Crear exámenes a partir de los libros de la Biblia, compartirlos con tu grupo y corregir las entregas y evaluaciones desde el panel.</p>
     </details>
 
     <details class="faq__item">

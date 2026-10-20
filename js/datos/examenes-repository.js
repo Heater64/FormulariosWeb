@@ -7,20 +7,28 @@
         const cache = await window.cacheDatos.get(`examenes:grupo:${usuario?.grupo_id}`);
         return cache || [];
       }
+      // Un admin solo ve los exámenes que él creó; el resto de la clase queda fuera.
+      const esAdmin = (usuario.rol || '').toLowerCase() === 'admin';
+      const clave = esAdmin ? `examenes:admin:${usuario.id}` : `examenes:grupo:${usuario.grupo_id}`;
       try {
         const esAlumno = (usuario.rol || '').toLowerCase() === 'usuario';
         // La papelera es un estado más del examen ('archivado'), no una tabla
         // aparte: las listas normales lo excluyen y solo se ve en /examenes.
-        const respuesta = esAlumno
-          ? await sb().rpc('listar_examenes_alumno', { p_grupo_id: usuario.grupo_id })
-          : await sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id)
+        let respuesta;
+        if (esAlumno) {
+          respuesta = await sb().rpc('listar_examenes_alumno', { p_grupo_id: usuario.grupo_id });
+        } else {
+          let consulta = sb().from('examenes_personalizados').select('*').eq('grupo_id', usuario.grupo_id)
             .neq('estado', 'archivado').order('creado_en', { ascending: false });
+          if (esAdmin) consulta = consulta.eq('creado_por', usuario.id);
+          respuesta = await consulta;
+        }
         if (respuesta.error) throw respuesta.error;
         const lista = respuesta.data || [];
-        await window.cacheDatos.set(`examenes:grupo:${usuario.grupo_id}`, lista);
+        await window.cacheDatos.set(clave, lista);
         return lista;
       } catch (e) {
-        return await window.cacheDatos.get(`examenes:grupo:${usuario?.grupo_id}`) || [];
+        return await window.cacheDatos.get(clave) || [];
       }
     },
     async crearEvaluacion({ grupoId, creadoPor, titulo, asignatura, descripcion }) {
@@ -65,10 +73,10 @@
         if (!error) evs = data;
       } catch (e) { /* sin columna orden → fallback */ }
       if (evs === null) {
-        try {
-          const { data } = await sb().from('evaluaciones').select('*').eq('grupo_id', grupoId).order('creado_en', { ascending: true });
-          evs = data;
-        } catch (e2) { evs = []; }
+        // Un error real (p. ej. permisos) se propaga; no se confunde con «sin evaluaciones».
+        const { data, error } = await sb().from('evaluaciones').select('*').eq('grupo_id', grupoId).order('creado_en', { ascending: true });
+        if (error) throw error;
+        evs = data;
       }
       const evaluaciones = evs || [];
       if (evaluaciones.length) {

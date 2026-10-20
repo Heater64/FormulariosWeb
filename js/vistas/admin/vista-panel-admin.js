@@ -118,7 +118,12 @@
       this._inicioSesion = Date.now();
       try {
         const esOwner = ((usuario.rol || '').toString().trim().toLowerCase()) === 'owner';
-        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto] = await Promise.all(
+        if (!esOwner && !usuario.grupo_id) {
+          raiz.innerHTML = '<div class="o-contenedor u-mt-4"><h1>Clase pendiente de asignar</h1><p class="u-color-texto-secundario">Tu cuenta es administradora, pero todavía no está vinculada a una clase. Pide al propietario que te asigne una para acceder al panel.</p><button class="btn-primario u-mt-2" data-admin-volver>Volver</button></div>';
+          raiz.querySelector('[data-admin-volver]')?.addEventListener('click', () => this._volver());
+          return;
+        }
+        const [usuariosRaw, gruposRaw, examenesRaw, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto, estadoSupabase] = await Promise.all(
           esOwner
             ? [
                 window.adminRepository.listarUsuarios(usuario),
@@ -130,7 +135,8 @@
                 window.adminRepository.listarBackups(),
                 window.adminRepository.listarConfiguracion(),
                 window.sugerenciasRepository ? window.sugerenciasRepository.listarTodas() : Promise.resolve([]),
-                window.adminRepository.listarMensajesContacto().catch(() => [])
+                window.adminRepository.listarMensajesContacto().catch(() => []),
+                window.adminRepository.comprobarSupabase().catch(e => ({ ok: false, latenciaMs: 0, error: e.message }))
               ]
             : [
                 window.adminRepository.listarUsuarios(usuario),
@@ -142,7 +148,8 @@
                 Promise.resolve([]),
                 Promise.resolve({}),
                 Promise.resolve([]),
-                Promise.resolve([])
+                Promise.resolve([]),
+                Promise.resolve(null)
               ]
         );
 
@@ -161,7 +168,7 @@
             examenes = [];
           }
         }
-        this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto, usuario };
+        this._datos = { usuarios, grupos, examenes, stats, auditoria, resumenExamenes, backups, config, sugerencias, contacto, estadoSupabase, usuario };
         this._nivelActivo = esOwner ? 'owner' : 'admin';
         this._tabActivo = 'centro';
         // Deep link desde Memorización: /admin?tab=memorizacion&mazo=ID abre la gestión del mazo
@@ -242,7 +249,8 @@
     },
 
     _renderTabContent(raiz) {
-      const { usuarios, grupos, examenes, usuario } = this._datos;      if (this._nivelActivo === 'owner') {
+      const { usuarios, grupos, examenes, usuario } = this._datos;
+      if (this._nivelActivo === 'owner') {
         switch (this._tabActivo) {
           case 'centro': return this._renderCentro();
           case 'usuarios': return this._renderUsuarios(usuarios, usuario);
@@ -446,10 +454,18 @@
       const inicio = (pag - 1) * this._porPagina;
       const pagina = filtrados.slice(inicio, inicio + this._porPagina);
       const selCount = this._seleccion.size;
-      const { grupos } = this._datos;
-      const opcionesGrupo = [{ valor: 'todos', texto: 'Todos los grupos' }, { valor: 'sin-grupo', texto: 'Sin grupo' }].concat((grupos || []).map(g => ({ valor: g.id, texto: g.nombre })));
+      // Un admin sin clase asignada no ve usuarios ni puede crear: se explica
+      // el motivo en vez de mostrar una lista vacía muda.
+      const sinClase = !this._esOwner() && !usuario.grupo_id;
       return `
         <div class="admin-lista">
+          ${sinClase ? `<div class="admin-pendiente"><div class="admin-pendiente__item">
+            <span class="admin-pendiente__icono admin-pendiente__icono--info">${I('info')}</span>
+            <div class="admin-pendiente__info">
+              <p class="admin-pendiente__titulo">Aún no tienes clase asignada</p>
+              <p class="admin-pendiente__meta">Pide al propietario que te asigne una clase para ver a tus alumnos y crear usuarios.</p>
+            </div>
+          </div></div>` : ''}
           <div class="admin-lista-cabecera">
             <h3 class="admin-lista-cabecera__titulo">${I('users')} Usuarios <span class="admin-lista-cabecera__contador">(${usuarios.length})</span></h3>
             <div class="admin-lista-cabecera__acciones">
@@ -464,23 +480,6 @@
               <span class="admin-buscar__icono">${I('search')}</span>
               <input type="text" id="buscarUsuarios" placeholder="Buscar por nombre, username o rol..." value="${E(this._buscarUsuarios)}" aria-label="Buscar usuarios">
             </div>
-            <select class="admin-filtro-pill" id="filtroRolUsuarios" aria-label="Filtrar por rol">
-              <option value="todos">Todos los roles</option>
-              ${this._opcionesRolPermitidas(usuario).map(o => `<option value="${o.valor}" ${this._filtroRol === o.valor ? 'selected' : ''}>${o.texto}</option>`).join('')}
-            </select>
-            <select class="admin-filtro-pill" id="filtroGrupoUsuarios" aria-label="Filtrar por grupo">
-              ${opcionesGrupo.map(g => `<option value="${g.valor}" ${this._filtroGrupo === g.valor ? 'selected' : ''}>${g.texto}</option>`).join('')}
-            </select>
-            <select class="admin-filtro-pill" id="filtroEstadoUsuarios" aria-label="Filtrar por estado">
-              <option value="todos" ${this._filtroEstado === 'todos' ? 'selected' : ''}>Estado: todos</option>
-              <option value="activos" ${this._filtroEstado === 'activos' ? 'selected' : ''}>Activos</option>
-              <option value="inactivos" ${this._filtroEstado === 'inactivos' ? 'selected' : ''}>Bloqueados</option>
-            </select>
-            <select class="admin-filtro-pill" id="ordenUsuarios" aria-label="Ordenar usuarios">
-              <option value="actividad" ${this._ordenUsuarios === 'actividad' ? 'selected' : ''}>Última actividad</option>
-              <option value="nombre" ${this._ordenUsuarios === 'nombre' ? 'selected' : ''}>Nombre</option>
-              <option value="fecha" ${this._ordenUsuarios === 'fecha' ? 'selected' : ''}>Fecha de alta</option>
-            </select>
           </div>
 
           ${selCount > 0 ? `
@@ -635,13 +634,14 @@
       const filtrados = this._examenesFiltrados();
       const publicado = examenes.filter(e => e.estado === 'publicado').length;
       const borrador = examenes.filter(e => e.estado === 'borrador').length;
+      const archivados = examenes.filter(e => e.estado === 'archivado').length;
       const opcionesGrupo = [{ valor: 'todos', texto: 'Todos los grupos' }].concat((grupos || []).map(g => ({ valor: g.id, texto: g.nombre })));
       return `
         <div class="admin-lista">
           <div class="admin-lista-cabecera">
             <h3 class="admin-lista-cabecera__titulo">${I('file-text')} Exámenes <span class="admin-lista-cabecera__contador">(${examenes.length})</span></h3>
             <div class="admin-lista-cabecera__acciones">
-              <span class="u-fs-xs u-color-texto-terciario">${publicado} publicados · ${borrador} borradores</span>
+              <span class="u-fs-xs u-color-texto-terciario">${publicado} publicados · ${borrador} borradores${archivados ? ` · ${archivados} en papelera` : ''}</span>
               <button class="btn-primario u-fs-xs" id="btnCrearExamen">${I('plus')} Crear examen</button>
             </div>
           </div>
@@ -655,6 +655,7 @@
               <option value="todos" ${this._filtroExamenEstado === 'todos' ? 'selected' : ''}>Estado: todos</option>
               <option value="publicado" ${this._filtroExamenEstado === 'publicado' ? 'selected' : ''}>Publicados</option>
               <option value="borrador" ${this._filtroExamenEstado === 'borrador' ? 'selected' : ''}>Borradores</option>
+              <option value="archivado" ${this._filtroExamenEstado === 'archivado' ? 'selected' : ''}>En papelera</option>
             </select>
             <select class="admin-filtro-pill" id="filtroExamenGrupo" aria-label="Filtrar por grupo">
               ${opcionesGrupo.map(g => `<option value="${g.valor}" ${this._filtroExamenGrupo === g.valor ? 'selected' : ''}>${g.texto}</option>`).join('')}
@@ -663,10 +664,29 @@
 
           ${filtrados.length === 0
             ? window.adminComunes.vacio('file-text', 'Sin exámenes para mostrar', 'Crea un examen desde el editor o ajusta los filtros.')
-            : `<div class="admin-grid-tarjetas">
-                ${filtrados.map(ex => this._renderExamenFicha(ex, resumen[ex.id])).join('')}
-              </div>`}
+            : this._renderExamenesAgrupados(filtrados, resumen)}
         </div>`;
+    },
+
+    // El owner ve los exámenes de todas las clases: se agrupan por clase.
+    // Un admin solo recibe sus propios exámenes (ya filtrados en la RPC).
+    _renderExamenesAgrupados(lista, resumen) {
+      const nombreGrupo = (ex) => ex.grupos?.nombre
+        || this._datos.grupos.find(g => g.id === ex.grupo_id)?.nombre
+        || 'Sin grupo';
+      const porGrupo = new Map();
+      lista.forEach(ex => {
+        const clave = nombreGrupo(ex);
+        if (!porGrupo.has(clave)) porGrupo.set(clave, []);
+        porGrupo.get(clave).push(ex);
+      });
+      return [...porGrupo.entries()].map(([grupo, exs]) => `
+        <section class="admin-examenes-grupo" aria-label="Clase ${E(grupo)}">
+          <h4 class="admin-examenes-grupo__titulo">${I('layout')} ${E(grupo)} <span class="admin-lista-cabecera__contador">(${exs.length})</span></h4>
+          <div class="admin-grid-tarjetas">
+            ${exs.map(ex => this._renderExamenFicha(ex, resumen[ex.id])).join('')}
+          </div>
+        </section>`).join('');
     },
 
     _renderExamenFicha(ex, r) {
@@ -697,10 +717,13 @@
           </div>
           <div class="admin-examen-card__acciones">
             <button class="btn-primario u-fs-xs btn-ver-resultados" data-id="${ex.id}">${I('eye')} Ver respuestas</button>
-            <button class="btn-icono btn-editar-examen" data-id="${ex.id}" title="Editar" aria-label="Editar ${E(ex.titulo)}">${I('edit-3')}</button>
-            <button class="btn-icono btn-duplicar-examen" data-id="${ex.id}" title="Duplicar" aria-label="Duplicar ${E(ex.titulo)}">${I('copy')}</button>
-            ${ex.estado !== 'publicado' ? `<button class="btn-icono btn-icono--exito btn-publicar-examen" data-id="${ex.id}" title="Publicar" aria-label="Publicar ${E(ex.titulo)}">${I('send')}</button>` : ''}
-            <button class="btn-icono btn-icono--peligro btn-eliminar-examen" data-id="${ex.id}" data-titulo="${E(ex.titulo)}" title="Eliminar" aria-label="Eliminar ${E(ex.titulo)}">${I('trash-2')}</button>
+            ${ex.estado === 'archivado'
+              ? `<button class="btn-icono btn-icono--exito btn-restaurar-examen" data-id="${ex.id}" data-titulo="${E(ex.titulo)}" title="Restaurar" aria-label="Restaurar ${E(ex.titulo)}">${I('rotate-ccw')}</button>
+                <button class="btn-icono btn-icono--peligro btn-eliminar-definitivo" data-id="${ex.id}" data-titulo="${E(ex.titulo)}" title="Eliminar definitivamente" aria-label="Eliminar definitivamente ${E(ex.titulo)}">${I('trash-2')}</button>`
+              : `<button class="btn-icono btn-editar-examen" data-id="${ex.id}" title="Editar" aria-label="Editar ${E(ex.titulo)}">${I('edit-3')}</button>
+                <button class="btn-icono btn-duplicar-examen" data-id="${ex.id}" title="Duplicar" aria-label="Duplicar ${E(ex.titulo)}">${I('copy')}</button>
+                ${['borrador', 'cerrado'].includes(ex.estado) ? `<button class="btn-icono btn-icono--exito btn-publicar-examen" data-id="${ex.id}" title="Publicar" aria-label="Publicar ${E(ex.titulo)}">${I('send')}</button>` : ''}
+                <button class="btn-icono btn-icono--peligro btn-eliminar-examen" data-id="${ex.id}" data-titulo="${E(ex.titulo)}" title="Mover a la papelera" aria-label="Mover a la papelera ${E(ex.titulo)}">${I('trash-2')}</button>`}
           </div>
         </article>`;
     },
@@ -733,7 +756,7 @@
       return `
         <div class="o-pila">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <h3 style="margin:0">${I('brain')} Mazos de memorización <span class="u-fs-xs u-color-texto-terciario">(${mazos.length})</span></h3>
+            <h3 class="u-m-0">${I('brain')} Mazos de memorización <span class="u-fs-xs u-color-texto-terciario">(${mazos.length})</span></h3>
             <div class="o-flecha" style="gap:var(--espaciado-xs);flex-wrap:wrap">
               <button class="btn-secundario u-fs-xs" id="btnSembrarMazos">${I('sparkles')} Sembrar contenido</button>
               <button class="btn-secundario u-fs-xs" id="btnImportarMazo">${I('upload')} Importar</button>
@@ -781,7 +804,7 @@
         <div class="o-pila">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
             <button class="btn-secundario u-fs-xs" id="btnVolverMazosMem">${I('arrow-left')} Mazos</button>
-            <h3 style="margin:0">${I(mazo.icono || 'layers')} ${E(mazo.nombre)} <span class="u-fs-xs u-color-texto-terciario">(${tarjetas.length})</span></h3>
+            <h3 class="u-m-0">${I(mazo.icono || 'layers')} ${E(mazo.nombre)} <span class="u-fs-xs u-color-texto-terciario">(${tarjetas.length})</span></h3>
             <button class="btn-primario u-fs-xs" id="btnCrearTarjetaMem">${I('plus')} Nueva tarjeta</button>
           </div>
           <p class="u-fs-xs u-color-texto-terciario u-mt-1">${E(mazo.descripcion || '')} · Cada tarjeta tiene un tipo de ejercicio. Duplica o edita con los botones.</p>
@@ -827,7 +850,7 @@
       ];
       return `
         <div class="o-pila">
-          <h3 style="margin:0">${I('message-square')} Sugerencias (${sugerencias.length})</h3>
+          <h3 class="u-m-0">${I('message-square')} Sugerencias (${sugerencias.length})</h3>
           <div class="owner-sug-resumen">
             ${Object.entries(porEstado).map(([k, v]) => {
               const est = window.sugerenciasRepository ? window.sugerenciasRepository.estadoInfo(k) : { texto: k, clase: '' };
@@ -899,7 +922,7 @@
       const estado = (m) => m.estado === 'nuevo' ? 'Nuevo' : m.estado === 'en_proceso' ? 'En proceso' : m.estado === 'resuelto' ? 'Resuelto' : 'Spam';
       return `<div class="o-pila">
         <div class="o-flecha o-flecha--between" style="align-items:center;gap:var(--espaciado-sm);flex-wrap:wrap">
-          <div><h3 style="margin:0">${I('mail')} Contacto</h3><p class="u-fs-xs u-color-texto-terciario">Bandeja operativa · ${nuevos} nuevos · ${mensajes.length} total</p></div>
+          <div><h3 class="u-m-0">${I('mail')} Contacto</h3><p class="u-fs-xs u-color-texto-terciario">Bandeja operativa · ${nuevos} nuevos · ${mensajes.length} total</p></div>
           <span class="u-fs-xs u-color-texto-terciario">Responde desde cada dirección de correo del mensaje.</span>
         </div>
         ${mensajes.length ? `<div class="o-pila" style="gap:var(--espaciado-xs)">${mensajes.map(m => `<article class="admin-setting-row" data-contacto-id="${E(m.id)}" style="align-items:flex-start;gap:var(--espaciado-sm)">
@@ -924,7 +947,7 @@
       return `
         <div class="o-pila">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <h3 style="margin:0">${I('clipboard-list')} Auditoría</h3>
+            <h3 class="u-m-0">${I('clipboard-list')} Auditoría</h3>
             <span class="u-fs-xs u-color-texto-terciario" id="contadorAuditoria">${auditBuscada.length} registros</span>
           </div>
           <div class="owner-filtros">
@@ -987,7 +1010,7 @@
       const logo = c.marca_logo || '';
       return `
         <div class="o-pila">
-          <h3 style="margin:0">${I('palette')} Marca del centro</h3>
+          <h3 class="u-m-0">${I('palette')} Marca del centro</h3>
           <p class="u-fs-xs u-color-texto-terciario u-mt-1">Personaliza el nombre y el logotipo que se muestran en la aplicación (título y cabecera del panel).</p>
           <div class="admin-setting-row">
             <div>
@@ -1003,7 +1026,7 @@
             </div>
           </div>
           <div class="admin-marca__logo">
-            <img id="marcaLogoPreview" src="${logo}" alt="Logotipo actual" width="160" height="80" decoding="async" ${logo ? '' : 'hidden'}>
+            <img id="marcaLogoPreview" src="${E(logo)}" alt="Logotipo actual" width="160" height="80" decoding="async" ${logo ? '' : 'hidden'}>
             <button class="btn-secundario u-fs-xs" id="btnSubirLogo">${I('upload')} ${logo ? 'Cambiar logo' : 'Subir logo'}</button>
             ${logo ? `<button class="btn-secundario u-fs-xs" id="btnQuitarLogo" style="color:var(--color-error)">${I('trash-2')} Quitar</button>` : ''}
           </div>
@@ -1017,7 +1040,7 @@
     _renderNotificaciones() {
       return `
         <div class="o-pila">
-          <h3 style="margin:0">${I('bell')} Notificaciones personalizadas</h3>
+          <h3 class="u-m-0">${I('bell')} Notificaciones personalizadas</h3>
           <p class="u-fs-xs u-color-texto-terciario u-mt-1">Envía un anuncio a todos los usuarios de la plataforma. Recibirán una notificación nativa en sus dispositivos.</p>
           <div class="admin-seccion">
             <div class="admin-form o-pila" style="gap:var(--espaciado-sm)">
@@ -1050,19 +1073,20 @@
     _renderSistema() {
       const { backups } = this._datos;
       const modoMant = this._datos.config['modo_mantenimiento'] === '1';
+      const est = this._datos.estadoSupabase || { ok: false, error: 'Sin datos' };
       const backupItems = (backups || []).slice(0, 8);
       return `
         <div class="owner-sistema">
-          <h3 style="margin:0">${I('database')} Sistema</h3>
+          <h3 class="u-m-0">${I('database')} Sistema</h3>
           <p class="u-fs-xs u-color-texto-terciario" style="margin-top:-12px">Herramientas exclusivas del propietario.</p>
 
           ${window.adminComunes.seccion({
             icono: 'cloud', iconoClase: 'admin-seccion__icono--exito', titulo: 'Estado de Supabase', desc: 'Infraestructura en tiempo real',
             contenido: `
               <div class="admin-sistema">
-                ${window.adminComunes.sistemaFila('server', 'Servidor', 'Operativo', 'admin-indicador--ok')}
-                ${window.adminComunes.sistemaFila('database', 'Base de datos', 'Conectada', 'admin-indicador--ok')}
-                ${window.adminComunes.sistemaFila('lock', 'Autenticación', 'Activa', 'admin-indicador--ok')}
+                ${window.adminComunes.sistemaFila('server', 'Servidor', est.ok ? `Responde en ${est.latenciaMs} ms` : 'Sin respuesta', est.ok ? 'admin-indicador--ok' : 'admin-indicador--error', est.error || '')}
+                ${window.adminComunes.sistemaFila('database', 'Base de datos', est.ok ? 'Consulta correcta' : 'Sin conexión', est.ok ? 'admin-indicador--ok' : 'admin-indicador--error', est.error || '')}
+                ${window.adminComunes.sistemaFila('lock', 'Autenticación', !est.ok ? 'No verificada' : (est.sesionActiva ? 'Sesión activa' : 'Sin sesión'), est.ok && est.sesionActiva ? 'admin-indicador--ok' : 'admin-indicador--aviso')}
                 ${window.adminComunes.sistemaFila('tag', 'Versión', window.__FB_APP_VERSION__?.version || '—', 'admin-indicador--ok')}
                 ${window.adminComunes.sistemaFila('hard-drive', 'Variables del sistema', 'v' + (window.__FB_APP_VERSION__?.version || '—') + ' · Supabase', 'admin-indicador--ok')}
               </div>` })}
@@ -1296,38 +1320,95 @@
       } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
     },
 
+    // Resume lo restaurado. Los perfiles no se restauran (ver restaurarSnapshot),
+    // y cualquier fila que fallara se muestra en vez de darla por buena.
+    _mostrarResumenRestauracion(resumen) {
+      const partes = [
+        `${resumen.grupos}/${resumen.gruposTotal} grupos`,
+        `${resumen.examenes}/${resumen.examenesTotal} exámenes`
+      ];
+      if (resumen.perfilesOmitidos) partes.push(`${resumen.perfilesOmitidos} perfiles omitidos (no se restauran)`);
+      const errores = resumen.errores || [];
+      if (errores.length) {
+        window.helpers.mostrarAlerta(`Restauración con ${errores.length} error(es): ${partes.join(', ')}. ${errores[0]}`, 'error');
+      } else {
+        window.helpers.mostrarAlerta(`Restaurado: ${partes.join(', ')}.`, 'exito');
+      }
+    },
+
     async _abrirCrearUsuario(rolPredef, raiz) {
       const { usuario } = this._datos;
+      const esAdminClase = !this._esOwner();
+      // El admin de clase solo puede crear dentro de su propia clase (la RPC
+      // 042 lo impone); el formulario lo refleja con el grupo ya fijado.
+      const grupoAdmin = esAdminClase ? (usuario.grupo_id || null) : null;
+      if (esAdminClase && !grupoAdmin) {
+        window.helpers.mostrarAlerta('Tu cuenta aún no tiene clase asignada. Pide al propietario que te asigne una para poder crear usuarios.', 'advertencia');
+        return;
+      }
       const grupos = this._datos.grupos;
-      const opcionesGrupo = [{ valor: '', texto: 'Sin grupo' }].concat((grupos || []).map(g => ({ valor: g.id, texto: g.nombre })));
+      const nombreGrupoAdmin = esAdminClase
+        ? ((grupos || []).find(g => g.id === grupoAdmin)?.nombre || 'tu clase')
+        : '';
+      const opcionesGrupo = esAdminClase
+        ? [{ valor: grupoAdmin, texto: nombreGrupoAdmin }]
+        : [{ valor: '', texto: 'Sin grupo' }].concat((grupos || []).map(g => ({ valor: g.id, texto: g.nombre })));
       const opcionesRol = this._opcionesRolPermitidas(usuario);
       const datos = await window.helpers.formulario({
         titulo: rolPredef === 'editor' ? 'Crear profesor' : rolPredef === 'usuario' ? 'Crear alumno' : rolPredef === 'admin' ? 'Crear administrador' : 'Crear usuario',
+        mensaje: esAdminClase
+          ? `Se creará en ${nombreGrupoAdmin}. Escribe tú la contraseña inicial y compártela con la persona.`
+          : 'Escribe tú la contraseña inicial del usuario.',
         campos: [
           { nombre: 'nombre_completo', etiqueta: 'Nombre completo', requerido: true },
           { nombre: 'username', etiqueta: 'Username (único)', requerido: true, placeholder: 'ej: ana.2024' },
-          { nombre: 'password', etiqueta: 'Contraseña', tipo: 'password', requerido: true },
+          { nombre: 'password', etiqueta: 'Contraseña inicial', tipo: 'password', requerido: true, placeholder: 'Mínimo 8 caracteres, letras y números' },
           { nombre: 'rol', etiqueta: 'Rol', tipo: 'select', valor: rolPredef || 'usuario', opciones: opcionesRol },
-          { nombre: 'grupo_id', etiqueta: 'Grupo', tipo: 'select', valor: '', opciones: opcionesGrupo }
+          { nombre: 'grupo_id', etiqueta: 'Grupo', tipo: 'select', valor: esAdminClase ? grupoAdmin : '', opciones: opcionesGrupo }
         ],
         textoConfirmar: 'Crear'
       });
       if (!datos) return;
-      if (!datos.username.trim() || !datos.password) { window.helpers.mostrarAlerta('Usuario y contraseña son obligatorios.', 'advertencia'); return; }
+      const nombre = String(datos.nombre_completo || '').trim();
+      const username = String(datos.username || '').trim();
+      if (!nombre || !username) { window.helpers.mostrarAlerta('Nombre y username son obligatorios.', 'advertencia'); return; }
+      let password;
+      try {
+        password = this._validarPasswordManual(datos.password);
+      } catch (e) { window.helpers.mostrarAlerta(e.message, 'advertencia'); return; }
+      const grupoId = esAdminClase ? grupoAdmin : (datos.grupo_id || null);
+      if (datos.rol === 'admin' && !grupoId) {
+        window.helpers.mostrarAlerta('Selecciona una clase antes de crear un administrador.', 'advertencia');
+        return;
+      }
       try {
         await window.adminRepository.crearUsuario({
-          nombre_completo: datos.nombre_completo.trim(),
-          username: datos.username.trim(),
-          password: datos.password,
+          nombre_completo: nombre,
+          username,
+          password,
           rol: datos.rol,
-          grupo_id: datos.grupo_id || null
+          grupo_id: grupoId
         });
-        await window.adminRepository.registrarAuditoria('usuario:crear', `Usuario "${datos.nombre_completo}" creado`, usuario.id);
-        window.helpers.mostrarAlerta('Usuario creado correctamente.', 'exito');
+        await window.adminRepository.registrarAuditoria('usuario:crear', `Usuario "${nombre}" (@${username}) creado`, usuario.id);
+        window.helpers.mostrarAlerta(`Usuario "${nombre}" (@${username}) creado. Ya puede iniciar sesión con la contraseña que le diste.`, 'exito');
         const nuevos = await window.adminRepository.listarUsuarios();
         this._datos.usuarios = nuevos;
         this._renderizar(raiz);
       } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+    },
+
+    // La contraseña inicial la escribe el admin a mano; se exige el mismo
+    // mínimo que en el resto de la app (ver authRepository._validarPassword).
+    _validarPasswordManual(password) {
+      if (window.authRepository && typeof window.authRepository._validarPassword === 'function') {
+        return window.authRepository._validarPassword(password);
+      }
+      const pw = String(password || '');
+      if (pw.length < 8) throw new Error('La contraseña debe tener al menos 8 caracteres.');
+      if (!/[A-Za-z]/.test(pw) || !/[0-9]/.test(pw)) {
+        throw new Error('La contraseña debe incluir letras y números.');
+      }
+      return pw;
     },
 
     // ---- USUARIOS (también reutilizado por la pestaña Administradores) ----
@@ -1341,17 +1422,18 @@
       if (inpBuscar) {
         inpBuscar.addEventListener('input', (e) => {
           this._buscarUsuarios = e.target.value;
+          this._filtroRol = 'todos';
+          this._filtroGrupo = 'todos';
+          this._filtroEstado = 'todos';
           this._pagUsuarios = 1;
           this._seleccion.clear();
           this._renderizar(raiz);
         });
       }
 
-      // Filtros y orden
-      r.querySelector('#filtroRolUsuarios')?.addEventListener('change', (e) => { this._filtroRol = e.target.value; this._pagUsuarios = 1; this._renderizar(raiz); });
-      r.querySelector('#filtroGrupoUsuarios')?.addEventListener('change', (e) => { this._filtroGrupo = e.target.value; this._pagUsuarios = 1; this._renderizar(raiz); });
-      r.querySelector('#filtroEstadoUsuarios')?.addEventListener('change', (e) => { this._filtroEstado = e.target.value; this._pagUsuarios = 1; this._renderizar(raiz); });
-      r.querySelector('#ordenUsuarios')?.addEventListener('change', (e) => { this._ordenUsuarios = e.target.value; this._renderizar(raiz); });
+      // Sin pills de filtro: el buscador es el único control visible. Al
+      // escribir se restablecen los filtros internos para no dejar la lista
+      // filtrada de forma invisible (p. ej. tras "Resolver" una tarea).
 
       // Pagination
       r.querySelectorAll('[data-pag="pagUsuarios"]').forEach(btn => {
@@ -1464,6 +1546,10 @@
             textoConfirmar: 'Guardar'
           });
           if (!datos) return;
+          if (u.rol === 'admin' && !datos.grupo_id) {
+            window.helpers.mostrarAlerta('Un administrador debe tener una clase asignada.', 'advertencia');
+            return;
+          }
           try {
             await window.adminRepository.actualizarUsuario(u.id, { nombre_completo: u.nombre_completo, username: u.username, rol: u.rol, grupo_id: datos.grupo_id || null });
             await window.adminRepository.registrarAuditoria('usuario:grupo', `Grupo de "${u.nombre_completo}" actualizado`, usuario.id);
@@ -1488,8 +1574,12 @@
             textoConfirmar: 'Guardar'
           });
           if (!datos || datos.rol === u.rol) return;
+          if (datos.rol === 'admin' && !u.grupo_id) {
+            window.helpers.mostrarAlerta('Asigna primero una clase a esta cuenta antes de convertirla en administradora.', 'advertencia');
+            return;
+          }
           try {
-            await window.adminRepository.cambiarRol(u.id, datos.rol);
+            await window.adminRepository.cambiarRol(u.id, datos.rol, u.grupo_id);
             await window.adminRepository.registrarAuditoria('usuario:rol', `Rol de "${u.nombre_completo}" cambiado a "${datos.rol}"`, usuario.id);
             window.helpers.mostrarAlerta('Rol actualizado.', 'exito');
             const nuevos = await window.adminRepository.listarUsuarios();
@@ -1708,12 +1798,40 @@
 
       r.querySelectorAll('.btn-eliminar-examen').forEach(btn => {
         btn.onclick = async () => {
-          const ok = await window.helpers.confirmar(`¿Eliminar el examen "${btn.dataset.titulo}"? Se borrarán también sus respuestas.`, { titulo: 'Eliminar examen', textoConfirmar: 'Eliminar' });
+          const ok = await window.helpers.confirmar(`¿Mover "${btn.dataset.titulo}" a la papelera? Dejará de estar visible y podrás restaurarlo.`, { titulo: 'Mover a la papelera', textoConfirmar: 'Mover' });
           if (!ok) return;
           try {
-            await window.adminRepository.eliminarExamen(btn.dataset.id);
-            await window.adminRepository.registrarAuditoria('examen:eliminar', `Examen "${btn.dataset.titulo}" eliminado`, usuario.id);
-            window.helpers.mostrarAlerta('Examen eliminado.', 'exito');
+            await window.adminRepository.moverExamenAPapelera(btn.dataset.id);
+            await window.adminRepository.registrarAuditoria('examen:papelera', `Examen "${btn.dataset.titulo}" movido a la papelera`, usuario.id);
+            window.helpers.mostrarAlerta('Examen movido a la papelera.', 'exito');
+            const nuevos = await window.adminRepository.listarExamenes();
+            this._datos.examenes = nuevos;
+            this._renderizar(raiz);
+          } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        };
+      });
+
+      r.querySelectorAll('.btn-restaurar-examen').forEach(btn => {
+        btn.onclick = async () => {
+          try {
+            await window.adminRepository.restaurarExamen(btn.dataset.id);
+            await window.adminRepository.registrarAuditoria('examen:restaurar', `Examen "${btn.dataset.titulo}" restaurado de la papelera`, usuario.id);
+            window.helpers.mostrarAlerta('Examen restaurado.', 'exito');
+            const nuevos = await window.adminRepository.listarExamenes();
+            this._datos.examenes = nuevos;
+            this._renderizar(raiz);
+          } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
+        };
+      });
+
+      r.querySelectorAll('.btn-eliminar-definitivo').forEach(btn => {
+        btn.onclick = async () => {
+          const ok = await window.helpers.confirmar(`¿Eliminar DEFINITIVAMENTE "${btn.dataset.titulo}"? Se borrarán también sus respuestas y no se podrá recuperar.`, { titulo: 'Eliminar definitivamente', textoConfirmar: 'Eliminar para siempre' });
+          if (!ok) return;
+          try {
+            await window.adminRepository.eliminarExamenDefinitivo(btn.dataset.id);
+            await window.adminRepository.registrarAuditoria('examen:eliminar', `Examen "${btn.dataset.titulo}" eliminado definitivamente`, usuario.id);
+            window.helpers.mostrarAlerta('Examen eliminado definitivamente.', 'exito');
             const nuevos = await window.adminRepository.listarExamenes();
             this._datos.examenes = nuevos;
             this._renderizar(raiz);
@@ -2166,12 +2284,8 @@
                 sugerencias: datos.sugerencias || []
               };
               const nombre = 'restaurar-' + new Date().toISOString().slice(0, 16).replace(/[T:]/g, '-');
-              const { data: b } = await window.supabaseClient.from('backups').insert({
-                creado_por: usuario.id, nombre, tamano_bytes: new Blob([JSON.stringify(snapshot)]).size, snapshot, estado: 'ok'
-              }).select().single();
-              if (!b) throw new Error('No se pudo guardar la copia temporal');
-              await window.adminRepository.restaurarBackup(b.id, usuario.id);
-              window.helpers.mostrarAlerta('Datos restaurados correctamente.', 'exito');
+              const resumen = await window.adminRepository.restaurarSnapshot(snapshot, nombre, usuario.id);
+              this._mostrarResumenRestauracion(resumen);
               const backups = await window.adminRepository.listarBackups();
               this._datos.backups = backups;
               this._renderizar(raiz);
@@ -2186,6 +2300,7 @@
               window.helpers.mostrarAlerta(`${n} sugerencias eliminadas.`, 'exito');
               const nuevas = await window.sugerenciasRepository.listarTodas();
               this._datos.sugerencias = nuevas;
+              this._renderizar(raiz);
             } catch (e) { window.helpers.mostrarAlerta('Error: ' + e.message, 'error'); }
             return;
           }
@@ -2206,8 +2321,8 @@
           const ok = await window.helpers.confirmar('¿Restaurar esta copia? Sobrescribirá los datos actuales con los del backup.', { titulo: 'Restaurar copia', textoConfirmar: 'Restaurar' });
           if (!ok) return;
           try {
-            await window.adminRepository.restaurarBackup(btn.dataset.id, usuario.id);
-            window.helpers.mostrarAlerta('Copia restaurada.', 'exito');
+            const resumen = await window.adminRepository.restaurarBackup(btn.dataset.id, usuario.id);
+            this._mostrarResumenRestauracion(resumen);
             const backups = await window.adminRepository.listarBackups();
             this._datos.backups = backups;
             this._renderizar(raiz);

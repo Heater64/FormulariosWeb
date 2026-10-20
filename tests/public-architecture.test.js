@@ -73,7 +73,8 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
   test('la landing pública ya no ofrece descarga de APK', () => {
     expect(publicHtml).not.toMatch(/\.apk/i);
     expect(publicHtml).not.toContain('Descargar aplicación Android');
-    expect(publicLoginJs).toContain("window.location.href = '/app/'");
+    // La redirección a /app/ vive en el formulario compartido (landing + login.html).
+    expect(read('js/componentes/login-form.js')).toContain("root.location.href = (opciones && opciones.destino) || '/app/'");
   });
 
   test('la landing cumple la CSP sin handlers inline', () => {
@@ -81,7 +82,9 @@ describe('arquitectura pública y PWA (APK en pausa)', () => {
     expect(publicHtml).not.toContain('onclick=');
     expect(publicHtml).not.toContain('onsubmit=');
     expect(publicHtml).toContain('./login.js');
-    expect(publicHtml).toContain('recuperar.html');
+    // Recuperación en el formulario compartido; registro enlazado desde la FAQ de la landing.
+    const loginForm = read('js/componentes/login-form.js');
+    expect(loginForm).toContain('recuperar.html');
     expect(publicHtml).toContain('registro.html');
     expect(publicRegistrationHtml).toContain('./registro.js');
     expect(publicRegistrationHtml).not.toContain('<script>');

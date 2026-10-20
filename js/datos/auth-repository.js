@@ -47,6 +47,12 @@ const authRepository = {
       .single();
     if (errPerfil || !perfil) throw new Error('No se pudo cargar tu perfil. Inténtalo de nuevo.');
 
+    // Modo mantenimiento: solo el owner puede entrar mientras esté activo.
+    if (perfil.rol !== 'owner' && await this.mantenimientoActivo(sb)) {
+      await sb.auth.signOut().catch(() => {});
+      throw new Error('La aplicación está en mantenimiento. Inténtalo más tarde.');
+    }
+
     store.asignar({ usuario: perfil, sesion: { autenticado: true, inicio: Date.now() } });
     window.eventBus.publicar('auth:login', { usuario: perfil, recordar: recordar !== false });
     return perfil;
@@ -58,6 +64,20 @@ const authRepository = {
     const { data: email, error } = await sb.rpc('auth_login', { p_username: usuario, p_password: password });
     if (error) throw new Error(this._extraerMensajeAuth(error));
     return email || null;
+  },
+
+  // Lee el flag de mantenimiento vía RPC (la tabla configuracion es solo owner).
+  // Si la consulta falla se avisa en consola y se permite el acceso: el
+  // bloqueo no debe dejar fuera a todos por un fallo de red.
+  async mantenimientoActivo(sb) {
+    try {
+      const { data, error } = await sb.rpc('modo_mantenimiento_activo');
+      if (error) throw error;
+      return data === true;
+    } catch (e) {
+      console.warn('No se pudo comprobar el modo mantenimiento:', e.message);
+      return false;
+    }
   },
 
   async cerrarSesion() {

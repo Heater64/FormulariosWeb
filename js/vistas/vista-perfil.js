@@ -544,6 +544,7 @@
     // ============================================================
     _configNotificaciones(cont, usuario, prefs) {
       const permiso = ('Notification' in window) ? Notification.permission : 'unsupported';
+      const webPush = !!(window.pushNotificationService && window.pushNotificationService.webPushDisponible && window.pushNotificationService.webPushDisponible());
       const permisoTexto = {
         granted: 'Permitidas por el navegador',
         denied: 'Bloqueadas en el navegador',
@@ -578,6 +579,7 @@
             </div>
           </div>
           ${permiso === 'default' ? `<button class="btn-primario perfil-btn-full" id="btnPedirPermiso">${I('bell-plus')} Activar notificaciones</button>` : ''}
+          ${webPush && permiso === 'granted' ? `<button class="btn-primario perfil-btn-full" id="btnActivarWeb">${I('bell-plus')} Activar avisos en este navegador</button>` : ''}
           ${permiso === 'denied' ? `<p class="u-fs-xs u-color-texto-terciario" style="line-height:1.5">Para activarlas, permite las notificaciones de FormsBiblicos en los ajustes de tu navegador.</p>` : ''}
         </div>
 
@@ -627,10 +629,20 @@
         });
       });
 
+      const btnActivarWeb = cont.querySelector('#btnActivarWeb');
+      if (btnActivarWeb) btnActivarWeb.onclick = async () => {
+        try {
+          const ok = await window.pushNotificationService.activarWeb();
+          window.helpers.mostrarAlerta(ok ? 'Avisos activados en este navegador.' : 'No se pudo activar en este navegador.', ok ? 'exito' : 'advertencia');
+        } catch (e) { window.helpers.mostrarAlerta('No se pudo activar en este navegador.', 'error'); }
+      };
+
       const btnPermiso = cont.querySelector('#btnPedirPermiso');
       if (btnPermiso) btnPermiso.onclick = async () => {
         try {
           const res = await Notification.requestPermission();
+          // Con permiso concedido, registra también este navegador para Web Push.
+          if (res === 'granted' && webPush) await window.pushNotificationService.activarWeb().catch(() => false);
           window.helpers.mostrarAlerta(res === 'granted' ? 'Notificaciones activadas.' : 'No se concedió el permiso.', res === 'granted' ? 'exito' : 'advertencia');
           if (window.notifications) window.notifications.setPermiso(res);
           // Re-render para reflejar el nuevo estado del permiso

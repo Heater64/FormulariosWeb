@@ -71,11 +71,11 @@
       return valores.reduce((a, b) => a + b, 0) / valores.length;
     },
 
-    // Volver al perfil: en la página standalone no hay rutas registradas,
+    // Volver a la cuenta: en la página standalone no hay rutas registradas,
     // así que se usa el hook _volverAlSpa si existe, si no el router.
     volver(vista) {
       if (vista._volverAlSpa) { vista._volverAlSpa(); return; }
-      router.navegar('/perfil');
+      router.navegar('/cuenta');
     },
 
     bindTabs(vista, raiz) {
@@ -94,7 +94,7 @@
       return `
         <header class="admin-panel-cabecera">
           <div class="admin-panel-cabecera__brand">
-            ${marca && marca.logo ? `<img class="admin-panel-cabecera__logo" src="${marca.logo}" alt="Logotipo del centro" width="44" height="44" decoding="async">` : `<span class="admin-panel-cabecera__logo-fallback">${I('command')}</span>`}
+            ${marca && marca.logo ? `<img class="admin-panel-cabecera__logo" src="${E(marca.logo)}" alt="Logotipo del centro" width="44" height="44" decoding="async">` : `<span class="admin-panel-cabecera__logo-fallback">${I('command')}</span>`}
             <div>
               <h1 class="admin-panel-cabecera__titulo">${E(tituloFinal)}</h1>
               <p class="admin-panel-cabecera__subtitulo">${subtitulo}</p>

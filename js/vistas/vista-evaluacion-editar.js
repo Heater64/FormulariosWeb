@@ -352,6 +352,10 @@
           const resumen = await window.plataformaRepository.resumen();
           this._examenes = (resumen && resumen.examenes) || [];
         } catch (e) { this._examenes = []; }
+        // Cuentas de alumno ya vinculadas a filas (migración 067). Sin ellas, la rejilla sigue.
+        try {
+          this._vinculos = (await window.plataformaRepository.vinculosEvaluacion(this._id)) || [];
+        } catch (e) { this._vinculos = []; }
       } catch (e) {
         if (!contenido.isConnected) return;
         contenido.innerHTML = `<div class="adm-aviso adm-aviso--error">No se pudo cargar la evaluación: ${esc(e.message)}</div>`;
@@ -573,6 +577,7 @@
         return `<tr>
           <th scope="row" class="eval-tabla__alumno">
             <span class="eval-tabla__alumno-txt">${esc(alumno)}</span>
+            ${this._htmlCuentaFila(alumno)}
             <span class="eval-acciones eval-acciones--fila">
               <button type="button" class="eval-acciones__btn" data-menu-fila="${indice}" aria-haspopup="menu" aria-label="Opciones de ${esc(alumno)}" title="Opciones de la fila">${window.Iconos.render('ellipsis-vertical')}</button>
             </span>
@@ -981,8 +986,90 @@
         { texto: 'Añadir alumno encima', icono: 'user-plus', accion: () => this._anadirFila(indice) },
         { texto: 'Añadir alumno debajo', icono: 'user-plus', accion: () => this._anadirFila(indice + 1) },
         { separador: true },
+        { texto: this._vinculoDe(alumno) ? 'Cambiar usuario asignado' : 'Asignar a usuario', icono: 'link', accion: () => this._vincularAlumno(alumno) },
+        { separador: true },
         { texto: 'Eliminar fila', icono: 'trash-2', peligro: true, accion: () => this._eliminarFila(alumno) }
       ]);
+    },
+
+    /** Vínculo de la fila con una cuenta de alumno, o null. */
+    _vinculoDe(alumno) {
+      const k = clave(alumno);
+      return (this._vinculos || []).find((v) => v.clave === k) || null;
+    },
+
+    /** Estado visible bajo el nombre de la fila: a qué cuenta está asignada. */
+    _htmlCuentaFila(alumno) {
+      const vinculo = this._vinculoDe(alumno);
+      if (!vinculo) {
+        return '<span class="eval-tabla__alumno-cuenta">Sin asignar</span>';
+      }
+      return `<span class="eval-tabla__alumno-cuenta eval-tabla__alumno-cuenta--asignada" title="Cuenta asignada">Asignado a ${esc(vinculo.nombre || 'cuenta sin nombre')}</span>`;
+    },
+
+    /**
+     * Elige la cuenta de alumno que ve la nota de esta fila. «Sin asignar»
+     * quita la asignación. El alumno solo verá su propia nota final.
+     */
+    async _vincularAlumno(alumno) {
+      let usuarios = [];
+      try {
+        usuarios = ((await window.adminRepository.listarUsuarios()) || [])
+          .filter((u) => u.rol === 'usuario' && u.activo !== false);
+      } catch (e) {
+        window.helpers.mostrarAlerta('No se pudieron cargar las cuentas: ' + e.message, 'error');
+        return;
+      }
+      const actual = this._vinculoDe(alumno);
+      // Sugerencia: si la fila no tiene cuenta y su nombre coincide con una cuenta,
+      // se preselecciona (igual que en Entregas).
+      const normalizar = (v) => String(v || '').trim().toLowerCase();
+      const nombreFila = normalizar(alumno);
+      const sugerido = actual ? null
+        : usuarios.find((u) => normalizar(u.nombre_completo) === nombreFila || normalizar(u.username) === nombreFila) || null;
+      const opciones = ['<option value="">Sin asignar</option>'].concat(usuarios.map((u) => {
+        const seleccionada = actual ? actual.alumno_id === u.id : (sugerido && sugerido.id === u.id);
+        return `<option value="${esc(u.id)}"${seleccionada ? ' selected' : ''}>${esc(u.nombre_completo || u.username || u.id)}</option>`;
+      })).join('');
+      const avisoSugerencia = sugerido
+        ? `<p class="adm-campo__ayuda">${window.Iconos.render('info')} El nombre de la fila coincide con esta cuenta, así que aparece preseleccionada.</p>`
+        : '';
+      const modal = window.panelUI.modal({
+        titulo: 'Asignar a usuario',
+        cuerpoHtml: `<p>Fila <strong>${esc(alumno)}</strong>. La cuenta elegida verá su nota final de esta evaluación al iniciar sesión; nadie más.</p>
+          ${avisoSugerencia}
+          <p id="avisoMover" class="adm-campo__ayuda" hidden></p>
+          <label>Cuenta de alumno<select id="vinculoAlumno">${opciones}</select></label>`,
+        pieHtml: `<button class="adm-btn" type="button" id="vinculoCancelar">Cancelar</button>
+          <button class="adm-btn adm-btn--principal" type="button" id="vinculoGuardar">Guardar</button>`
+      });
+      // Una cuenta ocupa una sola fila: si ya está en otra, se avisa antes de guardar.
+      const select = modal.contenido.querySelector('#vinculoAlumno');
+      const avisoMover = modal.contenido.querySelector('#avisoMover');
+      const actualizarAvisoMover = () => {
+        const id = select.value || null;
+        const otra = id ? (this._vinculos || []).find((v) => v.alumno_id === id && v.clave !== clave(alumno)) : null;
+        const nombreOtra = otra ? (((this._datos && this._datos.alumnos) || []).find((a) => clave(a) === otra.clave) || otra.clave) : '';
+        avisoMover.hidden = !otra;
+        avisoMover.textContent = otra
+          ? `Esta cuenta ya está asignada a la fila «${nombreOtra}». Al guardar, pasará a esta fila y se quitará de la otra.`
+          : '';
+      };
+      select.addEventListener('change', actualizarAvisoMover);
+      actualizarAvisoMover();
+      modal.contenido.querySelector('#vinculoCancelar').addEventListener('click', modal.cerrar);
+      modal.contenido.querySelector('#vinculoGuardar').addEventListener('click', async () => {
+        const id = modal.contenido.querySelector('#vinculoAlumno').value || null;
+        try {
+          this._vinculos = (await window.plataformaRepository.vincularAlumnoEvaluacion(this._id, clave(alumno), id)) || [];
+        } catch (e) {
+          window.helpers.mostrarAlerta('No se pudo guardar el vínculo: ' + e.message, 'error');
+          return;
+        }
+        modal.cerrar();
+        window.helpers.mostrarAlerta(id ? 'Usuario asignado.' : 'Asignación quitada.', 'exito');
+        this._repintar();
+      });
     },
 
     _anadirFila(indice) {

@@ -49,6 +49,11 @@
   let _cleanup = null;
 
   window.vistaExamenTomar = {
+    // Salida del examen a mitad (guardia + beforeunload, solo en _renderizar).
+    _salidaAutorizada: false,
+    _resolviendoSalida: false,
+    _desregistrarGuardia: null,
+    _antesDeDescargar: null,
     async montar(raiz, params) {
       if (_cleanup) { _cleanup(); _cleanup = null; }
       if (!params || !params.id) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
@@ -109,24 +114,105 @@
         if (intento.estado === 'completado' || intento.estado === 'calificado') {
           this._renderResultados(raiz, examen, preguntas, intento, usuario);
         } else {
-          this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario);
+          // Lo que verá la barra de «modo examen»: intentos que le quedan.
+          const infoIntento = {
+            ilimitado: permitidos === Infinity,
+            restantes: permitidos === Infinity ? Infinity : Math.max(0, permitidos - completados.length)
+          };
+          this._renderizar(raiz, examen, preguntas, intento, respuestas, usuario, infoIntento);
         }
       } catch (e) {
         console.error('Error cargando examen:', e.message || e);
         if (e.stack) console.error(e.stack);
-        raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" id="btnErrorExamenVolver">← Volver</button></div>`;
-        raiz.querySelector('#btnErrorExamenVolver')?.addEventListener('click', () => router.navegar('/examenes'));
+        const volverError = this._volverDe(usuario);
+        raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="u-color-error">No se pudo cargar el examen. Revisa tu conexión.</p><button class="btn-primario" id="btnErrorExamenVolver">← ${volverError.texto}</button></div>`;
+        raiz.querySelector('#btnErrorExamenVolver')?.addEventListener('click', () => router.navegar(volverError.destino));
       }
     },
 
-    _renderizar(raiz, examen, preguntas, intento, respuestas, usuario) {
+    // ── Salida a mitad del examen ───────────────────────────────────────
+    /**
+     * Volver atrás (gesto, flecha o botón del sistema) NO saca sin más: se
+     * pregunta, y al aceptar se envían las respuestas completadas y el
+     * intento queda consumido (ya no se puede continuar). Si la entrega
+     * falla (p. ej. falta una obligatoria), se avisa y se sigue dentro.
+     * `recoger` sincroniza la vista y devuelve las respuestas actuales.
+     */
+    _registrarGuardiaSalida(examen, intento, usuario, recoger) {
+      this._quitarGuardiaSalida();
+      this._salidaAutorizada = false;
+      this._resolviendoSalida = false;
+      if (typeof router === 'undefined' || typeof router.registrarGuardia !== 'function') return;
+      const rutaExamen = '/tomar/' + examen.id;
+      this._desregistrarGuardia = router.registrarGuardia(async (ruta) => {
+        // Remontar la misma ruta (recargar la vista) no es salir.
+        if (ruta === rutaExamen) return true;
+        if (this._salidaAutorizada) return true;
+        if (this._resolviendoSalida) {
+          router.revertirNavegacion(rutaExamen);
+          return false;
+        }
+        this._resolviendoSalida = true;
+        try {
+          const ok = await window.helpers.confirmar(
+            'Si vuelves atrás, se enviarán las respuestas que hayas completado y ya no podrás continuar este examen. ¿Volver y entregar?',
+            { titulo: '¿Volver y entregar el examen?', textoConfirmar: 'Volver y entregar', textoCancelar: 'Seguir en el examen', peligroso: false }
+          );
+          if (!ok) {
+            router.revertirNavegacion(rutaExamen);
+            return false;
+          }
+          try {
+            const respuestas = recoger();
+            await window.examenesRepository.entregarIntento(intento.id, respuestas);
+            try { await window.adminRepository.registrarAuditoria('examen:entregar', `Examen "${examen.titulo}"`, usuario.id, usuario.grupo_id); } catch (e) { /* best-effort */ }
+          } catch (e) {
+            window.helpers.mostrarAlerta('No se pudo entregar: ' + e.message, 'error');
+            router.revertirNavegacion(rutaExamen);
+            return false;
+          }
+          this._salidaAutorizada = true;
+          return true;
+        } finally {
+          this._resolviendoSalida = false;
+        }
+      });
+    },
+
+    _quitarGuardiaSalida() {
+      if (typeof this._desregistrarGuardia === 'function') this._desregistrarGuardia();
+      this._desregistrarGuardia = null;
+    },
+
+    // Aviso nativo al recargar o cerrar la pestaña a mitad del examen (el
+    // texto lo pone el navegador; aquí solo se pide confirmación). No cubre
+    // el botón atrás de la app: de eso se encarga la guardia de salida.
+    _conectarAntesDeDescargar() {
+      this._desconectarAntesDeDescargar();
+      this._antesDeDescargar = (e) => { e.preventDefault(); };
+      window.addEventListener('beforeunload', this._antesDeDescargar);
+    },
+
+    _desconectarAntesDeDescargar() {
+      if (this._antesDeDescargar) {
+        window.removeEventListener('beforeunload', this._antesDeDescargar);
+        this._antesDeDescargar = null;
+      }
+    },
+
+    _renderizar(raiz, examen, preguntas, intento, respuestas, usuario, info) {
       const config = this._configDe(examen);
       const duracionMinutos = this._minutosDesdeConfig(config);
+      info = info || {};
+      // Sin salidas hasta entregar (un solo intento): el alumno no tiene
+      // barra de navegación ni botón de salir; solo «Entregar examen».
+      const esAlumnoVista = (usuario.rol || '').toLowerCase() === 'usuario';
       // Aleatorizar el orden de las preguntas (las respuestas se guardan por id, seguro)
       const preguntasRender = config.aleatorizar_preguntas ? [...preguntas].sort(() => Math.random() - 0.5) : preguntas;
       if (preguntas.length === 0) {
-        raiz.innerHTML = '<div class="o-contenedor o-pila o-pila--lg u-mt-4 u-texto-centrado"><p class="u-color-texto-secundario">Este examen no tiene preguntas todavía.</p><button class="btn-primario" id="btnExamenVacioVolver">← Volver a exámenes</button></div>';
-        raiz.querySelector('#btnExamenVacioVolver')?.addEventListener('click', () => router.navegar('/examenes'));
+        const volverVacio = this._volverDe(usuario);
+        raiz.innerHTML = '<div class="o-contenedor o-pila o-pila--lg u-mt-4 u-texto-centrado"><p class="u-color-texto-secundario">Este examen no tiene preguntas todavía.</p><button class="btn-primario" id="btnExamenVacioVolver">← ' + volverVacio.texto + '</button></div>';
+        raiz.querySelector('#btnExamenVacioVolver')?.addEventListener('click', () => router.navegar(volverVacio.destino));
         return;
       }
       // Si el intento ya empezó antes, descontar el tiempo transcurrido para que
@@ -139,29 +225,39 @@
       const respondidas = preguntasRender.filter(p => this._tieneRespuesta(respuestas, p)).length;
       const porcentaje = Math.round((respondidas / preguntas.length) * 100);
 
+      // Barra de «modo examen» (solo alumno): a nombre de quién se registra,
+      // cuántos intentos quedan y que no hay salidas hasta entregar.
+      // Se muestra como línea fina bajo la cabecera para no romper el diseño.
+      let barraModo = '';
+      if (esAlumnoVista) {
+        const quien = window.helpers.escapeHtml(usuario.nombre_completo || usuario.username || '');
+        const insignia = info.ilimitado
+          ? '<span class="adm-badge adm-badge--borrador">Intentos ilimitados</span>'
+          : ((info.restantes || 1) <= 1
+            ? '<span class="adm-badge adm-badge--aviso">Intento único</span>'
+            : `<span class="adm-badge adm-badge--aviso">Te quedan ${info.restantes} intentos</span>`);
+        barraModo = `<div class="examen-modo__linea">${insignia}<span>Lo realizas como <strong>${quien}</strong> · quedará registrado a tu nombre · sin salidas hasta entregar.</span></div>`;
+      }
+      const quienCorto = window.helpers.escapeHtml(usuario.nombre_completo || usuario.username || '');
+
       raiz.innerHTML = `
-        <div class="examen-page o-contenedor o-pila o-pila--lg">
-          <div class="o-pila">
-            <div class="o-flecha o-flecha--between o-flecha--centro" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-              <div>
-                <h2 class="u-mb-0">${window.helpers.escapeHtml(examen.titulo)}</h2>
-                ${examen.descripcion ? `<p class="u-color-texto-secundario u-fs-sm u-mt-1">${window.helpers.escapeHtml(examen.descripcion)}</p>` : ''}
+        <div class="examen-page examen-modo">
+          <header class="examen-topbar">
+            <div class="o-contenedor examen-topbar__inner">
+              <span class="examen-topbar__icono" aria-hidden="true"><img src="assets/iconos/icono.svg" alt="" class="examen-topbar__icono-img"></span>
+              <div class="examen-topbar__titulos">
+                <strong class="examen-topbar__titulo">${window.helpers.escapeHtml(examen.titulo)}</strong>
+                <span class="examen-topbar__alumno">${quienCorto}</span>
               </div>
-              <div class="o-flecha" style="gap:var(--espaciado-xs);align-items:center">
-                ${duracionMinutos > 0 ? `<span class="examen-timer" id="examenTimer">${window.Iconos.render('clock')} ${Math.floor(segundosIniciales / 60)}:${String(segundosIniciales % 60).padStart(2, '0')}</span>` : ''}
-                <span class="u-fs-xs u-color-texto-terciario" style="white-space:nowrap">${preguntas.length} preguntas</span>
-              </div>
+              ${duracionMinutos > 0 ? `<span class="examen-timer" id="examenTimer">${window.Iconos.render('clock')} ${Math.floor(segundosIniciales / 60)}:${String(segundosIniciales % 60).padStart(2, '0')}</span>` : ''}
+              <span class="examen-topbar__score" id="examenScoreTop">${respondidas}/${preguntas.length}</span>
             </div>
-            <div class="examen-progreso u-mt-2">
-              <div class="examen-progreso__lleno" id="barraProgresoExamen" style="transform:scaleX(${Math.max(0, Math.min(1, porcentaje / 100))})"></div>
-            </div>
-            <div class="o-flecha o-flecha--between" style="gap:var(--espaciado-xs)">
-              <p class="u-fs-xs u-color-texto-terciario" id="contadorProgreso">${respondidas}/${preguntas.length} respondidas</p>
-              <span class="u-fs-xs u-color-texto-terciario" id="flagCount">0 marcadas</span>
-            </div>
-          </div>
-          <div id="preguntasExamen" class="o-pila examen-sin-paginar"></div>
-          <div class="examen-paginado" id="examenPaginado">
+            ${barraModo}
+          </header>
+          <main class="o-contenedor examen-lista">
+            <div id="preguntasExamen" class="examen-sin-paginar"></div>
+          </main>
+          <div class="examen-paginado" id="examenPaginado" hidden>
             <div class="examen-dots" id="examenDots"></div>
             <div id="preguntasPagina"></div>
             <div class="examen-nav">
@@ -170,9 +266,12 @@
               <button class="btn-secundario examen-nav__btn" id="btnSiguiente">Siguiente ${window.Iconos.render('chevron-right')}</button>
             </div>
           </div>
-          <div class="barra-accion">
-            <button class="btn-primario" id="btnEntregar">Entregar examen</button>
-          </div>
+          <footer class="examen-barra-envio">
+            <div class="o-contenedor examen-barra-envio__inner">
+              <p class="examen-barra-envio__info"><span class="examen-barra-envio__dot" aria-hidden="true"></span><span id="contadorProgreso">${respondidas} de ${preguntas.length} respondidas</span><span id="flagCount"></span></p>
+              <button class="btn-primario examen-barra-envio__btn" id="btnEntregar">Entregar examen</button>
+            </div>
+          </footer>
         </div>`;
 
       const cont = raiz.querySelector('#preguntasExamen');
@@ -221,8 +320,21 @@
         const count = preguntas.filter(p => this._tieneRespuesta(respuestas, p)).length;
         const barra = raiz.querySelector('#barraProgresoExamen');
         const texto = raiz.querySelector('#contadorProgreso');
+        const score = raiz.querySelector('#examenScoreTop');
         if (barra) barra.style.transform = `scaleX(${preguntas.length ? count / preguntas.length : 0})`;
-        if (texto) texto.textContent = `${count}/${preguntas.length} respondidas`;
+        if (texto) texto.textContent = `${count} de ${preguntas.length} respondidas`;
+        if (score) score.textContent = `${count}/${preguntas.length}`;
+        raiz.querySelectorAll('#preguntasExamen .pregunta-examen[data-pid]').forEach(el => {
+          const p = preguntas.find(q => String(q.id) === el.dataset.pid);
+          if (!p) return;
+          const ok = this._tieneRespuesta(respuestas, p);
+          el.classList.toggle('pregunta-examen--sin-responder', !ok);
+          const badge = el.querySelector(`[data-estado-for="${p.id}"]`);
+          if (badge) {
+            badge.textContent = ok ? 'Respondida' : 'Sin responder';
+            badge.classList.toggle('pregunta-examen__estado--ok', ok);
+          }
+        });
         _actualizarDots();
       };
 
@@ -308,7 +420,7 @@
       const actualizarFlagCount = () => {
         const count = Object.values(flags).filter(Boolean).length;
         const el = raiz.querySelector('#flagCount');
-        if (el) el.textContent = count > 0 ? `${window.Iconos.render('flag')} ${count} marcadas` : '0 marcadas';
+        if (el) el.textContent = count > 0 ? ` · ${count} marcadas` : '';
         window.Iconos?.actualizar?.();
       };
 
@@ -433,7 +545,11 @@
           } catch (e2) { /* no critico */ }
           if (window.haptica) window.haptica.logro();
           window.helpers.mostrarAlerta('Examen entregado correctamente.', 'exito');
-          router.navegar('/examenes');
+          // Entregado: la guardia y el aviso de recarga ya no pintan nada.
+          // El alumno vuelve a su inicio (no está en «Exámenes»).
+          this._salidaAutorizada = true;
+          this._desconectarAntesDeDescargar();
+          router.navegar(this._volverDe(usuario).destino);
         } catch (e) {
           _entregando = false;
           raiz.querySelector('#btnEntregar').disabled = false;
@@ -449,18 +565,34 @@
         const btnEntregar = raiz.querySelector('#btnEntregar');
         if (btnEntregar) btnEntregar.onclick = null;
       };
+      // Proteger la salida a mitad: guardia de atrás + aviso al recargar.
+      // Se retiran al entregar (éxito) o al desmontar la vista.
+      this._registrarGuardiaSalida(examen, intento, usuario, () => {
+        _sincronizarRespuestas();
+        return respuestas;
+      });
+      this._conectarAntesDeDescargar();
       actualizarFlagCount();
     },
 
     _renderPregunta(p, rActual, i) {
-      return `<div class="pregunta-examen" data-pid="${p.id}">
-        <p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
-        <div class="pregunta-examen__opciones">${this._renderRespuesta(p, rActual, i)}</div>
+      const sinResp = !this._tieneRespuesta({ [p.id]: rActual }, p);
+      return `<div class="pregunta-examen${sinResp ? ' pregunta-examen--sin-responder' : ''}" data-pid="${p.id}">
+        ${this._renderPreguntaInner(p, rActual, i)}
       </div>`;
     },
 
     _renderPreguntaInner(p, rActual, i) {
-      return `<p class="pregunta-examen__texto"><span class="pregunta-examen__numero">${i + 1}</span> ${textoPreguntaVisible(p)}</p>
+      const respondida = this._tieneRespuesta({ [p.id]: rActual }, p);
+      const estado = respondida ? 'Respondida' : 'Sin responder';
+      const sub = p.obligatoria ? `Pregunta ${i + 1} (obligatoria)` : `Pregunta ${i + 1} (opcional)`;
+      return `<div class="pregunta-examen__cabecera">
+          <span class="pregunta-examen__numero">Pregunta ${i + 1}</span>
+          <span class="pregunta-examen__puntos">${window.puntuacionExamen.puntosPregunta(p)} pt</span>
+        </div>
+        <p class="pregunta-examen__texto">${textoPreguntaVisible(p)}${p.obligatoria ? ' <span class="pregunta-examen__obligatoria">*</span>' : ''}</p>
+        <span class="pregunta-examen__estado${respondida ? ' pregunta-examen__estado--ok' : ''}" data-estado-for="${p.id}">${estado}</span>
+        <p class="pregunta-examen__sub">${sub}</p>
         <div class="pregunta-examen__opciones">${this._renderRespuesta(p, rActual, i)}</div>`;
     },
 
@@ -490,6 +622,15 @@
         return r.every(v => typeof v === 'number') ? true : conValor.length === r.length;
       }
       return true;
+    },
+
+    // El botón «Volver» del resultado: el alumno vuelve a su inicio (no está
+    // en «Exámenes», que es sección del profesor); el profesor sí vuelve allí.
+    _volverDe(usuario) {
+      const esProfesor = ['admin', 'editor', 'owner'].includes((usuario || {}).rol);
+      return esProfesor
+        ? { texto: 'Volver a exámenes', destino: '/examenes' }
+        : { texto: 'Volver', destino: '/inicio' };
     },
 
     _renderResultados(raiz, examen, preguntas, intento, usuario) {
@@ -530,22 +671,19 @@
       // ── Calcular métricas ──
       const notaFinal = intento.corregido && intento.nota != null ? (parseFloat(intento.nota) || 0) : calculo.nota;
       const aciertos = calculo.aciertos;
-      const fallos = preguntas.length - aciertos;
       const pct = calculo.porcentaje;
       const corregido = intento.corregido && !!intento.corregido_por;
       const estadoTexto = corregido ? 'Corregido' : 'Pendiente de corrección';
       const estadoBadgeClase = corregido ? 'resultado-badge--corregido' : 'resultado-badge--pendiente';
 
+      if (correccionVisible) {
+        this._renderCorreccion(raiz, examen, preguntas, respuestas, correccionMap, intento, notaFinal, aciertos, pct, usuario);
+        return;
+      }
+
       // ── Color de nota ──
       const notaColor = notaFinal >= 9 ? 'var(--color-exito)' : notaFinal >= 7 ? 'var(--color-acento)' : notaFinal >= 5 ? 'var(--color-aviso)' : 'var(--color-error)';
       const notaBg = notaFinal >= 9 ? 'var(--color-exito-soft)' : notaFinal >= 7 ? 'var(--color-acento-soft)' : notaFinal >= 5 ? 'var(--color-aviso-soft)' : 'var(--color-error-soft)';
-
-      // ── Tiempo ──
-      let tiempoStr = '';
-      if (intento.fecha_inicio && intento.fecha_completado) {
-        const difMin = Math.round((new Date(intento.fecha_completado) - new Date(intento.fecha_inicio)) / 60000);
-        tiempoStr = difMin < 1 ? '<1 min' : difMin + ' min';
-      }
 
       // ── Hero score circle (SVG donut) ──
       const radio = 58;
@@ -570,31 +708,6 @@
           </div>
         </div>`;
 
-      // ── Stats row ──
-      const statsRow = correccionVisible ? `
-        <div class="resultado-stats">
-          <div class="resultado-stat resultado-stat--ok">
-            <span class="resultado-stat__icono">${I('check')}</span>
-            <span class="resultado-stat__valor">${aciertos}</span>
-            <span class="resultado-stat__label">Correctas</span>
-          </div>
-          <div class="resultado-stat resultado-stat--error">
-            <span class="resultado-stat__icono">${I('x')}</span>
-            <span class="resultado-stat__valor">${fallos}</span>
-            <span class="resultado-stat__label">Incorrectas</span>
-          </div>
-          <div class="resultado-stat resultado-stat--neutral">
-            <span class="resultado-stat__icono">${I('target')}</span>
-            <span class="resultado-stat__valor">${pct}%</span>
-            <span class="resultado-stat__label">Precisión</span>
-          </div>
-          ${tiempoStr ? `<div class="resultado-stat resultado-stat--info">
-            <span class="resultado-stat__icono">${I('clock')}</span>
-            <span class="resultado-stat__valor">${tiempoStr}</span>
-            <span class="resultado-stat__label">Tiempo</span>
-          </div>` : ''}
-        </div>` : '';
-
       // ── Observaciones del profesor ──
       const obsHtml = intento.observaciones ? `
         <div class="resultado-obs">
@@ -606,37 +719,37 @@
         </div>` : '';
 
       // ── Construir HTML principal ──
+      const volver = this._volverDe(usuario);
       raiz.innerHTML = `
         <div class="examen-page o-contenedor o-pila o-pila--lg anim-exito">
           <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
-            <button class="btn-secundario" id="btnVolver">${I('arrow-left')} Volver a exámenes</button>
+            <button class="btn-secundario" id="btnVolver">${I('arrow-left')} ${volver.texto}</button>
           </div>
           ${scoreDonut}
-          ${statsRow}
           ${obsHtml}
-          ${correccionVisible ? `<div class="resultado-preguntas" id="desgloseResultados"></div>` : `<div class="resultado-espera">
+          <div class="resultado-espera">
             <span class="resultado-espera__icono">${I('clock')}</span>
             <p class="resultado-espera__titulo">${visibilidad === 'nunca' ? 'Este examen no muestra las respuestas a los alumnos.' : 'Resultados pendientes de publicación'}</p>
             <p class="resultado-espera__texto">${visibilidad === 'nunca' ? 'El profesor ha configurado este examen sin visualización de resultados.' : 'Los resultados estarán disponibles cuando el profesor los publique.'}</p>
-          </div>`}
+          </div>
         </div>`;
 
-      raiz.querySelector('#btnVolver').onclick = () => router.navegar('/examenes');
-      if (!correccionVisible) { window.Iconos.actualizar(); return; }
+      raiz.querySelector('#btnVolver').onclick = () => router.navegar(volver.destino);
+      window.Iconos.actualizar();
+    },
 
-      // ── Desglose por pregunta ──
-      const cont = raiz.querySelector('#desgloseResultados');
-      cont.innerHTML = preguntas.map((p, i) => {
-        const rUser = respuestas[p.id] !== undefined ? respuestas[p.id] : '(sin respuesta)';
+    // Corrección visible para el alumno: mismo diseño que el enlace público de examen.
+    _renderCorreccion(raiz, examen, preguntas, respuestas, correccionMap, intento, notaFinal, aciertos, pct, usuario) {
+      const volverCorr = this._volverDe(usuario);
+      const I = window.Iconos.render;
+      const E = window.helpers.escapeHtml;
+      const fmt = n => String(Math.round(Number(n) * 100) / 100).replace('.', ',');
+
+      const preguntasHtml = preguntas.map((p, i) => {
         const corr = correccionMap[p.id];
-        let esCorrecta;
-        if (corr && corr.es_correcta !== undefined && corr.es_correcta !== null) {
-          esCorrecta = !!corr.es_correcta;
-        } else {
-          esCorrecta = window.puntuacionExamen.esCorrectaPregunta(respuestas[p.id], p);
-        }
-        const estadoClase = esCorrecta ? 'resultado-pregunta--ok' : 'resultado-pregunta--ko';
-        const iconoEstado = p.tipo !== 'texto_largo' ? (esCorrecta ? I('check') : I('x')) : '';
+        const esCorrecta = corr && corr.es_correcta !== undefined && corr.es_correcta !== null
+          ? !!corr.es_correcta
+          : window.puntuacionExamen.esCorrectaPregunta(respuestas[p.id], p);
 
         const completarConHuecos = p.tipo === 'completar' && Array.isArray(p.huecos) && p.huecos.length > 0 &&
           TIENE_MARCADOR.test(p.texto || '');
@@ -645,60 +758,75 @@
         if (completarConHuecos) {
           respuestaUsuarioHtml = this._renderResultadoCompletar(p, respuestas[p.id]);
         } else if (['multiple', 'verdadero_falso', 'varias_opciones', 'opcion_unica', 'relacionar', 'ordenar'].includes(p.tipo)) {
-          respuestaUsuarioHtml = this._textoOpcion(p, rUser);
-        } else if (p.tipo === 'completar') {
-          // Sin marcadores: las palabras aceptadas van en «respuesta_correcta».
-          respuestaUsuarioHtml = E(String(rUser));
+          respuestaUsuarioHtml = E(this._textoOpcion(p, respuestas[p.id] !== undefined ? respuestas[p.id] : '(sin respuesta)'));
         } else {
-          respuestaUsuarioHtml = E(String(rUser));
+          // Respuesta libre (incluido completar sin marcadores): texto plano.
+          respuestaUsuarioHtml = E(String(respuestas[p.id] !== undefined ? respuestas[p.id] : '(sin respuesta)'));
         }
 
         let correctaHtml = '';
-        if (!esCorrecta) {
-          if (completarConHuecos) {
-            correctaHtml = this._renderRespuestaCorrectaCompletar(p);
-          } else {
-            correctaHtml = E(this._textoOpcion(p, p.respuesta_correcta));
-          }
-        }
+        if (p.tipo === 'completar') correctaHtml = this._renderRespuestaCorrectaCompletar(p);
+        else if (p.respuesta_correcta != null) correctaHtml = E(this._textoOpcion(p, p.respuesta_correcta));
 
-        const pts = corr && corr.puntos != null ? corr.puntos : (esCorrecta ? window.puntuacionExamen.puntosPregunta(p) : 0);
         const ptsTotal = window.puntuacionExamen.puntosPregunta(p);
+        const pts = corr && corr.puntos != null ? Number(corr.puntos) : (esCorrecta ? ptsTotal : 0);
+        const puntosCompletos = pts >= ptsTotal;
 
-        return `<div class="resultado-pregunta ${estadoClase}">
-          <div class="resultado-pregunta__cabecera">
-            <span class="resultado-pregunta__numero ${esCorrecta ? 'resultado-pregunta__numero--ok' : 'resultado-pregunta__numero--ko'}">${i + 1}</span>
-            <span class="resultado-pregunta__titulo">${textoPreguntaVisible(p)}</span>
-            <span class="resultado-pregunta__icono ${esCorrecta ? 'resultado-pregunta__icono--ok' : 'resultado-pregunta__icono--ko'}">${iconoEstado}</span>
-          </div>
-          <div class="resultado-pregunta__cuerpo">
-            <div class="resultado-pregunta__fila">
-              <span class="resultado-pregunta__etiqueta">Tu respuesta:</span>
-              <span class="resultado-pregunta__valor">${respuestaUsuarioHtml || '<em class="u-color-texto-terciario">Sin respuesta</em>'}</span>
+        return `<article class="correccion-pregunta">
+          <header class="correccion-pregunta__cabecera">
+            <span class="correccion-pregunta__n">Pregunta ${i + 1}</span>
+            ${p.obligatoria ? '<span class="correccion-pregunta__oblig">Obligatoria</span>' : ''}
+            <span class="correccion-pregunta__marca ${esCorrecta ? 'correccion-pregunta__marca--ok' : 'correccion-pregunta__marca--mal'}">${esCorrecta ? I('check') : I('x')}</span>
+            <span class="correccion-pregunta__pts">${fmt(ptsTotal)} pt</span>
+          </header>
+          <p class="correccion-pregunta__enunciado">${textoPreguntaVisible(p)}</p>
+          <div class="correccion-pregunta__cuerpo">
+            <div class="correccion-pregunta__fila">
+              <span class="correccion-pregunta__etiqueta">Tu respuesta:</span>
+              <span class="correccion-pregunta__valor">${respuestaUsuarioHtml || '<em>Sin respuesta</em>'}</span>
             </div>
-            ${!esCorrecta && correctaHtml ? `<div class="resultado-pregunta__fila">
-              <span class="resultado-pregunta__etiqueta">Respuesta correcta:</span>
-              <span class="resultado-pregunta__valor resultado-pregunta__valor--correcta">${correctaHtml}</span>
+            ${correctaHtml ? `<div class="correccion-pregunta__fila correccion-pregunta__fila--correcta">
+              <span class="correccion-pregunta__etiqueta">Respuesta correcta:</span>
+              <span class="correccion-pregunta__valor">${correctaHtml}</span>
             </div>` : ''}
-            ${p.explicacion ? `<div class="resultado-pregunta__expl">${I('info')} ${E(p.explicacion)}</div>` : ''}
-            ${corr && corr.comentario ? `<div class="resultado-pregunta__comentario">${I('message-square')} <em>${E(corr.comentario)}</em></div>` : ''}
+            <div class="correccion-pregunta__puntos ${puntosCompletos ? 'correccion-pregunta__puntos--ok' : ''}">
+              <span class="correccion-pregunta__etiqueta">Puntos:</span>
+              <span class="correccion-pregunta__valor"><strong>${fmt(pts)}</strong><span class="correccion-pregunta__max"> / ${fmt(ptsTotal)}</span></span>
+            </div>
           </div>
-          <div class="resultado-pregunta__pie">
-            <span class="resultado-pregunta__puntos">${pts}/${ptsTotal} pts</span>
-            ${p.tipo !== 'texto_largo' ? `<span class="resultado-pregunta__tipo">${I('tag')} ${this._tipoLegible(p.tipo)}</span>` : ''}
-          </div>
-        </div>`;
+          ${corr && corr.comentario ? `<div class="correccion-pregunta__comentario"><strong>Comentario del profesor:</strong> ${E(corr.comentario)}</div>` : ''}
+        </article>`;
       }).join('');
-      window.Iconos.actualizar();
-    },
 
-    _tipoLegible(tipo) {
-      const map = {
-        multiple: 'Opción múltiple', opcion_unica: 'Única', verdadero_falso: 'V/F',
-        respuesta_corta: 'Resp. corta', texto_largo: 'Desarrollo',
-        completar: 'Completar', varias_opciones: 'Varias', relacionar: 'Relacionar', ordenar: 'Ordenar'
-      };
-      return map[tipo] || tipo;
+      raiz.innerHTML = `
+        <div class="examen-page o-contenedor o-pila o-pila--lg anim-exito">
+          <div class="o-flecha o-flecha--between" style="flex-wrap:wrap;gap:var(--espaciado-xs)">
+            <button class="btn-secundario" id="btnVolver">${I('arrow-left')} ${volverCorr.texto}</button>
+          </div>
+          <section class="correccion-tarjeta">
+            <span class="correccion-tarjeta__icono">${I('check')}</span>
+            <h2 class="correccion-tarjeta__titulo">Resultado</h2>
+            <p class="correccion-tarjeta__subtitulo">${E(examen.titulo)}</p>
+            <div class="correccion-marca">
+              <span class="correccion-marca__nota">${fmt(notaFinal)}</span>
+              <span class="correccion-marca__sobre">sobre 10</span>
+            </div>
+            <ul class="correccion-detalle">
+              <li class="correccion-detalle__item">
+                <span class="correccion-detalle__key">Aciertos</span>
+                <strong class="correccion-detalle__val">${pct} %</strong>
+              </li>
+            </ul>
+            <div class="correccion-preguntas">
+              <h3 class="correccion-preguntas__titulo">Tu resultado por pregunta</h3>
+              ${preguntasHtml}
+            </div>
+            ${intento.observaciones ? `<div class="correccion-observaciones"><strong>Comentario del profesor:</strong> ${E(intento.observaciones)}</div>` : ''}
+          </section>
+        </div>`;
+
+      raiz.querySelector('#btnVolver').onclick = () => router.navegar(volverCorr.destino);
+      window.Iconos.actualizar();
     },
 
     _renderResultadoCompletar(pregunta, respuesta) {
@@ -934,6 +1062,8 @@
 
     desmontar() {
       if (_cleanup) { _cleanup(); _cleanup = null; }
+      this._quitarGuardiaSalida();
+      this._desconectarAntesDeDescargar();
     }
   };
 })();

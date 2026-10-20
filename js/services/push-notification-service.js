@@ -54,6 +54,20 @@
     }
   }
 
+  /** Clave pública VAPID (base64url) de la configuración del entorno. */
+  function claveVapid() {
+    return (root.entorno && root.entorno.vapidPublicKey) || '';
+  }
+
+  /** Convierte la clave VAPID base64url en los bytes que exige pushManager.subscribe. */
+  function base64UrlABytes(texto) {
+    const relleno = '='.repeat((4 - (texto.length % 4)) % 4);
+    const binario = root.atob((texto + relleno).replace(/-/g, '+').replace(/_/g, '/'));
+    const bytes = new Uint8Array(binario.length);
+    for (let i = 0; i < binario.length; i++) bytes[i] = binario.charCodeAt(i);
+    return bytes;
+  }
+
   function tokenValido(token) {
     return typeof token === 'string' && TOKEN_RE.test(token);
   }
@@ -471,7 +485,7 @@
      * ANTES de signOut(), mientras la sesión aún es válida.
      */
     async desactivarTokens() {
-      const usuarioId = this._usuarioId;
+      const usuarioId = this._usuarioId || ((this._usuario() || {}).id) || null;
       if (!usuarioId) return;
       const sb = root.supabaseClient;
       if (!sb) return;
@@ -483,7 +497,65 @@
       } catch (e) {
         console.warn('[Push] No se pudieron desactivar los tokens:', e.message || e);
       }
+      try {
+        await sb.from('suscripciones_web_push')
+          .update({ activo: false, ultima_actividad: new Date().toISOString() })
+          .eq('usuario_id', usuarioId)
+          .eq('activo', true);
+      } catch (e) {
+        console.warn('[Push] No se pudieron desactivar las suscripciones web:', e.message || e);
+      }
       this._token = null;
+    }
+
+    // ---- Web Push (PWA en navegador) ----
+
+    /**
+     * true si el navegador puede recibir Web Push con el service worker de la
+     * PWA y hay clave VAPID configurada. En la app nativa no aplica (FCM).
+     */
+    webPushDisponible() {
+      return !esCapacitor()
+        && !!claveVapid()
+        && 'serviceWorker' in root.navigator
+        && 'PushManager' in root
+        && typeof root.Notification !== 'undefined';
+    }
+
+    /**
+     * Activa los avisos en ESTE navegador: pide permiso si hace falta, crea la
+     * suscripción Push y la guarda en suscripciones_web_push. Solo puede
+     * llamarse con sesión iniciada y desde una acción del usuario.
+     * Devuelve true si quedó activo.
+     */
+    async activarWeb() {
+      if (!this.webPushDisponible()) return false;
+      const usuario = this._usuario();
+      const sb = root.supabaseClient;
+      if (!usuario || !usuario.id || !sb) return false;
+      if (root.Notification.permission === 'default') {
+        await root.Notification.requestPermission();
+      }
+      if (root.Notification.permission !== 'granted') return false;
+
+      const registro = await root.navigator.serviceWorker.ready;
+      let suscripcion = await registro.pushManager.getSubscription();
+      if (!suscripcion) {
+        suscripcion = await registro.pushManager.subscribe({
+          userVisibleOnly: true,
+          applicationServerKey: base64UrlABytes(claveVapid())
+        });
+      }
+      const json = suscripcion.toJSON();
+      // RPC: reasigna el endpoint si el navegador cambió de cuenta (RLS no lo permite en un upsert).
+      const { error } = await sb.rpc('registrar_suscripcion_web', {
+        p_endpoint: json.endpoint,
+        p_p256dh: json.keys.p256dh,
+        p_auth: json.keys.auth
+      });
+      if (error) throw error;
+      this._usuarioId = usuario.id;
+      return true;
     }
 
     // ---- Heartbeat ----

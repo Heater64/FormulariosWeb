@@ -473,7 +473,9 @@
         todoProg.forEach(r => { if (r.capitulos?.libro_id) librosUnicos.add(r.capitulos.libro_id); });
 
         const nuevaRacha = window.progresoLectura.calcularRacha(todoProg);
-        const anteriorRacha = parseInt(localStorage.getItem('fb_racha') || '0', 10);
+        // Racha por usuario: en un equipo compartido no debe heredar la de otra cuenta.
+        const claveRacha = 'fb_racha:' + usuario.id;
+        const anteriorRacha = parseInt(localStorage.getItem(claveRacha) || '0', 10);
 
         // Verificar y otorgar logros
         if (window.logrosDominio) {
@@ -492,7 +494,7 @@
         }
 
         if (nuevaRacha > anteriorRacha) {
-          localStorage.setItem('fb_racha', String(nuevaRacha));
+          localStorage.setItem(claveRacha, String(nuevaRacha));
           if (!haySiguiente) this._celebrar('trophy', '¡Libro completado!');
           else this._celebrar('flame', '¡Racha de ' + nuevaRacha + ' días!');
         } else if (!haySiguiente) {

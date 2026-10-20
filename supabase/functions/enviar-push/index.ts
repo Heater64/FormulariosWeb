@@ -1,8 +1,10 @@
 // ============================================================================
 // Edge Function: enviar-push
 // ============================================================================
-// Envía notificaciones nativas Android (FCM HTTP v1) a los dispositivos
-// registrados de los destinatarios de una notificación de FormsBiblicos.
+// Envía avisos de FormsBiblicos a los destinatarios de una notificación por
+// dos canales independientes:
+//   • Android nativo (FCM HTTP v1) → dispositivos_notificacion
+//   • PWA en navegador (Web Push con VAPID) → suscripciones_web_push
 //
 // CONTRATO (llamada desde la app con el JWT del usuario autenticado):
 //
@@ -26,11 +28,17 @@
 //
 //   Respuesta: { "enviados": n, "sinTokens": m, "errores": [...] }
 //
-// SECRETS NECESARIOS (Dashboard Supabase → Edge Functions → Secrets):
+// SECRETS (Dashboard Supabase → Edge Functions → Secrets):
 //   - SUPABASE_SERVICE_ROLE_KEY  (Settings → API → service_role)
-//   - FCM_SERVICE_ACCOUNT        (JSON completo de la cuenta de servicio de
-//                                 Firebase: project_id, client_email,
-//                                 private_key)
+//   - FCM_SERVICE_ACCOUNT        (opcional: JSON completo de la cuenta de
+//                                 servicio de Firebase: project_id,
+//                                 client_email, private_key). Sin él no se
+//                                 envían avisos nativos.
+//   - VAPID_PUBLIC_KEY           (opcional: clave pública VAPID; la misma que
+//                                 window.ENV.VAPID_PUBLIC_KEY en la PWA)
+//   - VAPID_PRIVATE_KEY          (opcional: clave privada VAPID; NUNCA al cliente)
+//   - VAPID_SUBJECT              (opcional: "mailto:..." de contacto VAPID)
+//   Web Push solo se activa si están las tres claves VAPID.
 //
 // Nota de diseño: la app llama a esta función DIRECTAMENTE con su JWT (en
 // lugar de un trigger SQL con pg_net) para no almacenar la service_role key
@@ -40,9 +48,13 @@
 // ============================================================================
 
 import { createClient } from "npm:@supabase/supabase-js@2";
+import webpush from "npm:web-push@3.6.7";
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+const VAPID_PUBLIC_KEY = Deno.env.get("VAPID_PUBLIC_KEY") || "";
+const VAPID_PRIVATE_KEY = Deno.env.get("VAPID_PRIVATE_KEY") || "";
+const VAPID_SUBJECT = Deno.env.get("VAPID_SUBJECT") || "";
 
 // Solo usuarios autenticados (mismo modelo de confianza que la RPC
 // enviar_notificacion). Con verify_jwt activado, el runtime ya validó la
@@ -231,6 +243,19 @@ function mensajeFcm(token, notif, accessToken) {
 }
 
 // ----------------------------------------------------------------------------
+// Web Push (PWA) — payload JSON que consume public/sw.js (evento push)
+// ----------------------------------------------------------------------------
+
+function payloadWeb(notif) {
+  return JSON.stringify({
+    title: String(notif.titulo || "FormsBiblicos").slice(0, 200),
+    body: String(notif.cuerpo || "").slice(0, 500),
+    url: notif.url ? String(notif.url).slice(0, 500) : "/",
+    tag: notif.id ? String(notif.id) : String(notif.tipo || "generica"),
+  });
+}
+
+// ----------------------------------------------------------------------------
 // Handler
 // ----------------------------------------------------------------------------
 
@@ -252,13 +277,6 @@ Deno.serve(async (req) => {
     });
   }
 
-  const serviceAccount = cuentaServicio();
-  if (!serviceAccount) {
-    return new Response(JSON.stringify({ error: "FCM_SERVICE_ACCOUNT no está configurado" }), {
-      status: 500,
-      headers: cabeceras,
-    });
-  }
   if (!SUPABASE_URL || !SERVICE_ROLE_KEY) {
     return new Response(JSON.stringify({ error: "SUPABASE_SERVICE_ROLE_KEY no está configurado" }), {
       status: 500,
@@ -281,21 +299,36 @@ Deno.serve(async (req) => {
     });
   }
 
-  // 1) OAuth2 → token de acceso de Firebase
-  let accessToken;
-  try {
-    accessToken = await obtenerAccessToken(serviceAccount);
-  } catch (e) {
-    return new Response(JSON.stringify({ error: `No se pudo autenticar con FCM: ${e.message}` }), {
-      status: 500,
-      headers: cabeceras,
-    });
+  const errores = [];
+
+  // 1) FCM: OAuth2 → token de acceso de Firebase (solo si hay cuenta de
+  //    servicio). Un fallo aquí no impide los avisos Web Push.
+  const serviceAccount = cuentaServicio();
+  let accessToken = null;
+  if (serviceAccount) {
+    try {
+      accessToken = await obtenerAccessToken(serviceAccount);
+    } catch (e) {
+      errores.push({ canal: "fcm", error: `No se pudo autenticar con FCM: ${e.message}` });
+    }
   }
 
-  // 2) Tokens activos de los destinatarios (una sola consulta)
+  // 2) Web Push: configurar VAPID solo si hay las tres claves.
+  let webPushActivo = false;
+  if (VAPID_PUBLIC_KEY && VAPID_PRIVATE_KEY && VAPID_SUBJECT) {
+    try {
+      webpush.setVapidDetails(VAPID_SUBJECT, VAPID_PUBLIC_KEY, VAPID_PRIVATE_KEY);
+      webPushActivo = true;
+    } catch (e) {
+      errores.push({ canal: "web", error: `VAPID no válido: ${e.message}` });
+    }
+  }
+
+  // 3) Suscriptores activos de los destinatarios (una consulta por canal)
   const supabase = createClient(SUPABASE_URL, SERVICE_ROLE_KEY);
   const usuarios = [...new Set(notificaciones.map((n) => n?.usuario_id).filter(Boolean))];
   let dispositivos = [];
+  let suscripciones = [];
   try {
     const { data, error } = await supabase
       .from("dispositivos_notificacion")
@@ -304,8 +337,15 @@ Deno.serve(async (req) => {
       .eq("activo", true);
     if (error) throw error;
     dispositivos = data || [];
+    const { data: webs, error: errorWeb } = await supabase
+      .from("suscripciones_web_push")
+      .select("id, usuario_id, endpoint, p256dh, auth")
+      .in("usuario_id", usuarios)
+      .eq("activo", true);
+    if (errorWeb) throw errorWeb;
+    suscripciones = webs || [];
   } catch (e) {
-    return new Response(JSON.stringify({ error: `No se pudieron leer los dispositivos: ${e.message}` }), {
+    return new Response(JSON.stringify({ error: `No se pudieron leer los suscriptores: ${e.message}` }), {
       status: 500,
       headers: cabeceras,
     });
@@ -318,18 +358,27 @@ Deno.serve(async (req) => {
     tokensPorUsuario.set(d.usuario_id, lista);
   }
 
-  // 3) Envío
-  const credenciales = { accessToken, projectId: serviceAccount.project_id };
+  const webPorUsuario = new Map();
+  for (const s of suscripciones) {
+    const lista = webPorUsuario.get(s.usuario_id) || [];
+    lista.push(s);
+    webPorUsuario.set(s.usuario_id, lista);
+  }
+
+  // 4) Envío
+  const credenciales = accessToken ? { accessToken, projectId: serviceAccount.project_id } : null;
   let enviados = 0;
   let sinTokens = 0;
-  const errores = [];
 
   for (const notif of notificaciones) {
-    const tokens = tokensPorUsuario.get(notif.usuario_id) || [];
-    if (!tokens.length) {
+    const tokens = (credenciales && tokensPorUsuario.get(notif.usuario_id)) || [];
+    const webs = (webPushActivo && webPorUsuario.get(notif.usuario_id)) || [];
+    if (!tokens.length && !webs.length) {
       sinTokens += 1;
       continue;
     }
+
+    // 4a) Android nativo (FCM)
     for (const dispositivo of tokens) {
       try {
         const { url, options } = mensajeFcm(dispositivo.token_fcm, notif, credenciales);
@@ -340,8 +389,7 @@ Deno.serve(async (req) => {
           await supabase
             .from("dispositivos_notificacion")
             .update({ ultima_actividad: new Date().toISOString() })
-            .eq("id", dispositivo.id)
-            .catch(() => {});
+            .eq("id", dispositivo.id);
         } else {
           const texto = await res.text();
           const esNoRegistrado = /UNREGISTERED|NOT_FOUND|registration-token/i.test(texto);
@@ -350,15 +398,44 @@ Deno.serve(async (req) => {
             await supabase
               .from("dispositivos_notificacion")
               .update({ activo: false, ultimo_error: "UNREGISTERED" })
-              .eq("id", dispositivo.id)
-              .catch(() => {});
-            errores.push({ token: dispositivo.token_fcm.slice(0, 12) + "…", error: "UNREGISTERED" });
+              .eq("id", dispositivo.id);
+            errores.push({ canal: "fcm", token: dispositivo.token_fcm.slice(0, 12) + "…", error: "UNREGISTERED" });
           } else {
-            errores.push({ token: dispositivo.token_fcm.slice(0, 12) + "…", error: `FCM ${res.status}` });
+            errores.push({ canal: "fcm", token: dispositivo.token_fcm.slice(0, 12) + "…", error: `FCM ${res.status}` });
           }
         }
       } catch (e) {
-        errores.push({ token: dispositivo.token_fcm.slice(0, 12) + "…", error: e.message });
+        errores.push({ canal: "fcm", token: dispositivo.token_fcm.slice(0, 12) + "…", error: e.message });
+      }
+    }
+
+    // 4b) PWA (Web Push)
+    for (const sub of webs) {
+      try {
+        await webpush.sendNotification(
+          { endpoint: sub.endpoint, keys: { p256dh: sub.p256dh, auth: sub.auth } },
+          payloadWeb(notif),
+          { TTL: 3600, urgency: "normal" },
+        );
+        enviados += 1;
+        await supabase
+          .from("suscripciones_web_push")
+          .update({ ultima_actividad: new Date().toISOString(), ultimo_error: null })
+          .eq("id", sub.id);
+      } catch (e) {
+        const estado = e?.statusCode;
+        // 404/410: el navegador ya no tiene la suscripción → desactivarla
+        if (estado === 404 || estado === 410) {
+          await supabase
+            .from("suscripciones_web_push")
+            .update({ activo: false, ultimo_error: `HTTP ${estado}` })
+            .eq("id", sub.id);
+        }
+        errores.push({
+          canal: "web",
+          endpoint: sub.endpoint.slice(0, 40) + "…",
+          error: estado ? `Web Push ${estado}` : e.message,
+        });
       }
     }
   }

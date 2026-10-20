@@ -51,10 +51,14 @@ const jsFiles = [
   join(root, 'js', 'core', 'errores.js'),
   join(root, 'js', 'datos', 'supabase-client.js'),
   join(root, 'js', 'datos', 'auth-repository.js'),
+  // Formulario de acceso compartido y pastilla de instalación (landing y /e/<token>)
+  join(root, 'js', 'componentes', 'login-form.js'),
+  join(root, 'js', 'componentes', 'pwa-pill.js'),
 ];
 for (const dir of jsDirs) {
   mkdirSync(dir.dest, { recursive: true });
 }
+mkdirSync(join(distPublic, 'js', 'componentes'), { recursive: true });
 for (const file of jsFiles) {
   if (existsSync(file)) {
     const dest = file.replace(root, distPublic);

@@ -71,7 +71,7 @@ Al subir la versión, actualiza también `CACHE_VERSION` en `sw.js` para que los
 
 1. Clona el repositorio
 2. Abre `index.html` en un servidor local (Live Server, http-server, `npm run dev`, etc.)
-3. O usa la página de login directa: `paginas/login.html`
+3. O usa la página de login directa: `login.html`
 4. Para probar la instalación PWA: despliega en https (p. ej. Vercel con `npm run build:public`) y usa "Instalar aplicación" del navegador.
 
 ### Cuenta de producción

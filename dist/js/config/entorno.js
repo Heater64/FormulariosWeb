@@ -1,1 +1,0 @@
-(function(){"use strict";const o=typeof window.ENV=="object"&&window.ENV||{},e={supabaseUrl:o.SUPABASE_URL||"https://josxcvncescqqlajahkh.supabase.co",supabaseAnonKey:o.SUPABASE_ANON_KEY||"sb_publishable_UvqSGCMonC_9ncBmYV14tw_PLM6-9R8",modoDemo:o.MODO_DEMO===!0,credencialesDemo:Array.isArray(o.CREDENCIALES_DEMO)?o.CREDENCIALES_DEMO:[]};window.entorno=e})();

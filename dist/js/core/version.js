@@ -1,1 +1,0 @@
-window.__FB_APP_VERSION__={version:"1.0.12",versionCode:12},window.__FB_UPDATE_MANIFEST_URL__="",window.__FB_SENTRY_DSN_PUBLIC__="",window.__FB_SENTRY_SDK_URL__="",window.__FB_SENTRY_ENVIRONMENT__="production";

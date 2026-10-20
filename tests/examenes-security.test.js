@@ -21,6 +21,15 @@ describe('contrato de seguridad de exámenes', () => {
     expect(migration).toContain("'preguntas', public.fb_sanitizar_preguntas(e.preguntas)");
   });
 
+  test('la entrega por enlace notifica al creador desde el servidor', () => {
+    const notif = read('supabase/migraciones/066_notificar_entrega_enlace.sql');
+    expect(notif).toContain('CREATE TRIGGER trg_fb_notificar_entrega_enlace');
+    expect(notif).toContain('AFTER INSERT OR UPDATE OF estado ON public.intentos_examen_personalizado');
+    expect(notif).toContain("NEW.enlace_id IS NULL");
+    expect(notif).toContain("'examen_entregado'");
+    expect(notif).toContain('v_creador');
+  });
+
   test('el cliente entrega y corrige mediante RPCs', () => {
     expect(repository).toContain("rpc('entregar_intento_examen'");
     expect(repository).toContain("rpc('calificar_intento_examen'");

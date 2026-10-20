@@ -164,8 +164,144 @@ describe('adminRepository consultas acotadas', () => {
     }]);
   });
 
+  test('la ruta #!/admin del SPA redirige al panel standalone (no 404)', () => {
+    const codigo = readFileSync(join(root, 'js/core/index.js'), 'utf8');
+    expect(codigo).toContain("router.registrar('/admin'");
+    expect(codigo).toContain('paginas/admin/panel-admin.html');
+  });
+
+  test('el panel refleja la papelera de exámenes (ver, restaurar, borrado suave/definitivo)', async () => {
+    const codigo = readFileSync(join(root, 'js/vistas/admin/vista-panel-admin.js'), 'utf8');
+    // Filtro y contador de archivados.
+    expect(codigo).toContain('>En papelera</option>');
+    expect(codigo).toContain('en papelera');
+    // La papelera se restaura o se borra; no se edita ni se publica desde ella.
+    expect(codigo).toContain('btn-restaurar-examen');
+    expect(codigo).toContain('btn-eliminar-definitivo');
+    expect(codigo).toContain("['borrador', 'cerrado'].includes(ex.estado)");
+    // Eliminar mueve a la papelera, no borra en duro.
+    expect(codigo).toContain('moverExamenAPapelera');
+    expect(codigo).not.toContain('adminRepository.eliminarExamen(');
+    // La página standalone carga el repositorio con la lógica de papelera.
+    const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
+    expect(html).toContain('js/datos/examenes-repository.js');
+
+    // Delegación: mismos métodos y auditoría que en Mis exámenes.
+    const llamadas = [];
+    global.window.supabaseClient = {};
+    global.window.examenesRepository = {
+      moverAPapelera: async (id) => { llamadas.push(['mover', id]); return { id }; },
+      restaurar: async (id) => { llamadas.push(['restaurar', id]); return { id }; },
+      eliminarDefinitivo: async (id) => { llamadas.push(['definitivo', id]); return { id }; }
+    };
+    await window.adminRepository.moverExamenAPapelera('ex-1');
+    await window.adminRepository.restaurarExamen('ex-1');
+    await window.adminRepository.eliminarExamenDefinitivo('ex-1');
+    expect(llamadas).toEqual([['mover', 'ex-1'], ['restaurar', 'ex-1'], ['definitivo', 'ex-1']]);
+    delete global.window.examenesRepository;
+  });
+
+  test('la pestaña Usuarios muestra solo el buscador, sin pills de filtro', () => {
+    const codigo = readFileSync(join(root, 'js/vistas/admin/vista-panel-admin.js'), 'utf8');
+    expect(codigo).toContain('id="buscarUsuarios"');
+    expect(codigo).not.toContain('id="filtroRolUsuarios"');
+    expect(codigo).not.toContain('id="filtroGrupoUsuarios"');
+    expect(codigo).not.toContain('id="filtroEstadoUsuarios"');
+    expect(codigo).not.toContain('id="ordenUsuarios"');
+  });
+
+  test('la pantalla Cuenta expone el acceso al Centro de Administración (solo admin/owner)', () => {
+    const codigo = readFileSync(join(root, 'js/vistas/vista-cuenta.js'), 'utf8');
+    // Misma tarjeta de acceso rápido que en Perfil (mismo tema y organización).
+    expect(codigo).toContain('perfil-boton-seccion');
+    expect(codigo).toContain('btnPanelAdmin');
+    expect(codigo).toContain("['admin', 'owner'].includes(rol)");
+    expect(codigo).toContain("router.navegar('/admin?origen=cuenta')");
+  });
+
+  test('el panel standalone vuelve al origen (cuenta o perfil, sin redirección abierta)', () => {
+    const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
+    expect(html).toContain("_origen === 'perfil' ? 'perfil' : 'cuenta'");
+    expect(html).toContain("'../../index.html#!/' + _destino");
+  });
+
+  test('la página standalone aplica el tema y ajustes del usuario como el SPA', () => {
+    const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
+    expect(html).toContain('js/core/theme-init.js');
+    expect(html).toContain('js/utilidades/preferencias.js');
+    expect(html).toContain('window.preferencias');
+    expect(html).toContain('.aplicar()');
+  });
+
+  test('la página standalone reenvía el query (?tab=) al montar el panel', () => {
+    const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
+    expect(html).toContain('new URLSearchParams(window.location.search)');
+    expect(html).toContain('montar(document.getElementById');
+    expect(html).toContain('{ query }');
+  });
+
   test('el panel no expone borrado de auditoría tras hacerla inmutable', () => {
     const codigo = readFileSync(join(root, 'js/vistas/admin/vista-panel-admin.js'), 'utf8');
     expect(codigo).not.toContain('limpiar-auditoria');
+  });
+
+  test('crearUsuario envía nombre, username, contraseña manual, rol y grupo a la RPC', async () => {
+    const llamadas = [];
+    global.window.supabaseClient = {
+      rpc: async (nombre, params) => {
+        llamadas.push({ nombre, params });
+        return { data: 'nuevo-id', error: null };
+      }
+    };
+
+    const resultado = await window.adminRepository.crearUsuario({
+      nombre_completo: 'Ana Pérez',
+      username: 'ana.2024',
+      password: 'Secreta123',
+      rol: 'usuario',
+      grupo_id: 'clase-1'
+    });
+
+    expect(resultado).toEqual({ id: 'nuevo-id' });
+    expect(llamadas).toEqual([{
+      nombre: 'admin_crear_usuario',
+      params: {
+        p_nombre_completo: 'Ana Pérez',
+        p_username: 'ana.2024',
+        p_password: 'Secreta123',
+        p_rol: 'usuario',
+        p_grupo_id: 'clase-1'
+      }
+    }]);
+  });
+
+  test('crearUsuario traduce el username duplicado y el rechazo por falta de clase', async () => {
+    global.window.supabaseClient = {
+      rpc: async () => ({ data: null, error: { message: 'Ese nombre de usuario ya existe' } })
+    };
+    await expect(window.adminRepository.crearUsuario({
+      nombre_completo: 'Ana', username: 'ana.2024', password: 'Secreta123', rol: 'usuario', grupo_id: 'clase-1'
+    })).rejects.toThrow('Ese nombre de usuario ya existe.');
+
+    global.window.supabaseClient = {
+      rpc: async () => ({ data: null, error: { message: 'No autorizado: solo el owner o el admin de una clase' } })
+    };
+    await expect(window.adminRepository.crearUsuario({
+      nombre_completo: 'Ana', username: 'ana.2024', password: 'Secreta123', rol: 'usuario', grupo_id: null
+    })).rejects.toThrow(/clase asignada/);
+  });
+
+  test('el formulario de crear usuario fija el grupo del admin y exige contraseña manual válida', () => {
+    const codigo = readFileSync(join(root, 'js/vistas/admin/vista-panel-admin.js'), 'utf8');
+    // Grupo forzado a la clase del admin (no se puede elegir otra).
+    expect(codigo).toContain('const grupoAdmin = esAdminClase ? (usuario.grupo_id || null) : null');
+    expect(codigo).toContain('const grupoId = esAdminClase ? grupoAdmin : (datos.grupo_id || null)');
+    // Sin clase asignada: aviso explicativo en vez de fallo silencioso.
+    expect(codigo).toContain('aún no tiene clase asignada');
+    // Contraseña manual con el mismo mínimo que el resto de la app.
+    expect(codigo).toContain('_validarPasswordManual');
+    expect(codigo).toContain('Mínimo 8 caracteres, letras y números');
+    // La confirmación muestra quién se creó sin re-mostrar la clave.
+    expect(codigo).toContain('Ya puede iniciar sesión con la contraseña que le diste');
   });
 });

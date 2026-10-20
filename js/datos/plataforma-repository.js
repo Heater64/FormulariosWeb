@@ -51,6 +51,10 @@
       if (nombre === 'fb_evaluacion_alumnos_guardar' && (error.code === 'PGRST202' || error.code === '42883')) {
         throw new Error('Falta aplicar la migración 064_evaluacion_hoja_calculo.sql en Supabase. Ejecútala en el SQL Editor y vuelve a cargar la sección.');
       }
+      // Asignación de cuentas a filas y notas del alumno: migración 067.
+      if (['fb_evaluacion_vinculos', 'fb_evaluacion_vincular', 'fb_mis_notas_evaluaciones'].includes(nombre) && (error.code === 'PGRST202' || error.code === '42883')) {
+        throw new Error('Falta aplicar la migración 067_evaluacion_vinculo_alumno.sql en Supabase. Ejecútala en el SQL Editor y vuelve a cargar la sección.');
+      }
       // Las RPC de evaluaciones vienen de la migración 060.
       if (nombre.indexOf('fb_evaluacion') === 0 && (error.code === 'PGRST202' || error.code === '42883')) {
         throw new Error('Falta aplicar la migración 060_evaluaciones.sql (y sus actualizaciones 064_evaluacion_hoja_calculo.sql y 065_evaluacion_secciones_paginadas.sql) en Supabase. Ejecútalas en el SQL Editor y vuelve a cargar la sección.');
@@ -107,6 +111,18 @@
         p_intento_id: intentoId,
         p_correccion: correccion || {},
         p_observaciones: observaciones || ''
+      });
+    },
+
+    /**
+     * Asigna (o con `alumnoId` nulo desasigna) la cuenta de alumno que verá
+     * este intento en «Mis notas» (migración 069). Devuelve
+     * { intento_id, alumno_id, alumno_asignado, ya_tenia_intento }.
+     */
+    asignarIntentoAlumno(intentoId, alumnoId) {
+      return rpc('fb_asignar_intento_alumno', {
+        p_intento_id: intentoId,
+        p_alumno: alumnoId || null
       });
     },
 
@@ -240,6 +256,23 @@
       return rpc('fb_evaluacion_importar', {
         p_id: id, p_celdas: celdas || [], p_finales: finales || []
       });
+    },
+
+    /** Cuentas de alumno vinculadas a las filas de una evaluación (migración 067). */
+    vinculosEvaluacion(id) {
+      return rpc('fb_evaluacion_vinculos', { p_id: id });
+    },
+
+    /** Asigna (o quita con `alumnoId` nulo) la cuenta de una fila de la rejilla. */
+    vincularAlumnoEvaluacion(id, clave, alumnoId) {
+      return rpc('fb_evaluacion_vincular', {
+        p_id: id, p_clave: clave, p_alumno: alumnoId || null
+      });
+    },
+
+    /** Solo las notas finales propias del alumno con sesión (migración 067). */
+    misNotasEvaluaciones() {
+      return rpc('fb_mis_notas_evaluaciones');
     }
   };
 })();

@@ -133,33 +133,87 @@ select[data-campo="tipo"]:focus {
   border-color: var(--color-acento);
 }
 
-/* Tarjeta de pregunta en examen (tomar examen) */
+/* Pregunta en examen (tomar examen): mismo diseño que el enlace público.
+   Las preguntas son filas separadas dentro de .examen-tarjeta. */
 .pregunta-examen {
-  padding: var(--espaciado-md);
-  background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  margin-bottom: var(--espaciado-md);
+  padding: var(--espaciado-md) 0 var(--espaciado-lg);
+  border-bottom: 1px solid var(--color-borde);
+}
+
+.pregunta-examen:last-child {
+  border-bottom: 0;
+}
+
+.pregunta-examen__cabecera {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-xs);
 }
 
 .pregunta-examen__numero {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  width: 28px;
-  height: 28px;
-  border-radius: 50%;
-  background: var(--color-acento);
-  color: var(--color-texto-acento);
-  font-size: var(--texto-sm);
+  font-size: var(--texto-xs);
   font-weight: 700;
-  margin-right: var(--espaciado-xs);
+  color: var(--color-acento);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.pregunta-examen__puntos {
+  margin-left: auto;
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  color: var(--color-texto-terciario);
 }
 
 .pregunta-examen__texto {
+  font-size: var(--texto-base);
   font-weight: 600;
-  margin-bottom: var(--espaciado-sm);
-  line-height: 1.4;
+  color: var(--color-texto);
+  line-height: 1.55;
+  white-space: pre-wrap;
+  margin: 0 0 var(--espaciado-md);
+}
+
+.pregunta-examen__obligatoria {
+  color: var(--color-error);
+  font-weight: 700;
+}
+
+/* Píldora de estado bajo el enunciado (Sin responder / Respondida) */
+.pregunta-examen__texto::after {
+  content: none;
+}
+
+.pregunta-examen__estado {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+  background: #fef3c7;
+  color: #92400e;
+  margin-bottom: var(--espaciado-xs);
+}
+
+.pregunta-examen__estado--ok {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+.pregunta-examen__sub {
+  margin: 0 0 var(--espaciado-md);
+  font-size: var(--texto-sm);
+  color: #4b5563;
+}
+
+/* En modo examen cada pregunta ya es una tarjeta: sin filete interior */
+#preguntasExamen .pregunta-examen {
+  border-bottom: 0;
+}
+
+#preguntasExamen .pregunta-examen:last-child {
+  border-bottom: 0;
 }
 
 .pregunta-examen__opciones {
@@ -180,13 +234,13 @@ select[data-campo="tipo"]:focus {
 }
 
 .pregunta-examen__opcion:hover {
-  background: var(--color-fondo-alt);
-  border-color: var(--color-acento-soft);
+  background: #f1f5f9;
+  border-color: #cbd5e1;
 }
 
 .pregunta-examen__opcion--seleccionada {
-  background: var(--color-acento-soft);
-  border-color: var(--color-acento);
+  background: #eff6ff;
+  border-color: #2563eb;
 }
 
 .pregunta-examen input[type="text"],
@@ -212,20 +266,8 @@ select[data-campo="tipo"]:focus {
     font-size: var(--texto-sm);
     gap: var(--espaciado-xs);
   }
-  .pregunta-examen {
-    padding: var(--espaciado-sm);
-  }
-  .pregunta-examen__texto {
-    font-size: var(--texto-sm);
-  }
   .pregunta-examen__opcion {
     padding: var(--espaciado-xs) var(--espaciado-sm);
-  }
-  /* el número de pregunta se hace algo más pequeño en móvil */
-  .pregunta-examen__numero {
-    width: 24px;
-    height: 24px;
-    font-size: var(--texto-xs);
   }
   /* El texto del selector de tipo (en editor) pasa a ancho completo */
   select[data-campo="tipo"] {
@@ -238,10 +280,5 @@ select[data-campo="tipo"]:focus {
   .pregunta__opcion {
     padding: var(--espaciado-xxs) var(--espaciado-xs);
     font-size: var(--texto-xs);
-  }
-  .pregunta-examen__numero {
-    width: 22px;
-    height: 22px;
-    margin-right: 4px;
   }
 }

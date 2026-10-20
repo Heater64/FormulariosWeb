@@ -454,6 +454,7 @@ describe('desactivarTokens()', () => {
 
   test('sin usuarioId registrado es no-op', async () => {
     let llamadas = 0;
+    global.store.actualizar('usuario', null);
     global.supabaseClient = { from: () => ({ update: () => ({ eq: () => { llamadas += 1; return Promise.resolve({}); } }) }) };
     const s = new PushService();
     await s.desactivarTokens();

@@ -356,6 +356,7 @@
         examen = {
           id: examen.id,
           grupo_id: examen.grupo_id,
+          evaluacion_id: examen.evaluacion_id || null,
           creado_por: examen.creado_por,
           titulo: examen.titulo || '',
           descripcion: examen.descripcion || '',
@@ -369,6 +370,7 @@
       } else {
         examen = {
           grupo_id: usuario.grupo_id || null,
+          evaluacion_id: null,
           creado_por: usuario.id,
           titulo: '',
           descripcion: '',
@@ -377,6 +379,14 @@
           config: {},
           preguntas: [preguntaTest()]
         };
+      }
+
+      // Evaluación de la que forma parte: la que trae el enlace de Calificaciones
+      // («Añadir examen») o la ya guardada. El enlace se valida contra las del grupo.
+      this._evaluaciones = await this._cargarEvaluaciones(examen.grupo_id || usuario.grupo_id || null);
+      if (!editando) {
+        const desdeEnlace = params && params.query && params.query.evaluacion;
+        examen.evaluacion_id = this._evaluaciones.some((e) => e.id === desdeEnlace) ? desdeEnlace : null;
       }
 
       // Recuperación: si este dispositivo conserva cambios sin sincronizar, se
@@ -435,6 +445,9 @@
       const examen = {
         id: guardado.id || (examenServidor && examenServidor.id) || undefined,
         grupo_id: guardado.grupo_id || (examenServidor && examenServidor.grupo_id) || null,
+        evaluacion_id: 'evaluacion_id' in guardado
+          ? (guardado.evaluacion_id || null)
+          : ((examenServidor && examenServidor.evaluacion_id) || null),
         creado_por: guardado.creado_por || (examenServidor && examenServidor.creado_por) || null,
         titulo: guardado.titulo || '',
         descripcion: guardado.descripcion || '',
@@ -502,6 +515,22 @@
               <label class="adm-campo__etiqueta" for="descripcion">Descripción o instrucciones (opcional)</label>
               <textarea class="adm-entrada" id="descripcion" maxlength="1200" placeholder="Instrucciones para el alumno…">${esc(ex.descripcion)}</textarea>
             </div>
+            <div class="adm-campo">
+              <label class="adm-campo__etiqueta" for="evaluacion">Evaluación</label>
+              <select class="adm-entrada" id="evaluacion">
+                <option value="">Sin evaluación (examen suelto)</option>
+                ${this._evaluaciones.map((e) => `<option value="${esc(e.id)}" ${ex.evaluacion_id === e.id ? 'selected' : ''}>${esc(e.titulo)}${e.asignatura ? ' · ' + esc(e.asignatura) : ''}</option>`).join('')}
+              </select>
+              <p class="adm-campo__ayuda">Las notas de este examen se añadirán automáticamente a la evaluación elegida.</p>
+            </div>
+            ${this._evaluaciones.length ? '' : `<div class="adm-aviso adm-aviso--info">Aún no hay evaluaciones en tu clase. Crea una para vincular este examen y sus notas.</div>`}
+            <div class="adm-campo">
+              <label class="adm-campo__etiqueta" for="nuevaEvaluacion">Crear una evaluación nueva</label>
+              <div style="display:flex;gap:var(--espaciado-xs);flex-wrap:wrap">
+                <input class="adm-entrada" id="nuevaEvaluacion" type="text" maxlength="120" placeholder="Ej.: Evaluación 1 — Tema 4" style="flex:1;min-width:200px">
+                <button class="adm-btn" id="btnCrearEvaluacion" type="button">Crear y seleccionar</button>
+              </div>
+            </div>
           </section>
 
           <section class="adm-seccion">
@@ -524,6 +553,11 @@
         this._examen.descripcion = e.target.value;
         this._marcarCambio();
       });
+      raiz.querySelector('#evaluacion').addEventListener('change', (e) => {
+        this._examen.evaluacion_id = e.target.value || null;
+        this._marcarCambio();
+      });
+      raiz.querySelector('#btnCrearEvaluacion').addEventListener('click', () => this._crearEvaluacionInline());
       raiz.querySelector('#btnAddPregunta').addEventListener('click', () => {
         this._sincronizarCampos();
         this._mostrarSelectorTipo();
@@ -1055,6 +1089,7 @@
           const guardado = await window.examenesRepository.guardar({
             id: ex.id,
             grupo_id: grupoId,
+            evaluacion_id: ex.evaluacion_id || null,
             creado_por: ex.creado_por || usuario.id,
             titulo: String(ex.titulo).trim(),
             descripcion: String(ex.descripcion || '').trim(),
@@ -1067,6 +1102,7 @@
 
           ex.id = guardado.id;
           ex.grupo_id = guardado.grupo_id;
+          ex.evaluacion_id = guardado.evaluacion_id || null;
           ex.creado_por = guardado.creado_por;
           ex.estado = guardado.estado || ex.estado;
           ex.publicado = !!guardado.publicado;
@@ -1285,6 +1321,53 @@
       return { grupoId, usuario };
     },
 
+    /** Evaluaciones del grupo para el selector; con error, avisa y devuelve lista vacía. */
+    async _cargarEvaluaciones(grupoId) {
+      if (!grupoId || !window.examenesRepository) return [];
+      try {
+        return (await window.examenesRepository.listarEvaluaciones(grupoId)) || [];
+      } catch (e) {
+        window.helpers.mostrarAlerta('No se pudieron cargar las evaluaciones: ' + e.message, 'error');
+        return [];
+      }
+    },
+
+    /** Crea una evaluación desde el editor y la deja seleccionada en el examen. */
+    async _crearEvaluacionInline() {
+      const input = document.querySelector('#nuevaEvaluacion');
+      const titulo = String(input ? input.value : '').trim();
+      if (titulo.length < 3) {
+        window.helpers.mostrarAlerta('Escribe un nombre para la evaluación (mínimo 3 letras).', 'error');
+        return;
+      }
+      this._sincronizarCampos();
+      const boton = document.querySelector('#btnCrearEvaluacion');
+      if (boton) boton.disabled = true;
+      try {
+        const { grupoId, usuario } = await this._asegurarGrupo();
+        const nueva = await window.examenesRepository.crearEvaluacion({
+          grupoId,
+          creadoPor: usuario.id,
+          titulo
+        });
+        this._evaluaciones = [...this._evaluaciones, nueva];
+        this._examen.grupo_id = grupoId;
+        this._examen.evaluacion_id = nueva.id;
+        this._marcarCambio();
+        this._repintar();
+        window.helpers.mostrarAlerta('Evaluación creada y seleccionada para este examen.', 'exito');
+      } catch (e) {
+        window.helpers.mostrarAlerta('No se pudo crear la evaluación: ' + e.message, 'error');
+        if (boton) boton.disabled = false;
+      }
+    },
+
+    /** Repinta el editor desde memoria (llamar tras sincronizar los campos). */
+    _repintar() {
+      const raiz = document.querySelector('#app-root');
+      if (raiz) this._pintar(raiz);
+    },
+
     _construirPreguntas() {
       return this._examen.preguntas.map((p, i) => {
         const texto = String(p.texto || '').trim();
@@ -1427,6 +1510,7 @@
         const guardado = await window.examenesRepository.guardar({
           id: ex.id,
           grupo_id: grupoId,
+          evaluacion_id: ex.evaluacion_id || null,
           creado_por: ex.creado_por || usuarioActual.id,
           titulo: String(ex.titulo).trim(),
           descripcion: String(ex.descripcion || '').trim(),
@@ -1439,6 +1523,7 @@
 
         ex.id = guardado.id;
         ex.grupo_id = guardado.grupo_id;
+        ex.evaluacion_id = guardado.evaluacion_id || null;
         ex.creado_por = guardado.creado_por;
         ex.estado = guardado.estado;
         ex.publicado = guardado.publicado;

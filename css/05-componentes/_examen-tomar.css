@@ -1,7 +1,160 @@
-/* === Tomar examen: Page layout === */
+/* === Tomar examen: Page layout (modo examen, estilo captura) === */
 .examen-page {
   padding-top: var(--espaciado-lg);
   padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+.examen-modo {
+  min-height: 100dvh;
+  background: #f0f2f5;
+  padding-top: 0;
+  padding-bottom: calc(150px + env(safe-area-inset-bottom));
+}
+
+/* Cabecera fija: icono + título/alumno + puntuación */
+.examen-topbar {
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  background: #fff;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.examen-topbar__inner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+
+.examen-topbar__icono {
+  width: 40px;
+  height: 40px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  background: #3b82f6;
+  border-radius: 12px;
+  color: #fff;
+}
+
+.examen-topbar__icono svg { width: 22px; height: 22px; }
+
+.examen-topbar__icono-img {
+  width: 26px;
+  height: 26px;
+  object-fit: contain;
+  filter: brightness(0) invert(1);
+}
+
+.examen-topbar__titulos {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.25;
+  min-width: 0;
+}
+
+.examen-topbar__titulo {
+  font-size: var(--texto-base);
+  font-weight: 800;
+  color: #111827;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.examen-topbar__alumno {
+  font-size: var(--texto-sm);
+  color: #6b7280;
+}
+
+.examen-topbar__score {
+  margin-left: auto;
+  font-size: var(--texto-sm);
+  font-weight: 600;
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+
+.examen-topbar .examen-timer { margin-left: 0; }
+
+/* Línea fina de modo examen bajo la cabecera */
+.examen-modo__linea {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 8px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #eef2f7;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-secundario);
+  text-align: center;
+}
+
+/* Lista de preguntas: una tarjeta blanca por pregunta */
+.examen-lista {
+  padding-top: var(--espaciado-md);
+}
+
+#preguntasExamen.examen-sin-paginar {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+}
+
+#preguntasExamen .pregunta-examen {
+  background: #fff;
+  border: 1px solid #e5e7eb;
+  border-radius: 16px;
+  padding: 20px;
+  box-shadow: 0 1px 2px rgba(16, 24, 40, 0.04);
+}
+
+/* Barra inferior fija: estado + botón ancho completo */
+.examen-barra-envio {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 20;
+  background: #fff;
+  border-top: 1px solid #e5e7eb;
+  padding: 12px 0 calc(12px + env(safe-area-inset-bottom));
+}
+
+.examen-barra-envio__inner {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.examen-barra-envio__info {
+  margin: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: var(--texto-sm);
+  color: #4b5563;
+}
+
+.examen-barra-envio__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #9ca3af;
+  flex: 0 0 auto;
+}
+
+.examen-barra-envio__btn {
+  width: 100%;
+  min-height: 48px;
+  font-size: var(--texto-base);
+  font-weight: 700;
+  border-radius: 8px;
 }
 
 /* === Tomar examen: Progress bar === */
@@ -23,6 +176,32 @@
   will-change: transform;
 }
 
+/* === Tomar examen: Tarjeta de preguntas (lista continua, igual que el enlace público) === */
+.examen-tarjeta {
+  padding: var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+}
+
+/* Barra inferior: contador a la izquierda, botón de entrega a la derecha */
+.barra-accion.examen-barra-envio {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.barra-accion.examen-barra-envio > .btn-primario {
+  width: auto;
+  min-width: 200px;
+  flex: 0 0 auto;
+}
+
+.examen-barra-envio__info {
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
 /* === Tomar examen: Submit bar === */
 .examen-submit-bar {
   position: fixed;
@@ -40,9 +219,9 @@
   z-index: 10;
 }
 
-/* === Tomar examen: Pagination (mobile) === */
+/* === Tomar examen: Pagination (oculta: el examen es siempre una lista continua) === */
 .examen-paginado {
-  display: none;
+  display: none !important;
 }
 
 .examen-pagina {
@@ -129,27 +308,37 @@
   gap: var(--espaciado-xs);
 }
 
-/* === Tomar examen: Option cards === */
+/* === Tomar examen: Option cards (estilo captura) === */
 .examen-opcion {
   display: flex;
   gap: var(--espaciado-sm);
   cursor: pointer;
-  padding: var(--espaciado-xs);
-  border-radius: var(--radio-sm);
-  border: 1px solid var(--color-borde);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  background: #f8fafc;
   transition: all var(--transicion-rapida);
   min-height: var(--toque-minimo);
   align-items: center;
 }
 
 .examen-opcion:hover {
-  border-color: var(--color-acento);
-  background: var(--color-acento-soft);
+  border-color: #cbd5e1;
+  background: #f1f5f9;
+}
+
+.examen-opcion input[type='radio'],
+.examen-opcion input[type='checkbox'] {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin: 0;
+  accent-color: #2563eb;
 }
 
 .examen-opcion--seleccionada {
-  background: var(--color-acento-soft);
-  border-color: var(--color-acento);
+  background: #eff6ff;
+  border-color: #2563eb;
 }
 
 /* === Tomar examen: Question result (legacy) === */
@@ -254,63 +443,6 @@
 .resultado-badge--corregido { background: var(--color-exito-soft); color: var(--color-exito); }
 .resultado-badge--pendiente { background: var(--color-aviso-soft); color: var(--color-aviso); }
 
-/* ── Stats row ── */
-.resultado-stats {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: var(--espaciado-sm);
-}
-
-.resultado-stat {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  padding: var(--espaciado-md);
-  background: var(--card-bg);
-  border: var(--card-border);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  text-align: center;
-  transition: transform var(--transicion-rapida), box-shadow var(--transicion-rapida);
-}
-
-.resultado-stat:hover {
-  transform: translateY(-2px);
-  box-shadow: var(--sombra-md);
-}
-
-.resultado-stat__icono {
-  display: flex;
-  width: 36px;
-  height: 36px;
-  border-radius: 50%;
-  align-items: center;
-  justify-content: center;
-  margin-bottom: 2px;
-}
-
-.resultado-stat__icono svg { width: 16px; height: 16px; }
-
-.resultado-stat--ok .resultado-stat__icono     { background: var(--color-exito-soft); color: var(--color-exito); }
-.resultado-stat--error .resultado-stat__icono  { background: var(--color-error-soft); color: var(--color-error); }
-.resultado-stat--neutral .resultado-stat__icono{ background: var(--color-acento-soft); color: var(--color-acento); }
-.resultado-stat--info .resultado-stat__icono   { background: var(--color-aviso-soft); color: var(--color-aviso); }
-
-.resultado-stat__valor {
-  font-size: var(--texto-xl);
-  font-weight: 800;
-  line-height: 1;
-}
-
-.resultado-stat__label {
-  font-size: var(--texto-xxs);
-  color: var(--color-texto-terciario);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
 /* ── Observaciones del profesor ── */
 .resultado-obs {
   padding: var(--espaciado-md);
@@ -379,161 +511,6 @@
   max-width: 360px;
 }
 
-/* ── Tarjeta de pregunta en resultados ── */
-.resultado-preguntas {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espaciado-sm);
-}
-
-.resultado-pregunta {
-  background: var(--card-bg);
-  border: var(--card-border);
-  border-radius: var(--card-radius);
-  box-shadow: var(--card-shadow);
-  overflow: hidden;
-  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
-}
-
-.resultado-pregunta--ok { border-left: 4px solid var(--color-exito); }
-.resultado-pregunta--ko { border-left: 4px solid var(--color-error); }
-
-.resultado-pregunta:hover {
-  box-shadow: var(--sombra-md);
-}
-
-.resultado-pregunta__cabecera {
-  display: flex;
-  align-items: center;
-  gap: var(--espaciado-sm);
-  padding: var(--espaciado-md);
-}
-
-.resultado-pregunta__numero {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: 30px;
-  height: 30px;
-  border-radius: 50%;
-  font-size: var(--texto-xs);
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.resultado-pregunta__numero--ok { background: var(--color-exito-soft); color: var(--color-exito); }
-.resultado-pregunta__numero--ko { background: var(--color-error-soft); color: var(--color-error); }
-
-.resultado-pregunta__titulo {
-  flex: 1;
-  font-size: var(--texto-sm);
-  font-weight: 600;
-  min-width: 0;
-}
-
-.resultado-pregunta__icono {
-  display: flex;
-  flex-shrink: 0;
-}
-
-.resultado-pregunta__icono svg { width: 18px; height: 18px; }
-.resultado-pregunta__icono--ok { color: var(--color-exito); }
-.resultado-pregunta__icono--ko { color: var(--color-error); }
-
-.resultado-pregunta__cuerpo {
-  padding: 0 var(--espaciado-md) var(--espaciado-md);
-  display: flex;
-  flex-direction: column;
-  gap: var(--espaciado-xs);
-}
-
-.resultado-pregunta__fila {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-
-.resultado-pregunta__etiqueta {
-  font-size: var(--texto-xxs);
-  color: var(--color-texto-terciario);
-  font-weight: 600;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-}
-
-.resultado-pregunta__valor {
-  font-size: var(--texto-sm);
-  font-weight: 500;
-  color: var(--color-texto);
-  line-height: 1.5;
-}
-
-.resultado-pregunta__valor--correcta {
-  color: var(--color-exito);
-  font-weight: 600;
-}
-
-.resultado-pregunta__expl {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding: var(--espaciado-sm);
-  background: var(--color-fondo-alt);
-  border-radius: var(--radio-md);
-  font-size: var(--texto-xs);
-  color: var(--color-texto-secundario);
-  line-height: var(--altura-linea-cuerpo);
-}
-
-.resultado-pregunta__expl svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  margin-top: 1px;
-  color: var(--color-acento);
-}
-
-.resultado-pregunta__comentario {
-  display: flex;
-  align-items: flex-start;
-  gap: 6px;
-  padding: var(--espaciado-sm);
-  background: var(--color-acento-soft);
-  border-radius: var(--radio-md);
-  font-size: var(--texto-xs);
-  color: var(--color-acento);
-  line-height: var(--altura-linea-cuerpo);
-}
-
-.resultado-pregunta__comentario svg {
-  width: 14px;
-  height: 14px;
-  flex-shrink: 0;
-  margin-top: 1px;
-}
-
-.resultado-pregunta__pie {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: var(--espaciado-xs) var(--espaciado-md);
-  border-top: 1px solid var(--color-fondo-alt);
-  font-size: var(--texto-xxs);
-  color: var(--color-texto-terciario);
-}
-
-.resultado-pregunta__puntos {
-  font-weight: 700;
-}
-
-.resultado-pregunta__tipo {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-}
-
-.resultado-pregunta__tipo svg { width: 11px; height: 11px; }
-
 /* ── Donut animation moved to CSS ── */
 .resultado-hero__donut circle:nth-child(2) {
   transition: stroke-dashoffset 1s var(--easing-apple);
@@ -567,38 +544,257 @@
     font-size: 2.2rem;
   }
 
-  .resultado-stats {
-    grid-template-columns: repeat(2, 1fr);
-  }
+}
 
-  .resultado-stat {
-    padding: var(--espaciado-sm);
-  }
+/* ── Corrección visible para el alumno (igual que el enlace público) ── */
+.correccion-tarjeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+  padding: var(--espaciado-xl);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.correccion-tarjeta__icono {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: var(--color-acento-soft);
+  color: var(--color-acento);
+}
+
+.correccion-tarjeta__icono svg { width: 20px; height: 20px; }
+
+.correccion-tarjeta__titulo {
+  margin-top: var(--espaciado-xs);
+  font-family: var(--fuente-display);
+  font-size: var(--texto-2xl);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+}
+
+.correccion-tarjeta__subtitulo {
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+
+.correccion-marca {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: var(--espaciado-md);
+}
+
+.correccion-marca__nota {
+  font-family: var(--fuente-display);
+  font-size: clamp(3rem, 16vw, 4.5rem);
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.03em;
+  color: var(--color-acento);
+}
+
+.correccion-marca__sobre {
+  font-size: var(--texto-base);
+  color: var(--color-texto-terciario);
+}
+
+.correccion-detalle {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-top: var(--espaciado-md);
+}
+
+.correccion-detalle__item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--espaciado-md);
+  padding: 10px 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  font-size: var(--texto-sm);
+  background: var(--card-bg);
+}
+
+.correccion-detalle__key { color: var(--color-texto-secundario); }
+
+.correccion-detalle__val {
+  font-family: var(--fuente-display);
+  font-weight: 700;
+  color: var(--color-texto);
+}
+
+.correccion-preguntas { margin-top: var(--espaciado-lg); }
+
+.correccion-preguntas__titulo {
+  font-family: var(--fuente-display);
+  font-size: var(--texto-lg);
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  margin-bottom: 12px;
+  color: var(--color-texto);
+}
+
+.correccion-pregunta {
+  display: flex;
+  flex-direction: column;
+  padding: var(--espaciado-md);
+  margin-bottom: var(--espaciado-sm);
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--card-radius);
+  box-shadow: var(--card-shadow);
+}
+
+.correccion-pregunta__cabecera {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.correccion-pregunta__n {
+  font-size: var(--texto-xxs);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-texto-secundario);
+}
+
+.correccion-pregunta__oblig {
+  font-size: var(--texto-xxs);
+  font-weight: 600;
+  color: var(--color-texto-terciario);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  padding: 2px 8px;
+}
+
+.correccion-pregunta__marca {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+
+.correccion-pregunta__marca svg { width: 14px; height: 14px; }
+.correccion-pregunta__marca--ok { background: var(--color-exito-soft); color: var(--color-exito); border: 1px solid var(--color-exito); }
+.correccion-pregunta__marca--mal { background: var(--color-error-soft); color: var(--color-error); border: 1px solid var(--color-error); }
+
+.correccion-pregunta__pts {
+  margin-left: auto;
+  font-size: var(--texto-xxs);
+  font-weight: 700;
+  color: var(--color-texto-secundario);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-pill);
+  padding: 3px 9px;
+}
+
+.correccion-pregunta__enunciado {
+  font-size: var(--texto-sm);
+  line-height: 1.6;
+  color: var(--color-texto);
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.correccion-pregunta__cuerpo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin-top: 10px;
+}
+
+.correccion-pregunta__fila {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-alt);
+  font-size: var(--texto-sm);
+  overflow-wrap: anywhere;
+}
+
+.correccion-pregunta__fila--correcta {
+  background: var(--color-exito-soft);
+  border-color: color-mix(in srgb, var(--color-exito) 35%, transparent);
+}
+
+.correccion-pregunta__etiqueta {
+  flex: 0 0 auto;
+  font-weight: 600;
+  color: var(--color-texto-secundario);
+}
+
+.correccion-pregunta__valor { color: var(--color-texto); }
+
+.correccion-pregunta__puntos {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 10px;
+  border: 1px dashed var(--color-borde);
+  border-radius: var(--radio-md);
+  font-size: var(--texto-sm);
+}
+
+.correccion-pregunta__puntos--ok {
+  background: var(--color-exito-soft);
+  border-color: var(--color-exito);
+  color: var(--color-exito);
+}
+
+.correccion-pregunta__puntos--ok .correccion-pregunta__etiqueta,
+.correccion-pregunta__puntos--ok strong { color: var(--color-exito); }
+
+.correccion-pregunta__max {
+  color: var(--color-texto-terciario);
+  font-weight: 600;
+}
+
+.correccion-pregunta__comentario {
+  margin-top: 10px;
+  padding: 10px 12px;
+  border-left: 3px solid var(--color-acento);
+  background: var(--color-acento-soft);
+  border-radius: 0 var(--radio-md) var(--radio-md) 0;
+  font-size: var(--texto-sm);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
+}
+
+.correccion-observaciones {
+  margin-top: var(--espaciado-md);
+  padding: 12px;
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-alt);
+  font-size: var(--texto-sm);
+  line-height: 1.6;
+  overflow-wrap: anywhere;
 }
 
 @media (max-width: 400px) {
-  .resultado-pregunta__cabecera {
-    gap: var(--espaciado-xs);
-    padding: var(--espaciado-sm);
-  }
-
-  .resultado-pregunta__numero {
-    width: 26px;
-    height: 26px;
-    font-size: 11px;
-  }
-
-  .resultado-pregunta__titulo {
-    font-size: var(--texto-xs);
-  }
-
-  .resultado-pregunta__cuerpo {
-    padding: 0 var(--espaciado-sm) var(--espaciado-sm);
-  }
-
-  .resultado-pregunta__pie {
-    padding: var(--espaciado-xs) var(--espaciado-sm);
-  }
+  .correccion-tarjeta { padding: var(--espaciado-md); }
+  .correccion-pregunta { padding: var(--espaciado-sm); }
 }
 
 /* === Tomar examen: Order buttons === */
@@ -617,28 +813,11 @@
   border-color: var(--color-acento);
 }
 
-/* === Responsive === */
-@media (min-width: 769px) {
-  .examen-paginado {
-    display: none !important;
-  }
-}
-
-@media (max-width: 768px) {
-  .examen-paginado {
-    display: block;
-  }
-
-  .examen-sin-paginar {
-    display: none !important;
-  }
-
-  .examen-pagina {
-    padding: var(--espaciado-sm) 0;
-  }
-
-  .examen-nav__btn {
-    max-width: none;
+/* === Responsive ===
+   El examen se muestra en todos los anchos como lista continua (ver .examen-paginado). */
+@media (max-width: 480px) {
+  .examen-tarjeta {
+    padding: var(--espaciado-md);
   }
 }
 

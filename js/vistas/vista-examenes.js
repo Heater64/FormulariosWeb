@@ -208,6 +208,23 @@
           this._accion(btn.dataset.accion, btn.dataset.id, btn.dataset.titulo);
         });
       });
+      // El desplegable siempre abre hacia abajo por defecto; en las últimas
+      // tarjetas no hay sitio y las opciones finales quedaban cortadas. Si al
+      // abrir no cabe en la ventana, se abre hacia arriba (CSS
+      // .adm-examen__mas--arriba). En móvil el menú es estático y empuja el
+      // contenido, así que allí no hay nada que voltear.
+      lista.querySelectorAll('details.adm-examen__mas').forEach((menu) => {
+        menu.addEventListener('toggle', () => {
+          if (!menu.open) { menu.classList.remove('adm-examen__mas--arriba'); return; }
+          const panel = menu.querySelector('.adm-examen__menu');
+          if (!panel) return;
+          if (window.getComputedStyle(panel).position !== 'absolute') return;
+          menu.classList.remove('adm-examen__mas--arriba');
+          if (panel.getBoundingClientRect().bottom > window.innerHeight - 8) {
+            menu.classList.add('adm-examen__mas--arriba');
+          }
+        });
+      });
       if (window.Iconos) window.Iconos.actualizar();
     },
 

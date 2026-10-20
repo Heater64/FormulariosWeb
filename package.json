@@ -11,7 +11,7 @@
     "test": "vitest run",
     "test:watch": "vitest",
     "test:coverage": "vitest run --coverage",
-    "test:responsive": "node auditoria-responsive.cjs",
+    "test:responsive": "node tests/e2e/auditoria-responsive.cjs",
     "test:release": "node scripts/release-gate.mjs",
     "test:web-quality": "node scripts/web-quality-gate.mjs",
     "test:staging:isolation": "node scripts/staging-isolation.mjs",

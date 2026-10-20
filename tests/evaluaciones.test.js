@@ -8,6 +8,7 @@ const migracion061 = read('supabase/migraciones/061_evaluaciones_reparar_modelo_
 const migracion062 = read('supabase/migraciones/062_evaluacion_creador_y_validacion_nula.sql');
 const migracion064 = read('supabase/migraciones/064_evaluacion_hoja_calculo.sql');
 const migracion065 = read('supabase/migraciones/065_evaluacion_secciones_paginadas.sql');
+const migracion074 = read('supabase/migraciones/074_evaluaciones_una_sola_lista.sql');
 // Estado final de la feature: la 060 declaró el modelo, la 061 lo reparó sobre
 // la tabla `evaluaciones` de la 009, la 062 cerró el hueco de autorización
 // con creado_por NULL detectado en pruebas en vivo, la 064 convirtió la
@@ -177,6 +178,27 @@ describe('migraciones 060/061: modelo de evaluaciones', () => {
         .filter((l) => l.includes(rpc) && /TO anon/.test(l));
       expect(concesiones).toEqual([]);
     }
+  });
+
+  test('una sola lista: backfill por grupo del creador, alta con el grupo del autor y acceso como la RLS', () => {
+    // Las evaluaciones creadas en la sección sin grupo pasan al grupo de su creador.
+    expect(migracion074).toMatch(/UPDATE public\.evaluaciones e[\s\S]*AND e\.grupo_id IS NULL/);
+    // El alta toma el grupo del perfil del autor, solo si es editor de ese grupo.
+    expect(migracion074).toMatch(/SELECT p\.grupo_id INTO v_grupo FROM public\.perfiles p WHERE p\.id = auth\.uid\(\)/);
+    expect(migracion074).toContain('IF v_grupo IS NOT NULL AND NOT public.es_editor_del_grupo(v_grupo) THEN');
+    // El listado ya no se limita a grupo_id IS NULL y usa el criterio de la RLS.
+    const listado = migracion074.slice(
+      migracion074.indexOf('CREATE OR REPLACE FUNCTION public.fb_evaluaciones_listar()'),
+      migracion074.indexOf('REVOKE ALL ON FUNCTION public.fb_evaluaciones_listar()')
+    );
+    expect(listado).not.toMatch(/grupo_id IS NULL/);
+    expect(listado).toContain('OR public.es_editor_del_grupo(e.grupo_id)');
+    expect(migracion074).toContain('OR public.es_editor_del_grupo(ev.grupo_id)');
+    // Mantiene la nota de rango y el recuento de alumnos de la 064.
+    expect(migracion074).toContain("'nota_max', e.nota_max");
+    expect(migracion074).toContain('SELECT count(DISTINCT k) FROM');
+    // Ninguna de las RPC que toca se concede a anon.
+    expect(migracion074).not.toMatch(/GRANT EXECUTE ON FUNCTION public\.fb_evaluacion\w*\([^)]*\) TO anon/);
   });
 
   test('editar una celda no la pisa sola: la nota manual solo cambia con profesor, y vacío la restaura', () => {

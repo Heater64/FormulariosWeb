@@ -67,6 +67,58 @@ self.addEventListener('message', (event) => {
 });
 
 // ============================================================
+// PUSH — avisos Web Push (la PWA puede estar cerrada)
+// ============================================================
+// El payload llega como JSON: { title, body, url, tag }.
+// Si la app está visible, la capa in-app (realtime) ya muestra el aviso
+// y no se duplica en el sistema.
+// ============================================================
+self.addEventListener('push', (event) => {
+  let datos = {};
+  try {
+    datos = event.data ? event.data.json() : {};
+  } catch (e) {
+    datos = {};
+  }
+  event.waitUntil((async () => {
+    const clientes = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    if (clientes.some((cliente) => cliente.visibilityState === 'visible')) return;
+    await self.registration.showNotification(datos.title || 'FormsBiblicos', {
+      body: datos.body || '',
+      tag: datos.tag || undefined,
+      icon: '/assets/iconos/192x192.png',
+      badge: '/assets/iconos/32x32.png',
+      data: { url: datos.url || '/' }
+    });
+  })());
+});
+
+// Solo se navega a rutas del propio origen (nunca a URLs externas).
+function destinoDeNotificacion(url) {
+  try {
+    const destino = new URL(url || '/', self.location.origin);
+    return destino.origin === self.location.origin ? destino.href : self.location.origin + '/';
+  } catch (e) {
+    return self.location.origin + '/';
+  }
+}
+
+self.addEventListener('notificationclick', (event) => {
+  event.notification.close();
+  const destino = destinoDeNotificacion(event.notification.data && event.notification.data.url);
+  event.waitUntil((async () => {
+    const clientes = await self.clients.matchAll({ type: 'window', includeUncontrolled: true });
+    const abierto = clientes.find((cliente) => cliente.url.startsWith(self.location.origin));
+    if (abierto) {
+      await abierto.focus();
+      if (abierto.url !== destino) await abierto.navigate(destino);
+      return;
+    }
+    await self.clients.openWindow(destino);
+  })());
+});
+
+// ============================================================
 // FETCH — solo GET del mismo origen
 // ============================================================
 self.addEventListener('fetch', (event) => {

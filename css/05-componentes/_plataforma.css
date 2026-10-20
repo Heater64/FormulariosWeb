@@ -493,6 +493,10 @@
 }
 .adm-examen__acciones-principales [data-accion="compartir"] { min-width: 150px; }
 .adm-examen__mas { position: relative; flex: 0 0 auto; }
+/* El menú abierto flota sobre las tarjetas siguientes: sin este z-index, la
+   tarjeta de debajo (con transform al pasar el cursor) pintaría por encima y
+   las últimas opciones quedarían cortadas e imposibles de pulsar. */
+.adm-examen__mas[open] { z-index: 30; }
 .adm-examen__mas > summary {
   list-style: none;
   cursor: pointer;
@@ -521,11 +525,23 @@
   display: grid;
   gap: var(--espaciado-xxs);
   min-width: 220px;
+  max-width: calc(100vw - 2 * var(--espaciado-md));
+  /* Nunca más alto que la ventana: si ni arriba ni abajo cabe entero, el
+     menú desliza por dentro en vez de cortar opciones inalcanzables. */
+  max-height: 320px;
+  max-height: min(320px, calc(100vh - 32px));
+  max-height: min(320px, calc(100dvh - 32px));
+  overflow-y: auto;
   padding: var(--espaciado-sm);
   border: 1px solid var(--color-borde);
   border-radius: var(--radio-md);
   background: var(--color-fondo-tarjeta);
   box-shadow: var(--sombra-lg);
+}
+/* Sin sitio debajo (últimas tarjetas), el menú se abre hacia arriba. */
+.adm-examen__mas--arriba .adm-examen__menu {
+  top: auto;
+  bottom: calc(100% + var(--espaciado-xs));
 }
 .adm-examen__menu .adm-btn {
   justify-content: flex-start;
@@ -727,6 +743,69 @@
 
 /* ── Tarjetas de bloque ── */
 .adm-seccion { margin-bottom: var(--espaciado-xl); }
+
+/* Inicio del alumno (vista-mis-notas): cada sección es una tarjeta con
+   contorno suave y aire (interlineado) en vez de bloques sueltos. Las filas
+   van dentro de la tarjeta, así que se quedan sin contorno propio y se
+   separan con una línea fina. */
+.vista-mis-notas .adm-seccion {
+  background: var(--card-bg);
+  border: var(--card-border);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-lg);
+  margin-bottom: var(--espaciado-lg);
+  line-height: 1.6;
+}
+.vista-mis-notas .adm-seccion__titulo { margin-bottom: var(--espaciado-md); }
+/* Subgrupos de «Mis exámenes»: pendientes, entregados sin corregir y corregidos. */
+.vista-mis-notas__grupo + .vista-mis-notas__grupo { margin-top: var(--espaciado-lg); }
+.vista-mis-notas__subtitulo {
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-bold);
+  color: var(--color-texto-secundario);
+  margin-bottom: var(--espaciado-sm);
+}
+/* Cada examen/evaluación es una caja con contorno propia: sobre la tarjeta
+   blanca de la sección, el fondo de página y el borde la separan del resto. */
+.vista-mis-notas .adm-lista { gap: var(--espaciado-sm); }
+.vista-mis-notas .adm-fila {
+  background: var(--color-fondo);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  line-height: 1.6;
+}
+.vista-mis-notas .adm-fila:hover {
+  background: var(--color-fondo-alt);
+  box-shadow: none;
+  transform: none;
+}
+.vista-mis-notas .empty-state { padding: var(--espaciado-xl) var(--espaciado-md); }
+.vista-mis-notas .empty-state__descripcion { line-height: 1.65; }
+
+/* «Ver corrección»: botón azul relleno, con el mismo color de texto que btn-primario. */
+.vista-mis-notas .adm-fila__acciones .btn-secundario {
+  background: var(--color-acento);
+  color: var(--color-texto-acento);
+  border: 1.5px solid var(--color-acento);
+}
+.vista-mis-notas .adm-fila__acciones .btn-secundario:hover {
+  background: var(--color-acento-fuerte);
+  border-color: var(--color-acento-fuerte);
+  color: var(--color-texto-acento);
+}
+
+/* Nota: cajita amarilla con contorno de línea discontinua. */
+.vista-mis-notas .adm-fila__nota:not(.adm-fila__nota--pendiente) {
+  display: inline-flex;
+  align-items: center;
+  padding: var(--espaciado-xxs) var(--espaciado-sm);
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+  border: 1.5px dashed var(--color-aviso);
+  border-radius: var(--radio-md);
+  font-weight: var(--texto-peso-bold);
+}
 .adm-seccion__titulo {
   font-size: var(--texto-xs);
   font-weight: var(--texto-peso-bold);
@@ -1676,6 +1755,19 @@ tr:focus-within > .eval-tabla__alumno .eval-acciones__btn,
   vertical-align: middle;
 }
 .eval-tabla__col { position: relative; }
+
+/* Cuenta de alumno asignada a la fila (bajo el nombre) */
+.eval-tabla__alumno-cuenta {
+  display: block;
+  max-width: calc(100% - 28px);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: var(--texto-xs);
+  font-weight: 400;
+  color: var(--color-texto-terciario);
+}
+.eval-tabla__alumno-cuenta--asignada { color: var(--color-acento); }
 
 /* Última columna fija: el resultado final se ve siempre, también al
    desplazar la hoja en horizontal (junto al alumno, siempre a la vista). */

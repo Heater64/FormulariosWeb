@@ -127,7 +127,27 @@ Opciones:
   supabase functions deploy enviar-push --project-ref TU_PROJECT_REF
   ```
 
-### 4.6 Rebuild y release
+### 4.6 Web Push para la PWA (opcional)
+
+La PWA en navegador recibe avisos por Web Push (VAPID), independientes de
+FCM. Sin estas claves la PWA simplemente no ofrece el botón de avisos.
+
+1. Genera el par de claves (una sola vez, en tu equipo):
+
+   ```bash
+   npx web-push generate-vapid-keys
+   ```
+
+2. Edge Functions → **Secrets**:
+   - `VAPID_PUBLIC_KEY` = clave pública
+   - `VAPID_PRIVATE_KEY` = clave privada (nunca al cliente)
+   - `VAPID_SUBJECT` = `mailto:tu-correo@dominio`
+3. Publica la misma clave pública en la PWA como `VAPID_PUBLIC_KEY`
+   (variable de entorno del build, lo lee `js/config/entorno.js`).
+4. Aplica la migración `supabase/migraciones/071_suscripciones_web_push.sql`
+   en el SQL Editor.
+
+### 4.7 Rebuild y release
 
 ```bash
 npm run version:patch
@@ -164,8 +184,12 @@ nueva incluirá Firebase (por el `google-services.json`) y el puente push.
 - **Token no aparece en Supabase:** ¿`google-services.json` está en
   `android/app/`? ¿Se reconstruyó la APK después de añadirlo? (El registro FCM
   falla en runtime sin el archivo, aunque la app compile.)
-- **`enviar-push` responde 500:** revisa los secrets `FCM_SERVICE_ACCOUNT` y
-  `SUPABASE_SERVICE_ROLE_KEY`, y que la función esté desplegada.
+- **`enviar-push` responde 500:** revisa el secret `SUPABASE_SERVICE_ROLE_KEY`
+  y que la función esté desplegada. Sin `FCM_SERVICE_ACCOUNT` no se envían
+  avisos nativos, y sin las tres claves VAPID no se envían avisos web, pero
+  ninguna de las dos ausencias provoca un error: cada canal es independiente.
+- **La PWA no muestra el botón de avisos:** falta `VAPID_PUBLIC_KEY` en el
+  build de la PWA, o el navegador no soporta Web Push.
 - **Error UNREGISTERED:** el token dejó de ser válido (reinstalación, cambio
   de app). La Edge Function lo desactiva automáticamente.
 - **La notificación llega pero no navega:** comprueba que el payload lleva

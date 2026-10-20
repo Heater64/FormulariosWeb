@@ -133,6 +133,17 @@
             </form>
           </section>` : ''}
 
+          ${['admin', 'owner'].includes(rol) ? `
+          <!-- PANEL DE ADMINISTRACIÓN (mismo acceso rápido que en Perfil) -->
+          <a class="perfil-boton-seccion" id="btnPanelAdmin" href="#!/admin">
+            <div class="perfil-boton-seccion__icono">${window.Iconos.render('settings')}</div>
+            <div class="perfil-boton-seccion__texto">
+              <p class="perfil-boton-seccion__label">Centro de Administración</p>
+              <p class="perfil-boton-seccion__desc">Gestionar usuarios, grupos, exámenes y configuración</p>
+            </div>
+            <span class="perfil-boton-seccion__flecha">${window.Iconos.render('chevron-right')}</span>
+          </a>` : ''}
+
           <section class="adm-bloque">
             <h2 class="adm-bloque__titulo">Sesión</h2>
             <p class="adm-cabecera__sub" style="margin-bottom:var(--espaciado-sm)">Al cerrar sesión volverás a la pantalla de acceso.</p>
@@ -215,6 +226,8 @@
       });
 
       if (window.Iconos) window.Iconos.actualizar();
+
+      raiz.querySelector('#btnPanelAdmin')?.addEventListener('click', (e) => { e.preventDefault(); router.navegar('/admin?origen=cuenta'); });
 
       raiz.querySelector('#btnSalir').addEventListener('click', async () => {
         const ok = await window.helpers.confirmar('¿Seguro que quieres cerrar sesión?', {
