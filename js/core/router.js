@@ -163,6 +163,10 @@ class Router {
           }
         }
 
+        // CSS de la sección en paralelo con el import() de la vista lazy. El
+        // cargador tiene su propio tope, así que nunca frena la navegación.
+        const cssP = window.cssSecciones ? window.cssSecciones.cargar(ruta) : Promise.resolve();
+
         if (config.lazy && !config.vista) {
           if (this._cacheVistas.has(rutaConfig)) {
             config.vista = this._cacheVistas.get(rutaConfig);
@@ -191,6 +195,9 @@ class Router {
         // usuario ya navegó a otra, pisándola). Comparar contra la ruta cruda
         // (con query) para no perder cambios de query string del mismo path.
         if (token !== this._ejecucionToken || this._rutaActual() !== cruda) return;
+
+        // Esperar la hoja de la sección (ya resuelta o con tope de 300 ms).
+        try { await cssP; } catch (e) { /* sin CSS de sección se sigue montando */ }
 
         const raiz = document.getElementById('app-root');
         if (!raiz) return;

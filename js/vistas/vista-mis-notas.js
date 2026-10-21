@@ -150,7 +150,7 @@
       }
       const nombre = (usuario.nombre_completo || usuario.username || '').split(' ')[0];
 
-      raiz.innerHTML = contenedor(`<p class="adm-cabecera__sub">Cargando tus notas…</p>`);
+      raiz.innerHTML = contenedor(window.skeleton ? window.skeleton.misNotas() : '');
 
       // Cargas independientes: cada fuente se pinta aunque la otra falle.
       // listar() devuelve los exámenes publicados del grupo (con caché si no

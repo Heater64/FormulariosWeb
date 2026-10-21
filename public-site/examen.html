@@ -9,9 +9,8 @@
 <meta name="robots" content="noindex, nofollow, noarchive">
 <meta name="description" content="Realiza tu examen.">
 <title>Examen</title>
-<link rel="preconnect" href="https://fonts.googleapis.com">
-<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/assets/fuentes/inter.css">
+  <link rel="preload" href="/assets/fuentes/InterVariable-latin.woff2" as="font" type="font/woff2" crossorigin>
 <link rel="icon" href="/assets/iconos/icono.svg" type="image/svg+xml">
 <!-- Rutas ABSOLUTAS a propósito: el alumno abre /e/<token>, que vercel.json
      reescribe a /examen.html SIN cambiar la URL. Con rutas relativas, el
@@ -78,6 +77,14 @@
   .lienzo--centrado{display:flex;align-items:center;justify-content:center;padding-bottom:var(--lg)}
 
   .tarjeta{background:var(--c);border:1px solid var(--b);border-radius:var(--rx);padding:var(--lg);box-shadow:var(--sombra)}
+
+  /* Esqueleto de carga: mismas medidas que la tarjeta real del examen, sin
+     texto "Cargando…". Se ve mientras /e/:token resuelve en el servidor. */
+  .skel{display:block;background:var(--fa);border-radius:var(--r);position:relative;overflow:hidden}
+  .skel::after{content:'';position:absolute;inset:0;transform:translateX(-100%);background:linear-gradient(90deg,transparent,rgba(148,163,184,.28),transparent);animation:skel-shimmer 1.4s infinite}
+  @keyframes skel-shimmer{100%{transform:translateX(100%)}}
+  @media (prefers-reduced-motion:reduce){.skel::after{animation:none}}
+  .skel-carga{display:flex;flex-direction:column;gap:14px}
   .tarjeta__icono{width:48px;height:48px;border-radius:50%;background:var(--as);display:grid;place-items:center;margin-bottom:var(--md);color:var(--a);font-size:1.4rem}
   .tarjeta__icono--error{background:var(--es);color:var(--e)}
 
@@ -249,8 +256,15 @@
 <div class="progreso" aria-hidden="true"><div class="progreso__barra" id="progresoBarra"></div></div>
 
 <main class="lienzo" id="lienzo" aria-live="polite">
-  <section class="tarjeta">
-    <p class="sub" id="cargando">Cargando el examen…</p>
+  <section class="tarjeta skel-carga" id="cargando" role="status" aria-busy="true" aria-label="Cargando el examen">
+    <div class="skel" style="width:48px;height:48px;border-radius:50%"></div>
+    <div class="skel" style="height:26px;width:72%"></div>
+    <div class="skel" style="height:14px;width:46%"></div>
+    <div style="height:8px"></div>
+    <div class="skel" style="height:48px;width:100%"></div>
+    <div class="skel" style="height:48px;width:100%"></div>
+    <div class="skel" style="height:48px;width:100%"></div>
+    <div class="skel" style="height:48px;width:100%"></div>
   </section>
 </main>
 

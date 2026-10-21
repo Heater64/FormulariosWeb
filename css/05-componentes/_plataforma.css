@@ -12,29 +12,46 @@
   max-width: min(100%, var(--ancho-maximo, 1200px));
 }
 
-/* ── Cabecera de sección ── */
-/* Cabecera de sección: fija al hacer scroll, con fondo opaco, filete inferior
-   y una sombra muy suave. El filete es el límite visual entre cabecera y
-   cuerpo en todas las vistas del panel (Inicio, Exámenes, Entregas,
-   Evaluaciones, Cuenta y el editor). */
+/* Inicio: el aire superior es menor que en una landing; el inferior deja sitio
+   a la barra de navegación móvil y a su safe-area. */
+.panel-inicio {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(96px + env(safe-area-inset-bottom));
+}
+@media (max-width: 600px) {
+  .panel-inicio {
+    padding-top: var(--espaciado-md);
+    padding-bottom: calc(88px + env(safe-area-inset-bottom));
+  }
+}
+
+/* ── Cabecera de sección ──
+   Barra de vidrio que flota sobre el contenido, en lugar de una banda pegada
+   a los bordes con una línea dura de lado a lado: esquinas redondeadas, filete
+   suave y sombra mínima. Se queda pegada arriba con un respiro de 2-4 px, así
+   las tarjetas pasan por detrás y la cabecera se lee como una pieza más del
+   panel (Inicio, Exámenes, Entregas, Evaluaciones, Cuenta, Notas y editor). */
 .adm-cabecera {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--espaciado-md);
+  gap: var(--espaciado-sm) var(--espaciado-md);
   position: sticky;
-  top: 0;
+  top: var(--espaciado-2xs);
   z-index: 20;
-  background: var(--color-fondo);
-  padding-block: var(--espaciado-sm);
-  border-bottom: 1px solid var(--color-borde);
-  box-shadow: var(--sombra-sm);
-  margin-bottom: var(--espaciado-xl);
+  background: var(--color-vidrio);
+  -webkit-backdrop-filter: var(--desenfoque-vidrio);
+  backdrop-filter: var(--desenfoque-vidrio);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  box-shadow: var(--sombra-xs);
+  margin-bottom: var(--espaciado-md);
 }
 .adm-cabecera__principal { flex: 1 1 260px; min-width: 0; }
 .adm-cabecera__titulo {
   font-family: var(--fuente-display);
-  font-size: clamp(var(--texto-2xl), 1.8vw + 1rem, var(--texto-3xl));
+  font-size: var(--texto-2xl);
   font-weight: var(--texto-peso-bold);
   letter-spacing: -0.025em;
   line-height: 1.16;
@@ -43,8 +60,8 @@
 .adm-cabecera__sub {
   color: var(--color-texto-secundario);
   font-size: var(--texto-sm);
-  margin-top: var(--espaciado-xs);
-  line-height: 1.55;
+  margin-top: var(--espaciado-2xs);
+  line-height: 1.5;
   max-width: 60ch;
 }
 .adm-cabecera__acciones {
@@ -53,26 +70,73 @@
   gap: var(--espaciado-xs);
   margin-top: 0;
 }
+@media (min-width: 720px) {
+  .adm-cabecera__titulo { font-size: var(--texto-3xl); }
+}
+
+/* Inicio usa la misma barra que el resto de secciones, también en el móvil:
+   si aquí el saludo se quedaba sin marco, sin icono y sin subtítulo, entrar a
+   Inicio parecía cambiar de aplicación. Solo conserva un matiz: las acciones se
+   alinean a la derecha en escritorio para no empujar el saludo. */
+.adm-cabecera--inicio {
+  padding-block: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-md);
+}
+.adm-cabecera--inicio .adm-cabecera__acciones { margin-left: auto; }
+/* La explicación cabe en una línea en escritorio: dos líneas sumaban altura
+   sin añadir información. */
+.adm-cabecera--inicio .adm-cabecera__sub { max-width: 68ch; }
 
 /* Icono de sección: mismo lenguaje que .vista-cabecera__icono de las vistas
-   internas, para que Inicio / Exámenes / Entregas / Cuenta se lean igual. */
+   internas, para que Inicio / Exámenes / Entregas / Cuenta se lean igual.
+   El radio grande (16 px en 38 px) le quita el aire de cuadro sin volverlo
+   un círculo: sigue siendo la misma pieza suave de las tarjetas. */
 .adm-cabecera__icono {
   flex: 0 0 auto;
-  /* Alineado con el título, no con el centro de la cabecera. */
-  align-self: flex-start;
-  margin-top: 2px;
-  width: 42px;
-  height: 42px;
-  padding: 9px;
-  border-radius: var(--radio-md);
+  width: 38px;
+  height: 38px;
+  padding: 8px;
+  border-radius: var(--radio-lg);
   background: var(--color-acento-soft);
   color: var(--color-acento);
   display: grid;
   place-items: center;
 }
 .adm-cabecera__icono svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
+}
+
+/* En pantallas estrechas la barra se aprieta: menos aire, radio menor y las
+   acciones a lo ancho para que ningún botón quede partido. */
+@media (max-width: 600px) {
+  .adm-cabecera {
+    gap: var(--espaciado-xs);
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    border-radius: var(--radio-md);
+    margin-bottom: var(--espaciado-sm);
+  }
+  .adm-cabecera__icono {
+    width: 34px;
+    height: 34px;
+    padding: 6px;
+    border-radius: var(--radio-md);
+  }
+  .adm-cabecera__icono svg { width: 20px; height: 20px; }
+  /* Una barra de 150 px clavada arriba se come media pantalla: la explicación
+     se queda en una línea y el título conserva el tamaño de la escala. */
+  .adm-cabecera__sub {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 1;
+    overflow: hidden;
+    margin-top: 2px;
+    font-size: var(--texto-xs);
+    line-height: 1.45;
+  }
+  .adm-cabecera__acciones { flex: 1 1 100%; }
+  .adm-cabecera__acciones > .adm-btn { flex: 1 1 auto; }
+
 }
 
 /* Iconos Lucide dentro de los botones: tamaño y alineación consistentes. */
@@ -128,11 +192,13 @@
 .adm-btn--peligro { color: var(--color-error); border-color: var(--color-error-soft); }
 .adm-btn--peligro:hover { background: var(--color-error-soft); }
 .adm-btn--pequeno {
-  min-height: 40px;
-  padding: 6px var(--espaciado-xs);
-  font-size: var(--texto-xs);
-  font-weight: var(--texto-peso-medio);
-  gap: 4px;
+  /* Sigue siendo compacto, pero nunca por debajo del mínimo táctil: el texto
+     vuelve a 14px para que «Entregas» y «Editar» se lean sin esfuerzo. */
+  min-height: 44px;
+  padding: 7px var(--espaciado-sm);
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-semibold);
+  gap: var(--espaciado-xxs);
 }
 .adm-btn-group {
   display: inline-flex;
@@ -156,34 +222,44 @@
   z-index: 1;
 }
 
-/* ── Estadísticas ── */
+/* ── Estadísticas ──
+   Una sola tira agrupada, no cuatro tarjetas: el contorno se dibuja una vez y
+   las celdas se separan con filetes finos. El dato manda; el color fuerte se
+   reserva a lo que exige acción (respuestas pendientes). */
 .adm-rejilla {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  gap: var(--espaciado-sm);
-  margin-bottom: var(--espaciado-xl);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  margin-bottom: var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
 }
 .adm-stat {
   min-width: 0;
-  background: var(--color-fondo-tarjeta);
-  /* Contorno neutro y del mismo grosor por los cuatro lados: el color de cada
-     dato vive en su icono y en la cifra, no en un filete del borde. */
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  padding: var(--card-padding-sm, var(--espaciado-md));
-  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-left: 1px solid var(--color-borde-suave);
+  transition: background var(--transicion-rapida);
 }
+.adm-stat:first-child { border-left: 0; }
 @media (hover: hover) {
-  .adm-stat:hover { box-shadow: var(--sombra-sm); }
+  .adm-stat:hover { background: var(--color-fondo); }
+}
+.adm-stat__cifra {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  min-width: 0;
 }
 .adm-stat__icono {
-  display: block;
-  margin-bottom: var(--espaciado-xs);
+  display: inline-flex;
+  flex: 0 0 auto;
   color: var(--color-texto-terciario);
 }
 .adm-stat__icono svg {
-  width: 18px;
-  height: 18px;
+  width: 16px;
+  height: 16px;
 }
 .adm-stat__valor {
   font-family: var(--fuente-display);
@@ -192,22 +268,41 @@
   line-height: 1;
   letter-spacing: -0.03em;
   font-variant-numeric: tabular-nums;
+  color: var(--color-texto);
 }
 .adm-stat__etiqueta {
   display: block;
-  margin-top: var(--espaciado-xs);
-  font-size: var(--texto-xs);
+  margin-top: var(--espaciado-2xs);
+  font-size: var(--texto-xxs);
   color: var(--color-texto-terciario);
   font-weight: var(--texto-peso-semibold);
+  line-height: 1.35;
   text-transform: uppercase;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.05em;
 }
-.adm-stat--acento .adm-stat__icono { color: var(--color-acento); }
-.adm-stat--aviso .adm-stat__icono { color: var(--color-aviso); }
-.adm-stat--exito .adm-stat__icono { color: var(--color-exito); }
-.adm-stat--acento .adm-stat__valor { color: var(--color-acento); }
+.adm-stat--aviso .adm-stat__icono,
 .adm-stat--aviso .adm-stat__valor { color: var(--color-aviso); }
-.adm-stat--exito .adm-stat__valor { color: var(--color-exito); }
+
+@media (max-width: 600px) {
+  .adm-rejilla {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    margin-bottom: var(--espaciado-md);
+  }
+  .adm-stat {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    border-left: 1px solid var(--color-borde-suave);
+    border-top: 1px solid var(--color-borde-suave);
+  }
+  .adm-stat:nth-child(1),
+  .adm-stat:nth-child(2) { border-top: 0; }
+  .adm-stat:nth-child(odd) { border-left: 0; }
+  .adm-stat__valor { font-size: var(--texto-2xl); }
+  .adm-stat__etiqueta {
+    margin-top: 2px;
+    font-size: var(--texto-xxs);
+    letter-spacing: 0.04em;
+  }
+}
 
 /* ── Filtros y buscador ──
    Los filtros van como control segmentado, no como botones sueltos: un riel
@@ -337,6 +432,20 @@
   padding-right: 40px;
   padding-left: 12px;
 }
+/* El buscador del panel usa el icono de .admin-buscar (Cuenta), pero esa hoja
+   se carga por sección: aquí se ancla al envoltorio para no depender de ella. */
+.adm-busqueda-wrap .admin-buscar__icono {
+  position: absolute;
+  right: 12px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-texto-terciario);
+  pointer-events: none;
+}
+.adm-busqueda-wrap .admin-buscar__icono svg { width: 20px; height: 20px; }
 /* Tema oscuro: icono de buscador se aclara */
 .adm-busqueda-wrap .adm-buscador[data-tema="dark"],
 :root[data-theme="dark"] .adm-busqueda-wrap .adm-buscador,
@@ -348,53 +457,50 @@
 .adm-lista { display: flex; flex-direction: column; gap: var(--espaciado-xs); }
 .adm-fila {
   background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-left: 4px solid var(--color-borde);
+  border: 1px solid var(--color-borde-suave);
   border-radius: var(--radio-lg);
   padding: var(--espaciado-md);
   display: flex;
   flex-wrap: wrap;
   gap: var(--espaciado-sm);
   align-items: flex-start;
-  transition: border-color var(--transicion-normal), box-shadow var(--transicion-normal), transform var(--transicion-normal), border-left-color var(--transicion-normal);
+  transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
 }
 .adm-fila:hover {
   border-color: var(--color-borde-fuerte);
-  border-left-color: var(--color-acento);
-  box-shadow: var(--sombra-sm);
-  transform: translateY(-2px);
+  background: var(--color-fondo);
 }
 .adm-fila__principal { flex: 1 1 240px; min-width: 0; }
-/* Acento lateral por estado: se escanea por color y el badge solo lo confirma. */
-.adm-fila--aviso { border-left-color: var(--color-aviso); }
-.adm-fila--exito { border-left-color: var(--color-exito); }
 .adm-fila--inactiva { background: var(--color-fondo); }
 .adm-fila--inactiva .adm-fila__titulo { color: var(--color-texto-secundario); }
 .adm-fila__titulo {
-  font-size: var(--texto-lg);
-  font-weight: var(--texto-peso-bold);
-  line-height: var(--altura-linea-titulo);
+  font-size: var(--texto-base);
+  font-weight: var(--texto-peso-semibold);
+  line-height: 1.35;
   color: var(--color-texto);
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: var(--espaciado-sm);
+  gap: var(--espaciado-xs);
 }
-.adm-fila__titulo .adm-badge { margin-left: var(--espaciado-xs); }
 .adm-fila__meta {
   display: flex;
   flex-wrap: wrap;
   gap: var(--espaciado-xs);
-  margin-top: var(--espaciado-sm);
-  font-size: var(--texto-sm);
+  margin-top: var(--espaciado-2xs);
+  font-size: var(--texto-xs);
   color: var(--color-texto-secundario);
   line-height: 1.5;
 }
-.adm-fila__meta > span + span {
-  margin-left: var(--espaciado-xs);
-  padding-left: var(--espaciado-xs);
-  border-left: 1px solid var(--color-borde);
+/* Inicio: datos separados por puntos y espacio, sin una barra por cada uno.
+   Se limita a la lista agrupada para no alterar los metadatos de Exámenes. */
+.adm-lista--agrupada .adm-fila__meta { gap: 2px 0; }
+.adm-lista--agrupada .adm-fila__meta > span + span::before {
+  content: '·';
+  margin: 0 var(--espaciado-xs);
+  color: var(--color-texto-terciario);
 }
+.adm-fila__meta-aviso { color: var(--color-aviso); font-weight: var(--texto-peso-semibold); }
 .adm-fila__meta__actualizado {
   color: var(--color-acento);
   font-size: var(--texto-xs);
@@ -403,46 +509,66 @@
   border-left: 2px solid var(--color-acento-soft);
 }
 .adm-fila__acciones {
-  flex: 1 1 200px;
+  flex: 0 1 auto;
+  display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: flex-end;
-  gap: var(--espaciado-sm);
+  gap: var(--espaciado-xs);
+  margin-left: auto;
 }
-.adm-fila__titulo {
-  font-size: var(--texto-base);
-  font-weight: var(--texto-peso-semibold);
-  display: flex;
+
+/* Lista agrupada (Inicio): una sola superficie y filas sin contorno propio.
+   El contorno se dibuja una vez y cada fila se separa con un filete fino. */
+.adm-lista--agrupada {
+  gap: 0;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+.adm-lista--agrupada .adm-fila {
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--color-borde-suave);
+  border-radius: 0;
+  padding: var(--espaciado-sm) var(--espaciado-md);
   align-items: center;
-  gap: var(--espaciado-xs);
-  flex-wrap: wrap;
 }
-.adm-fila__meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--espaciado-xs);
-  margin-top: var(--espaciado-xxs);
-  font-size: var(--texto-xs);
-  color: var(--color-texto-secundario);
+.adm-lista--agrupada .adm-fila:first-child { border-top: 0; }
+.adm-lista--agrupada .adm-fila:hover { background: var(--color-fondo); }
+.adm-lista--agrupada .adm-fila__principal { flex: 1 1 260px; }
+
+@media (max-width: 600px) {
+  .adm-lista--agrupada .adm-fila {
+    padding: var(--espaciado-sm);
+    align-items: flex-start;
+    gap: var(--espaciado-xs);
+  }
+  .adm-lista--agrupada .adm-fila__principal { flex: 1 1 100%; }
+  .adm-lista--agrupada .adm-fila__acciones {
+    flex: 1 1 100%;
+    margin-left: 0;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espaciado-xs);
+  }
+  .adm-lista--agrupada .adm-fila__acciones .adm-btn { width: 100%; }
 }
-.adm-fila__acciones { display: flex; flex-wrap: wrap; gap: var(--espaciado-xxs); }
 
 /* ── Tarjeta de examen: estado legible y acciones ordenadas ── */
 .adm-examen {
   align-items: stretch;
-  gap: var(--espaciado-md);
-  padding: var(--espaciado-md) var(--espaciado-lg);
+  gap: var(--espaciado-sm) var(--espaciado-md);
+  padding: var(--espaciado-sm) var(--espaciado-md);
   background: var(--color-fondo-tarjeta);
-  border: 1px solid var(--color-borde);
-  border-left: 4px solid var(--color-borde);
+  border: 1px solid var(--color-borde-suave);
   border-radius: var(--radio-lg);
-  box-shadow: var(--sombra-xs);
-  transition: border-color var(--transicion-normal), box-shadow var(--transicion-normal), transform var(--transicion-normal), border-left-color var(--transicion-normal);
+  transition: background var(--transicion-rapida), border-color var(--transicion-rapida);
 }
 .adm-examen:hover {
   border-color: var(--color-borde-fuerte);
-  border-left-color: var(--color-acento);
-  box-shadow: var(--sombra-md);
-  transform: translateY(-2px);
+  background: var(--color-fondo);
 }
 .adm-examen__principal { flex-basis: 300px; }
 .adm-examen__titulo {
@@ -463,16 +589,18 @@
 .adm-examen__meta {
   display: flex;
   flex-wrap: wrap;
-  gap: var(--espaciado-xs);
-  margin-top: var(--espaciado-sm);
+  gap: 4px var(--espaciado-md);
+  margin-top: var(--espaciado-xs);
   font-size: var(--texto-sm);
   color: var(--color-texto-secundario);
   line-height: 1.5;
 }
+/* Sin barras por dato: al envolver a otra línea quedaban filos sueltos al
+   principio de la fila. El espacio ya separa cada grupo. */
 .adm-examen__meta > span + span {
-  margin-left: var(--espaciado-xs);
-  padding-left: var(--espaciado-xs);
-  border-left: 1px solid var(--color-borde);
+  margin-left: 0;
+  padding-left: 0;
+  border-left: 0;
 }
 .adm-examen__meta > span:last-child {
   color: var(--color-texto-terciario);
@@ -742,7 +870,49 @@
 }
 
 /* ── Tarjetas de bloque ── */
-.adm-seccion { margin-bottom: var(--espaciado-xl); }
+.adm-seccion { margin-bottom: var(--espaciado-lg); }
+
+/* Título de sección con su acción a la derecha («Ver todos»). */
+.adm-seccion__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-xs);
+}
+.adm-seccion__fila .adm-seccion__titulo { margin-bottom: 0; }
+.adm-seccion__cuenta {
+  flex: 0 0 auto;
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto-terciario);
+  font-variant-numeric: tabular-nums;
+}
+.adm-seccion__enlace {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  min-height: 44px;
+  padding: 0 var(--espaciado-xxs);
+  border: 0;
+  border-radius: var(--radio-sm);
+  background: transparent;
+  color: var(--color-acento);
+  font: inherit;
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-semibold);
+  cursor: pointer;
+  transition: color var(--transicion-rapida);
+}
+.adm-seccion__enlace svg { width: 16px; height: 16px; opacity: 0.8; }
+@media (hover: hover) {
+  .adm-seccion__enlace:hover { color: var(--color-acento-hover); }
+}
+.adm-seccion__enlace:focus-visible {
+  outline: var(--focus-ring);
+  outline-offset: 2px;
+}
 
 /* Inicio del alumno (vista-mis-notas): cada sección es una tarjeta con
    contorno suave y aire (interlineado) en vez de bloques sueltos. Las filas
@@ -1191,6 +1361,22 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
    que el mensaje salte sobre el fondo en vez de fundirse con la sección. */
 .adm-aviso--destacado { border: 2px solid var(--color-exito); }
 
+/* Aviso de una línea: informa sin ocupar la altura de una sección. */
+.adm-aviso--fino {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  margin-bottom: var(--espaciado-lg);
+  padding: var(--espaciado-xs) var(--espaciado-sm);
+  border: 1px solid var(--color-exito-soft);
+}
+.adm-aviso--fino .adm-aviso__icono {
+  flex: 0 0 auto;
+  display: inline-flex;
+  color: var(--color-exito);
+}
+.adm-aviso--fino .adm-aviso__icono svg { width: 18px; height: 18px; }
+
 /* ── Modal «Enlace para toda la clase»: qué manda y qué solo informa ──
    Lo que hay que tocar (la URL y los botones) va en su tarjeta, con la URL
    en caja propia. El contexto va en una caja suave y las indicaciones, en
@@ -1390,7 +1576,7 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
 }
 
 @media (max-width: 360px) {
-  .adm-rejilla { gap: var(--espaciado-xs); }
+  .adm-stat { padding-inline: var(--espaciado-xs); }
   .adm-stat__valor { font-size: var(--texto-2xl); }
   .adm-fila__acciones .adm-btn-group { flex: 1 1 100%; }
   .adm-fila__acciones > .adm-btn { flex: 1 1 calc(50% - var(--espaciado-2xs)); }
@@ -1399,58 +1585,8 @@ textarea.adm-entrada { min-height: 110px; resize: vertical; line-height: 1.6; }
   .adm-tab { padding-inline: var(--espaciado-xs); }
 }
 
-/* Selector visual de tipos de pregunta (editor de exámenes).
-   Cada tarjeta muestra el nombre del formato y si se corrige sola: sin
-   descripción ni ejemplo, que el nombre ya basta para elegir. */
-.selector-tipo-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-  gap: var(--espaciado-sm);
-}
-
-.selector-tipo {
-  display: flex;
-  flex-direction: column;
-  gap: var(--espaciado-xs);
-  padding: var(--espaciado-md);
-  border: 1px solid var(--color-borde);
-  border-radius: var(--radio-lg);
-  background: var(--color-fondo-tarjeta);
-  text-align: left;
-  cursor: pointer;
-  transition: border-color var(--transicion-rapida), box-shadow var(--transicion-rapida), background var(--transicion-rapida);
-}
-
-.selector-tipo:hover {
-  border-color: var(--color-acento);
-  background: var(--color-acento-soft);
-  box-shadow: 0 0 0 1px var(--color-acento-soft);
-}
-
-.selector-tipo:focus-visible {
-  outline: 2px solid var(--color-acento);
-  outline-offset: 2px;
-}
-
-.selector-tipo__nombre {
-  font-weight: var(--texto-peso-semibold);
-  font-size: var(--texto-sm);
-  color: var(--color-texto);
-}
-
-.selector-tipo__correccion {
-  margin-top: auto;
-  padding-top: var(--espaciado-2xs);
-  font-size: var(--texto-xs);
-  font-weight: var(--texto-peso-semibold);
-  color: var(--color-texto-secundario);
-}
-
-.selector-tipo__correccion--auto { color: var(--color-exito, var(--color-acento)); }
-
-@media (max-width: 400px) {
-  .selector-tipo-grid { grid-template-columns: 1fr; }
-}
+/* El selector visual de tipos de pregunta vive en _pregunta-examen.css, que
+   es la hoja que se carga después y la que gana la cascada. */
 
 /* ── Evaluaciones: rejilla de notas tipo Excel ── */
 .eval-rejilla {
@@ -1909,4 +2045,15 @@ tr:focus-within > .eval-tabla__alumno .eval-acciones__btn,
   .eval-tabla .eval-tabla__final { width: 72px; min-width: 72px; }
   .eval-tabla__col { width: 84px; min-width: 84px; max-width: 84px; }
   .eval-tabla__col--anadir { width: 40px; min-width: 40px; max-width: 40px; }
+}
+
+/* ── Buscador con icono de marcado ──
+   .adm-buscador dibuja su propio magnifier de fondo para los usos sueltos.
+   Dentro de .adm-busqueda-wrap el icono lo pone el HTML, pero la regla de
+   prefers-color-scheme:dark añade padding-left y vuelve a pintarlo: en modo
+   oscuro salían dos lupas (una a cada lado). Aquí se anula solo en ese caso. */
+:root .adm-busqueda-wrap .adm-buscador,
+:root[data-theme="dark"] .adm-busqueda-wrap .adm-buscador {
+  background-image: none;
+  padding-left: var(--espaciado-sm);
 }

@@ -1,8 +1,8 @@
 const logrosDominio = {
   _definiciones: [
     { clave: 'primer_capitulo', nombre: 'Primer Paso', descripcion: 'Leíste tu primer capítulo', icono: 'book-open', condicion: p => p.capitulosLeidos >= 1 },
-    { clave: 'lector_10', nombre: 'Aprendiz', descripcion: 'Leíste 10 capítulos', icono: 'books', condicion: p => p.capitulosLeidos >= 10 },
-    { clave: 'lector_50', nombre: 'Estudioso', descripcion: 'Leíste 50 capítulos', icono: 'books', condicion: p => p.capitulosLeidos >= 50 },
+    { clave: 'lector_10', nombre: 'Aprendiz', descripcion: 'Leíste 10 capítulos', icono: 'book-open', condicion: p => p.capitulosLeidos >= 10 },
+    { clave: 'lector_50', nombre: 'Estudioso', descripcion: 'Leíste 50 capítulos', icono: 'book-open', condicion: p => p.capitulosLeidos >= 50 },
     { clave: 'lector_100', nombre: 'Dedicado', descripcion: 'Leíste 100 capítulos', icono: 'medal', condicion: p => p.capitulosLeidos >= 100 },
     { clave: 'libro_completo', nombre: 'Libro Completo', descripcion: 'Completaste un libro entero', icono: 'target', condicion: p => p.librosCompletados >= 1 },
     { clave: 'tres_libros', nombre: 'Trilogía', descripcion: 'Completaste 3 libros', icono: 'target', condicion: p => p.librosCompletados >= 3 },

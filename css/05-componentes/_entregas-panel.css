@@ -1,0 +1,203 @@
+/* ============================================================================
+ * _entregas-panel.css — Entregas y seguimiento
+ * ----------------------------------------------------------------------------
+ * La sección reutiliza la ficha de _examenes-panel.css (bajo `.ex-vista`) y
+ * añade lo propio de una cola de corrección:
+ *
+ *   [inbox] Examen 5  [3 por corregir]          [Corregir 3]
+ *           7 entregas · media 6,5
+ *           ▓▓▓▓▓▓░░░░  4 de 7 corregidas
+ *
+ * En el detalle, el medallón pasa a ser el avatar del alumno y el estado de su
+ * entrega se lee por color y badge. La paleta no cambia: éxito para lo
+ * corregido, aviso para lo pendiente y neutro para lo que aún no llegó.
+ * ==========================================================================*/
+
+/* Contenedor: mismo aire que Mis exámenes, sin tapar la barra móvil. */
+.vista-entregas {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+/* ── Progreso de corrección ──
+   Solo aparece cuando queda trabajo: una barra llena en un examen al día
+   repetiría lo que ya dice el badge y llenaría la lista de verde. */
+.vista-entregas .ex-progreso {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  max-width: 380px;
+  margin-top: var(--espaciado-xs);
+}
+.vista-entregas .ex-progreso__pista {
+  flex: 1 1 auto;
+  min-width: 64px;
+  height: 5px;
+  overflow: hidden;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+}
+.vista-entregas .ex-progreso__relleno {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: var(--color-exito);
+  transition: width var(--transicion-normal);
+}
+.vista-entregas .ex-progreso__texto {
+  flex: 0 0 auto;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Estado de cada examen en la lista ── */
+.vista-entregas .adm-examen[data-estado="pendiente"] .ex-ficha__marca {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+/* Los grupos de alumnos reutilizan las fichas: el color del medallón cuenta
+   lo mismo que el badge, y el contador hereda ese tono sin gritar. */
+.vista-entregas .ex-grupo--corregidas .ex-grupo__cuenta {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+.vista-entregas .ex-grupo--en-curso .ex-grupo__cuenta {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+}
+.vista-entregas .adm-examen[data-estado="al-dia"] .ex-ficha__marca,
+.vista-entregas .adm-examen[data-estado="corregida"] .ex-ficha__marca {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+.vista-entregas .adm-examen[data-estado="sin-entregas"] .ex-ficha__marca,
+.vista-entregas .adm-examen[data-estado="sin-entregar"] .ex-ficha__marca {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+}
+
+/* ── Detalle de un examen ──
+   El avatar con las iniciales sustituye al icono: en una lista de alumnos se
+   reconoce antes un nombre con su inicial que un símbolo repetido. */
+.vista-entregas .ex-ficha__marca--persona {
+  border-radius: 50%;
+  font-family: var(--fuente-display);
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-bold);
+  letter-spacing: 0.02em;
+  color: var(--color-texto-secundario);
+}
+.vista-entregas .ex-ficha__nota {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  white-space: nowrap;
+}
+.vista-entregas .ex-ficha__dato strong {
+  font-weight: var(--texto-peso-bold);
+  color: var(--color-texto);
+}
+
+/* ── Seguimiento: alumnos que faltan ──
+   Nombres en pastillas compactas, no otra lista de tarjetas: es un aviso de
+   a quién reclamar, no una tarea que se abra desde aquí. */
+.vista-entregas .ex-seguimiento {
+  margin-top: var(--espaciado-lg);
+}
+.vista-entregas .ex-faltan__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  margin: 0 0 var(--espaciado-xs);
+  padding-left: 2px;
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-texto-terciario);
+}
+/* Aviso de entregas sin cuenta: una línea, no un banner que tape la lista. */
+.vista-entregas .ex-seguimiento__nota {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--espaciado-xxs);
+  margin: var(--espaciado-xs) 0 0;
+  font-size: var(--texto-xs);
+  line-height: 1.5;
+  color: var(--color-aviso);
+}
+.vista-entregas .ex-seguimiento__nota svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.vista-entregas .ex-seguimiento__nota--exito {
+  color: var(--color-exito);
+  font-weight: var(--texto-peso-semibold);
+}
+.vista-entregas .ex-faltan__titulo svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+}
+.vista-entregas .ex-faltan {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+  margin-top: var(--espaciado-xs);
+}
+.vista-entregas .ex-faltan__fila {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  padding: 4px var(--espaciado-sm) 4px 4px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-pill);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+.vista-entregas .ex-faltan__avatar {
+  width: 28px;
+  height: 28px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xxs);
+  font-weight: var(--texto-peso-bold);
+  letter-spacing: 0.02em;
+}
+
+/* ── Responsive ──
+   En móvil, las dos acciones del detalle (corregir y asignar) se apilan a lo
+   ancho: sus etiquetas no caben una al lado de la otra sin partirse. */
+@media (max-width: 760px) {
+  .vista-entregas .ex-progreso { max-width: none; }
+  .vista-entregas .ex-ficha__acciones--apilada {
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .vista-entregas .ex-ficha__acciones--apilada .adm-examen__acciones-principales {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+  }
+  .vista-entregas .ex-ficha__acciones--apilada .adm-btn { width: 100%; }
+  .vista-entregas .ex-ficha__nota { padding-left: 2px; }
+  .vista-entregas .ex-faltan__fila { width: 100%; }
+}
+@media (max-width: 420px) {
+  .vista-entregas .ex-progreso__texto { font-size: var(--texto-xxs); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .vista-entregas .ex-progreso__relleno { transition: none; }
+}

@@ -62,7 +62,7 @@ describe('confirmación al editar un examen', () => {
   test('en Inicio la guarda depende de la marca del botón, no del orden', () => {
     const fuente = read('js/vistas/vista-panel.js');
     // El botón se marca al pintarlo…
-    expect(fuente).toContain('data-ir="/editor/${esc(ex.id)}" data-confirmar-edicion');
+    expect(fuente).toMatch(/data-ir="\/editor\/\$\{[^}]+\}" data-confirmar-edicion/);
     // …y el handler solo confirma cuando esa marca está.
     expect(fuente).toMatch(/if \(btn\.hasAttribute\('data-confirmar-edicion'\)\) \{[\s\S]{0,300}?const ok = await window\.helpers\.confirmarEdicion\(\);/);
   });

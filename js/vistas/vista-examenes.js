@@ -18,6 +18,17 @@
     cerrado: { texto: 'Cerrado', clase: 'adm-badge--cerrado' }
   };
 
+  // El icono de la pestaña y el de la marca de la ficha salen del mismo mapa:
+  // así el filtro «Publicados» y las tarjetas publicadas comparten símbolo.
+  const ICONOS_FILTRO = {
+    todos: 'list-checks', borrador: 'pen-line', publicado: 'send',
+    cerrado: 'lock', papelera: 'trash-2'
+  };
+  const ICONOS_ESTADO = { borrador: 'pen-line', publicado: 'send', cerrado: 'lock' };
+
+  // «1 preguntas» delataba que el contador se escribía a mano.
+  const plural = (n, singular, plurales) => `${n} ${n === 1 ? singular : plurales}`;
+
   const esc = (v) => window.panelUI.esc(v);
   const I = (n) => window.Iconos ? window.Iconos.render(n) : '';
 
@@ -37,7 +48,9 @@
         return;
       }
 
-      raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+      // `ex-vista` es el ámbito de la hoja _examenes-panel.css: la misma
+      // anatomía de ficha que usa Inicio, sin estilos globales.
+      raiz.innerHTML = `<div class="o-contenedor vista-examenes ex-vista">
         <header class="adm-cabecera">
           <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('clipboard-list')}</span>
           <div class="adm-cabecera__principal">
@@ -53,8 +66,13 @@
 
       raiz.querySelector('#btnNuevo').addEventListener('click', () => router.navegar('/editor/nuevo'));
       const contenido = raiz.querySelector('#contenido');
-      contenido.innerHTML = `<p class="adm-cabecera__sub">Cargando…</p>`;
+      // Misma rejilla que el listado final: pestañas, buscador y filas.
+      if (window.skeleton) window.skeleton.mostrar(contenido, window.skeleton.conFiltros(6), 'Cargando los exámenes');
 
+      // Las tres lecturas arrancan a la vez: papelera y copias locales no
+      // dependen del resumen, así que esperarlas en serie solo sumaba latencia.
+      const papeleraP = window.examenesRepository.listarPapelera().catch(() => []);
+      const copiasP = window.examenesRepository.copiasLocales().catch(() => []);
       try {
         const datos = await window.plataformaRepository.resumen();
         this._examenes = (datos && datos.examenes) || [];
@@ -64,10 +82,9 @@
       }
       // La papelera vive solo aquí: no hay entrada en la barra lateral. Se
       // carga junto al listado para poder mostrar su contador en la pestaña.
-      this._papelera = await window.examenesRepository.listarPapelera().catch(() => []);
       // Copias de exámenes que este navegador guardó y que ya no existen en la
       // nube: la última red si algo se borró por otra vía o desde otro equipo.
-      this._copias = await window.examenesRepository.copiasLocales().catch(() => []);
+      [this._papelera, this._copias] = await Promise.all([papeleraP, copiasP]);
       // Borradores del editor que nunca llegaron a la nube (o quedaron a medias
       // al cerrar la app). Es la red que evita perder un examen recién creado.
       const enPapelera = new Set(this._papelera.map((examen) => String(examen.id)));
@@ -83,16 +100,31 @@
         ['cerrado', 'Cerrados'],
         ['papelera', this._papelera.length ? `Papelera (${this._papelera.length})` : 'Papelera']
       ];
+      const cuentaDe = (id) => (id === 'todos'
+        ? this._examenes.length
+        : id === 'papelera'
+          ? this._papelera.length
+          : this._examenes.filter((ex) => ex.estado === id).length);
+      const htmlTabs = filtros.map(([id, texto]) => {
+        const activo = this._filtro === id;
+        // El contador de papelera viaja en el texto de origen; aquí se pinta
+        // como chip, así que se quita del rótulo para no duplicarlo.
+        const etiqueta = String(texto).replace(/\s*\(\d+\)$/, '');
+        const cuenta = cuentaDe(id);
+        return `<button class="adm-tab ex-tab${activo ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${activo}" aria-label="${etiqueta}${cuenta ? ` (${cuenta})` : ''}">
+          ${I(ICONOS_FILTRO[id])}<span class="ex-tab__texto">${etiqueta}</span>${cuenta ? `<span class="ex-tab__cuenta" aria-hidden="true">${cuenta}</span>` : ''}
+        </button>`;
+      }).join('');
       contenido.innerHTML = `
-        <div class="adm-tabs adm-tabs--deslizante" id="tabs" role="tablist">
-          <span class="adm-tabs__indicador" aria-hidden="true"></span>
-          ${filtros
-            .map(([id, texto]) => `<button class="adm-tab${this._filtro === id ? ' adm-tab--activo' : ''}" data-filtro="${id}" role="tab" aria-selected="${this._filtro === id}">${texto}</button>`)
-            .join('')}
-        </div>
-        <div class="adm-busqueda-wrap">
-          <span class="admin-buscar__icono" aria-hidden="true">${I('search')}</span>
-          <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
+        <div class="ex-barra">
+          <div class="adm-tabs adm-tabs--deslizante" id="tabs" role="tablist">
+            <span class="adm-tabs__indicador" aria-hidden="true"></span>
+            ${htmlTabs}
+          </div>
+          <div class="adm-busqueda-wrap ex-busqueda">
+            <span class="admin-buscar__icono" aria-hidden="true">${I('search')}</span>
+            <input type="search" class="adm-buscador" id="buscar" placeholder="Buscar por título…" value="${esc(this._busqueda)}" aria-label="Buscar exámenes">
+          </div>
         </div>
         <div id="lista" class="adm-lista"></div>`;
 
@@ -111,6 +143,9 @@
         if (contenido.isConnected === false) return;
         this._colocarIndicador(tabs);
       };
+      // Los iconos son <i> hasta que Lucide los convierte en <svg>: si se mide
+      // antes, la píldora se coloca con anchos de botón sin icono.
+      if (window.Iconos) window.Iconos.actualizar();
       recolocarIndicador();
       if (document.fonts && document.fonts.ready) document.fonts.ready.then(recolocarIndicador);
       window.addEventListener('resize', recolocarIndicador);
@@ -119,11 +154,7 @@
       tabs.querySelectorAll('.adm-tab').forEach((btn) => {
         btn.addEventListener('click', () => {
           this._filtro = btn.dataset.filtro;
-          tabs.querySelectorAll('.adm-tab').forEach((b) => {
-            b.classList.toggle('adm-tab--activo', b === btn);
-            b.setAttribute('aria-selected', String(b === btn));
-          });
-          recolocarIndicador();
+          this._activarTab();
           this._pintarLista();
         });
       });
@@ -149,6 +180,19 @@
       }
     },
 
+    /** Marca el filtro activo y recoloca la píldora (también al venir de un
+     *  estado vacío, no solo al pulsar una pestaña). */
+    _activarTab() {
+      const tabs = document.querySelector('#tabs');
+      if (!tabs) return;
+      tabs.querySelectorAll('.adm-tab').forEach((btn) => {
+        const activo = btn.dataset.filtro === this._filtro;
+        btn.classList.toggle('adm-tab--activo', activo);
+        btn.setAttribute('aria-selected', String(activo));
+      });
+      if (this._recolocarIndicador) this._recolocarIndicador();
+    },
+
     /**
      * Coloca la píldora del riel sobre el filtro activo. Se lee la geometría
      * real (offsetLeft/Top/Width/Height respecto al riel) en vez de calcularla,
@@ -168,6 +212,14 @@
       indicador.style.width = `${activo.offsetWidth}px`;
       indicador.style.height = `${activo.offsetHeight}px`;
       indicador.style.transform = `translate(${activo.offsetLeft}px, ${activo.offsetTop}px)`;
+
+      // En móvil los filtros se deslizan en una fila: si el activo queda fuera
+      // de la ventana visible del riel, se trae a la vista sin mover la página.
+      if (typeof tabs.scrollTo === 'function' && tabs.scrollWidth > tabs.clientWidth) {
+        const fuera = activo.offsetLeft < tabs.scrollLeft
+          || activo.offsetLeft + activo.offsetWidth > tabs.scrollLeft + tabs.clientWidth;
+        if (fuera) tabs.scrollTo({ left: Math.max(0, activo.offsetLeft - 12), behavior: 'auto' });
+      }
 
       if (primeraVez) {
         // Fuerza a pintar con la transición apagada antes de devolvérsela.
@@ -193,14 +245,13 @@
       });
 
       if (!filtrados.length) {
-        lista.innerHTML = `<div class="adm-vacio">
-          <p class="adm-vacio__titulo">${this._examenes.length ? 'Sin resultados' : 'Todavía no hay exámenes'}</p>
-          <p>${this._examenes.length ? 'Prueba otro filtro o borra la búsqueda.' : 'Crea tu primer examen para empezar.'}</p>
-        </div>`;
+        lista.innerHTML = this._htmlVacio();
+        this._conectarVacio(lista);
+        if (window.Iconos) window.Iconos.actualizar();
         return;
       }
 
-      lista.innerHTML = filtrados.map((ex) => this._tarjeta(ex)).join('');
+      lista.innerHTML = this._htmlGrupos(filtrados);
       lista.querySelectorAll('[data-accion]').forEach((btn) => {
         btn.addEventListener('click', () => {
           const menu = btn.closest('details');
@@ -228,6 +279,87 @@
       if (window.Iconos) window.Iconos.actualizar();
     },
 
+    /**
+     * «Todos» separa lo que espera corrección del resto. Es la única vista en
+     * la que el orden cambia: en una pestaña concreta el profesor ya filtró y
+     * espera ver su lista tal cual. La búsqueda también manda sobre el orden.
+     */
+    _htmlGrupos(filtrados) {
+      const pendientes = this._filtro === 'todos' && !this._busqueda
+        ? filtrados.filter((ex) => Number(ex.por_corregir) > 0)
+        : [];
+
+      if (!pendientes.length) {
+        return `<div class="adm-lista">${filtrados.map((ex) => this._tarjeta(ex)).join('')}</div>`;
+      }
+
+      const enAtencion = new Set(pendientes.map((ex) => String(ex.id)));
+      const resto = filtrados.filter((ex) => !enAtencion.has(String(ex.id)));
+      const grupos = [
+        { clave: 'atencion', titulo: 'Por corregir', icono: 'inbox', examenes: pendientes },
+        { clave: 'resto', titulo: 'Todos los exámenes', icono: 'clipboard-list', examenes: resto }
+      ].filter((grupo) => grupo.examenes.length);
+
+      return grupos.map((grupo) => `<section class="ex-grupo ex-grupo--${grupo.clave}" aria-label="${grupo.titulo}">
+        <p class="ex-grupo__titulo">
+          <span class="ex-grupo__icono" aria-hidden="true">${I(grupo.icono)}</span>
+          ${grupo.titulo}
+          <span class="ex-grupo__cuenta">${grupo.examenes.length}</span>
+        </p>
+        <div class="adm-lista">${grupo.examenes.map((ex) => this._tarjeta(ex)).join('')}</div>
+      </section>`).join('');
+    },
+
+    /** Estado vacío con una salida real: crear, limpiar la búsqueda o volver. */
+    _htmlVacio() {
+      if (!this._examenes.length) {
+        return `<div class="adm-vacio ex-vacio">
+          <span class="ex-vacio__icono" aria-hidden="true">${I('clipboard-list')}</span>
+          <p class="adm-vacio__titulo">Tu primer examen empieza aquí</p>
+          <p>Crea un examen, comparte un enlace con cada alumno y corrige las respuestas escritas desde esta misma página.</p>
+          <button class="adm-btn adm-btn--principal" type="button" data-vacio="nuevo">${I('plus')} Nuevo examen</button>
+        </div>`;
+      }
+
+      if (this._busqueda) {
+        return `<div class="adm-vacio ex-vacio">
+          <span class="ex-vacio__icono" aria-hidden="true">${I('search')}</span>
+          <p class="adm-vacio__titulo">Sin resultados para «${esc(this._busqueda)}»</p>
+          <p>Ningún examen coincide con esa búsqueda. Prueba con otra palabra o vuelve a la lista completa.</p>
+          <button class="adm-btn" type="button" data-vacio="limpiar">${I('x')} Limpiar búsqueda</button>
+        </div>`;
+      }
+
+      const nombres = { borrador: 'borradores', publicado: 'publicados', cerrado: 'cerrados' };
+      return `<div class="adm-vacio ex-vacio">
+        <span class="ex-vacio__icono" aria-hidden="true">${I(ICONOS_FILTRO[this._filtro] || 'clipboard-list')}</span>
+        <p class="adm-vacio__titulo">No hay ${nombres[this._filtro] || 'exámenes'} todavía</p>
+        <p>${this._filtro === 'borrador'
+          ? 'Cuando empieces un examen y no lo publiques, se quedará aquí esperando.'
+          : 'Cambia de pestaña o crea un examen nuevo para empezar.'}</p>
+        <button class="adm-btn" type="button" data-vacio="todos">${I('list-checks')} Ver todos los exámenes</button>
+      </div>`;
+    },
+
+    _conectarVacio(contenedor) {
+      const boton = contenedor.querySelector('[data-vacio]');
+      if (!boton) return;
+      boton.addEventListener('click', () => {
+        const accion = boton.dataset.vacio;
+        if (accion === 'nuevo') {
+          router.navegar('/editor/nuevo');
+          return;
+        }
+        const buscador = document.querySelector('#buscar');
+        this._busqueda = '';
+        if (buscador) buscador.value = '';
+        if (accion === 'todos') this._filtro = 'todos';
+        this._activarTab();
+        this._pintarLista();
+        if (accion === 'limpiar' && buscador) buscador.focus();
+      });
+    },
+
     // ── Borradores locales del editor ────────────────────────────────────
     _htmlBorradoresLocales() {
       if (!this._borradoresLocales.length) return '';
@@ -251,7 +383,9 @@
       }).join('');
 
       return `<section class="adm-borradores-locales" aria-label="Borradores sin terminar en este dispositivo">
-        <p class="adm-seccion__titulo">Borradores sin terminar en este dispositivo</p>
+        <p class="adm-seccion__titulo ex-local__titulo">
+          <span aria-hidden="true">${I('pen-line')}</span> Borradores sin terminar en este dispositivo
+        </p>
         ${filas}
       </section>`;
     },
@@ -301,10 +435,13 @@
       const visibles = this._busqueda
         ? this._papelera.filter((ex) => String(ex.titulo || '').toLowerCase().includes(this._busqueda))
         : this._papelera;
-      const cabecera = `<div class="adm-papelera__cabecera">
-        <p class="adm-cabecera__sub" style="margin:0">${total
-          ? `${total} ${total === 1 ? 'examen' : 'exámenes'} en la papelera. Se pueden restaurar; vaciarla los borra para siempre.`
-          : 'La papelera está vacía.'}</p>
+      const cabecera = `<div class="adm-papelera__cabecera ex-papelera__cabecera">
+        <div class="ex-papelera__intro">
+          <span class="ex-papelera__icono" aria-hidden="true">${I('archive')}</span>
+          <p class="adm-cabecera__sub" style="margin:0">${total
+            ? `${total} ${total === 1 ? 'examen' : 'exámenes'} en la papelera. Se pueden restaurar; vaciarla los borra para siempre.`
+            : 'La papelera está vacía.'}</p>
+        </div>
         <button class="adm-btn adm-btn--peligro adm-btn--pequeno" type="button" id="btnVaciarPapelera" ${total ? '' : 'disabled'}>
           ${I('trash-2')} Vaciar papelera
         </button>
@@ -312,15 +449,19 @@
 
       if (!total) {
         contenedor.innerHTML = `${cabecera}
-          <div class="adm-vacio">
-            <p class="adm-vacio__titulo">Nada por aquí</p>
-            <p>Los exámenes que borres aparecerán en la papelera y podrás recuperarlos.</p>
+          <div class="adm-vacio ex-vacio">
+            <span class="ex-vacio__icono" aria-hidden="true">${I('trash-2')}</span>
+            <p class="adm-vacio__titulo">La papelera está vacía</p>
+            <p>Los exámenes que borres aparecerán aquí y podrás recuperarlos cuando quieras.</p>
+            <button class="adm-btn" type="button" data-papelera-vacio="todos">${I('list-checks')} Ver todos los exámenes</button>
           </div>`;
       } else if (!visibles.length) {
         contenedor.innerHTML = `${cabecera}
-          <div class="adm-vacio">
+          <div class="adm-vacio ex-vacio">
+            <span class="ex-vacio__icono" aria-hidden="true">${I('search')}</span>
             <p class="adm-vacio__titulo">Sin resultados</p>
             <p>Ningún examen de la papelera coincide con la búsqueda.</p>
+            <button class="adm-btn" type="button" data-papelera-vacio="limpiar">${I('x')} Limpiar búsqueda</button>
           </div>`;
       } else {
         contenedor.innerHTML = `${cabecera}<div class="adm-lista">${visibles.map((ex) => this._tarjetaPapelera(ex)).join('')}</div>`;
@@ -336,6 +477,21 @@
       });
       const vaciar = contenedor.querySelector('#btnVaciarPapelera');
       if (vaciar) vaciar.addEventListener('click', () => this._accionPapelera('vaciar'));
+      const volver = contenedor.querySelector('[data-papelera-vacio]');
+      if (volver) {
+        volver.addEventListener('click', () => {
+          const accion = volver.dataset.papeleraVacio;
+          const buscador = document.querySelector('#buscar');
+          this._busqueda = '';
+          if (buscador) buscador.value = '';
+          if (accion === 'todos') {
+            this._filtro = 'todos';
+            this._activarTab();
+          }
+          this._pintarLista();
+          if (accion === 'limpiar' && buscador) buscador.focus();
+        });
+      }
       if (window.Iconos) window.Iconos.actualizar();
     },
 
@@ -349,25 +505,28 @@
         const estado = ESTADOS[examen.estado] || ESTADOS.borrador;
         const titulo = esc(examen.titulo || 'Examen sin título');
         const preguntas = Array.isArray(examen.preguntas) ? examen.preguntas.length : 0;
-        const meta = [
-          `${preguntas} pregunta${preguntas === 1 ? '' : 's'}`,
-          `${Number(examen.puntos_totales) || 0} puntos`,
-          guardadoEn ? `Copia guardada ${esc(window.panelUI.tiempoRelativo(guardadoEn))}` : 'Copia de este dispositivo'
-        ];
-        return `<article class="adm-fila adm-examen adm-examen--copia" aria-label="${titulo}">
-          <div class="adm-fila__principal adm-examen__principal">
-            <div class="adm-fila__titulo adm-examen__titulo">
+        const cuando = guardadoEn
+          ? `Copia guardada ${esc(window.panelUI.tiempoRelativo(guardadoEn))}`
+          : 'Copia de este dispositivo';
+        return `<article class="adm-fila adm-examen" data-estado="copia" aria-label="${titulo}">
+          <span class="ex-ficha__marca" aria-hidden="true">${I('archive')}</span>
+          <div class="ex-ficha__cuerpo">
+            <div class="ex-ficha__titulo">
               <h2>${titulo}</h2>
               <span class="adm-badge adm-badge--cerrado">Copia local</span>
               <span class="adm-badge ${estado.clase}">Antes: ${estado.texto}</span>
             </div>
-            <div class="adm-fila__meta adm-examen__meta">
-              ${meta.map((m) => `<span>${m}</span>`).join('')}
+            <div class="ex-ficha__meta">
+              <span class="ex-ficha__dato">${I('file-text')}${plural(preguntas, 'pregunta', 'preguntas')}</span>
+              <span class="ex-ficha__dato">${I('target')}${plural(Number(examen.puntos_totales) || 0, 'punto', 'puntos')}</span>
+            </div>
+            <div class="ex-ficha__pie">
+              <span>${I('clock')}${cuando}</span>
             </div>
           </div>
-          <div class="adm-fila__acciones adm-examen__acciones">
+          <div class="ex-ficha__acciones">
             <div class="adm-examen__acciones-principales">
-              <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-copia-accion="recuperar" data-copia-id="${esc(examen.id)}">
+              <button class="adm-btn adm-btn--pequeno ex-boton-suave ex-accion-principal" type="button" data-copia-accion="recuperar" data-copia-id="${esc(examen.id)}">
                 ${I('rotate-ccw')} Recuperar como borrador
               </button>
             </div>
@@ -376,8 +535,10 @@
       }).join('');
 
       return `<section class="adm-seccion adm-seccion--copias" aria-label="Copias locales de exámenes">
-        <div class="adm-seccion__cabecera">
+        <div class="adm-seccion__cabecera ex-seccion__cabecera">
+          <span class="ex-seccion__icono" aria-hidden="true">${I('archive')}</span>
           <span class="adm-seccion__titulo">Copias en este dispositivo</span>
+          <span class="adm-seccion__cuenta">${this._copias.length}</span>
         </div>
         <p class="adm-cabecera__sub">Estos exámenes se abrieron en este navegador y ya no están en la nube. Se recuperan como borrador, sin sus enlaces ni entregas.</p>
         <div class="adm-lista">${filas}</div>
@@ -401,26 +562,25 @@
       const estadoPrevio = ESTADOS[previa.estado_previo] || ESTADOS.borrador;
       const titulo = esc(ex.titulo || 'Examen sin título');
       const preguntas = Array.isArray(ex.preguntas) ? ex.preguntas.length : 0;
-      const meta = [
-        `${preguntas} pregunta${preguntas === 1 ? '' : 's'}`,
-        `${Number(ex.puntos_totales) || 0} puntos`,
-        `Eliminado ${esc(window.panelUI.tiempoRelativo(previa.eliminado_en || ex.actualizado_en))}`
-      ];
-
-      return `<article class="adm-fila adm-examen adm-examen--papelera" aria-label="${titulo}">
-        <div class="adm-fila__principal adm-examen__principal">
-          <div class="adm-fila__titulo adm-examen__titulo">
+      return `<article class="adm-fila adm-examen" data-estado="papelera" aria-label="${titulo}">
+        <span class="ex-ficha__marca" aria-hidden="true">${I('trash-2')}</span>
+        <div class="ex-ficha__cuerpo">
+          <div class="ex-ficha__titulo">
             <h2>${titulo}</h2>
             <span class="adm-badge adm-badge--papelera">En papelera</span>
             <span class="adm-badge ${estadoPrevio.clase}">Antes: ${estadoPrevio.texto}</span>
           </div>
-          <div class="adm-fila__meta adm-examen__meta">
-            ${meta.map((m) => `<span>${m}</span>`).join('')}
+          <div class="ex-ficha__meta">
+            <span class="ex-ficha__dato">${I('file-text')}${plural(preguntas, 'pregunta', 'preguntas')}</span>
+            <span class="ex-ficha__dato">${I('target')}${plural(Number(ex.puntos_totales) || 0, 'punto', 'puntos')}</span>
+          </div>
+          <div class="ex-ficha__pie">
+            <span>${I('clock')}Eliminado ${esc(window.panelUI.tiempoRelativo(previa.eliminado_en || ex.actualizado_en))}</span>
           </div>
         </div>
-        <div class="adm-fila__acciones adm-examen__acciones">
+        <div class="ex-ficha__acciones">
           <div class="adm-examen__acciones-principales">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-papelera-accion="restaurar" data-id="${esc(ex.id)}">
+            <button class="adm-btn adm-btn--pequeno ex-boton-suave" type="button" data-papelera-accion="restaurar" data-id="${esc(ex.id)}">
               ${I('rotate-ccw')} Restaurar
             </button>
             <button class="adm-btn adm-btn--peligro adm-btn--pequeno" type="button" data-papelera-accion="borrar" data-id="${esc(ex.id)}" data-titulo="${titulo}">
@@ -431,50 +591,82 @@
       </article>`;
     },
 
+    /**
+     * Una ficha = estado + qué es + cómo va + qué puedo hacer.
+     * La acción principal cambia con el estado: un borrador pide publicarse
+     * (acento sólido); un examen en marcha se gestiona (acento suave).
+     */
     _tarjeta(ex) {
       const estado = ESTADOS[ex.estado] || ESTADOS.borrador;
       const porCorregir = Number(ex.por_corregir) || 0;
       const numEnlaces = Number(ex.num_enlaces) || 0;
       const enlacesUsados = Number(ex.enlaces_usados) || 0;
-      const meta = [
-        (Number(ex.num_preguntas) || 0) + ' preguntas',
-        (Number(ex.puntos_totales) || 0) + ' puntos',
-        numEnlaces + ' compartidos · ' + enlacesUsados + ' usados',
-        (Number(ex.num_entregas) || 0) + ' entregas'
-      ];
-      if (ex.nota_media != null) meta.push('media ' + window.panelUI.numero(ex.nota_media));
-
+      const entregas = Number(ex.num_entregas) || 0;
+      const esBorrador = ex.estado === 'borrador';
       const titulo = esc(ex.titulo);
-      const estadoAccion = ex.estado === 'publicado'
-        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="cerrar" data-id="${esc(ex.id)}">${window.Iconos.render('lock')} Cerrar examen</button>`
-        : ex.estado === 'cerrado'
-          ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">${window.Iconos.render('unlock')} Reabrir examen</button>`
-          : `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">${window.Iconos.render('upload')} Publicar</button>`;
+      const icono = ICONOS_ESTADO[ex.estado] || 'pen-line';
 
-      return `<article class="adm-fila adm-examen" aria-label="${titulo}">
-        <div class="adm-fila__principal adm-examen__principal">
-          <div class="adm-fila__titulo adm-examen__titulo">
+      const datos = [
+        `<span class="ex-ficha__dato">${I('file-text')}${plural(Number(ex.num_preguntas) || 0, 'pregunta', 'preguntas')}</span>`,
+        `<span class="ex-ficha__dato">${I('target')}${plural(Number(ex.puntos_totales) || 0, 'punto', 'puntos')}</span>`
+      ];
+      if (!esBorrador) {
+        datos.push(`<span class="ex-ficha__dato ex-ficha__dato--entregas">${I('inbox')}${plural(entregas, 'entrega', 'entregas')}</span>`);
+        if (ex.nota_media != null) {
+          datos.push(`<span class="ex-ficha__dato">${I('medal')}media ${esc(window.panelUI.numero(ex.nota_media))}</span>`);
+        }
+      }
+
+      const pie = [];
+      // Solo se mencionan los enlaces cuando hay alguno: repetir «sin enlaces»
+      // en cada tarjeta convertía el pie en ruido. El botón ya invita a crearlos.
+      if (!esBorrador && numEnlaces) {
+        pie.push(`<span>${I('link-2')}${enlacesUsados} de ${numEnlaces} enlaces usados</span>`);
+      }
+      pie.push(`<span>${I('clock')}Actualizado ${esc(window.panelUI.tiempoRelativo(ex.actualizado_en || ex.creado_en))}</span>`);
+
+      const principal = esBorrador
+        ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno ex-accion-principal" type="button" data-accion="publicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('upload')} Publicar</button>`
+        : `<button class="adm-btn adm-btn--pequeno ex-boton-suave ex-accion-principal" type="button" data-accion="compartir" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('link')} Gestionar enlaces</button>`;
+
+      // Entregas solo aparece en un borrador si ya recibió alguna (poco común,
+      // pero posible al reabrir un examen y volver a borrador).
+      const menuEntregas = (!esBorrador || entregas > 0)
+        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="entregas" data-id="${esc(ex.id)}">${I('inbox')} Entregas${porCorregir > 0 ? ` · ${porCorregir} por corregir` : ''}</button>`
+        : '';
+      const estadoAccion = ex.estado === 'publicado'
+        ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="cerrar" data-id="${esc(ex.id)}">${I('lock')} Cerrar examen</button>`
+        : ex.estado === 'cerrado'
+          ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="publicar" data-id="${esc(ex.id)}">${I('unlock')} Reabrir examen</button>`
+          : '';
+
+      return `<article class="adm-fila adm-examen" data-estado="${esc(ex.estado || 'borrador')}"${porCorregir > 0 ? ' data-atencion="1"' : ''} aria-label="${titulo}">
+        <span class="ex-ficha__marca" aria-hidden="true">${I(icono)}</span>
+        <div class="ex-ficha__cuerpo">
+          <div class="ex-ficha__titulo">
             <h2>${titulo}</h2>
             <span class="adm-badge ${estado.clase}">${estado.texto}</span>
             ${porCorregir > 0 ? `<span class="adm-badge adm-badge--aviso">${porCorregir} por corregir</span>` : ''}
           </div>
-          <div class="adm-fila__meta adm-examen__meta">
-            ${meta.map((m) => `<span>${esc(m)}</span>`).join('')}
-            <span class="adm-fila__meta__actualizado">Actualizado ${esc(window.panelUI.tiempoRelativo(ex.actualizado_en || ex.creado_en))}</span>
+          <div class="ex-ficha__meta">
+            ${datos.join('')}
+          </div>
+          <div class="ex-ficha__pie">
+            ${pie.join('')}
           </div>
         </div>
-        <div class="adm-fila__acciones adm-examen__acciones" aria-label="Acciones de ${titulo}">
+        <div class="ex-ficha__acciones">
           <div class="adm-examen__acciones-principales">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" type="button" data-accion="compartir" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('link')} Gestionar enlaces</button>
-            <button class="adm-btn adm-btn--pequeno" type="button" data-accion="editar" data-id="${esc(ex.id)}">${window.Iconos.render('edit-3')} Editar</button>
+            ${principal}
+            <button class="adm-btn adm-btn--pequeno ex-boton-fantasma" type="button" data-accion="editar" data-id="${esc(ex.id)}">${I('edit-3')} Editar</button>
           </div>
           <details class="adm-examen__mas">
-            <summary class="adm-btn adm-btn--pequeno" aria-label="Más opciones para ${titulo}">${window.Iconos.render('more-horizontal')} Más opciones ${window.Iconos.render('chevron-down')}</summary>
+            <summary class="adm-btn adm-btn--pequeno ex-boton-fantasma" aria-label="Más opciones para ${titulo}">${I('more-horizontal')} Más ${I('chevron-down')}</summary>
             <div class="adm-examen__menu" aria-label="Acciones adicionales">
-              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="entregas" data-id="${esc(ex.id)}">${window.Iconos.render('inbox')} Entregas${porCorregir > 0 ? ` · ${porCorregir} por corregir` : ''}</button>
+              ${menuEntregas}
               ${estadoAccion}
-              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('copy')} Duplicar como borrador</button>
-              <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${window.Iconos.render('trash-2')} Eliminar examen</button>
+              <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('copy')} Duplicar como borrador</button>
+              <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('trash-2')} Eliminar examen</button>
             </div>
           </details>
         </div>
@@ -635,7 +827,7 @@
           <div class="adm-seccion__cabecera">
             <span class="adm-seccion__titulo">Enlaces individuales existentes</span>
           </div>
-          <div id="listaEnlaces"><p class="adm-cabecera__sub">Cargando enlaces…</p></div>`,
+          <div id="listaEnlaces">${window.skeleton ? window.skeleton.filas(2) : ''}</div>`,
         pieHtml: `<button class="adm-btn" id="btnIndividuales" type="button">Enlaces individuales…</button>
           <button class="adm-btn" data-rol="cerrar" type="button">Cerrar</button>`
       });
@@ -758,7 +950,7 @@
             <p class="adm-campo__ayuda">Puedes escribir «Nombre, Grupo». El grupo es opcional.</p>
           </div>
           <div id="errorEnlaces" class="adm-aviso adm-aviso--error" hidden></div>
-          <div id="listaEnlaces"><p class="adm-cabecera__sub">Cargando enlaces…</p></div>`,
+          <div id="listaEnlaces">${window.skeleton ? window.skeleton.filas(2) : ''}</div>`,
         pieHtml: `<button class="adm-btn" data-rol="cerrar" type="button">Cerrar</button>
           <button class="adm-btn adm-btn--principal" id="btnGenerar" type="button">Generar enlaces</button>`
       });

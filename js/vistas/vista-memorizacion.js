@@ -54,7 +54,9 @@
     async montar(raiz) {
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      raiz.innerHTML = window.skeleton ? window.skeleton.memorizacion() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.memorizacion()
+        : '<div class="o-contenedor u-mt-3" role="status" aria-busy="true"></div>';
       try {
         await this._cargarDatos();
         // Volver a la pestaña de mazos al entrar desde la navegación

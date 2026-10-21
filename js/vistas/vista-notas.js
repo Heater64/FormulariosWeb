@@ -76,7 +76,9 @@
       this._usuario = usuario;
       this._limpiarEditor();
 
-      raiz.innerHTML = window.skeleton ? window.skeleton.notas() : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.notas()
+        : '<div class="o-contenedor u-mt-3" role="status" aria-busy="true"></div>';
       try {
         const notas = await window.notasRepository.listarPersonales(usuario.id);
         this._pintarHome(raiz, notas);
@@ -257,7 +259,7 @@
             </div>
           </header>
           <div class="notas-lista" id="listaPapelera">
-            <div class="o-pila u-mt-3" style="align-items:center;gap:var(--espaciado-sm)"><span class="u-color-texto-terciario">Cargando…</span></div>
+            ${window.skeleton ? window.skeleton.filas(3) : ''}
           </div>
         </div>`;
       const volverHome = async () => {

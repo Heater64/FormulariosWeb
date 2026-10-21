@@ -1,0 +1,446 @@
+/* ============================================================================
+ * _examenes-panel.css — cola de exámenes del profesor
+ * ----------------------------------------------------------------------------
+ * La lista de exámenes es una cola de trabajo: el profesor entra a ver qué
+ * exige acción (corregir, publicar) y a abrir los enlaces de cada alumno.
+ * Por eso cada examen se lee como una ficha con tres capas:
+ *
+ *   [estado] Título  [Publicado] [3 por corregir]      [acción] [Editar] [⋯]
+ *           8 preguntas · 10 puntos · 7 entregas · media 6,5
+ *           8 de 12 enlaces usados · Actualizado hace 2 h
+ *
+ * La paleta no cambia: se reutilizan los tokens semánticos que ya usan los
+ * badges (éxito, info, aviso). El acento sólido queda para la cabecera de
+ * cada vista y para publicar un borrador; gestionar enlaces es rutina y va
+ * en tono suave.
+ *
+ * Ámbito: toda la anatomía vive bajo `.ex-vista`, la clase compartida por
+ * Mis exámenes (`/examenes`) y por Inicio (`/inicio`). No es un estilo global:
+ * las vistas que no lleven esa clase no se ven afectadas.
+ * ==========================================================================*/
+
+/* ── Contenedores ──
+   Cada vista aporta su propio aire vertical; la hoja solo se ocupa de que la
+   cola de trabajo no quede tapada por la barra de navegación móvil. */
+.vista-examenes {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+/* ── Cola de trabajo (fichas, grupos, acciones) ── */
+
+/* ── Barra de filtros + búsqueda ──
+   En escritorio comparten una fila: filtros a la izquierda, búsqueda a la
+   derecha. Antes la búsqueda ocupaba una banda entera debajo y empujaba la
+   lista sin aportar nada. */
+.ex-vista .ex-barra {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(200px, 260px);
+  align-items: center;
+  gap: var(--espaciado-sm);
+  margin-bottom: var(--espaciado-md);
+}
+.ex-vista .ex-barra .adm-tabs { margin-bottom: 0; }
+.ex-vista .ex-barra .adm-busqueda-wrap .adm-buscador { margin-bottom: 0; }
+
+/* Cada filtro lleva su icono y su contador: el estado del curso se lee sin
+   cambiar de pestaña. */
+.ex-vista .ex-tab {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  /* Un poco más estrecho que el riel base: cinco filtros con icono y
+     contador tienen que caber en una sola fila en escritorio. */
+  padding-inline: var(--espaciado-sm);
+  white-space: nowrap;
+}
+.ex-vista .ex-tab svg {
+  width: 15px;
+  height: 15px;
+  opacity: 0.85;
+}
+.ex-vista .ex-tab__cuenta {
+  min-width: 18px;
+  padding: 1px 5px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo);
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xxs);
+  font-weight: var(--texto-peso-semibold);
+  font-variant-numeric: tabular-nums;
+  line-height: 1.4;
+  text-align: center;
+}
+.ex-vista .adm-tab--activo .ex-tab__cuenta {
+  background: var(--color-acento-soft);
+  color: var(--color-acento-fuerte);
+}
+
+/* ── Agrupación ──
+   Lo que necesita corrección se separa arriba, sin sacar al resto de la
+   lista: el profesor ve primero su trabajo pendiente y luego el archivo.
+   En «Mis exámenes» ordena la pestaña «Todos»; en Inicio es la forma de no
+   repetir la misma ficha en dos secciones. */
+.ex-vista .ex-grupo + .ex-grupo { margin-top: var(--espaciado-lg); }
+.ex-vista .ex-grupo__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+  margin: 0 0 var(--espaciado-xs);
+  padding-left: 2px;
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-bold);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-texto-terciario);
+}
+.ex-vista .ex-grupo__icono {
+  display: inline-flex;
+  align-items: center;
+}
+.ex-vista .ex-grupo__icono svg {
+  width: 15px;
+  height: 15px;
+}
+.ex-vista .ex-grupo__cuenta {
+  min-width: 20px;
+  padding: 1px 6px;
+  border-radius: var(--radio-pill);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-xxs);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+}
+.ex-vista .ex-grupo--atencion .ex-grupo__titulo { color: var(--color-aviso); }
+.ex-vista .ex-grupo--atencion .ex-grupo__cuenta {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+
+/* ── Ficha de trabajo ──
+   La misma geometría sirve a los exámenes y a las evaluaciones: medallón,
+   cuerpo con tres capas y columna de acciones. Cada vista decide qué pinta
+   dentro (`_evaluaciones-panel.css`). */
+.ex-vista .adm-examen,
+.ex-vista .adm-evaluacion {
+  position: relative;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaciado-sm) var(--espaciado-md);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  transition:
+    background var(--transicion-rapida),
+    border-color var(--transicion-rapida),
+    box-shadow var(--transicion-rapida);
+}
+@media (hover: hover) {
+  .ex-vista .adm-examen:hover,
+  .ex-vista .adm-evaluacion:hover {
+    background: var(--color-fondo-tarjeta);
+    border-color: var(--color-borde-fuerte);
+    box-shadow: var(--sombra-sm);
+  }
+}
+
+/* Marca de estado: mismo lenguaje de color que el badge, sin depender solo
+   del texto para reconocer un borrador, un publicado o un cerrado. */
+.ex-vista .ex-ficha__marca {
+  width: 42px;
+  height: 42px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-secundario);
+}
+.ex-vista .ex-ficha__marca svg {
+  width: 20px;
+  height: 20px;
+}
+.ex-vista .adm-examen[data-estado="publicado"] .ex-ficha__marca {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+.ex-vista .adm-examen[data-estado="cerrado"] .ex-ficha__marca {
+  background: var(--color-info-soft);
+  color: var(--color-info);
+}
+.ex-vista .adm-examen[data-estado="papelera"] .ex-ficha__marca,
+.ex-vista .adm-examen[data-estado="copia"] .ex-ficha__marca {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+
+/* Franco ámbar: solo lo que exige acción (entregas sin corregir, evaluación
+   sin columnas). Es la única señal que interrumpe el ritmo de la lista. */
+.ex-vista .adm-fila[data-atencion] { box-shadow: inset 3px 0 0 var(--color-aviso); }
+@media (hover: hover) {
+  .ex-vista .adm-fila[data-atencion]:hover {
+    box-shadow: inset 3px 0 0 var(--color-aviso), var(--sombra-sm);
+  }
+}
+
+.ex-vista .ex-ficha__cuerpo { min-width: 0; }
+.ex-vista .ex-ficha__titulo {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaciado-xxs) var(--espaciado-xs);
+}
+/* Mis exámenes usa h2 (la vista no tiene otro título de sección); Inicio
+   anida las fichas bajo «Tus exámenes», así que allí son h3. */
+.ex-vista .ex-ficha__titulo h2,
+.ex-vista .ex-ficha__titulo h3 {
+  min-width: 0;
+  margin: 0;
+  font-size: var(--texto-lg);
+  font-weight: var(--texto-peso-bold);
+  line-height: 1.3;
+  letter-spacing: -0.01em;
+  color: var(--color-texto);
+  overflow-wrap: anywhere;
+}
+
+/* Datos con icono y separación por espacio: nada de una caja por cifra. */
+.ex-vista .ex-ficha__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 3px var(--espaciado-md);
+  margin-top: var(--espaciado-2xs);
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+  line-height: 1.5;
+}
+.ex-vista .ex-ficha__dato {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  min-width: 0;
+}
+.ex-vista .ex-ficha__dato svg {
+  width: 14px;
+  height: 14px;
+  flex: 0 0 auto;
+  color: var(--color-texto-terciario);
+  opacity: 0.9;
+}
+.ex-vista .ex-ficha__dato--entregas { color: var(--color-texto); }
+
+.ex-vista .ex-ficha__pie {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--espaciado-sm);
+  margin-top: var(--espaciado-2xs);
+  font-size: var(--texto-xs);
+  color: var(--color-texto-terciario);
+  line-height: 1.5;
+}
+.ex-vista .ex-ficha__pie > span {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+.ex-vista .ex-ficha__pie svg {
+  width: 13px;
+  height: 13px;
+  flex: 0 0 auto;
+}
+
+/* ── Acciones ── */
+.ex-vista .ex-ficha__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaciado-xs);
+}
+.ex-vista .ex-ficha__acciones .adm-examen__acciones-principales {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--espaciado-xs);
+}
+/* La etiqueta larga ya no necesita un ancho fijo: el grid de la ficha le da
+   sitio y así las tres acciones quedan alineadas en todas las filas. */
+.ex-vista .ex-ficha__acciones .adm-examen__acciones-principales [data-accion="compartir"] {
+  min-width: 0;
+}
+
+/* Acción rutinaria: tono de acento sobre fondo suave. Mantiene el azul de la
+   web pero deja el relleno sólido para la cabecera y para publicar. */
+.ex-vista .ex-boton-suave {
+  background: var(--color-acento-soft);
+  border-color: transparent;
+  color: var(--color-acento-fuerte);
+}
+@media (hover: hover) {
+  .ex-vista .ex-boton-suave:hover {
+    background: var(--color-acento-soft-hover);
+    border-color: var(--color-acento-soft-hover);
+    color: var(--color-acento-fuerte);
+  }
+}
+.ex-vista .ex-boton-fantasma {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-texto-secundario);
+}
+@media (hover: hover) {
+  .ex-vista .ex-boton-fantasma:hover {
+    background: var(--color-fondo-alt);
+    border-color: var(--color-borde);
+    color: var(--color-texto);
+  }
+}
+
+/* ── Papelera y copias locales ── */
+.ex-vista .ex-papelera__cabecera {
+  align-items: flex-start;
+}
+.ex-vista .ex-papelera__intro {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-sm);
+  flex: 1 1 320px;
+  min-width: 0;
+}
+.ex-vista .ex-papelera__icono {
+  width: 38px;
+  height: 38px;
+  flex: 0 0 auto;
+  display: grid;
+  place-items: center;
+  border-radius: var(--radio-md);
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+.ex-vista .ex-papelera__icono svg { width: 19px; height: 19px; }
+.ex-vista .ex-papelera__intro .adm-cabecera__sub { margin: 0; }
+
+.ex-vista .ex-seccion__cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+}
+.ex-vista .ex-seccion__cabecera .adm-seccion__titulo { margin-bottom: 0; }
+.ex-vista .ex-seccion__icono {
+  display: inline-flex;
+  color: var(--color-texto-terciario);
+}
+.ex-vista .ex-seccion__icono svg { width: 16px; height: 16px; }
+
+/* Borradores del editor: el aviso ya existía; solo se alinea el icono. */
+.ex-vista .ex-local__titulo {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xxs);
+}
+.ex-vista .ex-local__titulo svg { width: 15px; height: 15px; }
+
+/* ── Estado vacío ── */
+.ex-vista .ex-vacio {
+  padding: var(--espaciado-2xl) var(--espaciado-lg);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+}
+.ex-vista .ex-vacio__icono {
+  width: 52px;
+  height: 52px;
+  margin: 0 auto var(--espaciado-sm);
+  display: grid;
+  place-items: center;
+  border-radius: var(--radio-lg);
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+}
+.ex-vista .ex-vacio__icono svg { width: 24px; height: 24px; }
+.ex-vista .ex-vacio .adm-vacio__titulo { margin-bottom: var(--espaciado-2xs); }
+.ex-vista .ex-vacio p {
+  max-width: 44ch;
+  margin-inline: auto;
+  line-height: 1.6;
+}
+.ex-vista .ex-vacio .adm-btn { margin-top: var(--espaciado-md); }
+
+/* ── Inicio ──
+   La misma ficha, pero sin barra de filtros: los grupos empiezan justo
+   debajo del título de la sección y respiran menos que en una página de
+   listado completo. */
+.panel-inicio .ex-grupo:first-of-type { margin-top: 0; }
+.panel-inicio .ex-grupo + .ex-grupo { margin-top: var(--espaciado-md); }
+.panel-inicio .ex-grupo .adm-lista { gap: var(--espaciado-xs); }
+
+/* ── Responsive ──
+   Por debajo de 1200px la barra se apila: los cinco filtros con icono no
+   caben junto al buscador sin apretarse. En móvil, los filtros se deslizan
+   en una sola fila y la ficha pasa a dos columnas con acciones a lo ancho. */
+@media (max-width: 1200px) {
+  .ex-vista .ex-barra { grid-template-columns: minmax(0, 1fr); }
+}
+@media (max-width: 860px) {
+  .ex-vista .ex-barra .adm-tabs {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
+  }
+  .ex-vista .ex-barra .adm-tabs::-webkit-scrollbar { display: none; }
+}
+@media (max-width: 760px) {
+  .ex-vista .adm-examen,
+  .ex-vista .adm-evaluacion {
+    grid-template-columns: auto minmax(0, 1fr);
+    align-items: start;
+    gap: var(--espaciado-xs) var(--espaciado-sm);
+    padding: var(--espaciado-sm);
+  }
+  .ex-vista .ex-ficha__marca {
+    width: 38px;
+    height: 38px;
+    margin-top: 1px;
+  }
+  .ex-vista .ex-ficha__marca svg { width: 18px; height: 18px; }
+  .ex-vista .ex-ficha__acciones {
+    grid-column: 1 / -1;
+    width: 100%;
+    margin-top: var(--espaciado-2xs);
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    justify-content: stretch;
+  }
+  .ex-vista .ex-ficha__acciones .adm-examen__acciones-principales { display: contents; }
+  .ex-vista .ex-ficha__acciones .ex-accion-principal { grid-column: 1 / -1; }
+  .ex-vista .ex-ficha__acciones .adm-btn { width: 100%; }
+  .ex-vista .ex-ficha__acciones .adm-examen__mas {
+    width: 100%;
+    grid-column: 2;
+  }
+  .ex-vista .ex-ficha__acciones .adm-examen__mas > summary {
+    width: 100%;
+    justify-content: center;
+  }
+  .ex-vista .ex-ficha__acciones > .adm-btn { grid-column: 1 / -1; }
+  .ex-vista .ex-papelera__cabecera .adm-btn { width: 100%; }
+}
+@media (max-width: 420px) {
+  .ex-vista .ex-ficha__meta { font-size: var(--texto-xs); gap: 2px var(--espaciado-sm); }
+  .ex-vista .ex-ficha__pie { font-size: var(--texto-xxs); }
+  .ex-vista .ex-vacio { padding: var(--espaciado-xl) var(--espaciado-md); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ex-vista .adm-examen,
+  .ex-vista .adm-evaluacion { transition: none; }
+}

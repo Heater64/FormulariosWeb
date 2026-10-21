@@ -4,7 +4,9 @@
     async montar(raiz, params) {
       const libroId = parseInt(params.libro);
       const capituloNum = parseInt(params.capitulo);
-      raiz.innerHTML = window.skeleton ? window.skeleton.tarjetas(2, { ancho: '100%' }) : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? `<div class="o-contenedor o-pila u-mt-3" role="status" aria-busy="true">${window.skeleton.tarjetas(2, { ancho: '100%' })}</div>`
+        : '<div class="o-contenedor o-pila u-mt-3" role="status" aria-busy="true"></div>';
       const sb = window.supabaseClient;
       const usuario = store.obtener('usuario');
       if (!sb || !usuario) return;

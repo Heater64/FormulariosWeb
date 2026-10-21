@@ -38,3 +38,312 @@
 @media (prefers-reduced-motion: reduce) {
   .skel::after { animation: none; }
 }
+
+/* ==========================================================================
+   Sistema de esqueletos v2
+   --------------------------------------------------------------------------
+   Las composiciones de js/utilidades/skeleton.js dibujan la misma estructura
+   que el contenido final (cabecera, estadísticas, filas, tabla, formulario).
+   Todo vive aquí para que cualquier página —SPA, login, examen del alumno,
+   panel de administración— pueda usar los mismos bloques.
+   ========================================================================== */
+
+.skel-stack {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-md);
+}
+
+/* Aviso solo para lectores de pantalla: nunca se ve texto "Cargando…". */
+.skel-stack__sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+.skel-stack__grupo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.skel-seccion {
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-sm);
+  margin-top: var(--espaciado-sm);
+}
+
+/* Cabecera de sección (icono + título + subtítulo + acción). */
+.skel-cabecera {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--espaciado-md);
+  padding-block: var(--espaciado-sm);
+  border-bottom: 1px solid var(--color-borde);
+  margin-bottom: var(--espaciado-xs);
+}
+
+.skel-cabecera__texto {
+  flex: 1 1 220px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding-top: 2px;
+}
+
+/* Estadísticas: mismo hueco que la tira agrupada .adm-rejilla/.adm-stat. */
+.skel-stats {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 0;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+
+.skel-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-left: 1px solid var(--color-borde-suave);
+}
+
+.skel-stat:first-child { border-left: 0; }
+
+.skel-stat__cifra {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+}
+
+@media (max-width: 600px) {
+  .skel-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .skel-stat {
+    padding: var(--espaciado-xs) var(--espaciado-sm);
+    border-left: 1px solid var(--color-borde-suave);
+    border-top: 1px solid var(--color-borde-suave);
+  }
+  .skel-stat:nth-child(1),
+  .skel-stat:nth-child(2) { border-top: 0; }
+  .skel-stat:nth-child(odd) { border-left: 0; }
+}
+
+/* Filas de listado: mismo hueco que .adm-fila. */
+.skel-fila {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-start;
+  gap: var(--espaciado-sm);
+  min-height: 84px;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  padding: var(--espaciado-md);
+}
+
+/* Inicio: lista agrupada y filas compactas. */
+.skel-stack__grupo--agrupada {
+  gap: 0;
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+
+.skel-fila--compacta {
+  min-height: 68px;
+  align-items: center;
+  background: transparent;
+  border: 0;
+  border-top: 1px solid var(--color-borde-suave);
+  border-radius: 0;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+}
+
+.skel-fila--compacta:first-child { border-top: 0; }
+
+/* Inicio y Mis exámenes: la ficha real tiene medallón de estado, datos con
+   icono, pie y acciones. El esqueleto reserva esos tres huecos para que el
+   contenido no empuje la página al aterrizar. */
+.skel-fila--medallon {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr) auto;
+  align-items: center;
+  gap: var(--espaciado-sm) var(--espaciado-md);
+  min-height: 92px;
+  padding: var(--espaciado-sm) var(--espaciado-md);
+}
+.skel-medallon {
+  width: 42px;
+  height: 42px;
+  border-radius: var(--radio-md);
+}
+.skel-fila__pie {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-sm);
+}
+.skel-fila--medallon .skel-fila__texto { gap: 7px; }
+.skel-fila--medallon .skel-fila__acciones { align-items: center; }
+
+@media (max-width: 760px) {
+  .skel-fila--medallon {
+    grid-template-columns: 38px minmax(0, 1fr);
+    align-items: start;
+    gap: var(--espaciado-xs) var(--espaciado-sm);
+    padding: var(--espaciado-sm);
+  }
+  .skel-medallon {
+    width: 38px;
+    height: 38px;
+    margin-top: 1px;
+  }
+  .skel-fila--medallon .skel-fila__acciones {
+    grid-column: 1 / -1;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espaciado-xs);
+  }
+  .skel-fila--medallon .skel-fila__acciones > .skel { width: 100% !important; }
+}
+
+@media (max-width: 600px) {
+  .skel-fila--compacta {
+    min-height: 112px;
+    align-items: flex-start;
+    padding: var(--espaciado-sm);
+    gap: var(--espaciado-xs);
+  }
+  .skel-fila--compacta .skel-fila__texto { flex: 1 1 100%; gap: 6px; }
+  .skel-fila--compacta .skel-fila__acciones {
+    flex: 1 1 100%;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: var(--espaciado-xs);
+  }
+  .skel-fila--compacta .skel-fila__acciones > .skel { width: 100% !important; }
+}
+
+/* Cabecera de Inicio: sin filete y más baja en móvil, como la real. */
+.skel-cabecera--inicio {
+  padding-block: var(--espaciado-sm);
+  border-bottom: 0;
+  margin-bottom: 0;
+}
+
+.skel-seccion__fila {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-sm);
+}
+
+@media (max-width: 600px) {
+  .skel-cabecera--inicio { padding-block: 0; }
+  .skel-cabecera--inicio > .skel:first-child { display: none; }
+  .skel-cabecera--inicio .skel-cabecera__texto > .skel:nth-child(2) { display: none; }
+}
+
+.skel-fila__texto {
+  flex: 1 1 240px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.skel-fila__meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.skel-fila__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+  flex: 0 0 auto;
+}
+
+/* Riel de filtros y buscador. */
+.skel-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xs);
+}
+
+.skel-buscador {
+  height: 44px;
+  width: 100%;
+  border-radius: var(--radio-md);
+  background: var(--color-fondo-alt);
+  position: relative;
+  overflow: hidden;
+}
+
+.skel-buscador::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  transform: translateX(-100%);
+  background: linear-gradient(90deg, transparent 0%, var(--color-shimmer) 50%, transparent 100%);
+  animation: skel-shimmer 1.4s infinite;
+}
+
+/* Tabla (rejilla de evaluación, libro de calificaciones). */
+.skel-tabla {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  background: var(--color-borde);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+
+.skel-tabla__fila {
+  display: grid;
+  gap: var(--espaciado-sm);
+  align-items: center;
+  background: var(--color-fondo-tarjeta);
+  padding: 12px var(--espaciado-sm);
+  min-height: 42px;
+}
+
+/* Campos de formulario. */
+.skel-campo {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* Cabecera de perfil/cuenta. */
+.skel-tarjeta--perfil {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-md);
+}
+
+.skel-perfil__datos {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  flex: 1 1 auto;
+  min-width: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .skel-buscador::after { animation: none; }
+}

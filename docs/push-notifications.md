@@ -143,7 +143,12 @@ FCM. Sin estas claves la PWA simplemente no ofrece el botón de avisos.
    - `VAPID_PRIVATE_KEY` = clave privada (nunca al cliente)
    - `VAPID_SUBJECT` = `mailto:tu-correo@dominio`
 3. Publica la misma clave pública en la PWA como `VAPID_PUBLIC_KEY`
-   (variable de entorno del build, lo lee `js/config/entorno.js`).
+   (variable de entorno del despliegue). El build la traduce a
+   `js/config/env-publico.js` con `scripts/generar-env-publico.mjs` —se ejecuta
+   solo desde los hooks `predev`, `prebuild` y `prebuild:public`— y `index.html`
+   carga ese archivo justo antes de `js/config/entorno.js`, que la expone como
+   `window.entorno.vapidPublicKey`. Sin esa variable el archivo queda vacío y el
+   panel no ofrece activar los avisos del navegador.
 4. Aplica la migración `supabase/migraciones/071_suscripciones_web_push.sql`
    en el SQL Editor.
 

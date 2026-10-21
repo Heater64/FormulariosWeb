@@ -16,7 +16,9 @@
   justify-content: center;
   gap: var(--espaciado-lg);
   padding: var(--espaciado-xl);
-  transition: opacity 900ms var(--easing-smooth), visibility 0s linear 900ms;
+  /* Salida corta: el splash solo cubre el arranque; el esqueleto de la vista
+     ya está debajo, así que no hace falta un fundido largo. */
+  transition: opacity 220ms var(--easing-smooth), visibility 0s linear 220ms;
 }
 
 .splash-screen--loaded {

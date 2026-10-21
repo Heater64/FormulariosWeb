@@ -60,14 +60,16 @@ describe('asignar un intento por enlace a la cuenta de un alumno (069)', () => {
     expect(repositorio).toContain('p_alumno: alumnoId || null');
   });
 
-  test('la lista de entregas ofrece «Asignar a usuario» por entrega', () => {
+  test('la lista de entregas ofrece «Asignar cuenta» por entrega', () => {
     expect(vista).toContain('data-asignar=');
-    expect(vista).toContain('Asignar a usuario');
+    expect(vista).toContain('Asignar cuenta');
     expect(vista).toContain('Cambiar cuenta');
     // La acción abre el modal de asignación con la entrega concreta.
     expect(vista).toContain('_abrirAsignacion(entrega)');
-    // El estado de asignación se muestra en la fila (nombre de la cuenta).
-    expect(vista).toContain("meta.push('Asignado a ' + entrega.alumno_asignado)");
+    // El estado de asignación se muestra en la ficha (nombre de la cuenta) y,
+    // si no la tiene, se dice para que el profesor sepa qué falta.
+    expect(vista).toContain('Asignada a ${esc(entrega.alumno_asignado)}');
+    expect(vista).toContain('Sin asignar a una cuenta');
   });
 
   test('el modal sugiere la cuenta cuyo nombre coincide con el del enlace', () => {

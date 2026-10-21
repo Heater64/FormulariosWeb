@@ -24,6 +24,19 @@ async function minificarJs(ruta) {
   }
 }
 
+// Las hojas por sección ya no las empaqueta Vite (no están en el <head>): el
+// router las pide en tiempo de ejecución desde dist/css/. Sin esto viajarían
+// sin minificar, que es justo lo que la división pretendía evitar.
+async function minificarCss(ruta) {
+  const code = readFileSync(ruta, 'utf8');
+  try {
+    const res = await transform(code, { minify: true, loader: 'css' });
+    writeFileSync(ruta, res.code);
+  } catch (error) {
+    console.warn(`[build] No se pudo minificar ${ruta}: ${error.message}`);
+  }
+}
+
 function readAndroidVersionCode() {
   const source = join(process.cwd(), 'android/version-code.properties');
   const contents = readFileSync(source, 'utf8');
@@ -53,8 +66,7 @@ function injectRuntimeVersion() {
   };
 }
 
-function copyAppStaticFiles() {
-  const dirs = ['js', 'css', 'data', 'assets/iconos', 'assets/capturas'];      // manifest.json, sw.js y offline.html viven en public/ (publicDir de Vite)
+function copyAppStaticFiles() {      const dirs = ['js', 'css', 'data', 'assets/iconos', 'assets/capturas', 'assets/fuentes'];      // manifest.json, sw.js y offline.html viven en public/ (publicDir de Vite)
       // y se copian a dist/ sin hash: el manifiesto PWA necesita una URL estable.
       const files = ['version.json'];
 
@@ -99,6 +111,10 @@ function copyAppStaticFiles() {
 
       for (const file of listarArchivos(join(distRoot, 'js'))) {
         if (file.endsWith('.js')) await minificarJs(file);
+      }
+
+      for (const file of listarArchivos(join(distRoot, 'css'))) {
+        if (file.endsWith('.css')) await minificarCss(file);
       }
 
       const html = readFileSync(distIndexPath, 'utf8');

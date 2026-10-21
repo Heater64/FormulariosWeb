@@ -114,7 +114,9 @@
       if (!usuario || !['admin', 'owner'].includes((usuario.rol || '').toString().trim().toLowerCase())) {
         raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Acceso no autorizado</p><button class="btn-primario u-mt-2" data-admin-volver>Volver</button></div>'; raiz.querySelector('[data-admin-volver]')?.addEventListener('click', () => this._volver()); return;
       }
-      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(8, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando panel...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.panelAdmin()
+        : '<div class="o-contenedor u-mt-3" role="status" aria-busy="true"></div>';
       this._inicioSesion = Date.now();
       try {
         const esOwner = ((usuario.rol || '').toString().trim().toLowerCase()) === 'owner';

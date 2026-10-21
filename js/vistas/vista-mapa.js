@@ -3,7 +3,9 @@
   window.vistaMapa = {
     async montar(raiz) {
       const usuario = store.obtener('usuario');
-      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor u-mt-3">${window.skeleton.tarjetas(12, { ancho: '100%' })}</div>` : '<div class="o-contenedor u-mt-3"><p class="u-color-texto-terciario">Cargando mapa bíblico...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? `<div class="o-contenedor u-mt-3" role="status" aria-busy="true">${window.skeleton.tarjetas(8, { ancho: '100%' })}</div>`
+        : '<div class="o-contenedor u-mt-3" role="status" aria-busy="true"></div>';
       try {
         const sb = window.supabaseClient;
         if (!sb) return;

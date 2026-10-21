@@ -49,7 +49,7 @@
             </div>
           </div>
           <div class="notif-filtros" id="notifFiltros" role="tablist" aria-label="Filtrar notificaciones"></div>
-          <div id="notifLista" aria-live="polite"></div>
+          <div id="notifLista" aria-live="polite">${window.skeleton ? window.skeleton.notificaciones() : ''}</div>
         </div>`;
 
       if (window.Iconos) window.Iconos.actualizar();
@@ -130,6 +130,13 @@
       const lista = raiz.querySelector('#notifLista');
       if (!lista) return;
       const st = this._estadoStore();
+
+      // Primera carga: esqueleto con el mismo alto que las tarjetas reales. Sin
+      // esto el store vacío se leía como «Todo al día» antes de recibir datos.
+      if (st.cargando && !(st.items || []).length) {
+        lista.innerHTML = window.skeleton ? window.skeleton.filas(5, { titulo: '62%' }) : '';
+        return;
+      }
 
       if (st.error) {
         lista.innerHTML = `<div class="empty-state">

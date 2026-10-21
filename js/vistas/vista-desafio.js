@@ -61,7 +61,9 @@
       // _empezarJuego del _loop reconstruye el estado y restaura el progreso
       // guardado (columna progreso) en el ejercicio siguiente.
       this._enJuego = false;
-      raiz.innerHTML = `<div class="o-contenedor u-mt-3">${window.skeleton ? window.skeleton.tarjetas(3) : '<p class="u-color-texto-terciario">Cargando desafío...</p>'}</div>`;
+      raiz.innerHTML = window.skeleton
+        ? `<div class="o-contenedor u-mt-3" role="status" aria-busy="true">${window.skeleton.tarjetas(3)}</div>`
+        : '<div class="o-contenedor u-mt-3" role="status" aria-busy="true"></div>';
       await this._loop();
     },
 

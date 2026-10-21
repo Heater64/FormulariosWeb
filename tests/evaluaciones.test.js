@@ -420,7 +420,9 @@ describe('rutas, sidebar y títulos', () => {
   });
 
   test('la sección aparece en la barra lateral y nombra su propia pestaña', () => {
-    expect(coreIndex).toMatch(/\{\s*ruta: '\/evaluaciones',\s*icono: 'clipboard-list',\s*texto: 'Evaluaciones'\s*\}/);
+    // El ítem puede llevar propiedades extra (`textoCorto` para la barra
+    // estrecha); lo que no puede faltar es ruta, icono y etiqueta.
+    expect(coreIndex).toMatch(/\{\s*ruta: '\/evaluaciones',\s*icono: 'clipboard-list',\s*texto: 'Evaluaciones'[^\n]*\}/);
     expect(routerJs).toContain("'/evaluaciones': 'Evaluaciones'");
     expect(routerJs).toContain("'/evaluaciones/:id': 'Evaluación'");
   });

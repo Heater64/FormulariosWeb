@@ -15,6 +15,18 @@
 
   const ROLES = ['admin', 'editor', 'owner'];
   const esc = (v) => window.panelUI.esc(v);
+  const I = (nombre) => (window.Iconos ? window.Iconos.render(nombre) : '');
+
+  const plural = (n, singular, plurales) => `${n} ${n === 1 ? singular : plurales}`;
+
+  /** Iniciales de un nombre para el avatar del detalle («Ana Pérez» → AP). */
+  function iniciales(nombre) {
+    const partes = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '?';
+    const primera = partes[0].charAt(0);
+    const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : partes[0].charAt(1);
+    return (primera + (ultima || '')).toUpperCase();
+  }
 
   function esAdmin() {
     const usuario = store.obtener('usuario');
@@ -24,10 +36,12 @@
   function estadoBadge(entrega) {
     if (entrega.corregido) return '<span class="adm-badge adm-badge--exito">Calificada</span>';
     if (entrega.estado === 'en_progreso') return '<span class="adm-badge adm-badge--borrador">Sin entregar</span>';
-    if (Number(entrega.pendientes_correccion) > 0) {
-      return `<span class="adm-badge adm-badge--aviso">${Number(entrega.pendientes_correccion)} por corregir</span>`;
-    }
-    return '<span class="adm-badge adm-badge--publicado">Entregada</span>';
+    // Una entrega completada sin corregir es trabajo pendiente aunque el
+    // servidor no haya contado aún respuestas escritas que decidir.
+    const pendientes = Number(entrega.pendientes_correccion) || 0;
+    return pendientes > 0
+      ? `<span class="adm-badge adm-badge--aviso">${pendientes} por corregir</span>`
+      : '<span class="adm-badge adm-badge--aviso">Por corregir</span>';
   }
 
   window.vistaEntregas = {
@@ -49,18 +63,21 @@
 
     // ── Listado general (/entregas) ───────────────────────────────────────
     async _pintarListado(raiz) {
-      raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+      raiz.innerHTML = `<div class="o-contenedor vista-entregas ex-vista">
         <header class="adm-cabecera">
           <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('inbox')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo">Entregas</h1>
-            <p class="adm-cabecera__sub">Elige un examen para ver quién ha respondido, quién falta y corregir lo que falta.</p>
+            <p class="adm-cabecera__sub">Revisa quién ha respondido, quién falta y qué queda por corregir en cada examen.</p>
           </div>
         </header>
-        <div id="contenido"><p class="adm-cabecera__sub">Cargando…</p></div>
+        <div id="contenido"></div>
       </div>`;
 
       const contenido = raiz.querySelector('#contenido');
+      if (window.skeleton) window.skeleton.mostrar(contenido, window.skeleton.filas(5), 'Cargando las entregas');
+      // La lista de usuarios es independiente del resumen: se pide a la vez.
+      const usuariosP = window.adminRepository.listarUsuarios().catch(() => null);
       let examenes = [];
       try {
         const datos = await window.plataformaRepository.resumen();
@@ -75,52 +92,42 @@
       // todavía. Solo publicado/cerrado: un borrador nunca se ofreció.
       let numAlumnosClase = null;
       try {
-        const usuariosClase = await window.adminRepository.listarUsuarios() || [];
+        const usuariosClase = await usuariosP || [];
         numAlumnosClase = usuariosClase.filter((u) => u.rol === 'usuario' && u.activo !== false).length;
       } catch (e) { numAlumnosClase = null; }
       const sinEntregas = examenes.filter((ex) => Number(ex.num_entregas) === 0 && (ex.estado === 'publicado' || ex.estado === 'cerrado'));
       if (!conEntregas.length && !sinEntregas.length) {
-        contenido.innerHTML = `<div class="adm-vacio">
+        contenido.innerHTML = `<div class="adm-vacio ex-vacio">
+          <span class="ex-vacio__icono" aria-hidden="true">${window.Iconos.render('inbox')}</span>
           <p class="adm-vacio__titulo">Todavía no hay entregas</p>
-          <p>Publica un examen y comparte los enlaces con tus alumnos.</p>
+          <p>Publica un examen y comparte los enlaces con tus alumnos. Aquí verás quién ha respondido y qué queda por corregir.</p>
+          <button class="adm-btn adm-btn--principal" type="button" data-ir-examenes>${window.Iconos.render('clipboard-list')} Ir a Mis exámenes</button>
         </div>`;
+        const irExamenes = contenido.querySelector('[data-ir-examenes]');
+        if (irExamenes) irExamenes.addEventListener('click', () => router.navegar('/examenes'));
+        if (window.Iconos) window.Iconos.actualizar();
         return;
       }
 
       const metaSinEntregas = numAlumnosClase == null || numAlumnosClase === 0
         ? 'Nadie ha entregado aún'
-        : numAlumnosClase + ' alumno(s) en clase · faltan todos';
-      const htmlSinEntregas = sinEntregas.length ? `<h2 class="adm-seccion__titulo" style="margin-top:var(--espaciado-lg)">Sin entregas todavía (${sinEntregas.length})</h2>
-        <div class="adm-lista">${sinEntregas.map((ex) => `
-          <div class="adm-fila">
-            <div class="adm-fila__principal">
-              <div class="adm-fila__titulo">${esc(ex.titulo)}</div>
-              <div class="adm-fila__meta"><span>${esc(metaSinEntregas)}</span></div>
-            </div>
-            <div class="adm-fila__acciones">
-              <button class="adm-btn adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('eye')} Ver seguimiento</button>
-            </div>
-          </div>`).join('')}</div>` : '';
+        : `${plural(numAlumnosClase, 'alumno', 'alumnos')} en clase · faltan todos`;
 
-      contenido.innerHTML = (conEntregas.length ? `<div class="adm-lista">${conEntregas.map((ex) => {
-        const porCorregir = Number(ex.por_corregir) || 0;
-        const meta = [
-          (Number(ex.num_entregas) || 0) + ' entregas',
-          (Number(ex.enlaces_usados) || 0) + ' de ' + (Number(ex.num_enlaces) || 0) + ' enlaces usados'
-        ];
-        if (ex.nota_media != null) meta.push('media ' + window.panelUI.numero(ex.nota_media));
-        return `<div class="adm-fila">
-          <div class="adm-fila__principal">
-            <div class="adm-fila__titulo">${esc(ex.titulo)}
-              ${porCorregir > 0 ? `<span class="adm-badge adm-badge--aviso">${porCorregir} por corregir</span>` : '<span class="adm-badge adm-badge--exito">Todo corregido</span>'}
-            </div>
-            <div class="adm-fila__meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>
-          </div>
-          <div class="adm-fila__acciones">
-            <button class="adm-btn adm-btn--principal adm-btn--pequeno" data-ir="/corregir/${esc(ex.id)}">${window.Iconos.render('eye')} Ver entregas</button>
-          </div>
-        </div>`;
-      }).join('')}</div>` : '') + htmlSinEntregas;
+      // La cola se ordena por urgencia: primero lo que espera corrección, luego
+      // lo que ya está al día y, al final, los exámenes que nadie ha entregado.
+      const pendientes = conEntregas.filter((ex) => Number(ex.por_corregir) > 0);
+      const alDia = conEntregas.filter((ex) => Number(ex.por_corregir) === 0);
+      const grupos = [];
+      if (pendientes.length) {
+        grupos.push(this._htmlGrupoEntregas('atencion', 'Por corregir', 'clipboard-check', pendientes, true));
+      }
+      if (alDia.length) {
+        grupos.push(this._htmlGrupoEntregas('al-dia', 'Al día', 'check-circle', alDia, false));
+      }
+      if (sinEntregas.length) {
+        grupos.push(this._htmlGrupoEntregas('sin-entregas', 'Sin entregas todavía', 'send', sinEntregas, false, metaSinEntregas));
+      }
+      contenido.innerHTML = grupos.join('');
 
       contenido.querySelectorAll('[data-ir]').forEach((btn) => {
         btn.addEventListener('click', () => router.navegar(btn.dataset.ir));
@@ -128,14 +135,116 @@
       if (window.Iconos) window.Iconos.actualizar();
     },
 
+    /** Un grupo de la cola: pendientes, al día o exámenes que nadie entregó. */
+    _htmlGrupoEntregas(clave, titulo, icono, examenes, atencion, metaSinEntregas) {
+      // El nombre accesible lleva el total; el contador visible va como chip.
+      const etiqueta = clave === 'sin-entregas'
+        ? `Sin entregas todavía (${examenes.length})`
+        : `${titulo} (${examenes.length})`;
+      const tarjetas = examenes.map((ex) => (metaSinEntregas
+        ? this._tarjetaSinEntregas(ex, metaSinEntregas)
+        : this._tarjetaEntregas(ex))).join('');
+      return `<section class="ex-grupo ex-grupo--${clave}${atencion ? ' ex-grupo--atencion' : ''}" aria-label="${etiqueta}">
+        <p class="ex-grupo__titulo">
+          <span class="ex-grupo__icono" aria-hidden="true">${I(icono)}</span>
+          ${titulo}
+          <span class="ex-grupo__cuenta">${examenes.length}</span>
+        </p>
+        <div class="adm-lista">${tarjetas}</div>
+      </section>`;
+    },
+
+    /** Examen con entregas: estado de corrección, progreso y acción directa. */
+    _tarjetaEntregas(ex) {
+      const porCorregir = Number(ex.por_corregir) || 0;
+      const entregas = Number(ex.num_entregas) || 0;
+      const corregidas = Math.max(0, entregas - porCorregir);
+      const numEnlaces = Number(ex.num_enlaces) || 0;
+      const usados = Number(ex.enlaces_usados) || 0;
+      const pendiente = porCorregir > 0;
+      const titulo = esc(ex.titulo);
+      const porcentaje = entregas ? Math.round((corregidas / entregas) * 100) : 0;
+
+      const datos = [
+        `<span class="ex-ficha__dato">${I('inbox')}${plural(entregas, 'entrega', 'entregas')}</span>`
+      ];
+      if (ex.nota_media != null) {
+        datos.push(`<span class="ex-ficha__dato">${I('medal')}media ${esc(window.panelUI.numero(ex.nota_media))}</span>`);
+      }
+
+      // Sin enlaces no se dice «0 de 0»; el pie solo aparece cuando aporta.
+      const pie = [];
+      if (numEnlaces) {
+        pie.push(`<span>${I('link-2')}${usados} de ${numEnlaces} enlaces usados</span>`);
+      }
+      if (ex.estado === 'cerrado') {
+        pie.push(`<span>${I('lock')}Cerrado</span>`);
+      }
+
+      // La barra solo aparece cuando queda trabajo: un examen al día ya lo dice
+      // su badge y no necesita otra línea verde.
+      const progreso = pendiente ? `<div class="ex-progreso" role="group" aria-label="${corregidas} de ${entregas} corregidas">
+        <span class="ex-progreso__pista" aria-hidden="true"><span class="ex-progreso__relleno" style="width:${porcentaje}%"></span></span>
+        <span class="ex-progreso__texto">${corregidas} de ${entregas} ${corregidas === 1 ? 'corregida' : 'corregidas'}</span>
+      </div>` : '';
+
+      const accion = pendiente
+        ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno ex-accion-principal" type="button" data-ir="/corregir/${esc(ex.id)}">${I('clipboard-check')} Corregir ${porCorregir}</button>`
+        : `<button class="adm-btn adm-btn--pequeno ex-boton-suave ex-accion-principal" type="button" data-ir="/corregir/${esc(ex.id)}">${I('eye')} Ver entregas</button>`;
+
+      return `<article class="adm-fila adm-examen" data-estado="${pendiente ? 'pendiente' : 'al-dia'}" aria-label="${titulo}">
+        <span class="ex-ficha__marca" aria-hidden="true">${I('inbox')}</span>
+        <div class="ex-ficha__cuerpo">
+          <div class="ex-ficha__titulo">
+            <h2>${titulo}</h2>
+            ${pendiente
+              ? `<span class="adm-badge adm-badge--aviso">${porCorregir} por corregir</span>`
+              : '<span class="adm-badge adm-badge--exito">Todo corregido</span>'}
+          </div>
+          <div class="ex-ficha__meta">${datos.join('')}</div>
+          ${progreso}
+          ${pie.length ? `<div class="ex-ficha__pie">${pie.join('')}</div>` : ''}
+        </div>
+        <div class="ex-ficha__acciones">
+          <div class="adm-examen__acciones-principales">${accion}</div>
+        </div>
+      </article>`;
+    },
+
+    /** Examen ofrecido que aún no tiene ninguna entrega. */
+    _tarjetaSinEntregas(ex, metaSinEntregas) {
+      const titulo = esc(ex.titulo);
+      const cerrado = ex.estado === 'cerrado';
+      const detalle = cerrado
+        ? 'El examen está cerrado y nadie entregó.'
+        : metaSinEntregas;
+      return `<article class="adm-fila adm-examen" data-estado="sin-entregas" aria-label="${titulo}">
+        <span class="ex-ficha__marca" aria-hidden="true">${I(cerrado ? 'lock' : 'send')}</span>
+        <div class="ex-ficha__cuerpo">
+          <div class="ex-ficha__titulo">
+            <h2>${titulo}</h2>
+            <span class="adm-badge adm-badge--borrador">Sin entregas</span>
+          </div>
+          <div class="ex-ficha__meta">
+            <span class="ex-ficha__dato">${I('users')}${esc(detalle)}</span>
+          </div>
+        </div>
+        <div class="ex-ficha__acciones">
+          <div class="adm-examen__acciones-principales">
+            <button class="adm-btn adm-btn--pequeno ex-boton-suave" type="button" data-ir="/corregir/${esc(ex.id)}">${I('eye')} Ver seguimiento</button>
+          </div>
+        </div>
+      </article>`;
+    },
+
     // ── Entregas de un examen (/corregir/:id) ─────────────────────────────
     async _pintarExamen(raiz) {
-      raiz.innerHTML = `<div class="o-contenedor" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
+      raiz.innerHTML = `<div class="o-contenedor vista-entregas ex-vista">
         <header class="adm-cabecera">
           <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('clipboard-check')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo" id="tituloExamen">Entregas</h1>
-            <p class="adm-cabecera__sub" id="subExamen">Cargando…</p>
+            <div class="adm-cabecera__sub" id="subExamen">${window.skeleton ? window.skeleton.bloque('13px', '240px', 'border-radius:var(--radio-sm)') : ''}</div>
           </div>
           <div class="adm-cabecera__acciones">
             <button class="adm-btn" id="btnVolver">${window.Iconos.render('arrow-left')} Volver</button>
@@ -151,6 +260,7 @@
         router.navegar('/editor/' + this._examenId);
       });
       const contenido = raiz.querySelector('#contenido');
+      if (window.skeleton) window.skeleton.mostrar(contenido, window.skeleton.filas(6), 'Cargando las entregas del examen');
 
       try {
         const [entregas, resumen, usuarios] = await Promise.all([
@@ -177,51 +287,45 @@
 
       const faltan = this._faltan();
       titulo.textContent = this._examenTitulo;
-      sub.textContent = this._entregas.length
-        ? `${this._entregas.length} entrega(s) · ${porCorregir} sin corregir` + (faltan.length ? ` · ${faltan.length} sin entregar` : '')
-        : ('Sin entregas todavía' + (faltan.length ? ` · faltan ${faltan.length}` : ''));
+      const partesSubtitulo = [];
+      if (this._entregas.length) {
+        partesSubtitulo.push(plural(this._entregas.length, 'entrega', 'entregas'));
+        partesSubtitulo.push(porCorregir > 0 ? `${porCorregir} por corregir` : 'todo corregido');
+      } else {
+        partesSubtitulo.push('Sin entregas todavía');
+      }
+      if (faltan.length) {
+        partesSubtitulo.push(plural(faltan.length, 'alumno sin entregar', 'alumnos sin entregar'));
+      }
+      sub.textContent = partesSubtitulo.join(' · ');
 
       this._pintarEntregas(contenido);
     },
 
     _pintarEntregas(contenedor) {
       if (!this._entregas.length) {
-        contenedor.innerHTML = `<div class="adm-vacio">
+        contenedor.innerHTML = `<div class="adm-vacio ex-vacio">
+          <span class="ex-vacio__icono" aria-hidden="true">${I('inbox')}</span>
           <p class="adm-vacio__titulo">Nadie ha entregado este examen</p>
-          <p>Cuando un alumno use su enlace, aparecerá aquí.</p>
+          <p>Cuando un alumno use su enlace, aparecerá aquí con lo que haya respondido.</p>
         </div>`;
       } else {
-        contenedor.innerHTML = `<div class="adm-lista">${this._entregas.map((entrega) => {
-        // El intento hecho dentro de la app ya trae cuenta (alumno_id): si la
-        // fila aún no tiene nombre escrito, se muestra el de la cuenta para
-        // que nunca salga «Sin nombre» sin registro de quién rindió.
-        const nombre = entrega.alumno_nombre || entrega.alumno_asignado || 'Sin nombre';
-        const meta = [];
-        if (entrega.alumno_grupo) meta.push(entrega.alumno_grupo);
-        if (entrega.alumno_asignado && entrega.alumno_asignado !== nombre) meta.push('Asignado a ' + entrega.alumno_asignado);
-        if (entrega.fecha_completado) meta.push('Entregado ' + window.panelUI.tiempoRelativo(entrega.fecha_completado));
-        else meta.push('Empezado ' + window.panelUI.tiempoRelativo(entrega.fecha_inicio));
-        if (entrega.corregido) meta.push('Nota ' + window.panelUI.numero(entrega.nota) + '/10');
-        else if (entrega.puntuacion != null) meta.push('Test ' + window.panelUI.numero(entrega.puntuacion) + ' %');
-
-        const accion = entrega.estado === 'en_progreso' ? 'Sin entregar' : (entrega.corregido ? 'Revisar' : 'Corregir');
-        // Filete lateral por estado: se escanear la lista sin leer el badge.
-        const estadoFila = entrega.estado === 'en_progreso'
-          ? ' adm-fila--inactiva'
-          : (entrega.corregido ? ' adm-fila--exito' : ' adm-fila--aviso');
-        return `<div class="adm-fila${estadoFila}">
-          <div class="adm-fila__principal">
-            <div class="adm-fila__titulo">${esc(nombre)} ${estadoBadge(entrega)}</div>
-            <div class="adm-fila__meta">${meta.map((m) => `<span>${esc(m)}</span>`).join('')}</div>
-          </div>
-          <div class="adm-fila__acciones">
-            <button class="adm-btn adm-btn--pequeno" type="button" data-asignar="${esc(entrega.intento_id)}">${window.Iconos.render('link')} ${entrega.alumno_id ? 'Cambiar cuenta' : 'Asignar a usuario'}</button>
-            ${entrega.estado === 'en_progreso'
-              ? '<span class="adm-cabecera__sub">Aún no ha entregado</span>'
-              : `<button class="adm-btn adm-btn--principal adm-btn--pequeno" data-abrir="${esc(entrega.intento_id)}">${window.Iconos.render(entrega.corregido ? 'eye' : 'clipboard-check')} ${accion}</button>`}
-          </div>
-        </div>`;
-      }).join('')}</div>`;
+        // Primero lo que exige corrección, después el archivo y, al final, los
+        // intentos que aún no se han entregado: el orden de trabajo del profesor.
+        const pendientes = this._entregas.filter((t) => this._estadoEntrega(t) === 'pendiente');
+        const corregidas = this._entregas.filter((t) => this._estadoEntrega(t) === 'corregida');
+        const enCurso = this._entregas.filter((t) => this._estadoEntrega(t) === 'en-progreso');
+        const grupos = [];
+        if (pendientes.length) {
+          grupos.push(this._htmlGrupoAlumnos('atencion', 'Por corregir', 'clipboard-check', pendientes, true));
+        }
+        if (corregidas.length) {
+          grupos.push(this._htmlGrupoAlumnos('corregidas', 'Corregidas', 'check-circle', corregidas, false));
+        }
+        if (enCurso.length) {
+          grupos.push(this._htmlGrupoAlumnos('en-curso', 'En curso', 'clock', enCurso, false));
+        }
+        contenedor.innerHTML = grupos.join('');
       }
       // Seguimiento de la clase: quién falta por entregar (y aviso si hay
       // entregas sin asignar a una cuenta).
@@ -237,6 +341,75 @@
         });
       });
       if (window.Iconos) window.Iconos.actualizar();
+    },
+
+    /** Estado real de una entrega: decide su grupo y su acción. */
+    _estadoEntrega(entrega) {
+      if (entrega.estado === 'en_progreso') return 'en-progreso';
+      if (entrega.corregido) return 'corregida';
+      return 'pendiente';
+    },
+
+    /** Un grupo de alumnos del detalle, con su cuenta en el título. */
+    _htmlGrupoAlumnos(clave, titulo, icono, entregas, atencion) {
+      return `<section class="ex-grupo ex-grupo--${clave}${atencion ? ' ex-grupo--atencion' : ''}" aria-label="${titulo} (${entregas.length})">
+        <p class="ex-grupo__titulo">
+          <span class="ex-grupo__icono" aria-hidden="true">${I(icono)}</span>
+          ${titulo}
+          <span class="ex-grupo__cuenta">${entregas.length}</span>
+        </p>
+        <div class="adm-lista">${entregas.map((entrega) => this._tarjetaAlumno(entrega)).join('')}</div>
+      </section>`;
+    },
+
+    /** Ficha de una entrega: quién, cuándo y qué toca hacer con ella. */
+    _tarjetaAlumno(entrega) {
+      const estado = this._estadoEntrega(entrega);
+      const nombre = entrega.alumno_nombre || entrega.alumno_asignado || 'Sin nombre';
+      const asignada = entrega.alumno_asignado && entrega.alumno_asignado !== nombre;
+      const cuando = entrega.fecha_completado
+        ? `Entregado ${window.panelUI.tiempoRelativo(entrega.fecha_completado)}`
+        : `Empezado ${window.panelUI.tiempoRelativo(entrega.fecha_inicio)}`;
+
+      const datos = [];
+      if (entrega.alumno_grupo) {
+        datos.push(`<span class="ex-ficha__dato">${I('users')}${esc(entrega.alumno_grupo)}</span>`);
+      }
+      datos.push(`<span class="ex-ficha__dato">${I('clock')}${esc(cuando)}</span>`);
+      if (entrega.corregido) {
+        datos.push(`<span class="ex-ficha__dato ex-ficha__nota">${I('medal')}Nota ${esc(window.panelUI.numero(entrega.nota))}/10</span>`);
+      } else if (entrega.puntuacion != null) {
+        datos.push(`<span class="ex-ficha__dato">${I('target')}Test ${esc(window.panelUI.numero(entrega.puntuacion))} %</span>`);
+      }
+
+      const pie = [];
+      if (asignada) {
+        pie.push(`<span>${I('link-2')}Asignada a ${esc(entrega.alumno_asignado)}</span>`);
+      } else if (!entrega.alumno_id) {
+        pie.push(`<span>${I('info')}Sin asignar a una cuenta</span>`);
+      }
+
+      const accion = estado === 'en-progreso'
+        ? ''
+        : (estado === 'pendiente'
+          ? `<button class="adm-btn adm-btn--principal adm-btn--pequeno ex-accion-principal" type="button" data-abrir="${esc(entrega.intento_id)}">${I('clipboard-check')} Corregir</button>`
+          : `<button class="adm-btn adm-btn--pequeno ex-boton-suave ex-accion-principal" type="button" data-abrir="${esc(entrega.intento_id)}">${I('eye')} Revisar</button>`);
+
+      return `<article class="adm-fila adm-examen" data-estado="${estado}"${estado === 'pendiente' ? ' data-atencion' : ''} aria-label="${esc(nombre)}">
+        <span class="ex-ficha__marca ex-ficha__marca--persona" aria-hidden="true">${esc(iniciales(nombre))}</span>
+        <div class="ex-ficha__cuerpo">
+          <div class="ex-ficha__titulo">
+            <h2>${esc(nombre)}</h2>
+            ${estadoBadge(entrega)}
+          </div>
+          <div class="ex-ficha__meta">${datos.join('')}</div>
+          ${pie.length ? `<div class="ex-ficha__pie">${pie.join('')}</div>` : ''}
+        </div>
+        <div class="ex-ficha__acciones">
+          <div class="adm-examen__acciones-principales">${accion}</div>
+          <button class="adm-btn adm-btn--pequeno ex-boton-fantasma" type="button" data-asignar="${esc(entrega.intento_id)}" aria-label="${entrega.alumno_id ? 'Cambiar la cuenta de' : 'Asignar a una cuenta la entrega de'} ${esc(nombre)}">${I('link')} ${entrega.alumno_id ? 'Cambiar cuenta' : 'Asignar cuenta'}</button>
+        </div>
+      </article>`;
     },
 
     // ── Asignar la entrega a la cuenta de un alumno ───────────────────────
@@ -335,29 +508,34 @@
     },
 
     /** Sección «Faltan por entregar» (vacía si la clase no tiene alumnos). */
+    /** Sección «Faltan por entregar» (vacía si la clase no tiene alumnos). */
     _htmlFaltan() {
       const alumnos = this._alumnos || [];
       if (!alumnos.length) return '';
       const faltan = alumnos.filter((a) => !this._alumnoHaEntregado(a));
       const sinAsignar = (this._entregas || []).filter((t) => !t.alumno_id).length;
       const avisoSinAsignar = sinAsignar > 0
-        ? `<p class="adm-campo__ayuda">${window.Iconos.render('info')} Hay ${sinAsignar} entrega(s) sin asignar a una cuenta: asígnalas para que aparezcan en «Mis notas».</p>`
+        ? `<p class="ex-seguimiento__nota">${I('info')} ${plural(sinAsignar, 'entrega', 'entregas')} sin asignar a una cuenta: asígnalas para que aparezcan en «Mis notas».</p>`
         : '';
       if (!faltan.length) {
-        return `<section aria-label="Seguimiento de la clase" style="margin-top:var(--espaciado-md)">
-          <div class="adm-aviso adm-aviso--exito">${window.Iconos.render('check')} Toda la clase ha entregado este examen.</div>
+        return `<section class="ex-seguimiento" aria-label="Seguimiento de la clase">
+          <p class="ex-seguimiento__nota ex-seguimiento__nota--exito">${I('check-circle')} Toda la clase ha entregado este examen.</p>
           ${avisoSinAsignar}
         </section>`;
       }
-      return `<section aria-label="Seguimiento de la clase" style="margin-top:var(--espaciado-md)">
-        <h2 class="adm-seccion__titulo">${window.Iconos.render('users')} Faltan por entregar (${faltan.length})</h2>
+      // Nombres en pastillas: es un aviso de a quién reclamar, no una tarea que
+      // se abra desde aquí. Por eso no repiten la anatomía de ficha.
+      return `<section class="ex-seguimiento" aria-label="Seguimiento de la clase">
+        <p class="ex-faltan__titulo">
+          <span aria-hidden="true">${I('users')}</span>
+          Faltan por entregar (${faltan.length})
+        </p>
         ${avisoSinAsignar}
-        <div class="adm-lista">${faltan.map((a) => `
-          <div class="adm-fila">
-            <div class="adm-fila__principal">
-              <div class="adm-fila__titulo">${esc(window.helpers.nombreAlumno(a))}</div>
-            </div>
-          </div>`).join('')}</div>
+        <div class="ex-faltan">${faltan.map((a) => `
+          <span class="ex-faltan__fila">
+            <span class="ex-faltan__avatar" aria-hidden="true">${esc(iniciales(window.helpers.nombreAlumno(a)))}</span>
+            ${esc(window.helpers.nombreAlumno(a))}
+          </span>`).join('')}</div>
       </section>`;
     },
 

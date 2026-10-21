@@ -27,7 +27,7 @@ const EXAMEN = {
   num_preguntas: 8, num_enlaces: 2, num_entregas: 3, por_corregir: 1
 };
 
-function crearEntorno() {
+function crearEntorno(examenes = [EXAMEN]) {
   const dom = new JSDOM(
     '<!doctype html><html><body><div id="app-root"></div></body></html>',
     { url: 'http://localhost/#!/inicio', runScripts: 'outside-only', pretendToBeVisual: true }
@@ -45,7 +45,7 @@ function crearEntorno() {
       : null)
   };
   w.router = { navegar, irAtras() {}, _ejecutar() {}, pathActual: () => '' };
-  w.plataformaRepository = { resumen: async () => ({ examenes: [EXAMEN] }) };
+  w.plataformaRepository = { resumen: async () => ({ examenes }) };
 
   return { w, dom, navegar, vista: w.vistaPanel };
 }
@@ -132,6 +132,148 @@ describe('Inicio · botón Editar pide confirmación', () => {
 
     expect(entorno.w.document.querySelector('.modal-confirm')).toBeNull();
     expect(entorno.navegar).toHaveBeenCalledWith('/corregir/ex-1');
+  });
+});
+
+describe('Inicio · jerarquía visual del resumen', () => {
+  const montar = async (examenes) => {
+    const entorno = crearEntorno(examenes);
+    await entorno.vista.montar(entorno.w.document.getElementById('app-root'));
+    return { ...entorno, raiz: entorno.w.document.getElementById('app-root') };
+  };
+
+  test('agrupa las cuatro métricas en una sola tira y ofrece «Ver todos»', async () => {
+    const { raiz, dom } = await montar([EXAMEN, { ...EXAMEN, id: 'ex-2' }]);
+
+    expect(raiz.querySelectorAll('.adm-rejilla--agrupada .adm-stat')).toHaveLength(4);
+    expect(raiz.querySelectorAll('.adm-stat__cifra')).toHaveLength(4);
+    expect(raiz.querySelector('[data-ir="/examenes"]')).toBeTruthy();
+    // La lista de Inicio son fichas de la misma cola de trabajo, no filas sueltas.
+    expect(raiz.querySelectorAll('.adm-lista .adm-examen')).toHaveLength(2);
+
+    dom.window.close();
+  });
+
+  test('sin pendientes deja un aviso fino en vez de una sección vacía', async () => {
+    const { raiz, dom } = await montar([{ ...EXAMEN, por_corregir: 0 }]);
+
+    expect(raiz.querySelector('.adm-aviso--fino')).toBeTruthy();
+    expect(raiz.textContent).toContain('Todo corregido. No hay respuestas pendientes.');
+    expect(raiz.querySelector('#listaPendientes')).toBeNull();
+    expect(raiz.textContent).not.toContain('Pendientes de corrección');
+
+    dom.window.close();
+  });
+
+  test('con pendientes conserva el estado publicado y marca la tarea en ámbar', async () => {
+    const { raiz, dom } = await montar([EXAMEN]);
+    const fila = raiz.querySelector('.adm-lista .adm-fila');
+
+    expect(fila.querySelector('.adm-badge--publicado')).toBeTruthy();
+    expect(fila.querySelector('.adm-badge--aviso').textContent).toContain('1 por corregir');
+    // La tarea no sustituye al estado: la ficha suma el franco ámbar.
+    expect(fila.hasAttribute('data-atencion')).toBe(true);
+    expect(raiz.textContent).toContain('Por corregir');
+
+    dom.window.close();
+  });
+
+  test('la lista no repite el azul sólido: el relleno queda en la cabecera', async () => {
+    const { raiz, dom } = await montar([EXAMEN, { ...EXAMEN, id: 'ex-2', por_corregir: 0 }]);
+
+    expect(raiz.querySelectorAll('.adm-examen .adm-btn--principal')).toHaveLength(0);
+    expect(raiz.querySelector('#btnNuevo').classList.contains('adm-btn--principal')).toBe(true);
+
+    dom.window.close();
+  });
+});
+
+describe('Inicio · cola de trabajo sin duplicados', () => {
+  const montar = async (examenes) => {
+    const entorno = crearEntorno(examenes);
+    await entorno.vista.montar(entorno.w.document.getElementById('app-root'));
+    return { ...entorno, raiz: entorno.w.document.getElementById('app-root') };
+  };
+
+  test('separa «Por corregir» del archivo sin repetir la misma ficha', async () => {
+    const pendiente = { ...EXAMEN, id: 'ex-a', titulo: 'Con pendientes', por_corregir: 2 };
+    const otro = { ...EXAMEN, id: 'ex-b', titulo: 'También pendiente', por_corregir: 1 };
+    const alDia = { ...EXAMEN, id: 'ex-c', titulo: 'Al día', por_corregir: 0 };
+    const { raiz, dom } = await montar([pendiente, otro, alDia]);
+
+    const grupos = raiz.querySelectorAll('.ex-grupo');
+    expect(grupos).toHaveLength(2);
+    expect(grupos[0].classList.contains('ex-grupo--atencion')).toBe(true);
+    expect(grupos[0].querySelector('.ex-grupo__titulo').textContent).toContain('Por corregir');
+    expect(grupos[1].querySelector('.ex-grupo__titulo').textContent).toContain('Todos los exámenes');
+
+    const fichas = [...raiz.querySelectorAll('.adm-examen')];
+    expect(fichas).toHaveLength(3);
+    const etiquetas = fichas.map((nodo) => nodo.getAttribute('aria-label'));
+    expect(etiquetas).toEqual([...new Set(etiquetas)]);
+
+    dom.window.close();
+  });
+
+  test('el medallón y el pie describen el estado sin leer el badge', async () => {
+    const { raiz, dom } = await montar([EXAMEN]);
+    const ficha = raiz.querySelector('.adm-examen');
+
+    expect(ficha.dataset.estado).toBe('publicado');
+    expect(ficha.querySelector('.ex-ficha__marca [data-lucide="send"]')).toBeTruthy();
+    // 2 enlaces en el resumen, ninguno usado todavía.
+    expect(ficha.querySelector('.ex-ficha__pie').textContent).toContain('0 de 2 enlaces usados');
+    expect(ficha.querySelector('.ex-ficha__pie').textContent).toContain('Actualizado');
+
+    dom.window.close();
+  });
+
+  test('concordancia: 1 pregunta, 1 punto y 1 entrega', async () => {
+    const uno = {
+      ...EXAMEN,
+      num_preguntas: 1, puntos_totales: 1, num_entregas: 1,
+      num_enlaces: 1, enlaces_usados: 0, por_corregir: 0, nota_media: null
+    };
+    const { raiz, dom } = await montar([uno]);
+    const meta = raiz.querySelector('.ex-ficha__meta').textContent;
+
+    expect(meta).toContain('1 pregunta');
+    expect(meta).not.toContain('1 preguntas');
+    expect(meta).toContain('1 punto');
+    expect(meta).not.toContain('1 puntos');
+    expect(meta).toContain('1 entrega');
+    expect(meta).not.toContain('1 entregas');
+
+    dom.window.close();
+  });
+
+  test('una ficha lleva una sola acción de entrega, según su estado', async () => {
+    const { raiz, dom } = await montar([
+      { ...EXAMEN, id: 'ex-pend', por_corregir: 2 },
+      { ...EXAMEN, id: 'ex-al-dia', por_corregir: 0 }
+    ]);
+
+    const pendiente = raiz.querySelector('.adm-examen[aria-label="Evaluación inicial"]');
+    const alDia = [...raiz.querySelectorAll('.adm-examen')].find((nodo) => nodo !== pendiente);
+
+    const accionPendiente = pendiente.querySelectorAll('button[data-ir="/corregir/ex-pend"]');
+    expect(accionPendiente).toHaveLength(1);
+    expect(accionPendiente[0].textContent).toContain('Corregir');
+
+    const accionAlDia = alDia.querySelectorAll('button[data-ir="/corregir/ex-al-dia"]');
+    expect(accionAlDia).toHaveLength(1);
+    expect(accionAlDia[0].textContent).toContain('Entregas');
+
+    dom.window.close();
+  });
+
+  test('sin exámenes ofrece crear el primero en lugar de una lista vacía', async () => {
+    const { raiz, dom } = await montar([]);
+
+    expect(raiz.querySelector('.ex-vacio')).toBeTruthy();
+    expect(raiz.querySelector('.ex-vacio [data-ir="/editor/nuevo"]')).toBeTruthy();
+
+    dom.window.close();
   });
 });
 

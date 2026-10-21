@@ -333,7 +333,11 @@
       this._guardadoPendiente = false;
       this._guardando = false;
       this._ultimoErrorGuardado = '';
-      raiz.innerHTML = `<div class="o-contenedor u-mt-4"><p class="adm-cabecera__sub">Cargando…</p></div>`;
+      // Esqueleto del editor: cabecera, campos y tarjetas de pregunta. Evita
+      // que el usuario mire una pantalla vacía mientras llega el examen.
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.editor()
+        : '<div class="o-contenedor u-mt-4" role="status" aria-busy="true"></div>';
 
       let examen;
       if (editando) {

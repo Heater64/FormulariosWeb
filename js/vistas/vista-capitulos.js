@@ -3,7 +3,9 @@
   window.vistaCapitulos = {
     async montar(raiz, params) {
       const libroId = parseInt(params.libro);
-      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor o-pila u-mt-3">${window.skeleton.tarjetas(20, { ancho: '100%' })}</div>` : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando capítulos...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? `<div class="o-contenedor o-pila u-mt-3" role="status" aria-busy="true">${window.skeleton.filas(8, { titulo: '64%' })}</div>`
+        : '<div class="o-contenedor o-pila u-mt-3" role="status" aria-busy="true"></div>';
       const sb = window.supabaseClient;
       const usuario = store.obtener('usuario');
       if (!sb || !usuario) return;

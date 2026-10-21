@@ -10,7 +10,7 @@
 // CACHE_VERSION para que los clientes limpien la caché antigua al activar.
 // ============================================================
 
-const CACHE_VERSION = 'v1.0.12';
+const CACHE_VERSION = 'v1.0.13';
 const CACHE_NAME = `formsbiblicos-${CACHE_VERSION}`;
 
 // Shell mínimo para que la app abra sin conexión. El resto se cachea

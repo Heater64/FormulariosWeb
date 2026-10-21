@@ -29,7 +29,25 @@
     return util.replace(/^(Detalle|Detail|Hint|Error)\s*:\s*/i, '').trim();
   }
 
+  // ── Caché del resumen del panel ────────────────────────────────────────
+  // Pintar el panel es la primera acción del profesor en casi todas las
+  // sesiones, y volver a Inicio/Exámenes/Entregas repite la MISMA RPC. Un
+  // caché en memoria de vida corta evita el viaje de red y el esqueleto en
+  // navegaciones seguidas; cualquier escritura lo invalida al instante.
+  const RESUMEN_TTL_MS = 15000;
+  let resumenCache = null;     // { datos, ts }
+  let resumenEnVuelo = null;   // Promise en curso (dedupe de peticiones)
+
+  function invalidarResumen() {
+    resumenCache = null;
+    resumenEnVuelo = null;
+  }
+
+  // Las lecturas no cambian datos: no tiene sentido tirar el caché por ellas.
+  const RPC_LECTURA = /^(fb_resumen_admin|fb_listar_|fb_obtener_|fb_estado_|fb_consultar_|fb_comunitario_consultar|fb_evaluaciones_listar|fb_evaluacion_obtener|fb_evaluacion_vinculos|fb_mis_notas_evaluaciones|modo_mantenimiento_activo)/;
+
   async function rpc(nombre, args) {
+    if (!RPC_LECTURA.test(nombre)) invalidarResumen();
     if (!sb()) throw new Error('Sin conexión con el servidor.');
     const { data, error } = await sb().rpc(nombre, args || {});
     if (error) {
@@ -74,17 +92,44 @@
      * entregas y evaluaciones.
      */
     async resumen() {
-      const datos = await rpc('fb_resumen_admin');
-      const examenes = (datos && Array.isArray(datos.examenes)) ? datos.examenes : [];
-      const repo = window.examenesRepository;
-      if (!examenes.length || !repo || typeof repo.idsEnPapelera !== 'function') return datos;
-      const enPapelera = await repo.idsEnPapelera();
-      if (!enPapelera.length) return datos;
-      const ocultos = new Set(enPapelera);
-      return Object.assign({}, datos, {
-        examenes: examenes.filter((examen) => !ocultos.has(String(examen.id)))
-      });
+      const ahora = Date.now();
+      if (resumenCache && (ahora - resumenCache.ts) < RESUMEN_TTL_MS) return resumenCache.datos;
+      if (resumenEnVuelo) return resumenEnVuelo;
+
+      resumenEnVuelo = (async () => {
+        const repo = window.examenesRepository;
+        // Las dos lecturas son independientes: en paralelo cuestan un solo
+        // viaje de ida y vuelta en vez de dos.
+        const [datos, enPapelera] = await Promise.all([
+          rpc('fb_resumen_admin'),
+          repo && typeof repo.idsEnPapelera === 'function'
+            ? repo.idsEnPapelera().catch(() => [])
+            : Promise.resolve([])
+        ]);
+        const examenes = (datos && Array.isArray(datos.examenes)) ? datos.examenes : [];
+        const ocultos = new Set((enPapelera || []).map(String));
+        const limpio = ocultos.size
+          ? Object.assign({}, datos, { examenes: examenes.filter((examen) => !ocultos.has(String(examen.id))) })
+          : datos;
+        return limpio;
+      })();
+
+      try {
+        const datos = await resumenEnVuelo;
+        resumenCache = { datos, ts: Date.now() };
+        return datos;
+      } finally {
+        resumenEnVuelo = null;
+      }
     },
+
+    /** Último resumen bueno sin tocar la red (null si no hay). */
+    resumenCacheado() {
+      return resumenCache ? resumenCache.datos : null;
+    },
+
+    /** Fuerza a la próxima lectura a ir a la red (tras publicar, borrar…). */
+    invalidarResumen,
 
     crearEnlaces(examenId, alumnos) {
       return rpc('fb_crear_enlaces', { p_examen_id: examenId, p_alumnos: alumnos || [] });

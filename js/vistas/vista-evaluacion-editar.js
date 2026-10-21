@@ -281,7 +281,7 @@
           <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('table-2')}</span>
           <div class="adm-cabecera__principal">
             <h1 class="adm-cabecera__titulo" id="tituloEvaluacion" title="Pulsa para cambiar el nombre">Evaluación</h1>
-            <p class="adm-cabecera__sub" id="subEvaluacion">Cargando…</p>
+            <p class="adm-cabecera__sub" id="subEvaluacion">${window.skeleton ? window.skeleton.bloque('13px', '220px', 'border-radius:var(--radio-sm)') : ''}</p>
           </div>
           <div class="adm-cabecera__acciones">
             <span class="eval-estado" id="estadoGuardado" role="status" aria-live="polite"></span>
@@ -290,7 +290,7 @@
             <button class="adm-btn" id="btnVolver" type="button">${window.Iconos.render('arrow-left')} Volver</button>
           </div>
         </header>
-        <div id="contenido"><p class="adm-cabecera__sub">Cargando…</p></div>
+        <div id="contenido">${window.skeleton ? window.skeleton.evaluacionEditar() : ''}</div>
       </div>`;
 
       raiz.querySelector('#tituloEvaluacion').addEventListener('click', () => this._editarTitulo());

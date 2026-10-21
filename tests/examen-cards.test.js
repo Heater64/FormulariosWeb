@@ -142,12 +142,12 @@ describe('tarjetas de exámenes', () => {
 
   test('las filas del panel ofrecen UNA acción de entrega, no dos botones iguales', () => {
     const fuente = read('js/vistas/vista-panel.js');
-    const plantillaFila = fuente.slice(fuente.indexOf('function filaExamen'), fuente.indexOf('window.vistaPanel'));
+    const plantillaFila = fuente.slice(fuente.indexOf('function tarjetaExamen'), fuente.indexOf('function htmlLista'));
 
-    // Dos ramas, una acción por cada una: "Corregir" en pendientes o
-    // "Entregas" en la lista general. Nunca ambas en la misma fila.
+    // Dos ramas, una acción por cada una: "Corregir" cuando hay entregas sin
+    // corregir y "Entregas" cuando el examen está al día. Nunca ambas.
     expect((plantillaFila.match(/data-ir="\/corregir\//g) || []).length).toBe(2);
-    expect(plantillaFila).toContain("contexto === 'pendientes'");
+    expect(plantillaFila).toContain('porCorregir > 0');
     expect(plantillaFila).toContain(' Corregir</button>');
     expect(plantillaFila).toContain(' Entregas</button>');
     // Regresión del bug: la fila ya no acumula "Corregir" condicional Y un

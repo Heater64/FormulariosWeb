@@ -382,7 +382,7 @@
 
       const renderMisSugerencias = async () => {
         if (!listaSug || !sugerenciasRepo) return;
-        listaSug.innerHTML = '<p class="u-fs-xs u-color-texto-terciario">Cargando...</p>';
+        listaSug.innerHTML = window.skeleton ? window.skeleton.filas(2, { titulo: '70%' }) : '';
         let lista = [];
         try { lista = await sugerenciasRepo.listarMias(usuario.id); } catch (e) { lista = []; }
         if (!lista.length) {

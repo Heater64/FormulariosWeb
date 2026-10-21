@@ -4,6 +4,11 @@
  * La plataforma tiene un único rol con acceso al panel. Esta pantalla muestra
  * identidad, apariencia, contraseña y cierre de sesión. Los ajustes visuales
  * reutilizan el mismo servicio de preferencias que el resto de la aplicación.
+ *
+ * Anatomía: la identidad se lee como una ficha (avatar + nombre + rol + acción),
+ * y cada bloque de ajustes es una tarjeta con cabecera propia. El formulario de
+ * contraseña vive plegado: es una acción poco frecuente y no debe empujar el
+ * resto de la página fuera de la pantalla.
  * ==========================================================================*/
 (function () {
   'use strict';
@@ -11,6 +16,7 @@
   const ROLES = ['admin', 'editor', 'owner'];
   const etiquetaRol = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor' };
   const esc = (v) => window.panelUI.esc(v);
+  const I = (nombre) => (window.Iconos ? window.Iconos.render(nombre) : '');
 
   function preferenciasActuales(usuario) {
     let prefs = usuario.preferencias || {};
@@ -50,6 +56,24 @@
     return prefs;
   }
 
+  function inicialDe(nombre) {
+    const partes = String(nombre || '').trim().split(/\s+/).filter(Boolean);
+    if (!partes.length) return '?';
+    const primera = partes[0].charAt(0);
+    const ultima = partes.length > 1 ? partes[partes.length - 1].charAt(0) : partes[0].charAt(1);
+    return (primera + (ultima || '')).toUpperCase();
+  }
+
+  function cabeceraBloque(icono, titulo, desc, id) {
+    return `<header class="cuenta-bloque__cabecera">
+      <span class="cuenta-bloque__icono" aria-hidden="true">${I(icono)}</span>
+      <div>
+        <h2 class="cuenta-bloque__titulo"${id ? ` id="${id}"` : ''}>${esc(titulo)}</h2>
+        <p class="cuenta-bloque__desc">${esc(desc)}</p>
+      </div>
+    </header>`;
+  }
+
   window.vistaCuenta = {
     async montar(raiz) {
       const usuario = store.obtener('usuario');
@@ -57,97 +81,128 @@
 
       const rol = (usuario.rol || '').toLowerCase();
       const nombre = usuario.nombre_completo || usuario.username || 'Cuenta';
-      const inicial = nombre.charAt(0).toUpperCase();
+      const foto = usuario.foto_perfil || '';
+      const fechaAlta = (usuario.creado_en && window.helpers && window.helpers.formatearFecha)
+        ? window.helpers.formatearFecha(usuario.creado_en)
+        : '';
 
       raiz.innerHTML = `
-        <div class="o-contenedor o-contenedor--ancho" style="padding-top:var(--espaciado-lg);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
-          <header class="adm-cabecera">
-            <span class="adm-cabecera__icono" aria-hidden="true">${window.Iconos.render('user')}</span>
+        <div class="o-contenedor vista-cuenta">
+          <header class="adm-cabecera cuenta-cabecera">
+            <span class="adm-cabecera__icono" aria-hidden="true">${I('user')}</span>
             <div class="adm-cabecera__principal">
               <h1 class="adm-cabecera__titulo">Mi cuenta</h1>
-              <p class="adm-cabecera__sub">Los alumnos no necesitan cuenta: solo usan el enlace que les envías.</p>
+              <p class="adm-cabecera__sub">Tu identidad, apariencia y seguridad.</p>
             </div>
           </header>
 
-          <section class="adm-bloque">
-            <h2 class="adm-bloque__titulo">Identidad</h2>
-            <div class="adm-fila" style="border:0;padding:0;background:transparent">
-              <div style="flex:0 0 auto;width:52px;height:52px;border-radius:50%;background:var(--color-acento-soft);color:var(--color-acento-fuerte);display:grid;place-items:center;font-family:var(--fuente-display);font-size:var(--texto-xl);font-weight:var(--texto-peso-semibold)">${esc(inicial)}</div>
-              <div class="adm-fila__principal">
-                <div class="adm-fila__titulo">${esc(nombre)}</div>
-                <div class="adm-fila__meta">
-                  ${usuario.username ? `<span>@${esc(usuario.username)}</span>` : ''}
-                  <span>${esc(etiquetaRol[rol] || usuario.rol || '')}</span>
-                </div>
+          <!-- Identidad -->
+          <section class="cuenta-ficha" aria-label="Identidad">
+            <span class="cuenta-ficha__avatar" aria-hidden="true">
+              ${foto
+                ? `<img src="${esc(foto)}" alt="" width="64" height="64" decoding="async">`
+                : esc(inicialDe(nombre))}
+            </span>
+            <div class="cuenta-ficha__cuerpo">
+              <div class="cuenta-ficha__titulo">
+                <h2>${esc(nombre)}</h2>
+                <span class="cuenta-rol cuenta-rol--${esc(rol || 'usuario')}">${esc(etiquetaRol[rol] || usuario.rol || 'Cuenta')}</span>
+              </div>
+              <div class="cuenta-ficha__meta">
+                ${usuario.username ? `<span class="cuenta-ficha__dato">@${esc(usuario.username)}</span>` : ''}
+                <span class="cuenta-ficha__dato">${usuario.activo === false ? 'Cuenta desactivada' : 'Cuenta activa'}</span>
+                ${fechaAlta ? `<span class="cuenta-ficha__dato">${I('calendar')}Desde ${esc(fechaAlta)}</span>` : ''}
               </div>
             </div>
+            <a class="adm-btn adm-btn--pequeno cuenta-boton-suave cuenta-ficha__accion" href="#!/perfil">${I('pencil')} Editar perfil</a>
           </section>
 
-          <section class="adm-bloque" aria-labelledby="tituloApariencia">
-            <h2 class="adm-bloque__titulo" id="tituloApariencia">Apariencia</h2>
-            <p class="adm-cabecera__sub" style="margin:calc(-1 * var(--espaciado-xs)) 0 var(--espaciado-sm)">Personaliza cómo se ve el panel en este dispositivo.</p>
-            <span class="adm-campo__etiqueta" id="etiquetaAccesibilidad" style="display:block;margin-top:var(--espaciado-md)">Accesibilidad</span>
-            <div class="adm-campo" style="margin-top:var(--espaciado-md)">
-              <span class="adm-campo__etiqueta" id="etiquetaTema">Tema</span>
-              <div class="adm-tabs" role="group" aria-labelledby="etiquetaTema">
-                <button class="adm-tab" type="button" data-tema="light" aria-pressed="false">Claro</button>
-                <button class="adm-tab" type="button" data-tema="auto" aria-pressed="false">Automático</button>
-                <button class="adm-tab" type="button" data-tema="dark" aria-pressed="false">Oscuro</button>
+          <!-- Apariencia -->
+          <section class="cuenta-bloque" aria-labelledby="tituloApariencia">
+            ${cabeceraBloque('palette', 'Apariencia', 'Se guarda en tu cuenta y se aplica en todos tus dispositivos.', 'tituloApariencia')}
+            <div class="cuenta-tema" role="group" aria-labelledby="tituloApariencia">
+              <button class="cuenta-tema__btn" type="button" data-tema="light" aria-pressed="false">${I('sun')}<span>Claro</span></button>
+              <button class="cuenta-tema__btn" type="button" data-tema="auto" aria-pressed="false">${I('refresh-cw')}<span>Automático</span></button>
+              <button class="cuenta-tema__btn" type="button" data-tema="dark" aria-pressed="false">${I('moon')}<span>Oscuro</span></button>
+            </div>
+
+            <div class="cuenta-ajustes" role="group" aria-label="Accesibilidad">
+              <div class="cuenta-ajuste" role="switch" aria-checked="false" tabindex="0" data-control="altoContraste">
+                <span class="cuenta-ajuste__icono" aria-hidden="true">${I('eye')}</span>
+                <span class="cuenta-ajuste__texto">
+                  <span class="cuenta-ajuste__titulo">Alto contraste</span>
+                  <span class="cuenta-ajuste__ayuda">Aumenta la separación entre texto, fondos y bordes.</span>
+                </span>
+                <span class="cuenta-ajuste__control" aria-hidden="true">
+                  <input class="adm-switch" type="checkbox" id="chkContraste" tabindex="-1">
+                </span>
+              </div>
+              <div class="cuenta-ajuste" role="switch" aria-checked="false" tabindex="0" data-control="letraGrande">
+                <span class="cuenta-ajuste__icono" aria-hidden="true">${I('book-open')}</span>
+                <span class="cuenta-ajuste__texto">
+                  <span class="cuenta-ajuste__titulo">Texto grande</span>
+                  <span class="cuenta-ajuste__ayuda">Aumenta el tamaño del texto del panel.</span>
+                </span>
+                <span class="cuenta-ajuste__control" aria-hidden="true">
+                  <input class="adm-switch" type="checkbox" id="chkLetra" tabindex="-1">
+                </span>
               </div>
             </div>
-            <div class="adm-campo--toggles" role="group" aria-labelledby="etiquetaAccesibilidad">
-              <div class="adm-opcion" role="switch" aria-checked="false" tabindex="0" data-control="altoContraste">
-                <span><span class="adm-opcion__titulo">Alto contraste</span><span class="adm-opcion__ayuda">Aumenta la separación entre texto, fondos y bordes.</span></span>
-                <div class="adm-opcion__controles">
-                  <input class="adm-switch" type="checkbox" id="chkContraste" role="presentation" aria-hidden="true">
-                </div>
-              </div>
-              <div class="adm-opcion" role="switch" aria-checked="false" tabindex="0" data-control="letraGrande">
-                <span><span class="adm-opcion__titulo">Texto grande</span><span class="adm-opcion__ayuda">Aumenta el tamaño del texto del panel.</span></span>
-                <div class="adm-opcion__controles">
-                  <input class="adm-switch" type="checkbox" id="chkLetra" role="presentation" aria-hidden="true">
-                </div>
-              </div>
-            </div>
-            <p id="estadoApariencia" class="adm-campo__ayuda" role="status" aria-live="polite"></p>
+            <p id="estadoApariencia" class="cuenta-estado" role="status" aria-live="polite"></p>
           </section>
 
-          ${ROLES.includes(rol) ? `<section class="adm-bloque">
-            <h2 class="adm-bloque__titulo">Cambiar contraseña</h2>
-            <div id="avisoPassword" class="adm-aviso adm-aviso--error" hidden role="alert"></div>
-            <form id="formPassword" novalidate>
-              <div class="adm-campo">
-                <label class="adm-campo__etiqueta" for="actual">Contraseña actual</label>
-                <input class="adm-entrada" id="actual" type="password" autocomplete="current-password" required>
+          ${ROLES.includes(rol) ? `<section class="cuenta-bloque" aria-labelledby="tituloSeguridad">
+            ${cabeceraBloque('shield', 'Seguridad', 'Protege el acceso a tu cuenta.', 'tituloSeguridad')}
+            <details class="cuenta-detalles" id="detallesPassword">
+              <summary class="cuenta-detalles__resumen">
+                <span class="cuenta-detalles__icono" aria-hidden="true">${I('key')}</span>
+                <span class="cuenta-detalles__texto">
+                  <span class="cuenta-detalles__titulo">Cambiar contraseña</span>
+                  <span class="cuenta-detalles__ayuda">Mínimo 8 caracteres, con letras y números.</span>
+                </span>
+                <span class="cuenta-detalles__flecha" aria-hidden="true">${I('chevron-down')}</span>
+              </summary>
+              <div class="cuenta-detalles__cuerpo">
+                <div id="avisoPassword" class="adm-aviso adm-aviso--error" hidden role="alert"></div>
+                <form id="formPassword" class="cuenta-form" novalidate>
+                  <div class="adm-campo">
+                    <label class="adm-campo__etiqueta" for="actual">Contraseña actual</label>
+                    <input class="adm-entrada" id="actual" type="password" autocomplete="current-password" required>
+                  </div>
+                  <div class="cuenta-form__par">
+                    <div class="adm-campo">
+                      <label class="adm-campo__etiqueta" for="nueva">Contraseña nueva</label>
+                      <input class="adm-entrada" id="nueva" type="password" autocomplete="new-password" required>
+                    </div>
+                    <div class="adm-campo">
+                      <label class="adm-campo__etiqueta" for="confirmar">Repite la contraseña nueva</label>
+                      <input class="adm-entrada" id="confirmar" type="password" autocomplete="new-password" required>
+                    </div>
+                  </div>
+                  <button class="adm-btn adm-btn--principal cuenta-form__guardar" type="submit" id="btnPassword">Guardar contraseña</button>
+                </form>
               </div>
-              <div class="adm-campo">
-                <label class="adm-campo__etiqueta" for="nueva">Contraseña nueva</label>
-                <input class="adm-entrada" id="nueva" type="password" autocomplete="new-password" required>
-                <p class="adm-campo__ayuda">Mínimo 8 caracteres, con letras y números.</p>
-              </div>
-              <div class="adm-campo">
-                <label class="adm-campo__etiqueta" for="confirmar">Repite la contraseña nueva</label>
-                <input class="adm-entrada" id="confirmar" type="password" autocomplete="new-password" required>
-              </div>
-              <button class="adm-btn adm-btn--principal" type="submit" id="btnPassword">Guardar contraseña</button>
-            </form>
+            </details>
           </section>` : ''}
 
           ${['admin', 'owner'].includes(rol) ? `
-          <!-- PANEL DE ADMINISTRACIÓN (mismo acceso rápido que en Perfil) -->
-          <a class="perfil-boton-seccion" id="btnPanelAdmin" href="#!/admin">
-            <div class="perfil-boton-seccion__icono">${window.Iconos.render('settings')}</div>
-            <div class="perfil-boton-seccion__texto">
-              <p class="perfil-boton-seccion__label">Centro de Administración</p>
-              <p class="perfil-boton-seccion__desc">Gestionar usuarios, grupos, exámenes y configuración</p>
-            </div>
-            <span class="perfil-boton-seccion__flecha">${window.Iconos.render('chevron-right')}</span>
+          <a class="cuenta-acceso" id="btnPanelAdmin" href="#!/admin">
+            <span class="cuenta-acceso__icono" aria-hidden="true">${I('settings')}</span>
+            <span class="cuenta-acceso__texto">
+              <span class="cuenta-acceso__label">Centro de Administración</span>
+              <span class="cuenta-acceso__desc">Usuarios, grupos, exámenes y configuración.</span>
+            </span>
+            <span class="cuenta-acceso__flecha" aria-hidden="true">${I('chevron-right')}</span>
           </a>` : ''}
 
-          <section class="adm-bloque">
-            <h2 class="adm-bloque__titulo">Sesión</h2>
-            <p class="adm-cabecera__sub" style="margin-bottom:var(--espaciado-sm)">Al cerrar sesión volverás a la pantalla de acceso.</p>
-            <button class="adm-btn adm-btn--peligro" id="btnSalir" type="button">Cerrar sesión</button>
+          <section class="cuenta-bloque cuenta-bloque--sesion" aria-labelledby="tituloSesion">
+            ${cabeceraBloque('log-out', 'Sesión', 'Cierra la sesión en este dispositivo. Podrás volver a entrar con tu usuario y contraseña.', 'tituloSesion')}
+            <div class="cuenta-sesion">
+              <span class="cuenta-sesion__texto">
+                ${usuario.username ? `Sesión iniciada como <strong>@${esc(usuario.username)}</strong>.` : 'Sesión iniciada en este dispositivo.'}
+              </span>
+              <button class="adm-btn adm-btn--peligro" id="btnSalir" type="button">${I('log-out')} Cerrar sesión</button>
+            </div>
           </section>
         </div>`;
 
@@ -158,7 +213,7 @@
         botonesTema.forEach((boton) => {
           const activo = (boton.dataset.tema === 'auto' && !prefs.tema)
             || boton.dataset.tema === prefs.tema;
-          boton.classList.toggle('adm-tab--activo', activo);
+          boton.classList.toggle('cuenta-tema__btn--activo', activo);
           boton.setAttribute('aria-pressed', String(activo));
         });
       };
@@ -189,6 +244,9 @@
         if (estadoApariencia) estadoApariencia.textContent = mensaje;
       };
 
+      // El control entero es el interruptor (role="switch"): el checkbox solo
+      // refleja el estado. Así el área táctil es toda la fila y no hay dos
+      // manejadores que puedan invertir la preferencia dos veces.
       if (altoContrasteControl) {
         altoContrasteControl.addEventListener('click', () => {
           aplicarCambios({ alto_contraste: !prefs.alto_contraste }, 'Preferencia de contraste actualizada.');
@@ -214,16 +272,6 @@
           }
         });
       }
-
-      const contrasteInput = raiz.querySelector('#chkContraste');
-      if (contrasteInput) contrasteInput.addEventListener('change', () => {
-        aplicarCambios({ alto_contraste: contrasteInput.checked }, 'Preferencia de contraste actualizada.');
-      });
-
-      const letraInput = raiz.querySelector('#chkLetra');
-      if (letraInput) letraInput.addEventListener('change', () => {
-        aplicarCambios({ letra_grande: letraInput.checked }, 'Tamaño de texto actualizado.');
-      });
 
       if (window.Iconos) window.Iconos.actualizar();
 

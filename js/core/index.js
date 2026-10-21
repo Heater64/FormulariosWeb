@@ -10,8 +10,11 @@
     window.location.href = enApp ? '../' : 'login.html';
   }
 
-  const SPLASH_MINIMO_MS = 2000;
-  const SPLASH_SALIDA_MS = 900;
+  // El splash solo cubre el arranque real: en cuanto la primera vista monta su
+  // esqueleto se desvanece. Antes esperaba 2 s fijos (más 900 ms de salida) y
+  // tapaba la app aunque los datos ya estuvieran listos.
+  const SPLASH_MINIMO_MS = 300;
+  const SPLASH_SALIDA_MS = 200;
 
   const APP = {
     async init() {
@@ -159,13 +162,13 @@
       this._watchdogTimer = setTimeout(() => this._watchdogRecargar(), 15000);
 
       // Secuencia inicial de carga
-      actualizarEstado('Cargando usuario...');
+      actualizarEstado('Recuperando tu sesión…');
 
       const usuario = store?.obtener('usuario');
       if (usuario) {
         actualizarEstado(`Hola, ${usuario.nombre_completo || usuario.username}`);
       } else {
-        actualizarEstado('Cargando...');
+        actualizarEstado('Preparando tu panel…');
       }
     },
 
@@ -206,7 +209,7 @@
       if (this._splashEstado) this._splashEstado('Listo');
       this._splash.classList.add('splash-screen--loaded');
       const reducida = window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-      const esperaSalida = reducida ? 0 : SPLASH_SALIDA_MS + 80;
+      const esperaSalida = reducida ? 0 : SPLASH_SALIDA_MS + 40;
       setTimeout(() => {
         if (this._splash && this._splash.parentNode) this._splash.remove();
       }, esperaSalida);
@@ -227,6 +230,9 @@
 
     _mostrarSetupInicial(usuario) {
       const I = (n) => { try { return window.Iconos.render(n); } catch(e) { return ''; } };
+      // Este diálogo solo aparece la primera vez: sus estilos (.login-setup)
+      // viajan con el grupo de cuenta para no cargarlos en el arranque normal.
+      if (window.cssSecciones) window.cssSecciones.cargarGrupo('cuenta').catch(() => {});
       let temaSel = null;
 
       const overlay = document.createElement('div');
@@ -525,6 +531,7 @@
         return;
       }
       nav.style.display = '';
+      nav.setAttribute('aria-label', 'Navegación principal');
       document.body.classList.remove('fb-sin-nav');
 
       const E = (v) => window.helpers.escapeHtml(v == null ? '' : String(v));
@@ -550,7 +557,9 @@
       const itemsAdmin = [
         { ruta: '/inicio', icono: 'home', texto: 'Inicio' },
         { ruta: '/examenes', icono: 'clipboard-check', texto: 'Exámenes', centro: true },
-        { ruta: '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones' },
+        // «Notas» es la etiqueta visible en pantallas estrechas: «Evaluaciones»
+        // no cabe en la barra inferior de 5 items y se cortaba con puntos.
+        { ruta: '/evaluaciones', icono: 'clipboard-list', texto: 'Evaluaciones', textoCorto: 'Notas' },
         { ruta: '/entregas', icono: 'inbox', texto: 'Entregas' },
         { ruta: '/cuenta', icono: 'user', texto: 'Cuenta' }
       ];
@@ -592,11 +601,13 @@
           <span class="barra-nav-inferior__logo" aria-hidden="true"><img src="assets/iconos/icono.svg" alt="" class="barra-nav-inferior__logo-img"></span>
           <span class="barra-nav-inferior__marca-nombre">${E(marcaNombre)}</span>
         </div>
-        <div class="barra-nav-inferior__items" role="tablist" aria-label="Navegación principal">
+        <div class="barra-nav-inferior__items">
           ${items.map(i => `
-            <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" data-nav role="tab" aria-selected="${esActivo(i.ruta)}" aria-label="${i.texto}">
+            <a href="#!${i.ruta}" class="barra-nav-inferior__item${esActivo(i.ruta) ? ' barra-nav-inferior__item--activo' : ''}${i.centro ? ' barra-nav-inferior__item--centro' : ''}" data-nav${esActivo(i.ruta) ? ' aria-current="page"' : ''}>
               <span class="barra-nav-inferior__icono">${window.Iconos.render(i.icono)}</span>
-              <span class="barra-nav-inferior__texto">${E(i.texto)}</span>
+              <span class="barra-nav-inferior__texto">${i.textoCorto
+                ? `<span class="barra-nav-inferior__texto-largo">${E(i.texto)}</span><span class="barra-nav-inferior__texto-corto">${E(i.textoCorto)}</span>`
+                : E(i.texto)}</span>
             </a>
           `).join('')}
         </div>

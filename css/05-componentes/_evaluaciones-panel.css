@@ -1,0 +1,94 @@
+/* ============================================================================
+ * _evaluaciones-panel.css — Evaluaciones (listado)
+ * ----------------------------------------------------------------------------
+ * Una evaluación es una hoja de notas: columnas (los exámenes o trabajos que
+ * cuentan) y alumnos con nota. El listado es un archivo, así que la ficha dice
+ * lo justo para decidir si se abre, se configura o se borra:
+ *
+ *   [hoja] Primer trimestre  [Con notas]                  [Abrir] [⋯]
+ *          4 columnas · 24 alumnos · 12 mar 2026
+ *          Evaluación de la primera parte del curso
+ *          Actualizada hace 2 h
+ *
+ * La anatomía (medallón, título, metadatos con icono, pie y acciones) la pone
+ * _examenes-panel.css bajo `.ex-vista`. Aquí solo va lo propio de esta
+ * pantalla: la barra resumen + buscador, la descripción a una línea y el color
+ * del medallón según el estado de la hoja. Cero tokens nuevos.
+ * ==========================================================================*/
+
+/* ── Contenedor ── */
+.vista-evaluaciones {
+  padding-top: var(--espaciado-lg);
+  padding-bottom: calc(100px + env(safe-area-inset-bottom));
+}
+
+/* ── Barra: resumen a la izquierda, buscador a la derecha ──
+   Reutiliza el riel de dos columnas de la cola de exámenes: el sitio que allí
+   ocupan las pestañas lo ocupa aquí el recuento, que es lo único que cambia
+   con la búsqueda. */
+.vista-evaluaciones .ex-barra__resumen {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
+  margin: 0;
+  font-size: var(--texto-sm);
+  color: var(--color-texto-secundario);
+}
+.vista-evaluaciones .ex-barra__resumen svg {
+  width: 15px;
+  height: 15px;
+  flex: 0 0 auto;
+  color: var(--color-texto-terciario);
+}
+.vista-evaluaciones .ex-barra__resumen strong {
+  color: var(--color-texto);
+  font-weight: var(--texto-peso-semibold);
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Estado de la hoja ──
+   Sin columnas no hay nada que rellenar: es la única que pide trabajo y por
+   eso lleva el medallón ámbar (y el franco de la ficha). Con notas respira
+   en verde; una hoja preparada pero sin notas se queda neutra. */
+.vista-evaluaciones .adm-evaluacion[data-estado="sin-columnas"] .ex-ficha__marca {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+.vista-evaluaciones .adm-evaluacion[data-estado="con-notas"] .ex-ficha__marca {
+  background: var(--color-exito-soft);
+  color: var(--color-exito);
+}
+
+/* ── Descripción ──
+   Una línea en escritorio (el texto completo vive en «Editar datos»); en
+   móvil se permiten dos para no perder el sentido de la frase. */
+.vista-evaluaciones .ex-ficha__descripcion {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  margin: 2px 0 0;
+  max-width: 72ch;
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--color-texto-secundario);
+  overflow-wrap: anywhere;
+}
+
+/* ── Responsive ── */
+@media (max-width: 1200px) {
+  /* La barra ya se apila con la regla compartida de .ex-barra. */
+  .vista-evaluaciones .ex-barra__resumen { padding-left: 2px; }
+}
+@media (max-width: 760px) {
+  .vista-evaluaciones .ex-ficha__descripcion { -webkit-line-clamp: 2; }
+}
+@media (max-width: 420px) {
+  .vista-evaluaciones .ex-barra__resumen { font-size: var(--texto-xs); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  /* La ficha compartida ya desactiva su transición. */
+  .vista-evaluaciones .ex-ficha__descripcion { transition: none; }
+}

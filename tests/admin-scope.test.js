@@ -212,8 +212,10 @@ describe('adminRepository consultas acotadas', () => {
 
   test('la pantalla Cuenta expone el acceso al Centro de Administración (solo admin/owner)', () => {
     const codigo = readFileSync(join(root, 'js/vistas/vista-cuenta.js'), 'utf8');
-    // Misma tarjeta de acceso rápido que en Perfil (mismo tema y organización).
-    expect(codigo).toContain('perfil-boton-seccion');
+    // Misma fila de acceso rápido que en Perfil (mismo tema y organización),
+    // adaptada a la ficha de Cuenta.
+    expect(codigo).toContain('cuenta-acceso');
+    expect(codigo).toContain('Centro de Administración');
     expect(codigo).toContain('btnPanelAdmin');
     expect(codigo).toContain("['admin', 'owner'].includes(rol)");
     expect(codigo).toContain("router.navegar('/admin?origen=cuenta')");

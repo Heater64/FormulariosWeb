@@ -59,7 +59,9 @@
       if (!params || !params.id) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }
       const usuario = store.obtener('usuario');
       if (!usuario) { router.navegar('/login'); return; }
-      raiz.innerHTML = window.skeleton ? `<div class="o-contenedor o-pila u-mt-3">${window.skeleton.tarjetas(3, { ancho: '100%' })}</div>` : '<div class="o-contenedor o-pila u-mt-3"><p class="u-color-texto-terciario">Cargando examen...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.examenAlumno()
+        : '<div class="o-contenedor o-pila u-mt-3" role="status" aria-busy="true"></div>';
       try {
         let examen = await window.examenesRepository.obtener(params.id);
         if (!examen) { raiz.innerHTML = '<div class="o-contenedor u-mt-4"><p>Examen no encontrado</p></div>'; return; }

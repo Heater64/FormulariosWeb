@@ -94,17 +94,37 @@
 /* Cabecera común de sección: identidad clara, contexto y acciones al alcance.
    Se comparte entre las vistas operativas; Memorización mantiene su cabecera
    de colección propia para conservar la jerarquía visual de sus mazos. */
+/* Cabecera de las vistas internas (estudio, notas, calificaciones…).
+   Mismo lenguaje que .adm-cabecera del panel: piezas redondeadas y un filete
+   que se desvanece en los extremos en vez de una línea recta de lado a lado. */
 .vista-cabecera {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--espaciado-md);
   flex-wrap: nowrap;
+  position: relative;
   width: 100%;
   min-width: 0;
   padding: 0 0 var(--espaciado-md);
   margin-bottom: var(--espaciado-lg);
-  border-bottom: 1px solid var(--color-borde);
+  border-bottom: 0;
+}
+.vista-cabecera::after {
+  content: '';
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent 0,
+    var(--color-borde) 8%,
+    var(--color-borde) 92%,
+    transparent 100%
+  );
+  pointer-events: none;
 }
 
 .vista-cabecera__principal {
@@ -124,7 +144,7 @@
   width: 42px;
   height: 42px;
   padding: 9px;
-  border-radius: var(--radio-md);
+  border-radius: var(--radio-lg);
   background: var(--color-acento-soft);
   color: var(--color-acento);
 }
@@ -205,6 +225,7 @@
     width: 36px;
     height: 36px;
     padding: 7px;
+    border-radius: var(--radio-md);
   }
   .vista-cabecera .notif-cabecera {
     width: 42px;

@@ -90,7 +90,11 @@ select[data-campo="tipo"] {
   min-width: 180px;
 }
 
-/* Selector visual de tipos en editor */
+/* ── Selector visual de tipos de pregunta (editor de exámenes) ──
+   Único dueño del componente. Antes estaba copiado en _plataforma.css,
+   _editor-huecos.css y este archivo; como este se carga el último, las reglas
+   móviles de los otros dos nunca se aplicaban. Cualquier ajuste del selector
+   va aquí. */
 .selector-tipo-grid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
@@ -116,6 +120,11 @@ select[data-campo="tipo"] {
   box-shadow: 0 0 0 1px var(--color-acento-soft);
 }
 
+.selector-tipo:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: 2px;
+}
+
 .selector-tipo__nombre {
   font-weight: var(--texto-peso-semibold);
   font-size: var(--texto-sm);
@@ -126,6 +135,32 @@ select[data-campo="tipo"] {
   font-size: var(--texto-xs);
   color: var(--color-texto-secundario);
   line-height: 1.4;
+}
+
+.selector-tipo__correccion {
+  margin-top: auto;
+  padding-top: var(--espaciado-2xs);
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto-secundario);
+}
+
+.selector-tipo__correccion--auto { color: var(--color-exito, var(--color-acento)); }
+
+.selector-tipo:not([data-tipo]) { display: none; }
+
+/* Móvil: dos columnas en vez de una. Los ocho tipos son igual de válidos en el
+   teléfono que en el PC —ninguno se desactiva— y en dos columnas caben en
+   cuatro filas cortas, sin media pantalla de desplazamiento dentro del modal. */
+@media (max-width: 480px) {
+  .selector-tipo-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .selector-tipo { padding: var(--espaciado-sm); }
+  .selector-tipo__nombre { font-size: var(--texto-xs); }
+  .selector-tipo__descripcion { display: none; }
+}
+
+@media (max-width: 360px) {
+  .selector-tipo { padding: var(--espaciado-xs) var(--espaciado-sm); }
 }
 
 select[data-campo="tipo"]:focus {

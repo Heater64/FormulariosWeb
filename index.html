@@ -38,9 +38,9 @@
   <!-- Preconexiones: abre sockets antes de que se pidan los recursos externos -->
   <link rel="preconnect" href="https://cdn.jsdelivr.net" crossorigin>
   <link rel="preconnect" href="https://josxcvncescqqlajahkh.supabase.co" crossorigin>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+  <!-- Tipografía: Inter autoalojada (una descarga de 48 KB para 400–800).
+       Antes se pedía una hoja a fonts.googleapis.com en el <head>, lo que
+       bloqueaba el primer pintado con dos saltos de red externos. -->
 
   <!-- ============================================================
        Theme bootstrap (corre pre-CSS): evita el flash de tema al cargar.
@@ -75,6 +75,7 @@
   <link rel="icon" href="assets/iconos/16x16.png" type="image/png" sizes="16x16">
 
   <!-- CSS: Settings -->
+  <link rel="stylesheet" href="css/00-settings/_fuentes.css">
   <link rel="stylesheet" href="css/00-settings/_tokens.css">
   <link rel="stylesheet" href="css/00-settings/_colores.css">
   <link rel="stylesheet" href="css/00-settings/_tipografia.css">
@@ -118,45 +119,18 @@
 
 
 
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-capitulo.css">
-  <link rel="stylesheet" href="css/05-componentes/_celebracion.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-libro.css">
-  <link rel="stylesheet" href="css/05-componentes/_estudio.css">
   <link rel="stylesheet" href="css/05-componentes/_barra-accion.css">
-  <link rel="stylesheet" href="css/05-componentes/_pregunta-examen.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-pregunta.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-memorizacion.css">
-  <link rel="stylesheet" href="css/05-componentes/_memorizacion-juego.css">
   <link rel="stylesheet" href="css/05-componentes/_info-ayuda.css">
   <link rel="stylesheet" href="css/05-componentes/_update-dialog.css">
-  <link rel="stylesheet" href="css/05-componentes/_versiculo.css">
-  <link rel="stylesheet" href="css/05-componentes/_btn-calidad.css">
-  <link rel="stylesheet" href="css/05-componentes/_seccion-admin.css">
-  <link rel="stylesheet" href="css/05-componentes/_zona-peligro.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-crear.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-imagen.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-huecos.css">
-  <link rel="stylesheet" href="css/05-componentes/_perfil.css">
-  <link rel="stylesheet" href="css/05-componentes/_login.css">
-  <link rel="stylesheet" href="css/05-componentes/_tarjeta-estadistica.css">
-  <link rel="stylesheet" href="css/05-componentes/_calificaciones.css">
-  <link rel="stylesheet" href="css/05-componentes/_corregir-examen.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-preguntas.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-examenes.css">
-  <link rel="stylesheet" href="css/05-componentes/_examen-tomar.css">
-  <link rel="stylesheet" href="css/05-componentes/_examen-lista.css">
-  <link rel="stylesheet" href="css/05-componentes/_sugerencias.css">
-  <link rel="stylesheet" href="css/05-componentes/_explorar.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-tiptap.css">
-  <link rel="stylesheet" href="css/05-componentes/_editor-dibujo.css">
-  <link rel="stylesheet" href="css/05-componentes/_pull-to-refresh.css">
-  <link rel="stylesheet" href="css/05-componentes/_admin-panel.css">
-  <link rel="stylesheet" href="css/05-componentes/_grupos.css">
-  <link rel="stylesheet" href="css/05-componentes/_desafios.css">
+  <!-- Avisos compartidos por todas las vistas: campana, ayuda y diálogo de
+       actualización. El resto de componentes se carga por sección con
+       js/core/css-secciones.js (ver más abajo). -->
   <link rel="stylesheet" href="css/05-componentes/_notificaciones.css">
+  <!-- Las primitivas del panel (_plataforma.css) las cargan las secciones que
+       las usan (panel, cuenta, editor, alumno) desde css-secciones.js: son
+       46 KB que no deben bloquear el primer pintado de todas las rutas. -->
 
   <!-- CSS del panel de exámenes (inicio, exámenes, entregas, cuenta) -->
-  <link rel="stylesheet" href="css/05-componentes/_plataforma.css">
 
   <!-- CSS: Utilities (cargan al final para poder usar !important) -->
   <link rel="stylesheet" href="css/06-utilidades/_utilidades.css">
@@ -173,7 +147,9 @@
        desde el router, no aquí.
        ============================================================ -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2" defer></script>
-  <script src="js/vendor/lucide.min.js" defer></script>
+  <!-- Iconos: subconjunto generado (135 de 1991 iconos, ~27 KB). Regenerar con
+       `node scripts/generar-iconos.mjs` si se usa un icono nuevo. -->
+  <script src="js/vendor/lucide-subset.js" defer></script>
 
   <!-- JS: Autorrecuperación (primero: registra handlers de error antes que el resto) -->
   <script src="js/utilidades/error-recovery.js" defer></script>
@@ -194,6 +170,9 @@
   <script src="js/core/store.js" defer></script>
   <script src="js/core/eventBus.js" defer></script>
   <script src="js/core/errores.js" defer></script>
+  <!-- CSS por sección: el <head> solo lleva lo crítico; el router pide las
+       hojas de la sección destino justo antes de montarla. -->
+  <script src="js/core/css-secciones.js" defer></script>
   <script src="js/core/router.js" defer></script>
   <!-- Coordinador único de back: cierra modales con el back del sistema
        (navegador y gesto Android) antes de navegar. -->
@@ -202,6 +181,11 @@
   <script src="js/core/swipe-back.js" defer></script>
   <!-- Barra de navegación: se oculta mientras el teclado está abierto -->
   <script src="js/core/navigation.js" defer></script>
+
+  <!-- Configuración pública del despliegue (VAPID, Sentry...): la escribe
+       scripts/generar-env-publico.mjs en cada build a partir de las variables
+       de entorno. Va antes de entorno.js, que la lee de window.ENV. -->
+  <script src="js/config/env-publico.js" defer></script>
 
   <!-- JS: Configuración de entorno (modo demo, Supabase) — debe cargar antes
        que supabase-client.js y cualquier vista -->
@@ -255,7 +239,7 @@
     </div>
     <h1 class="splash-screen__title">FormsBiblicos</h1>
     <div class="splash-screen__progress"><div class="splash-screen__bar"></div></div>
-    <p class="splash-screen__status" id="splashStatus">Cargando…</p>
+    <p class="splash-screen__status" id="splashStatus">Preparando…</p>
   </div>
 
   <!-- Online/Offline Indicator -->

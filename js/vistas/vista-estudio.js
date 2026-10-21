@@ -2,7 +2,9 @@
   'use strict';
   window.vistaEstudio = {
     async montar(raiz) {
-      raiz.innerHTML = window.skeleton ? window.skeleton.estudio() : '<div class="o-contenedor o-pila o-pila--lg u-mt-3"><p class="u-color-texto-terciario">Cargando...</p></div>';
+      raiz.innerHTML = window.skeleton
+        ? window.skeleton.estudio()
+        : '<div class="o-contenedor o-pila o-pila--lg u-mt-3" role="status" aria-busy="true"></div>';
       const usuario = store.obtener('usuario');
       const sb = window.supabaseClient;
       if (!sb || !usuario) return;

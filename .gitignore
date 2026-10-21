@@ -19,3 +19,7 @@ dist/
 dist-public/
 .tmp
 supabase/.temp/
+/freebuff-sites-build/
+
+# Claves VAPID locales (el par privado nunca se versiona)
+.vapid/

@@ -45,6 +45,10 @@ const jsDirs = [
   { src: join(root, 'js', 'datos'), dest: join(distPublic, 'js', 'datos') },
 ];
 const jsFiles = [
+  // Configuración pública generada en el build (clave VAPID de Web Push).
+  // Va antes que entorno.js también aquí: el login y la landing comparten
+  // scope con /app/, así que deben ver la misma configuración.
+  join(root, 'js', 'config', 'env-publico.js'),
   join(root, 'js', 'config', 'entorno.js'),
   join(root, 'js', 'core', 'store.js'),
   join(root, 'js', 'core', 'eventBus.js'),
