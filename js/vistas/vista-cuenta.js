@@ -74,6 +74,43 @@
     </header>`;
   }
 
+  // Categorías de aviso: mismas claves de preferencias que lee
+  // notification-service (_categoriaHabilitada). Las claves legacy siguen
+  // desactivando la categoría hasta que el usuario la vuelve a activar.
+  // `disponible: false` oculta las categorías que aún no existen en la web;
+  // al activarlas basta con quitar la marca (las preferencias ya guardadas
+  // se conservan).
+  const NOTIF_CATEGORIAS = [
+    { clave: 'notif_desafios', legado: 'notif_logros', icono: 'sword', titulo: 'Desafíos', desc: 'Invitaciones y resultados de tus retos', disponible: false },
+    { clave: 'notif_examenes', icono: 'clipboard-check', titulo: 'Exámenes', desc: 'Publicación, entregas y correcciones' },
+    { clave: 'notif_estudio', legado: 'notif_recordatorios', icono: 'book-open', titulo: 'Estudio', desc: 'Repasos, mazos y capítulos completados', disponible: false },
+    { clave: 'notif_grupos', legado: 'notif_invitaciones', icono: 'users', titulo: 'Grupos', desc: 'Invitaciones y novedades de tus clases', disponible: false },
+    { clave: 'notif_logros', icono: 'trophy', titulo: 'Logros', desc: 'Logros desbloqueados', disponible: false },
+    { clave: 'notif_sistema', icono: 'settings', titulo: 'Sistema', desc: 'Avisos y actualizaciones de la plataforma' }
+  ].filter((categoria) => categoria.disponible !== false);
+
+  const NOTIF_DISPOSITIVO = [
+    { clave: 'notif_sonidos', icono: 'volume-2', titulo: 'Sonidos', desc: 'Aviso sonoro al recibir una notificación' },
+    { clave: 'notif_vibracion', legado: 'notif_sonidos', icono: 'vibrate', titulo: 'Vibración', desc: 'Vibra al recibir un aviso' },
+    { clave: 'notif_nativas', icono: 'smartphone', titulo: 'Notificaciones del dispositivo', desc: 'Mostrar en la bandeja del sistema en vez de solo dentro de la app' }
+  ];
+
+  // Fila con interruptor. Toda la fila es <label>, así el toque en cualquier
+  // punto alterna el checkbox y el nombre accesible sale del texto visible.
+  function filaNotif({ clave, icono, titulo, desc }, activo) {
+    return `
+      <label class="cuenta-ajuste">
+        <span class="cuenta-ajuste__icono" aria-hidden="true">${I(icono)}</span>
+        <span class="cuenta-ajuste__texto">
+          <span class="cuenta-ajuste__titulo">${esc(titulo)}</span>
+          <span class="cuenta-ajuste__ayuda">${esc(desc)}</span>
+        </span>
+        <span class="cuenta-ajuste__control">
+          <input class="adm-switch" type="checkbox" data-notif="${clave}" ${activo ? 'checked' : ''}>
+        </span>
+      </label>`;
+  }
+
   window.vistaCuenta = {
     async montar(raiz) {
       const usuario = store.obtener('usuario');
@@ -85,6 +122,18 @@
       const fechaAlta = (usuario.creado_en && window.helpers && window.helpers.formatearFecha)
         ? window.helpers.formatearFecha(usuario.creado_en)
         : '';
+      const prefs = preferenciasActuales(usuario);
+      const permisoNotif = ('Notification' in window) ? Notification.permission : 'unsupported';
+      const permisoTexto = {
+        granted: 'Permitidas por el navegador',
+        denied: 'Bloqueadas en el navegador; actívalas desde los ajustes del sitio',
+        default: 'Todavía no has dado permiso',
+        unsupported: 'Este dispositivo no admite avisos del navegador'
+      }[permisoNotif] || 'Estado desconocido';
+      const webPushNotif = !!(window.pushNotificationService
+        && typeof window.pushNotificationService.webPushDisponible === 'function'
+        && window.pushNotificationService.webPushDisponible());
+      const notifActiva = (item) => prefs[item.clave] !== false && !(item.legado && prefs[item.legado] === false);
 
       raiz.innerHTML = `
         <div class="o-contenedor vista-cuenta">
@@ -92,7 +141,7 @@
             <span class="adm-cabecera__icono" aria-hidden="true">${I('user')}</span>
             <div class="adm-cabecera__principal">
               <h1 class="adm-cabecera__titulo">Mi cuenta</h1>
-              <p class="adm-cabecera__sub">Tu identidad, apariencia y seguridad.</p>
+              <p class="adm-cabecera__sub">Tu identidad, preferencias y seguridad.</p>
             </div>
           </header>
 
@@ -114,7 +163,7 @@
                 ${fechaAlta ? `<span class="cuenta-ficha__dato">${I('calendar')}Desde ${esc(fechaAlta)}</span>` : ''}
               </div>
             </div>
-            <a class="adm-btn adm-btn--pequeno cuenta-boton-suave cuenta-ficha__accion" href="#!/perfil">${I('pencil')} Editar perfil</a>
+            <button class="adm-btn adm-btn--pequeno cuenta-boton-suave cuenta-ficha__accion" id="btnEditarPerfil" type="button">${I('pencil')} Editar perfil</button>
           </section>
 
           <!-- Apariencia -->
@@ -149,6 +198,30 @@
               </div>
             </div>
             <p id="estadoApariencia" class="cuenta-estado" role="status" aria-live="polite"></p>
+          </section>
+
+          <!-- Notificaciones -->
+          <section class="cuenta-bloque" aria-labelledby="tituloNotificaciones">
+            ${cabeceraBloque('bell', 'Notificaciones', 'Elige qué avisos quieres recibir y cómo te avisa la app.', 'tituloNotificaciones')}
+            <div class="cuenta-sesion">
+              <span class="cuenta-sesion__texto">
+                Avisos del navegador<br>
+                <span class="cuenta-ajuste__ayuda">${esc(permisoTexto)}</span>
+              </span>
+              ${permisoNotif === 'default' ? `<button class="adm-btn adm-btn--pequeno" id="btnPermisoNotif" type="button">${I('bell-plus')} Permitir</button>` : ''}
+              ${permisoNotif === 'granted' && webPushNotif ? `<button class="adm-btn adm-btn--pequeno" id="btnActivarPush" type="button">${I('bell-plus')} Activar en este navegador</button>` : ''}
+            </div>
+
+            <p class="cuenta-bloque__desc" style="margin-top:var(--espaciado-md)">Categorías</p>
+            <div class="cuenta-ajustes" role="group" aria-label="Categorías de notificaciones">
+              ${NOTIF_CATEGORIAS.map((c) => filaNotif(c, notifActiva(c))).join('')}
+            </div>
+
+            <p class="cuenta-bloque__desc" style="margin-top:var(--espaciado-md)">En este dispositivo</p>
+            <div class="cuenta-ajustes" role="group" aria-label="Sonido y dispositivo">
+              ${NOTIF_DISPOSITIVO.map((c) => filaNotif(c, notifActiva(c))).join('')}
+            </div>
+            <p id="estadoNotificaciones" class="cuenta-estado" role="status" aria-live="polite"></p>
           </section>
 
           ${ROLES.includes(rol) ? `<section class="cuenta-bloque" aria-labelledby="tituloSeguridad">
@@ -206,7 +279,6 @@
           </section>
         </div>`;
 
-      const prefs = preferenciasActuales(usuario);
       const estadoApariencia = raiz.querySelector('#estadoApariencia');
       const botonesTema = [...raiz.querySelectorAll('[data-tema]')];
       const reflejarTema = () => {
@@ -276,6 +348,92 @@
       if (window.Iconos) window.Iconos.actualizar();
 
       raiz.querySelector('#btnPanelAdmin')?.addEventListener('click', (e) => { e.preventDefault(); router.navegar('/admin?origen=cuenta'); });
+
+      // Preferencias de notificación: mismas claves que lee
+      // notification-service. Al reactivar una categoría se borra su clave
+      // legacy para que una config antigua no la siga silenciando.
+      const estadoNotificaciones = raiz.querySelector('#estadoNotificaciones');
+      raiz.querySelectorAll('[data-notif]').forEach((input) => {
+        input.addEventListener('change', () => {
+          const clave = input.dataset.notif;
+          const item = [...NOTIF_CATEGORIAS, ...NOTIF_DISPOSITIVO].find((c) => c.clave === clave);
+          const actuales = preferenciasActuales(usuario);
+          if (input.checked && item && item.legado) delete actuales[item.legado];
+          usuario.preferencias = actuales;
+          Object.assign(prefs, persistirPreferencias(usuario, { [clave]: input.checked }));
+          if (estadoNotificaciones) estadoNotificaciones.textContent = 'Preferencias de notificación guardadas.';
+        });
+      });
+
+      const btnPermisoNotif = raiz.querySelector('#btnPermisoNotif');
+      if (btnPermisoNotif) btnPermisoNotif.addEventListener('click', async () => {
+        btnPermisoNotif.disabled = true;
+        try {
+          const resultado = await Notification.requestPermission();
+          if (window.notifications && window.notifications.setPermiso) window.notifications.setPermiso(resultado);
+          if (resultado === 'granted' && webPushNotif) {
+            await window.pushNotificationService.activarWeb().catch(() => false);
+          }
+          window.helpers.mostrarAlerta(
+            resultado === 'granted' ? 'Notificaciones activadas.' : 'No se concedió el permiso.',
+            resultado === 'granted' ? 'exito' : 'advertencia'
+          );
+          if (router.pathActual() === '/cuenta') await window.vistaCuenta.montar(raiz);
+        } catch (e) {
+          window.helpers.mostrarAlerta('No se pudo solicitar el permiso.', 'error');
+          btnPermisoNotif.disabled = false;
+        }
+      });
+
+      const btnActivarPush = raiz.querySelector('#btnActivarPush');
+      if (btnActivarPush) btnActivarPush.addEventListener('click', async () => {
+        btnActivarPush.disabled = true;
+        try {
+          const ok = await window.pushNotificationService.activarWeb();
+          window.helpers.mostrarAlerta(
+            ok ? 'Avisos activados en este navegador.' : 'No se pudo activar en este navegador.',
+            ok ? 'exito' : 'advertencia'
+          );
+        } catch (e) {
+          window.helpers.mostrarAlerta('No se pudo activar en este navegador.', 'error');
+        } finally {
+          btnActivarPush.disabled = false;
+        }
+      });
+
+      raiz.querySelector('#btnEditarPerfil')?.addEventListener('click', async () => {
+        const prefsPerfil = preferenciasActuales(usuario);
+        const datos = await window.helpers.formulario({
+          titulo: 'Editar perfil',
+          mensaje: `Puedes cambiar tu nombre y tu descripción. El usuario @${usuario.username} no se puede cambiar.`,
+          campos: [
+            { nombre: 'nombre_completo', etiqueta: 'Nombre', valor: usuario.nombre_completo || '', requerido: true },
+            { nombre: 'descripcion', etiqueta: 'Descripción', tipo: 'textarea', filas: 2, valor: prefsPerfil.descripcion || prefsPerfil.frase || '', placeholder: 'Ej: Amante del estudio bíblico' }
+          ],
+          textoConfirmar: 'Guardar'
+        });
+        if (!datos) return;
+
+        const nombreNuevo = datos.nombre_completo.trim();
+        const prefsActualizadas = { ...prefsPerfil, descripcion: datos.descripcion.trim() };
+        delete prefsActualizadas.frase;
+        try {
+          const { error } = await window.supabaseClient.from('perfiles')
+            .update({ nombre_completo: nombreNuevo, preferencias: JSON.stringify(prefsActualizadas) })
+            .eq('id', usuario.id);
+          if (error) throw error;
+          usuario.nombre_completo = nombreNuevo;
+          usuario.preferencias = prefsActualizadas;
+          store.actualizar('usuario', { ...usuario });
+          localStorage.setItem('fb_usuario', JSON.stringify(usuario));
+          window.helpers.mostrarAlerta('Perfil actualizado.', 'exito');
+          // Refrescar la ficha sin salir de Cuenta; si el usuario ya navegó a
+          // otra sección mientras guardaba, no pisar esa vista.
+          if (router.pathActual() === '/cuenta') await window.vistaCuenta.montar(raiz);
+        } catch (e) {
+          window.helpers.mostrarAlerta('No se pudo actualizar el perfil: ' + e.message, 'error');
+        }
+      });
 
       raiz.querySelector('#btnSalir').addEventListener('click', async () => {
         const ok = await window.helpers.confirmar('¿Seguro que quieres cerrar sesión?', {

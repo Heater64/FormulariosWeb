@@ -95,18 +95,10 @@
 
         // Marca del centro: configuracion ya no es legible sin sesión (028)
         this._aplicarMarca();
+        router.reemplazar('/inicio');
 
-        // Navegar a /inicio ANTES de esperar el welcome (1200ms): evita que un
-        // cambio de ruta del usuario durante el arranque sea sobrescrito.
-        const esPrimeraVez = !localStorage.getItem('fb_setup_completado:' + usuario.id) &&
-          (!usuario.preferencias || (usuario.preferencias.tema !== null && !usuario.preferencias.tema));
-                          
-        if (esPrimeraVez) {
-          router.reemplazar('/inicio');
-          setTimeout(() => this._mostrarSetupInicial(usuario), 400);
-        } else {
-          router.reemplazar('/inicio');
-        }
+        // El tutorial informativo se presenta una vez por cuenta, tras cargar el perfil autorizado.
+        this._procesarPrimeraVisita(usuario);
 
         if (window._loginUI) {
           await window._loginUI.crearWelcome(usuario.nombre_completo || usuario.username);
@@ -132,6 +124,7 @@
           this.splashEstado('Listo');
           this._programarOcultarSplash();
         }
+        this._procesarPrimeraVisita(store.obtener('usuario'));
       });
     },
 
@@ -226,6 +219,121 @@
       if (this._splashStatus) this._splashStatus.textContent = 'Reiniciando por tiempo de espera...';
       try { await window.cacheDatos?.limpiarTodo(); } catch (e) {}
       setTimeout(() => window.location.reload(), 1500);
+    },
+
+    async _procesarPrimeraVisita(usuario) {
+      if (!usuario || !usuario.id) return;
+      const rol = String(usuario.rol || '').trim().toLowerCase();
+      if (!['admin', 'usuario'].includes(rol)) return;
+      if (this._tutorialInicialIds?.has(usuario.id)) return;
+      if (router.pathActual() !== '/inicio') return;
+
+      let preferencias = usuario.preferencias || {};
+      if (typeof preferencias === 'string') {
+        try { preferencias = JSON.parse(preferencias); } catch (e) { preferencias = {}; }
+      }
+      if (preferencias.tutorial_inicio_visto === true) return;
+
+      this._tutorialInicialIds = this._tutorialInicialIds || new Set();
+      this._tutorialInicialIds.add(usuario.id);
+      setTimeout(() => this._mostrarTutorialInicial(usuario), 400);
+    },
+
+    async _mostrarTutorialInicial(usuario) {
+      if (!usuario || !usuario.id) return;
+      let rol = String(usuario.rol || '').trim().toLowerCase();
+      if (!['admin', 'usuario'].includes(rol)) {
+        this._tutorialInicialIds?.delete(usuario.id);
+        return;
+      }
+
+      let preferencias = usuario.preferencias || {};
+      if (typeof preferencias === 'string') {
+        try { preferencias = JSON.parse(preferencias); } catch (e) { preferencias = {}; }
+      }
+      if (preferencias.tutorial_inicio_visto === true) return;
+      if (document.querySelector('[data-tutorial-inicial]')) return;
+
+      const I = (n) => { try { return window.Iconos.render(n); } catch(e) { return ''; } };
+      if (window.cssSecciones) {
+        try { await window.cssSecciones.cargarGrupo('cuenta'); } catch (e) { /* el diálogo conserva el estilo crítico */ }
+      }
+      const vigente = store.obtener('usuario');
+      if (router.pathActual() !== '/inicio' || !vigente || vigente.id !== usuario.id) {
+        this._tutorialInicialIds?.delete(usuario.id);
+        return;
+      }
+      if (document.querySelector('[data-tutorial-inicial]')) return;
+      rol = String(vigente.rol || '').trim().toLowerCase();
+      if (!['admin', 'usuario'].includes(rol)) {
+        this._tutorialInicialIds?.delete(usuario.id);
+        return;
+      }
+      preferencias = vigente.preferencias || {};
+      if (typeof preferencias === 'string') {
+        try { preferencias = JSON.parse(preferencias); } catch (e) { preferencias = {}; }
+      }
+      if (preferencias.tutorial_inicio_visto === true) {
+        this._tutorialInicialIds?.delete(usuario.id);
+        return;
+      }
+      const usuarioTutorial = { ...vigente, preferencias };
+      const esAdmin = rol === 'admin';
+
+      const overlay = document.createElement('div');
+      overlay.className = 'login-setup';
+      overlay.dataset.tutorialInicial = 'true';
+      overlay.setAttribute('role', 'dialog');
+      overlay.setAttribute('aria-modal', 'true');
+      overlay.setAttribute('aria-labelledby', 'tutorialInicialTitulo');
+      overlay.innerHTML = `
+        <div class="login-setup__card" tabindex="-1">
+          <h2 class="login-setup__titulo" id="tutorialInicialTitulo">${I('sparkles')} ${esAdmin ? 'Bienvenido, administrador' : 'Tu espacio de estudio'}</h2>
+          <p class="login-setup__sub">${esAdmin
+            ? 'Aquí tienes una guía rápida para empezar con tu clase.'
+            : 'Aquí tienes una guía rápida para empezar.'}</p>
+          <ul class="tutorial-inicial__lista">
+            ${esAdmin ? `
+              <li><strong>Inicio</strong>: revisa el resumen de tus exámenes y lo que requiere atención.</li>
+              <li><strong>Exámenes</strong>: crea y publica evaluaciones para tu clase.</li>
+              <li><strong>Entregas y Notas</strong>: corrige respuestas y consulta las calificaciones.</li>` : `
+              <li><strong>Mis notas</strong>: consulta tus resultados y las calificaciones.</li>
+              <li><strong>Exámenes pendientes</strong>: pulsa «Hacer examen» cuando estés listo.</li>
+              <li><strong>Cuenta</strong>: cambia tus preferencias y revisa la seguridad.</li>`}
+          </ul>
+          <p class="tutorial-inicial__error" data-tutorial-error role="alert" hidden></p>
+          <button class="btn-primario u-mt-2" type="button" data-tutorial-confirmar style="width:100%;justify-content:center">Entendido</button>
+        </div>`;
+      document.body.appendChild(overlay);
+      if (window.Iconos) window.Iconos.actualizar();
+      overlay.querySelector('.login-setup__card')?.focus();
+
+      const boton = overlay.querySelector('[data-tutorial-confirmar]');
+      boton.addEventListener('click', async () => {
+        boton.disabled = true;
+        const mensaje = overlay.querySelector('[data-tutorial-error]');
+        try {
+          if (!window.supabaseClient) throw new Error('Supabase no está disponible');
+          const resultado = await window.supabaseClient
+            .from('perfiles')
+            .update({ preferencias: JSON.stringify({ ...preferencias, tutorial_inicio_visto: true }) })
+            .eq('id', usuarioTutorial.id);
+          if (resultado?.error) throw resultado.error;
+
+          const actualizado = {
+            ...usuarioTutorial,
+            preferencias: { ...preferencias, tutorial_inicio_visto: true }
+          };
+          store.actualizar('usuario', actualizado);
+          try { localStorage.setItem('fb_usuario', JSON.stringify(actualizado)); } catch (e) {}
+          overlay.remove();
+        } catch (error) {
+          boton.disabled = false;
+          this._tutorialInicialIds?.delete(usuarioTutorial.id);
+          mensaje.hidden = false;
+          mensaje.textContent = 'No se pudo guardar que viste el tutorial. Comprueba tu conexión e inténtalo de nuevo.';
+        }
+      });
     },
 
     _mostrarSetupInicial(usuario) {
@@ -396,7 +504,10 @@
       const usuario = store.obtener('usuario');
       if (!usuario || !usuario.id) return;
       const sb = window.supabaseClient;
-      if (!sb || !navigator.onLine) return;
+      if (!sb || !navigator.onLine) {
+        this._procesarPrimeraVisita(usuario);
+        return;
+      }
       try {
         const { data, error } = await sb.from('perfiles')
           .select('id, activo, rol, grupo_id, nombre_completo, username, foto_perfil, preferencias')
@@ -442,8 +553,10 @@
         } catch (e) {}
         store.actualizar('usuario', actualizado);
         this._renderizarBarraNavegacion();
+        this._procesarPrimeraVisita(actualizado);
       } catch (e) {
         // Sin conexión o error de red: mantener la sesión local sin cambios
+        this._procesarPrimeraVisita(usuario);
       }
     },
 
@@ -736,6 +849,10 @@
       });
       router.registrar('/examenes', window.vistaExamenes);
       router.registrar('/cuenta', this._vistaLazy(['./js/vistas/vista-cuenta.js'], () => window.vistaCuenta));
+      // /perfil era la vista antigua de perfil, retirada del SPA. Enlaces
+      // guardados y el «Volver» de las páginas legales siguen apuntando ahí:
+      // redirigir a Cuenta evita que acaben en «Página no encontrada».
+      router.registrar('/perfil', { montar: () => router.reemplazar('/cuenta') });
 
       // ── Vistas pesadas: carga perezosa bajo demanda ──
       // Nota: /editor/nuevo se registra ANTES de /editor/:id para que la ruta

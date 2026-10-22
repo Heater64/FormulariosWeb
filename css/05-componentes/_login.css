@@ -1153,6 +1153,39 @@
   color: var(--color-texto);
 }
 
+.tutorial-inicial__lista {
+  display: grid;
+  gap: var(--espaciado-sm);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  text-align: left;
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+}
+
+.tutorial-inicial__lista li {
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  border-left: 2px solid var(--color-acento);
+  background: var(--color-fondo);
+  border-radius: var(--radio-sm);
+}
+
+.tutorial-inicial__lista strong {
+  color: var(--color-texto);
+}
+
+.tutorial-inicial__error {
+  margin: var(--espaciado-sm) 0 0;
+  color: var(--color-error);
+  font-size: var(--texto-xs);
+}
+
+.tutorial-inicial__error[hidden] {
+  display: none;
+}
+
 /* ===== Responsive ===== */
 
 /* Móvil y tablet: tarjeta alrededor del formulario para distinguirlo del fondo */

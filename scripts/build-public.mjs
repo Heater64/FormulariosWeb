@@ -10,14 +10,29 @@
 // Uso: npm run build:public   (buildCommand de vercel.json)
 // ============================================================================
 import { spawnSync } from 'node:child_process';
-import { cpSync, existsSync, mkdirSync, rmSync } from 'node:fs';
+import { cpSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { join, dirname } from 'node:path';
 import { fileURLToPath } from 'node:url';
+import {
+  calcularIdentidad,
+  entornoIdentidad,
+  estamparManifiesto,
+  estamparServiceWorker,
+  leerVersionCode
+} from './lib/build-identity.mjs';
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 const distPublic = join(root, 'dist-public');
 const distApp = join(root, 'dist');
 const viteBin = join(root, 'node_modules', 'vite', 'bin', 'vite.js');
+
+// Una sola identidad para TODO el despliegue: la landing (dist-public/) y la
+// app (dist-public/app/) comparten nombre de caché, así que deben llevar el
+// mismo buildId o una dejaría a la otra con la caché antigua.
+const packageData = JSON.parse(readFileSync(join(root, 'package.json'), 'utf8'));
+const versionCode = leerVersionCode(readFileSync(join(root, 'android/version-code.properties'), 'utf8'));
+const identidad = calcularIdentidad({ packageJson: packageData, versionCode });
+const entornoBuild = entornoIdentidad(identidad);
 
 function run(cmd, args, env = {}) {
   const res = spawnSync(cmd, args, {
@@ -32,8 +47,9 @@ function run(cmd, args, env = {}) {
 }
 
 // 1) Login + landing → dist-public/ (vite.public.config.js vacía el directorio)
+console.log(`[build-public] Build ${identidad.buildId} · ${identidad.versionFull}`);
 console.log('[build-public] 1/4 Login + landing…');
-run(process.execPath, [viteBin, 'build', '--config', 'vite.public.config.js']);
+run(process.execPath, [viteBin, 'build', '--config', 'vite.public.config.js'], entornoBuild);
 
 // 2) Copiar archivos estáticos necesarios para el login:
 //    - JS de auth (entorno, store, eventBus, errores, supabase-client, auth-repository)
@@ -101,6 +117,7 @@ if (existsSync(assetsSrc)) {
 // 3) App para navegador con base /app/
 console.log('[build-public] 3/4 App (base /app/)…');
 run(process.execPath, [viteBin, 'build', '--base', '/app/'], {
+  ...entornoBuild,
   VITE_UPDATE_MANIFEST_URL: '/version.json',
   FB_PUBLIC_BUILD: '1'
 });
@@ -111,4 +128,18 @@ const destino = join(distPublic, 'app');
 rmSync(destino, { recursive: true, force: true });
 if (existsSync(distApp)) cpSync(distApp, destino, { recursive: true });
 
-console.log('[build-public] OK · login en dist-public/ + app en dist-public/app/');
+// Estampa la identidad del build en los artefactos públicos que NO pasan por
+// el build de Vite: el service worker del scope raíz y el manifiesto de
+// versión. Sin esto, el SW público conservaría el CACHE_VERSION del repo y
+// los clientes seguirían sirviendo la caché anterior.
+const swPublico = join(distPublic, 'sw.js');
+if (existsSync(swPublico)) {
+  writeFileSync(swPublico, estamparServiceWorker(readFileSync(swPublico, 'utf8'), identidad), 'utf8');
+}
+const manifiestoPublico = join(distPublic, 'version.json');
+if (existsSync(manifiestoPublico)) {
+  const manifiesto = JSON.parse(readFileSync(manifiestoPublico, 'utf8'));
+  writeFileSync(manifiestoPublico, `${JSON.stringify(estamparManifiesto(manifiesto, identidad), null, 2)}\n`, 'utf8');
+}
+
+console.log(`[build-public] OK · login en dist-public/ + app en dist-public/app/ · build ${identidad.buildId}`);

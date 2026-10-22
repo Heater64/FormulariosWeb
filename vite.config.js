@@ -2,6 +2,14 @@ import { defineConfig } from 'vite';
 import { cpSync, copyFileSync, existsSync, mkdirSync, readFileSync, rmSync, writeFileSync, readdirSync, statSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { transform } from 'esbuild';
+import {
+  calcularIdentidad,
+  contenidoVersionJs,
+  estamparManifiesto,
+  estamparServiceWorker,
+  etiquetaVersion,
+  leerVersionCode
+} from './scripts/lib/build-identity.mjs';
 
 function listarArchivos(dir) {
   const out = [];
@@ -39,12 +47,30 @@ async function minificarCss(ruta) {
 
 function readAndroidVersionCode() {
   const source = join(process.cwd(), 'android/version-code.properties');
-  const contents = readFileSync(source, 'utf8');
-  const match = contents.match(/^versionCode=(\d+)\s*$/m);
-  if (!match || Number(match[1]) < 1) {
-    throw new Error('android/version-code.properties debe contener un versionCode entero positivo.');
+  return leerVersionCode(readFileSync(source, 'utf8'));
+}
+
+// Identidad del build: versión de release + buildId único. Si el proceso
+// padre ya la calculó (build:public, build de Sites), la reutiliza vía
+// entorno para que todos los artefactos de un despliegue coincidan.
+function identidadDelBuild() {
+  const packageData = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8'));
+  return calcularIdentidad({ packageJson: packageData, versionCode: readAndroidVersionCode() });
+}
+
+// Estampa la identidad del build en el service worker y en el manifiesto
+// público de versión: así cada despliegue deja obsoleta la caché anterior
+// (nombre de caché único) y el cliente ve qué build está sirviendo.
+function estamparArtefactosDeVersion(distRoot, identidad) {
+  const swPath = join(distRoot, 'sw.js');
+  if (existsSync(swPath)) {
+    writeFileSync(swPath, estamparServiceWorker(readFileSync(swPath, 'utf8'), identidad), 'utf8');
   }
-  return Number(match[1]);
+  const manifestPath = join(distRoot, 'version.json');
+  if (existsSync(manifestPath)) {
+    const manifiesto = JSON.parse(readFileSync(manifestPath, 'utf8'));
+    writeFileSync(manifestPath, `${JSON.stringify(estamparManifiesto(manifiesto, identidad), null, 2)}\n`, 'utf8');
+  }
 }
 
 function injectRuntimeVersion() {
@@ -101,10 +127,16 @@ function copyAppStaticFiles() {      const dirs = ['js', 'css', 'data', 'assets/
       // y window.__FB_UPDATE_MANIFEST_URL__ son scripts EXTERNOS, no inline.
       const versionJsDestino = join(distRoot, 'js/core/version.js');
       mkdirSync(dirname(versionJsDestino), { recursive: true });
-      const pkgVersion = JSON.parse(readFileSync(join(process.cwd(), 'package.json'), 'utf8')).version || '0.0.0';
-      const versionCode = readAndroidVersionCode();
-      const versionJs = `window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};window.__FB_SENTRY_DSN_PUBLIC__=${JSON.stringify(process.env.VITE_SENTRY_DSN_PUBLIC || '')};window.__FB_SENTRY_SDK_URL__=${JSON.stringify(process.env.VITE_SENTRY_SDK_URL || '')};window.__FB_SENTRY_ENVIRONMENT__=${JSON.stringify(process.env.VITE_SENTRY_ENVIRONMENT || 'production')};`;
+      const identidad = identidadDelBuild();
+      const versionJs = contenidoVersionJs(identidad, {
+        __FB_UPDATE_MANIFEST_URL__: process.env.VITE_UPDATE_MANIFEST_URL || '',
+        __FB_SENTRY_DSN_PUBLIC__: process.env.VITE_SENTRY_DSN_PUBLIC || '',
+        __FB_SENTRY_SDK_URL__: process.env.VITE_SENTRY_SDK_URL || '',
+        __FB_SENTRY_ENVIRONMENT__: process.env.VITE_SENTRY_ENVIRONMENT || 'production'
+      });
       writeFileSync(versionJsDestino, versionJs, 'utf8');
+      estamparArtefactosDeVersion(distRoot, identidad);
+      console.log(`[build] build ${identidad.buildId} · ${identidad.versionFull}`);
 
       const distIndexPath = join(distRoot, 'index.html');
       if (!existsSync(distIndexPath)) return;
@@ -169,13 +201,19 @@ function servirPublicSite() {
         // producción lo genera closeBundle, pero el index.html lo solicita
         // igualmente durante la auditoría y la navegación local.
         if (pathname === '/js/core/version.js') {
-          const pkgVersion = JSON.parse(readFileSync(join(rootDir, 'package.json'), 'utf8')).version || '0.0.0';
-          const versionCodeFile = join(rootDir, 'android/version-code.properties');
-          const versionCodeSource = existsSync(versionCodeFile) ? readFileSync(versionCodeFile, 'utf8') : '';
-          const match = versionCodeSource.match(/^versionCode=(\d+)\s*$/m);
-          const versionCode = match ? Number(match[1]) : 0;
+          const identidad = identidadDelBuild();
           res.setHeader('Content-Type', 'application/javascript; charset=utf-8');
-          res.end(`window.__FB_APP_VERSION__=${JSON.stringify({ version: pkgVersion, versionCode })};window.__FB_UPDATE_MANIFEST_URL__=${JSON.stringify(process.env.VITE_UPDATE_MANIFEST_URL || '')};window.__FB_SENTRY_DSN_PUBLIC__=${JSON.stringify(process.env.VITE_SENTRY_DSN_PUBLIC || '')};window.__FB_SENTRY_SDK_URL__=${JSON.stringify(process.env.VITE_SENTRY_SDK_URL || '')};window.__FB_SENTRY_ENVIRONMENT__=${JSON.stringify(process.env.VITE_SENTRY_ENVIRONMENT || 'development')};`);
+          res.end(contenidoVersionJs({
+            ...identidad,
+            buildId: 'dev',
+            buildCorto: 'dev',
+            label: etiquetaVersion(identidad.version, 'dev')
+          }, {
+            __FB_UPDATE_MANIFEST_URL__: process.env.VITE_UPDATE_MANIFEST_URL || '',
+            __FB_SENTRY_DSN_PUBLIC__: process.env.VITE_SENTRY_DSN_PUBLIC || '',
+            __FB_SENTRY_SDK_URL__: process.env.VITE_SENTRY_SDK_URL || '',
+            __FB_SENTRY_ENVIRONMENT__: process.env.VITE_SENTRY_ENVIRONMENT || 'development'
+          }));
           return;
         }
         // JS que cargan esas páginas y el examen (theme, legal, login, examen)

@@ -1,9 +1,43 @@
-import { describe, expect, test, beforeEach, afterEach } from 'vitest';
+import { describe, expect, test, beforeEach, afterEach, vi } from 'vitest';
 import { readFileSync } from 'node:fs';
+import vm from 'node:vm';
+import { JSDOM } from 'jsdom';
 
 const read = (path) => readFileSync(new URL(`../${path}`, import.meta.url), 'utf8');
 const accountView = read('js/vistas/vista-cuenta.js');
 const appShell = read('js/core/index.js');
+
+function crearEntornoTutorial(usuario) {
+  const dom = new JSDOM('<!doctype html><html><body></body></html>', {
+    url: 'http://localhost/#!/inicio', runScripts: 'outside-only', pretendToBeVisual: true
+  });
+  const w = dom.window;
+  const estado = { usuario };
+  const actualizaciones = [];
+  const navegaciones = [];
+  const timers = [];
+  w.setTimeout = (callback, delay) => { timers.push({ callback, delay }); return timers.length; };
+  w.store = {
+    obtener: (clave) => estado[clave],
+    actualizar: (clave, valor) => { estado[clave] = valor; }
+  };
+  w.router = { reemplazar: (ruta) => navegaciones.push(ruta) };
+  w.Iconos = { render: (nombre) => `<i data-icono="${nombre}"></i>`, actualizar: vi.fn() };
+  w.helpers = { mostrarAlerta: vi.fn() };
+  w.cssSecciones = { cargarGrupo: vi.fn(async () => {}) };
+  w.supabaseClient = {
+    from: (tabla) => ({
+      update: (cambios) => ({
+        eq: async (campo, id) => {
+          actualizaciones.push({ tabla, cambios, campo, id });
+          return { error: null };
+        }
+      })
+    })
+  };
+  vm.runInContext(appShell, dom.getInternalVMContext(), { filename: 'js/core/index.js' });
+  return { dom, w, estado, actualizaciones, navegaciones, timers };
+}
 
 describe('acceso y ajustes de cuenta', () => {
   test('la ruta Cuenta carga su vista bajo demanda en vez de registrar undefined', () => {
@@ -13,6 +47,27 @@ describe('acceso y ajustes de cuenta', () => {
   test('el acceso al nombre de la barra lateral lleva a Mi cuenta', () => {
     expect(appShell).toContain('href="#!${destinoCuenta}" data-nav aria-label="Ir a Mi cuenta"');
     expect(appShell).toContain("const destinoCuenta = '/cuenta'");
+  });
+
+  test('Editar perfil abre el formulario y no enlaza a la ruta retirada /perfil', () => {
+    expect(accountView).not.toContain('href="#!/perfil"');
+    expect(accountView).toContain('id="btnEditarPerfil"');
+    expect(appShell).toContain("router.registrar('/perfil', { montar: () => router.reemplazar('/cuenta') })");
+  });
+
+  test('Mi cuenta incluye la gestión de notificaciones por categoría y dispositivo', () => {
+    expect(accountView).toContain("cabeceraBloque('bell', 'Notificaciones'");
+    expect(accountView).toContain('data-notif="${clave}"');
+    ['notif_examenes', 'notif_sistema', 'notif_sonidos', 'notif_vibracion', 'notif_nativas']
+      .forEach((clave) => expect(accountView).toContain(`clave: '${clave}'`));
+    expect(accountView).toContain('id="btnPermisoNotif"');
+  });
+
+  test('Desafíos, Estudio, Grupos y Logros siguen ocultos mientras no existan en la web', () => {
+    ['notif_desafios', 'notif_estudio', 'notif_grupos', 'notif_logros'].forEach((clave) => {
+      expect(accountView).toMatch(new RegExp(`clave: '${clave}'[^\\n]*disponible: false`));
+    });
+    expect(accountView).toContain('filter((categoria) => categoria.disponible !== false)');
   });
 
   test('Mi cuenta ofrece controles de tema, contraste y tamaño de texto', () => {

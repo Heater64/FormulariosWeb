@@ -8,9 +8,15 @@
 //
 // Al subir la versión de la app (npm run version:*), actualiza también
 // CACHE_VERSION para que los clientes limpien la caché antigua al activar.
+//
+// OJO: el build sobrescribe esta constante con la identidad del build
+// (versión + buildId único; ver scripts/lib/build-identity.mjs). Así cada
+// despliegue invalida la caché anterior sin que nadie tenga que editar este
+// archivo a mano. El valor de aquí es solo el valor por defecto del repo y
+// debe coincidir con la versión de package.json.
 // ============================================================
 
-const CACHE_VERSION = 'v1.0.13';
+const CACHE_VERSION = 'v1.0.12';
 const CACHE_NAME = `formsbiblicos-${CACHE_VERSION}`;
 
 // Shell mínimo para que la app abra sin conexión. El resto se cachea

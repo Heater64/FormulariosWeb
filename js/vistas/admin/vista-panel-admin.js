@@ -1089,7 +1089,7 @@
                 ${window.adminComunes.sistemaFila('server', 'Servidor', est.ok ? `Responde en ${est.latenciaMs} ms` : 'Sin respuesta', est.ok ? 'admin-indicador--ok' : 'admin-indicador--error', est.error || '')}
                 ${window.adminComunes.sistemaFila('database', 'Base de datos', est.ok ? 'Consulta correcta' : 'Sin conexión', est.ok ? 'admin-indicador--ok' : 'admin-indicador--error', est.error || '')}
                 ${window.adminComunes.sistemaFila('lock', 'Autenticación', !est.ok ? 'No verificada' : (est.sesionActiva ? 'Sesión activa' : 'Sin sesión'), est.ok && est.sesionActiva ? 'admin-indicador--ok' : 'admin-indicador--aviso')}
-                ${window.adminComunes.sistemaFila('tag', 'Versión', window.__FB_APP_VERSION__?.version || '—', 'admin-indicador--ok')}
+                ${window.adminComunes.sistemaFila('tag', 'Versión', window.__FB_APP_VERSION__?.label || window.__FB_APP_VERSION__?.version || '—', 'admin-indicador--ok')}
                 ${window.adminComunes.sistemaFila('hard-drive', 'Variables del sistema', 'v' + (window.__FB_APP_VERSION__?.version || '—') + ' · Supabase', 'admin-indicador--ok')}
               </div>` })}
 

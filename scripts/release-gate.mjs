@@ -71,10 +71,58 @@ ok(/build:public/.test(vercel) && /dist-public/.test(vercel), 'Vercel publica el
 
 const packageText = read('package.json');
 ok(packageText.includes('"build:public"'), 'Script build:public declarado');
+ok(packageText.includes('"build:sites"'), 'Script build:sites declarado');
 ok(packageText.includes('"test"'), 'Script test declarado');
 ok(existsSync(join(root, 'scripts/generate-study-content.mjs')), 'Generador de contenido de estudio presente');
 ok(existsSync(join(root, '.github/workflows/backup.yml')), 'Workflow de backup presente');
 ok(existsSync(join(root, '.github/workflows/release-android-tag.yml')), 'Workflow Android por tag presente');
+
+// --- Versionado y cache-busting -------------------------------------------
+// El service worker del repo declara la versión base; el build la sustituye
+// por la identidad completa del build (versión + buildId único). Si las dos
+// se desincronizan, los clientes se quedan con la caché anterior.
+const packageJson = JSON.parse(packageText);
+const swFuente = read('public/sw.js');
+const cacheBase = swFuente.match(/const CACHE_VERSION = 'v([^'+]+)/)?.[1] || '';
+ok(cacheBase === packageJson.version, `CACHE_VERSION del repo (${cacheBase || '—'}) coincide con package.json (${packageJson.version})`);
+
+let manifestVersion = null;
+try { manifestVersion = JSON.parse(read('version.json')); } catch {}
+ok(Boolean(manifestVersion) && manifestVersion.version === packageJson.version, 'version.json publica la misma versión que package.json');
+
+for (const [nombre, ruta] of [['app', 'dist/sw.js'], ['publico', 'dist-public/sw.js'], ['sites', 'freebuff-sites-build/assets/sw.js']]) {
+  const sw = read(ruta);
+  if (!sw) {
+    console.log(`SKIP  ${ruta} no existe (artefacto no construido en esta pasada)`);
+    continue;
+  }
+  ok(/const CACHE_VERSION = 'v\d+\.\d+\.\d+\+[^']+'/.test(sw), `${nombre}: el service worker construido lleva identidad de build (caché única)`);
+}
+
+for (const [nombre, ruta] of [['app', 'dist/version.json'], ['publico', 'dist-public/version.json'], ['sites', 'freebuff-sites-build/assets/version.json']]) {
+  const texto = read(ruta);
+  if (!texto) {
+    console.log(`SKIP  ${ruta} no existe (artefacto no construido en esta pasada)`);
+    continue;
+  }
+  let manifiesto = null;
+  try { manifiesto = JSON.parse(texto); } catch {}
+  ok(Boolean(manifiesto?.buildId) && Boolean(manifiesto?.builtAt), `${nombre}: el manifiesto construido declara buildId y builtAt`);
+}
+
+const workerSites = read('freebuff-sites-build/worker.js');
+if (workerSites) {
+  ok(workerSites.includes('must-revalidate'), 'El worker de Sites obliga a revalidar los recursos sin hash');
+  ok(workerSites.includes('immutable'), 'El worker de Sites sirve los assets con hash como inmutables');
+} else {
+  console.log('SKIP  freebuff-sites-build/worker.js no existe (build de Sites no generado en esta pasada)');
+}
+
+const vercelHeaders = JSON.parse(read('vercel.json') || '{}').headers || [];
+const cacheControlDe = (source) => vercelHeaders.find((item) => item.source === source)?.headers?.find((h) => h.key === 'Cache-Control')?.value || '';
+for (const source of ['/js/(.*)', '/css/(.*)', '/app/js/(.*)', '/app/css/(.*)']) {
+  ok(cacheControlDe(source).includes('must-revalidate'), `Vercel revalida ${source}`);
+}
 
 const total = checks.length;
 console.log(`=== Release gate: ${total - failures.length}/${total} ===`);

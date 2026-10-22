@@ -117,7 +117,7 @@
       const esAdmin = rol === 'admin' || rol === 'owner';
       const prefs = usuario.preferencias || {};
       const descripcion = (prefs.descripcion || prefs.frase || '').trim();
-      const versionActual = window.__FB_APP_VERSION__?.version || '—';
+      const versionActual = window.__FB_APP_VERSION__?.label || window.__FB_APP_VERSION__?.version || '—';
 
       raiz.innerHTML = `
         <div class="o-contenedor o-pila o-pila--lg perfil-root" style="padding-top:var(--espaciado-md);padding-bottom:calc(100px + env(safe-area-inset-bottom))">
@@ -829,7 +829,7 @@
         window.location.href = legalHref(seccion);
         return;
       }
-      const versionActual = window.__FB_APP_VERSION__?.version || '—';
+      const versionActual = window.__FB_APP_VERSION__?.label || window.__FB_APP_VERSION__?.version || '—';
       const contenido = {
         'que-es': `
           <div class="perfil-seccion">

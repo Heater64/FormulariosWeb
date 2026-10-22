@@ -10,6 +10,7 @@
     "build": "vite build",
     "prebuild:public": "node scripts/generar-env-publico.mjs",
     "build:public": "node scripts/build-public.mjs",
+    "build:sites": "node scripts/build-sites.mjs",
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",

@@ -50,7 +50,9 @@ Estos archivos **siguen en el repo pero ya no se cargan ni se usan**:
 
 ## Versionado (sigue activo)
 
-La versión vive en `package.json` (SemVer). Para subirla **de vez en cuando** (no en cada push):
+Hay dos cosas distintas, y las dos se gestionan solas:
+
+**1. Versión de release** (SemVer en `package.json`): la numeran las personas, cuando hay novedades que contar:
 
 ```bash
 npm run version:patch   # 1.0.12 → 1.0.13
@@ -58,7 +60,33 @@ npm run version:minor   # 1.0.12 → 1.1.0
 npm run version:major   # 1.0.12 → 2.0.0
 ```
 
-Al subir la versión, actualiza también `CACHE_VERSION` en `sw.js` para que los clientes limpien la caché antigua del service worker.
+`npm run version:*` actualiza también `android/version-code.properties`, el `CACHE_VERSION` de `sw.js` y `version.json`.
+
+**2. Identidad de build** (automática): cada build calcula un `buildId` único (`<commit>-<AAAAMMDD>-<HHMMSS>-<aleatorio>`) y lo estampa en:
+
+- `CACHE_VERSION` del service worker → cada despliegue usa un nombre de caché distinto, así que al activarse el SW borra la caché anterior y el cliente deja de servir el bundle viejo.
+- `js/core/version.js` → la versión que se ve en el perfil y en el panel de admin (`1.0.12 · 2224c13-1027`).
+- `version.json` publicado → `buildId` y `builtAt`, para saber qué build está en producción.
+
+**No hay que editar `sw.js` a mano**: el build sobrescribe la constante. El valor del repo es solo el valor por defecto y debe coincidir con `package.json` (lo comprueba `npm run test:release`).
+
+Para desplegar:
+
+```bash
+npm run build         # app web (dist/)
+npm run build:public  # sitio público de Vercel (dist-public/)
+npm run build:sites   # paquete para Freebuff Sites (freebuff-sites-build/)
+```
+
+Los tres llevan la MISMA identidad de build, y los recursos sin hash (JS, CSS, HTML, `sw.js`, `version.json`) se sirven con `must-revalidate`: nada se queda cacheado entre despliegues.
+
+## Añadir una sección nueva
+
+Toda sección se publica por etapas con una función de Supabase (`oculta` → `beta` → `activa`). Nunca se deja una ruta visible a medio terminar: el enlace, la ruta y los accesos indirectos se activan a la vez.
+
+El procedimiento completo —bandera, repositorio, vista, guardia del router, CSS por sección, pruebas y despliegue— está en [AGENTS.md](AGENTS.md). Antes de empezar, lee también [CONVENCIONES.md](CONVENCIONES.md).
+
+La infraestructura de banderas vive en [076_funciones.sql](supabase/migraciones/076_funciones.sql). El runtime del cliente (`js/core/features.js`) es la siguiente pieza pendiente.
 
 ## Stack
 

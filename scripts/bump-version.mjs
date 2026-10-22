@@ -1,4 +1,5 @@
 import { readFile, writeFile } from 'node:fs/promises';
+import { existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -6,6 +7,7 @@ const rootDir = join(dirname(fileURLToPath(import.meta.url)), '..');
 const packagePath = join(rootDir, 'package.json');
 const versionCodePath = join(rootDir, 'android/version-code.properties');
 const swPath = join(rootDir, 'public/sw.js');
+const manifestPath = join(rootDir, 'version.json');
 const kind = process.argv[2];
 const increments = { patch: [0, 0, 1], minor: [0, 1, 0], major: [1, 0, 0] };
 
@@ -38,9 +40,21 @@ await writeFile(versionCodePath, versionCodeText.replace(/^versionCode=\d+\s*$/m
 // Mantener CACHE_VERSION en sw.js sincronizado con package.json
 const swText = await readFile(swPath, 'utf8');
 const newSwText = swText.replace(
-  /const CACHE_VERSION = 'v[\d.]+'/,
+  /const CACHE_VERSION = 'v[^']*'/,
   `const CACHE_VERSION = 'v${packageData.version}'`
 );
 if (newSwText !== swText) await writeFile(swPath, newSwText);
 
-console.log(`${previousVersion} → ${packageData.version} · Android versionCode ${nextVersionCode} · SW CACHE_VERSION actualizado`);
+// El manifiesto público de versión es lo que ve el cliente: si no se actualiza
+// aquí, la web seguiría anunciando la versión anterior.
+let manifestActualizado = false;
+if (existsSync(manifestPath)) {
+  const manifiesto = JSON.parse(await readFile(manifestPath, 'utf8'));
+  if (manifiesto.version !== packageData.version) {
+    manifiesto.version = packageData.version;
+    await writeFile(manifestPath, `${JSON.stringify(manifiesto, null, 2)}\n`, 'utf8');
+    manifestActualizado = true;
+  }
+}
+
+console.log(`${previousVersion} → ${packageData.version} · Android versionCode ${nextVersionCode} · SW CACHE_VERSION actualizado${manifestActualizado ? ' · version.json sincronizado' : ''}`);
