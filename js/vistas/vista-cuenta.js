@@ -258,6 +258,17 @@
             </details>
           </section>` : ''}
 
+          <!-- Almacenamiento -->
+          <section class="cuenta-bloque" aria-labelledby="tituloAlmacenamiento">
+            ${cabeceraBloque('database', 'Almacenamiento', 'Gestión de la caché y los datos temporales.', 'tituloAlmacenamiento')}
+            <div class="cuenta-sesion">
+              <span class="cuenta-sesion__texto">
+                Elimina los datos guardados localmente y recarga la app para volver a descargarlos. <strong>Tu cuenta, tu progreso y tus borradores no se pierden.</strong>
+              </span>
+              <button class="adm-btn adm-btn--pequeno" id="btnLimpiarCache" type="button">${I('trash-2')} Eliminar caché</button>
+            </div>
+          </section>
+
           ${['admin', 'owner'].includes(rol) ? `
           <a class="cuenta-acceso" id="btnPanelAdmin" href="#!/admin">
             <span class="cuenta-acceso__icono" aria-hidden="true">${I('settings')}</span>
@@ -440,6 +451,22 @@
           titulo: 'Cerrar sesión', textoConfirmar: 'Cerrar sesión'
         });
         if (ok && window.authRepository) window.authRepository.cerrarSesion();
+      });
+
+      // Eliminar caché: misma mecánica que la antigua vista de Perfil.
+      // cacheDatos.limpiarTodo() borra la caché del Service Worker, la
+      // IndexedDB de datos y las claves temporales de localStorage, pero
+      // conserva la sesión y los borradores del editor.
+      const btnLimpiarCache = raiz.querySelector('#btnLimpiarCache');
+      if (btnLimpiarCache) btnLimpiarCache.addEventListener('click', async () => {
+        const ok = await window.helpers.confirmar(
+          'Se eliminarán los datos guardados localmente (caché de la app) y la página se recargará. Tu cuenta, tu progreso y tus borradores no se pierden.',
+          { titulo: '¿Eliminar caché?', textoConfirmar: 'Eliminar y recargar' }
+        );
+        if (!ok) return;
+        window.helpers.mostrarAlerta('Eliminando caché…', 'info', 1500);
+        try { await window.cacheDatos.limpiarTodo(); } catch (e) {}
+        setTimeout(() => window.location.reload(), 1200);
       });
 
       const form = raiz.querySelector('#formPassword');

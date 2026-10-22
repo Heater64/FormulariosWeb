@@ -78,9 +78,18 @@ describe('acceso y ajustes de cuenta', () => {
     expect(accountView).toContain('id="chkContraste"');
     expect(accountView).toContain('id="chkLetra"');
   });
+
+  test('Mi cuenta ofrece eliminar la caché local sin tocar la sesión ni los borradores', () => {
+    expect(accountView).toContain("cabeceraBloque('database', 'Almacenamiento'");
+    expect(accountView).toContain('id="btnLimpiarCache"');
+    // La limpieza reutiliza cacheDatos.limpiarTodo(), que conserva la sesión
+    // (fb_usuario) y los borradores del editor, y recarga para datos frescos.
+    expect(accountView).toContain('window.cacheDatos.limpiarTodo()');
+    expect(accountView).toContain('window.location.reload()');
+  });
 });
 
-describe('interacción de apariencia de Cuenta', () => {
+describe('interacción de Cuenta', () => {
   let previousWindow;
   let previousStore;
   let previousLocalStorage;
@@ -185,5 +194,73 @@ describe('interacción de apariencia de Cuenta', () => {
     expect(preferenciasGuardadas).toMatchObject({ tema: 'dark', alto_contraste: true, letra_grande: true });
     expect(temaAplicado).toBe(true);
     expect(JSON.parse(storage.get('fb_usuario')).preferencias).toMatchObject({ tema: 'dark', alto_contraste: true, letra_grande: true });
+  });
+
+  test('Eliminar caché pide confirmación, limpia los datos locales y recarga', async () => {
+    const estado = { usuario: { id: 'u-1', username: 'rebeca', rol: 'admin', preferencias: {} } };
+    const storage = new Map();
+    const listeners = new Map();
+    const timers = [];
+    const alertas = [];
+    const limpiarTodo = vi.fn(async () => {});
+    const reload = vi.fn();
+    let respuestaConfirmar = true;
+
+    const realSetTimeout = global.setTimeout;
+    global.setTimeout = (callback, delay) => { timers.push({ callback, delay }); return timers.length; };
+    global.localStorage = {
+      setItem: (key, value) => storage.set(key, value),
+      getItem: (key) => storage.get(key) || null
+    };
+    global.store = {
+      obtener: (key) => estado[key],
+      actualizar: (key, value) => { estado[key] = value; }
+    };
+    global.window = {
+      panelUI: { esc: (value) => String(value ?? '') },
+      Iconos: { render: (nombre) => `<i data-lucide="${nombre}"></i>`, actualizar() {} },
+      preferencias: { guardar() {}, aplicar() {} },
+      helpers: {
+        confirmar: async () => respuestaConfirmar,
+        mostrarAlerta: (...args) => alertas.push(args)
+      },
+      router: { navegar() {} },
+      authRepository: null,
+      supabaseClient: null,
+      cacheDatos: { limpiarTodo },
+      location: { reload }
+    };
+
+    const botones = new Map([
+      ['#btnSalir', { addEventListener() {} }],
+      ['#btnLimpiarCache', { addEventListener: (nombre, callback) => listeners.set(`limpiar-${nombre}`, callback) }]
+    ]);
+    const raiz = {
+      innerHTML: '',
+      querySelector: (selector) => botones.get(selector) ?? null,
+      querySelectorAll: () => []
+    };
+
+    try {
+      new Function(accountView)();
+      await global.window.vistaCuenta.montar(raiz);
+
+      // Sin confirmar no se borra nada.
+      respuestaConfirmar = false;
+      await listeners.get('limpiar-click')();
+      expect(limpiarTodo).not.toHaveBeenCalled();
+
+      // Confirmando: se limpia, se avisa y se programa la recarga.
+      respuestaConfirmar = true;
+      await listeners.get('limpiar-click')();
+      expect(limpiarTodo).toHaveBeenCalledTimes(1);
+      expect(alertas.some(([mensaje]) => String(mensaje).includes('Eliminando caché'))).toBe(true);
+      expect(timers).toHaveLength(1);
+      expect(timers[0].delay).toBe(1200);
+      timers[0].callback();
+      expect(reload).toHaveBeenCalledTimes(1);
+    } finally {
+      global.setTimeout = realSetTimeout;
+    }
   });
 });
