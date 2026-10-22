@@ -222,24 +222,41 @@ describe('adminRepository consultas acotadas', () => {
   });
 
   test('el panel standalone vuelve al origen (cuenta o perfil, sin redirección abierta)', () => {
-    const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
-    expect(html).toContain("_origen === 'perfil' ? 'perfil' : 'cuenta'");
-    expect(html).toContain("'../../index.html#!/' + _destino");
+    // El arranque vive en js/vistas/admin/panel-admin-boot.js: la CSP de
+    // producción bloquea los scripts inline del HTML.
+    const boot = readFileSync(join(root, 'js/vistas/admin/panel-admin-boot.js'), 'utf8');
+    expect(boot).toContain("_origen === 'perfil' ? 'perfil' : 'cuenta'");
+    expect(boot).toContain("'../../index.html#!/' + _destino");
   });
 
   test('la página standalone aplica el tema y ajustes del usuario como el SPA', () => {
     const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
+    const boot = readFileSync(join(root, 'js/vistas/admin/panel-admin-boot.js'), 'utf8');
     expect(html).toContain('js/core/theme-init.js');
     expect(html).toContain('js/utilidades/preferencias.js');
-    expect(html).toContain('window.preferencias');
-    expect(html).toContain('.aplicar()');
+    expect(boot).toContain('window.preferencias');
+    expect(boot).toContain('.aplicar()');
   });
 
   test('la página standalone reenvía el query (?tab=) al montar el panel', () => {
+    const boot = readFileSync(join(root, 'js/vistas/admin/panel-admin-boot.js'), 'utf8');
+    expect(boot).toContain('new URLSearchParams(window.location.search)');
+    expect(boot).toContain('montar(document.getElementById');
+    expect(boot).toContain('{ query }');
+  });
+
+  test('el panel standalone se copia al build y no usa scripts inline (CSP de producción)', () => {
     const html = readFileSync(join(root, 'paginas/admin/panel-admin.html'), 'utf8');
-    expect(html).toContain('new URLSearchParams(window.location.search)');
-    expect(html).toContain('montar(document.getElementById');
-    expect(html).toContain('{ query }');
+    // La CSP de producción (vercel.json) es script-src 'self' sin
+    // 'unsafe-inline': todo <script> del panel debe ser externo.
+    const etiquetas = html.match(/<script\b[^>]*>/g) || [];
+    expect(etiquetas.length).toBeGreaterThan(0);
+    for (const etiqueta of etiquetas) expect(etiqueta).toContain('src=');
+    expect(html).toContain('js/vistas/admin/panel-admin-boot.js');
+    // Sin copiar paginas/ al build, /app/paginas/admin/panel-admin.html daba
+    // 404 en producción y el Centro de Administración no abría.
+    const vite = readFileSync(join(root, 'vite.config.js'), 'utf8');
+    expect(vite).toContain("'paginas'");
   });
 
   test('el panel no expone borrado de auditoría tras hacerla inmutable', () => {

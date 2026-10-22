@@ -92,7 +92,7 @@ function injectRuntimeVersion() {
   };
 }
 
-function copyAppStaticFiles() {      const dirs = ['js', 'css', 'data', 'assets/iconos', 'assets/capturas', 'assets/fuentes'];      // manifest.json, sw.js y offline.html viven en public/ (publicDir de Vite)
+function copyAppStaticFiles() {      const dirs = ['js', 'css', 'data', 'assets/iconos', 'assets/capturas', 'assets/fuentes', 'paginas'];      // manifest.json, sw.js y offline.html viven en public/ (publicDir de Vite)
       // y se copian a dist/ sin hash: el manifiesto PWA necesita una URL estable.
       const files = ['version.json'];
 
