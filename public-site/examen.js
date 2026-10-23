@@ -109,6 +109,14 @@
     return texto;
   }
 
+  // La píldora «Instala la app» se muestra al entrar y al terminar el examen
+  // (y en los avisos de la misma entrada), y se oculta mientras se responde
+  // para no molestar. Vive en #zonaPill, fuera del #lienzo que se repinta.
+  function verPill(visible) {
+    var zona = $('zonaPill');
+    if (zona) zona.hidden = !visible;
+  }
+
   function progreso(fraccion) {
     var barra = $('progresoBarra');
     if (!barra) return;
@@ -118,6 +126,7 @@
 
   // ── Pantallas ─────────────────────────────────────────────────────────────
   function pantallaMensaje(opciones) {
+    verPill(true);
     var lienzo = $('lienzo');
     lienzo.className = 'lienzo lienzo--estrecho lienzo--centrado';
     lienzo.innerHTML = '';
@@ -130,7 +139,47 @@
     progreso(0);
   }
 
+  // Temario de estudio publicado (fase 2): el servidor solo lo entrega si el
+  // profesor lo publicó y la bandera está activa. Se pinta como <details>
+  // nativo, antes del aviso de entrega única, para que el alumno pueda
+  // repasarlo antes de empezar.
+  function refATexto(ref) {
+    if (!ref || !ref.libro) return '';
+    var salida = String(ref.libro);
+    if (ref.capitulo != null) salida += ' ' + ref.capitulo;
+    if (ref.versiculos) salida += ':' + ref.versiculos;
+    if (ref.capitulo_fin != null) {
+      salida += '-' + ref.capitulo_fin;
+      if (ref.versiculos_fin) salida += ':' + ref.versiculos_fin;
+    }
+    return salida;
+  }
+
+  function bloqueTemario(temario) {
+    var items = (temario && Object.prototype.toString.call(temario.items) === '[object Array]')
+      ? temario.items.slice().sort(function (a, b) {
+          return (parseInt(a && a.orden, 10) || 0) - (parseInt(b && b.orden, 10) || 0);
+        })
+      : [];
+    if (!items.length) return null;
+
+    var cont = el('details', 'temario');
+    cont.appendChild(el('summary', 'temario__cabecera',
+      'Temario de estudio (' + items.length + ' elemento' + (items.length === 1 ? '' : 's') + ')'));
+    var lista = el('ol', 'temario__lista');
+    items.forEach(function (item) {
+      var li = el('li', 'temario__item');
+      var refs = ((item && item.refs) || []).map(refATexto).filter(Boolean);
+      if (refs.length) li.appendChild(el('span', 'temario__ref', refs.join(' · ')));
+      li.appendChild(document.createTextNode((item && item.texto) || ''));
+      lista.appendChild(li);
+    });
+    cont.appendChild(lista);
+    return cont;
+  }
+
   function pantallaIntroduccion(ctx) {
+    verPill(true);
     var lienzo = $('lienzo');
     lienzo.className = 'lienzo lienzo--estrecho';
     lienzo.innerHTML = '';
@@ -149,6 +198,9 @@
       desc.style.whiteSpace = 'pre-wrap';
       tarjeta.appendChild(desc);
     }
+
+    var temario = bloqueTemario(ctx.temario);
+    if (temario) tarjeta.appendChild(temario);
 
     var aviso = el('div', 'aviso aviso--warn');
     aviso.appendChild(el('strong', null, 'Antes de empezar: '));
@@ -276,6 +328,7 @@
   }
 
   function renderPreguntas() {
+    verPill(false);
     var lienzo = $('lienzo');
     lienzo.className = 'lienzo';
     lienzo.innerHTML = '';
@@ -1002,7 +1055,14 @@
       return;
     }
     if (window.PwaPill) {
-      window.PwaPill.montar({ contenedor: document.getElementById('lienzo'), id: estado.token, esExamen: true });
+      // #zonaPill está fuera de #lienzo: montarla dentro de #lienzo no
+      // servía, porque la primera pantalla (introducción/aviso) vaciaba el
+      // innerHTML y la borraba nada más cargar.
+      window.PwaPill.montar({
+        contenedor: document.getElementById('zonaPill') || document.getElementById('lienzo'),
+        id: estado.token,
+        esExamen: true
+      });
     }
 
     rpc('fb_estado_enlace', { p_token: estado.token })

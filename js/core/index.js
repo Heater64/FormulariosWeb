@@ -30,6 +30,12 @@
       // Aplicar la marca configurada por el propietario (nombre del centro)
       this._aplicarMarca();
     
+      // Cargar banderas de función (AGENTS.md): tras restaurar la sesión y
+      // antes de registrar rutas, para que las guardias puedan consultarlas.
+      // Nunca bloquea el arranque: features.cargar() traga sus errores y
+      // devuelve false → todo oculto si algo falla.
+      if (window.features) await window.features.cargar();
+    
       // Inicializar rutas
       this._inicializarRutas();
     
@@ -857,8 +863,8 @@
       // ── Vistas pesadas: carga perezosa bajo demanda ──
       // Nota: /editor/nuevo se registra ANTES de /editor/:id para que la ruta
       // exacta no quede capturada por el parámetro (el router usa orden de registro).
-      router.registrar('/editor/nuevo', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
-      router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js'], () => window.vistaExamenEditor));
+      router.registrar('/editor/nuevo', this._vistaLazy(['./js/vistas/vista-examen-editor.js', './js/componentes/editor-temario.js', './js/dominio/temario-parser.js', './js/datos/temario-repository.js'], () => window.vistaExamenEditor));
+      router.registrar('/editor/:id', this._vistaLazy(['./js/vistas/vista-examen-editor.js', './js/componentes/editor-temario.js', './js/dominio/temario-parser.js', './js/datos/temario-repository.js'], () => window.vistaExamenEditor));
       router.registrar('/entregas', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
       router.registrar('/corregir/:id', this._vistaLazy(['./js/vistas/vista-entregas.js'], () => window.vistaEntregas));
       // Vista del alumno con su corrección (aciertos/fallos). Enlazada desde «Mis exámenes».

@@ -5,5 +5,8 @@
     "FormsBiblicos vuelve a ser una aplicación web instalable (PWA)",
     "La distribución como APK de Android queda en pausa por ahora (ver README)"
   ],
-  "publishedAt": "2026-08-13T00:00:00.000Z"
+  "publishedAt": "2026-08-13T00:00:00.000Z",
+  "buildId": "8a95dcf-20261023-102613-02bc",
+  "builtAt": "2026-10-23T10:26:13.709Z",
+  "commit": "8a95dcf"
 }

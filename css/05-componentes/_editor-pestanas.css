@@ -1,0 +1,70 @@
+/* ============================================================================
+   _editor-pestanas.css — pestañas del editor de exámenes
+   ----------------------------------------------------------------------------
+   Control segmentado de dos pestañas: «Configuración» (datos, evaluación y
+   temario) y «Contenido del examen» (preguntas). La pestaña activa se eleva
+   como chip sobre el carril. Solo tokens de css/00-settings/.
+   ========================================================================== */
+
+.adm-pestanas {
+  display: inline-flex;
+  gap: var(--espaciado-2xs);
+  padding: var(--espaciado-2xs);
+  background: var(--color-fondo-alt);
+  border: 1px solid var(--color-borde-suave);
+  border-radius: var(--radio-pill);
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+  margin-block-end: var(--espaciado-md);
+}
+
+.adm-pestanas::-webkit-scrollbar {
+  display: none;
+}
+
+.adm-pestanas__boton {
+  appearance: none;
+  background: none;
+  border: none;
+  margin: 0;
+  padding: var(--espaciado-xs) var(--espaciado-md);
+  min-block-size: var(--toque-minimo);
+  border-radius: var(--radio-pill);
+  color: var(--color-texto-secundario);
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-semibold);
+  white-space: nowrap;
+  cursor: pointer;
+  transition:
+    color var(--transicion-rapida),
+    background-color var(--transicion-rapida),
+    box-shadow var(--transicion-rapida);
+}
+
+.adm-pestanas__boton:hover {
+  color: var(--color-texto);
+  background: color-mix(in srgb, var(--color-fondo-tarjeta) 60%, transparent);
+}
+
+.adm-pestanas__boton:focus-visible {
+  outline: 2px solid var(--color-acento);
+  outline-offset: -2px;
+  color: var(--color-texto);
+}
+
+/* El activo es un chip sólido: fondo tarjeta, acento y sombra mínima.
+   Se redeclara :hover para que el fundido no pise el estado activo. */
+.adm-pestanas__boton--activo,
+.adm-pestanas__boton--activo:hover {
+  background: var(--color-fondo-tarjeta);
+  color: var(--color-acento);
+  font-weight: var(--texto-peso-bold);
+  box-shadow: var(--sombra-xs);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .adm-pestanas__boton {
+    transition: none;
+  }
+}

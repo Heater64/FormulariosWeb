@@ -313,6 +313,8 @@
     _saliendo: false,
     _ultimoErrorGuardado: '',
     _desregistrarGuardia: null,
+    _abrirTemario: false,       // llega con ?temario=1 desde la tarjeta de /examenes
+    _pestana: 'config',         // pestaña visible del editor: config | contenido
 
     async montar(raiz, params) {
       const usuario = store.obtener('usuario');
@@ -324,6 +326,11 @@
       const id = params && params.id;
       const editando = id && id !== 'nuevo';
       this._claveBorrador = editando ? String(id) : 'nuevo';
+      this._abrirTemario = !!(params && params.query && params.query.temario);
+      // Pestaña inicial: Configuración agrupa título, evaluación y temario;
+      // un examen existente abre en Contenido (preguntas), y el enlace
+      // «Temario» de /examenes lleva directo a Configuración.
+      this._pestana = (!editando || this._abrirTemario) ? 'config' : 'contenido';
       this._rev = 0;
       this._sucio = false;
       this._borradorRestaurado = false;
@@ -367,6 +374,7 @@
           estado: examen.estado || 'borrador',
           publicado: !!examen.publicado,
           config: examen.config || {},
+          temario: (examen.temario && typeof examen.temario === 'object') ? examen.temario : null,
           actualizado_en: examen.actualizado_en || null,
           preguntas: normalizar(preguntas)
         };
@@ -375,14 +383,15 @@
         examen = {
           grupo_id: usuario.grupo_id || null,
           evaluacion_id: null,
-          creado_por: usuario.id,
-          titulo: '',
-          descripcion: '',
-          estado: 'borrador',
-          publicado: false,
-          config: {},
-          preguntas: [preguntaTest()]
-        };
+        creado_por: usuario.id,
+        titulo: '',
+        descripcion: '',
+        estado: 'borrador',
+        publicado: false,
+        config: {},
+        temario: null,
+        preguntas: [preguntaTest()]
+      };
       }
 
       // Evaluación de la que forma parte: la que trae el enlace de Calificaciones
@@ -424,6 +433,8 @@
     },
 
     desmontar() {
+      // El bloque de temario puede tener un modal de pegado abierto en <body>.
+      if (window.editorTemario) window.editorTemario.desmontar();
       // Último volcado: localStorage es síncrono, así que se completa aunque
       // la pestaña se esté cerrando. La nube se intenta sin bloquear.
       if (this._examen && this._sucio && !this._descartando) {
@@ -458,6 +469,9 @@
         estado: guardado.estado || 'borrador',
         publicado: !!guardado.publicado,
         config: guardado.config || {},
+        temario: (guardado.temario && typeof guardado.temario === 'object')
+          ? guardado.temario
+          : ((examenServidor && examenServidor.temario) || null),
         actualizado_en: (examenServidor && examenServidor.actualizado_en) || null,
         preguntas: normalizar(preguntas)
       };
@@ -509,41 +523,62 @@
 
           <div id="aviso" class="adm-aviso adm-aviso--error" hidden></div>
 
-          <section class="adm-bloque">
-            <h2 class="adm-bloque__titulo">Datos del examen</h2>
-            <div class="adm-campo">
-              <label class="adm-campo__etiqueta" for="titulo">Título</label>
-              <input class="adm-entrada" id="titulo" type="text" maxlength="160" value="${esc(ex.titulo)}" placeholder="Ej.: Examen de matemáticas — Tema 4">
-            </div>
-            <div class="adm-campo">
-              <label class="adm-campo__etiqueta" for="descripcion">Descripción o instrucciones (opcional)</label>
-              <textarea class="adm-entrada" id="descripcion" maxlength="1200" placeholder="Instrucciones para el alumno…">${esc(ex.descripcion)}</textarea>
-            </div>
-            <div class="adm-campo">
-              <label class="adm-campo__etiqueta" for="evaluacion">Evaluación</label>
-              <select class="adm-entrada" id="evaluacion">
-                <option value="">Sin evaluación (examen suelto)</option>
-                ${this._evaluaciones.map((e) => `<option value="${esc(e.id)}" ${ex.evaluacion_id === e.id ? 'selected' : ''}>${esc(e.titulo)}${e.asignatura ? ' · ' + esc(e.asignatura) : ''}</option>`).join('')}
-              </select>
-              <p class="adm-campo__ayuda">Las notas de este examen se añadirán automáticamente a la evaluación elegida.</p>
-            </div>
-            ${this._evaluaciones.length ? '' : `<div class="adm-aviso adm-aviso--info">Aún no hay evaluaciones en tu clase. Crea una para vincular este examen y sus notas.</div>`}
-            <div class="adm-campo">
-              <label class="adm-campo__etiqueta" for="nuevaEvaluacion">Crear una evaluación nueva</label>
-              <div style="display:flex;gap:var(--espaciado-xs);flex-wrap:wrap">
-                <input class="adm-entrada" id="nuevaEvaluacion" type="text" maxlength="120" placeholder="Ej.: Evaluación 1 — Tema 4" style="flex:1;min-width:200px">
-                <button class="adm-btn" id="btnCrearEvaluacion" type="button">Crear y seleccionar</button>
-              </div>
-            </div>
-          </section>
+          <div class="adm-pestanas" role="tablist" aria-label="Secciones del editor de examen">
+            <button type="button" class="adm-pestanas__boton" role="tab" id="pestanaConfig"
+              tabindex="0" aria-selected="false" aria-controls="panelConfig" data-pestana="config">Configuración</button>
+            <button type="button" class="adm-pestanas__boton" role="tab" id="pestanaContenido"
+              tabindex="-1" aria-selected="false" aria-controls="panelContenido" data-pestana="contenido">Contenido del examen</button>
+          </div>
 
-          <section class="adm-seccion">
-            <h2 class="adm-seccion__titulo">Preguntas</h2>
-            <div id="preguntas"></div>
-            <div style="display:flex;gap:var(--espaciado-xs);flex-wrap:wrap;margin-top:var(--espaciado-sm)">
-              <button class="adm-btn adm-btn--principal" id="btnAddPregunta">＋ Añadir pregunta</button>
-            </div>
-          </section>
+          <div id="panelConfig" role="tabpanel" aria-labelledby="pestanaConfig">
+            <section class="adm-bloque" aria-labelledby="titSeccionExamen">
+              <h2 class="adm-bloque__titulo" id="titSeccionExamen">Examen</h2>
+              <p class="adm-campo__ayuda">Título e instrucciones que verá el alumno al abrir el examen.</p>
+              <div class="adm-campo">
+                <label class="adm-campo__etiqueta" for="titulo">Título</label>
+                <input class="adm-entrada" id="titulo" type="text" maxlength="160" value="${esc(ex.titulo)}" placeholder="Ej.: Examen de matemáticas — Tema 4">
+              </div>
+              <div class="adm-campo">
+                <label class="adm-campo__etiqueta" for="descripcion">Descripción o instrucciones (opcional)</label>
+                <textarea class="adm-entrada" id="descripcion" maxlength="1200" placeholder="Instrucciones para el alumno…">${esc(ex.descripcion)}</textarea>
+              </div>
+            </section>
+
+            <section class="adm-bloque" aria-labelledby="titSeccionEvaluacion">
+              <h2 class="adm-bloque__titulo" id="titSeccionEvaluacion">Evaluación</h2>
+              <div class="adm-campo">
+                <label class="adm-campo__etiqueta" for="evaluacion">Evaluación</label>
+                <select class="adm-entrada" id="evaluacion">
+                  <option value="">Sin evaluación (examen suelto)</option>
+                  ${this._evaluaciones.map((e) => `<option value="${esc(e.id)}" ${ex.evaluacion_id === e.id ? 'selected' : ''}>${esc(e.titulo)}${e.asignatura ? ' · ' + esc(e.asignatura) : ''}</option>`).join('')}
+                </select>
+                <p class="adm-campo__ayuda">Las notas de este examen se añadirán automáticamente a la evaluación elegida.</p>
+              </div>
+              ${this._evaluaciones.length ? '' : `<div class="adm-aviso adm-aviso--info">Aún no hay evaluaciones en tu clase. Crea una para vincular este examen y sus notas.</div>`}
+              <div class="adm-campo">
+                <label class="adm-campo__etiqueta" for="nuevaEvaluacion">Crear una evaluación nueva</label>
+                <div style="display:flex;gap:var(--espaciado-xs);flex-wrap:wrap">
+                  <input class="adm-entrada" id="nuevaEvaluacion" type="text" maxlength="120" placeholder="Ej.: Evaluación 1 — Tema 4" style="flex:1;min-width:200px">
+                  <button class="adm-btn" id="btnCrearEvaluacion" type="button">Crear y seleccionar</button>
+                </div>
+              </div>
+            </section>
+
+            ${window.features && window.features.activa('temario')
+              ? '<div id="temarioContenedor"></div>'
+              : ''}
+          </div>
+
+          <div id="panelContenido" role="tabpanel" aria-labelledby="pestanaContenido" hidden>
+
+            <section class="adm-seccion">
+              <h2 class="adm-seccion__titulo">Preguntas</h2>
+              <div id="preguntas"></div>
+              <div style="display:flex;gap:var(--espaciado-xs);flex-wrap:wrap;margin-top:var(--espaciado-sm)">
+                <button class="adm-btn adm-btn--principal" id="btnAddPregunta">＋ Añadir pregunta</button>
+              </div>
+            </section>
+          </div>
         </div>`;
 
       raiz.querySelector('#btnVolver').addEventListener('click', async () => {
@@ -572,8 +607,15 @@
       if (reintentar) reintentar.addEventListener('click', () => { if (this._examen) this._autoguardar(); });
       const descartar = raiz.querySelector('#btnDescartarBorrador');
       if (descartar) descartar.addEventListener('click', () => this._descartarBorrador());
+      raiz.querySelectorAll('[data-pestana]').forEach((boton) => {
+        boton.addEventListener('click', () => this._mostrarPestana(boton.dataset.pestana));
+      });
+      const tablist = raiz.querySelector('[role="tablist"]');
+      if (tablist) tablist.addEventListener('keydown', (e) => this._alPulsarTeclaPestana(e));
+      this._aplicarPestana();
 
       this._pintarPreguntas();
+      this._montarTemario();
       this._actualizarEstadoGuardado();
     },
 
@@ -1101,7 +1143,8 @@
             puntos_totales: datos.total,
             estado: ex.estado || 'borrador',
             publicado: !!ex.publicado,
-            config: ex.config || {}
+            config: ex.config || {},
+            temario: ex.temario || null
           });
 
           ex.id = guardado.id;
@@ -1372,6 +1415,68 @@
       if (raiz) this._pintar(raiz);
     },
 
+    /**
+     * Monta el bloque «Temario de estudio» (bandera 'temario'). El componente
+     * vive fuera de esta vista y notifica cada cambio con onCambio para que
+     * el temario entre en el mismo autoguardado que las preguntas.
+     */
+    _montarTemario() {
+      const cont = document.querySelector('#temarioContenedor');
+      if (!cont || !window.editorTemario) return;
+      window.editorTemario.montar(cont, {
+        temario: this._examen.temario,
+        abierto: this._abrirTemario,
+        onCambio: (temario) => {
+          this._examen.temario = temario;
+          this._marcarCambio();
+        }
+      });
+      this._abrirTemario = false;
+    },
+
+    /** Cambia de pestaña SIN repintar: el DOM de ambas se conserva, así que
+     * un campo a medio escribir nunca se pierde al cambiar de pestaña. */
+    _mostrarPestana(clave) {
+      if (clave !== 'config' && clave !== 'contenido') return;
+      this._pestana = clave;
+      this._aplicarPestana();
+    },
+
+    /**
+     * Teclado del tablist (patrón ARIA de pestañas): flechas circulares,
+     * Home y End cambian la pestaña y llevan el foco al botón activo.
+     */
+    _alPulsarTeclaPestana(evento) {
+      const claves = ['config', 'contenido'];
+      const actual = Math.max(0, claves.indexOf(this._pestana));
+      let destino = -1;
+      if (evento.key === 'ArrowRight' || evento.key === 'ArrowDown') destino = (actual + 1) % claves.length;
+      else if (evento.key === 'ArrowLeft' || evento.key === 'ArrowUp') destino = (actual - 1 + claves.length) % claves.length;
+      else if (evento.key === 'Home') destino = 0;
+      else if (evento.key === 'End') destino = claves.length - 1;
+      if (destino < 0) return;
+      evento.preventDefault();
+      this._mostrarPestana(claves[destino]);
+      const boton = document.getElementById(destino === 0 ? 'pestanaConfig' : 'pestanaContenido');
+      if (boton) boton.focus();
+    },
+
+    /** Aplica la pestaña activa: clase, aria-selected y paneles ocultos. */
+    _aplicarPestana() {
+      const activa = this._pestana === 'contenido' ? 'contenido' : 'config';
+      document.querySelectorAll('[data-pestana]').forEach((boton) => {
+        const seleccionada = boton.dataset.pestana === activa;
+        boton.classList.toggle('adm-pestanas__boton--activo', seleccionada);
+        boton.setAttribute('aria-selected', seleccionada ? 'true' : 'false');
+        // Roving tabindex: solo la pestaña activa entra en el orden de Tab.
+        boton.tabIndex = seleccionada ? 0 : -1;
+      });
+      const panelConfig = document.getElementById('panelConfig');
+      const panelContenido = document.getElementById('panelContenido');
+      if (panelConfig) panelConfig.hidden = activa !== 'config';
+      if (panelContenido) panelContenido.hidden = activa !== 'contenido';
+    },
+
     _construirPreguntas() {
       return this._examen.preguntas.map((p, i) => {
         const texto = String(p.texto || '').trim();
@@ -1522,7 +1627,8 @@
           puntos_totales: total,
           estado: ex.estado || 'borrador',
           publicado: !!ex.publicado,
-          config: ex.config || {}
+          config: ex.config || {},
+          temario: ex.temario || null
         });
 
         ex.id = guardado.id;

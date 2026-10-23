@@ -100,6 +100,80 @@
   padding-top: var(--espaciado-md);
 }
 
+/* ── Temario de estudio (fase 2, bandera 'temario') ────────────────────── */
+
+.examen-temario {
+  margin-block-end: var(--espaciado-md);
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-lg);
+  overflow: hidden;
+}
+
+.examen-temario__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  min-block-size: var(--toque-minimo);
+  padding: var(--espaciado-sm) var(--espaciado-md);
+  cursor: pointer;
+  font-size: var(--texto-sm);
+  font-weight: var(--texto-peso-semibold);
+  color: var(--color-texto);
+  list-style: none;
+}
+
+.examen-temario__cabecera::-webkit-details-marker {
+  display: none;
+}
+
+.examen-temario[open] > .examen-temario__cabecera {
+  border-block-end: 1px solid var(--color-borde-suave);
+}
+
+.examen-temario__cuenta {
+  flex: 0 0 auto;
+  padding-inline: var(--espaciado-sm);
+  border-radius: var(--radio-pill);
+  background: var(--color-acento-soft);
+  color: var(--color-acento-fuerte);
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-semibold);
+}
+
+.examen-temario__lista {
+  margin: 0;
+  padding: var(--espaciado-sm) var(--espaciado-md) var(--espaciado-md);
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.examen-temario__item {
+  display: flex;
+  align-items: baseline;
+  gap: var(--espaciado-sm);
+  font-size: var(--texto-sm);
+  line-height: 1.5;
+  color: var(--color-texto);
+}
+
+.examen-temario__tipo {
+  flex: 0 0 auto;
+  min-inline-size: 5.5rem;
+  color: var(--color-texto-terciario);
+  font-size: var(--texto-xs);
+  font-weight: var(--texto-peso-semibold);
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}
+
+.examen-temario__texto {
+  overflow-wrap: anywhere;
+}
+
 #preguntasExamen.examen-sin-paginar {
   display: flex;
   flex-direction: column;

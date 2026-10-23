@@ -75,6 +75,10 @@
   .lienzo--estrecho{width:min(100% - 32px,560px)}
   .lienzo--correccion{width:min(100% - 32px,900px)}
   .lienzo--centrado{display:flex;align-items:center;justify-content:center;padding-bottom:var(--lg)}
+  /* :empty cubre el momento en que la píldora se cierra con la ×: sin él
+     quedaría un hueco vacío bajo la barra de progreso. */
+  .zona-pill{width:min(100% - 32px,560px);margin:var(--md) auto 0}
+  .zona-pill:empty,.zona-pill[hidden]{display:none}
 
   .tarjeta{background:var(--c);border:1px solid var(--b);border-radius:var(--rx);padding:var(--lg);box-shadow:var(--sombra)}
 
@@ -93,6 +97,15 @@
   .sub{color:var(--ts);font-size:var(--sm);line-height:1.65}
   .meta{display:flex;flex-wrap:wrap;gap:var(--xs);margin:var(--md) 0}
   .chip{display:inline-flex;align-items:center;gap:5px;padding:5px 11px;border-radius:999px;background:var(--fa);border:1px solid var(--b);font-size:var(--xs);font-weight:600;color:var(--ts)}
+
+  /* ── Temario de estudio publicado (fase 2) ── */
+  .temario{margin:0 0 var(--md);border:1px solid var(--b);border-radius:var(--r);background:var(--fa);overflow:hidden}
+  .temario__cabecera{display:flex;align-items:center;min-height:var(--touch);padding:10px 14px;cursor:pointer;font-size:var(--sm);font-weight:600;color:var(--t);list-style:none}
+  .temario__cabecera::-webkit-details-marker{display:none}
+  .temario[open] .temario__cabecera{border-bottom:1px solid var(--b)}
+  .temario__lista{list-style:none;margin:0;padding:12px 14px;display:flex;flex-direction:column;gap:8px}
+  .temario__item{font-size:var(--sm);line-height:1.55;color:var(--ts);overflow-wrap:anywhere}
+  .temario__ref{display:inline-block;margin-right:8px;padding:2px 9px;border-radius:999px;background:var(--as);color:var(--a);font-size:var(--xs);font-weight:600}
 
   .campo{margin-bottom:var(--md)}
   label{display:block;font-size:var(--sm);font-weight:600;margin-bottom:6px}
@@ -234,6 +247,7 @@
 
   @media (max-width:560px){
     .lienzo{width:min(100% - 24px,760px);padding-top:var(--md)}
+    .zona-pill{width:min(100% - 24px,560px)}
     .tarjeta{padding:var(--md)}
     .barra-envio{flex-direction:column;align-items:stretch;gap:8px}
     .barra-envio__info{text-align:center}
@@ -254,6 +268,11 @@
   <span class="cabecera__estado" id="cabEstado"></span>
 </header>
 <div class="progreso" aria-hidden="true"><div class="progreso__barra" id="progresoBarra"></div></div>
+
+<!-- Zona de la píldora «Instala la app». Vive FUERA de #lienzo porque cada
+     pantalla hace lienzo.innerHTML = '' y la borraría al instante. La pinta
+     examen.js: visible al entrar y al terminar, oculta mientras se responde. -->
+<div class="zona-pill" id="zonaPill" hidden></div>
 
 <main class="lienzo" id="lienzo" aria-live="polite">
   <section class="tarjeta skel-carga" id="cargando" role="status" aria-busy="true" aria-label="Cargando el examen">

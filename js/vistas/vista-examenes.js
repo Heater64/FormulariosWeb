@@ -605,6 +605,12 @@
       const esBorrador = ex.estado === 'borrador';
       const titulo = esc(ex.titulo);
       const icono = ICONOS_ESTADO[ex.estado] || 'pen-line';
+      // Temario (bandera 'temario'): indicador en la tarjeta + acceso desde
+      // el menú. Sin temario no se pinta badge: el ausente ya lo comunica.
+      const temarioActivo = !!(window.features && window.features.activa('temario'));
+      const temario = temarioActivo && ex.temario && Array.isArray(ex.temario.items) && ex.temario.items.length
+        ? ex.temario
+        : null;
 
       const datos = [
         `<span class="ex-ficha__dato">${I('file-text')}${plural(Number(ex.num_preguntas) || 0, 'pregunta', 'preguntas')}</span>`,
@@ -647,6 +653,7 @@
             <h2>${titulo}</h2>
             <span class="adm-badge ${estado.clase}">${estado.texto}</span>
             ${porCorregir > 0 ? `<span class="adm-badge adm-badge--aviso">${porCorregir} por corregir</span>` : ''}
+            ${temario ? `<span class="adm-badge ${temario.publicado ? 'adm-badge--publicado' : 'adm-badge--borrador'}">${temario.publicado ? 'Temario publicado' : 'Temario borrador'}</span>` : ''}
           </div>
           <div class="ex-ficha__meta">
             ${datos.join('')}
@@ -665,6 +672,7 @@
             <div class="adm-examen__menu" aria-label="Acciones adicionales">
               ${menuEntregas}
               ${estadoAccion}
+              ${temarioActivo ? `<button class="adm-btn adm-btn--pequeno" type="button" data-accion="temario" data-id="${esc(ex.id)}">${I('book-open')} Temario${temario ? '' : ' · sin temario'}</button>` : ''}
               <button class="adm-btn adm-btn--pequeno" type="button" data-accion="duplicar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('copy')} Duplicar como borrador</button>
               <button class="adm-btn adm-btn--pequeno adm-btn--peligro" type="button" data-accion="eliminar" data-id="${esc(ex.id)}" data-titulo="${titulo}">${I('trash-2')} Eliminar examen</button>
             </div>
@@ -677,6 +685,12 @@
       if (accion === 'editar') {
         if (!(await window.helpers.confirmarEdicion())) return;
         router.navegar('/editor/' + id);
+        return;
+      }
+      if (accion === 'temario') {
+        if (!(await window.helpers.confirmarEdicion())) return;
+        // El editor abre con el panel de revisión del temario desplegado.
+        router.navegar('/editor/' + id + '?temario=1');
         return;
       }
       if (accion === 'entregas') { router.navegar('/corregir/' + id); return; }

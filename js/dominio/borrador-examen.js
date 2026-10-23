@@ -50,6 +50,9 @@
   function tieneContenidoReal(examen) {
     if (!esObjeto(examen)) return false;
     if (texto(examen.titulo).trim()) return true;
+    // Un temario pegado también es trabajo del profesor: sin esto, un
+    // dispositivo sin título y solo temario perdería la recuperación local.
+    if (esObjeto(examen.temario) && Array.isArray(examen.temario.items) && examen.temario.items.length) return true;
     const preguntas = Array.isArray(examen.preguntas) ? examen.preguntas : [];
     return preguntas.some((pregunta) => {
       if (!esObjeto(pregunta)) return false;

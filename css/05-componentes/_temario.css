@@ -1,0 +1,196 @@
+/* ============================================================================
+   _temario.css — bloque «Temario de estudio» del editor de exámenes
+   ----------------------------------------------------------------------------
+   Solo tokens de css/00-settings/. BEM con prefijo `temario-`/`temario__`;
+   el chip de estado reutiliza .adm-badge de _plataforma.css.
+   ========================================================================== */
+
+.temario__cabecera {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.temario__badge {
+  white-space: nowrap;
+}
+
+/* ── Resumen: «3 referencias · 1 observación · 1 tarea» ─────────────────── */
+
+.temario__resumen {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-xxs);
+  margin-block: var(--espaciado-xs) var(--espaciado-sm);
+}
+
+.temario__chip {
+  display: inline-flex;
+  align-items: center;
+  min-height: calc(var(--toque-minimo) / 2);
+  padding-inline: var(--espaciado-sm);
+  border-radius: var(--radio-pill);
+  background: var(--color-acento-soft);
+  color: var(--color-acento-fuerte);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.temario__chip--aviso {
+  background: var(--color-aviso-soft);
+  color: var(--color-aviso);
+}
+
+/* ── Alta rápida: una línea por Enter ──────────────────────────────────── */
+
+.temario__alta {
+  display: flex;
+  gap: var(--espaciado-xs);
+  align-items: stretch;
+  margin-block-start: var(--espaciado-sm);
+}
+
+.temario__alta-campo {
+  flex: 1 1 auto;
+  min-inline-size: 0;
+}
+
+.temario__alta .adm-btn {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 560px) {
+  .temario__alta {
+    flex-direction: column;
+  }
+}
+
+/* ── Acciones ───────────────────────────────────────────────────────────── */
+
+.temario__acciones {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  margin-block-start: var(--espaciado-sm);
+}
+
+/* ── Lista de revisión ──────────────────────────────────────────────────── */
+
+.temario__lista {
+  margin-block-start: var(--espaciado-sm);
+}
+
+.temario__lista[hidden] {
+  display: none;
+}
+
+.temario__elementos {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--espaciado-xs);
+}
+
+.temario__anadir {
+  margin-block-start: var(--espaciado-sm);
+}
+
+/* ── Elemento individual ────────────────────────────────────────────────── */
+
+.temario-item {
+  background: var(--color-fondo-tarjeta);
+  border: 1px solid var(--color-borde);
+  border-radius: var(--radio-md);
+  padding: var(--espaciado-sm);
+}
+
+/* Énfasis de revisión: 2px de borde (regla de bordes del sistema). */
+.temario-item--revisar {
+  border: 2px solid var(--color-aviso);
+  padding: calc(var(--espaciado-sm) - 1px);
+}
+
+.temario-item__fila {
+  display: flex;
+  align-items: center;
+  gap: var(--espaciado-xs);
+  flex-wrap: wrap;
+}
+
+.temario-item__tipo {
+  flex: 0 0 auto;
+  min-inline-size: 9rem;
+}
+
+.temario-item__texto {
+  flex: 1 1 12rem;
+  min-inline-size: 0;
+}
+
+.temario-item__botones {
+  display: flex;
+  gap: var(--espaciado-2xs);
+}
+
+/* Cada acción toca el mínimo táctil. */
+.temario-item__btn {
+  min-inline-size: var(--toque-minimo);
+  min-block-size: var(--toque-minimo);
+  padding: 0;
+}
+
+/* ── Referencias interpretadas ──────────────────────────────────────────── */
+
+.temario-item__refs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--espaciado-2xs);
+  margin-block-start: var(--espaciado-xs);
+}
+
+.temario-item__ref {
+  display: inline-flex;
+  align-items: center;
+  min-block-size: calc(var(--toque-minimo) / 2);
+  padding-inline: var(--espaciado-xs);
+  border-radius: var(--radio-pill);
+  background: var(--color-acento-soft);
+  color: var(--color-acento-fuerte);
+  font-size: var(--texto-xs);
+  font-weight: 600;
+}
+
+.temario-item__ref--vacia {
+  background: var(--color-fondo-alt);
+  color: var(--color-texto-terciario);
+  font-weight: 500;
+}
+
+.temario-item__aviso {
+  margin: var(--espaciado-2xs) 0 0;
+  color: var(--color-aviso);
+  font-size: var(--texto-xs);
+  line-height: 1.4;
+}
+
+/* ── Móvil: los botones de acción no comprimen el campo de texto ────────── */
+
+@media (max-width: 560px) {
+  .temario-item__fila {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .temario-item__tipo {
+    min-inline-size: 0;
+  }
+
+  .temario-item__botones {
+    justify-content: flex-end;
+  }
+}

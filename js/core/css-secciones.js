@@ -36,7 +36,9 @@
       '_plataforma.css',
       '_editor-examenes.css', '_editor-preguntas.css', '_editor-tiptap.css',
       '_editor-dibujo.css', '_editor-huecos.css', '_editor-imagen.css',
-      '_tarjeta-pregunta.css', '_pregunta-examen.css', '_sugerencias.css'
+      '_tarjeta-pregunta.css', '_pregunta-examen.css', '_sugerencias.css',
+      // Bloque «Temario de estudio» (bandera temario) y pestañas del editor.
+      '_temario.css', '_editor-pestanas.css'
     ],
     estudio: [
       '_plataforma.css', '_estudio.css', '_tarjeta-libro.css', '_tarjeta-capitulo.css',

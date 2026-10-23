@@ -202,6 +202,29 @@
       }
     },
 
+    /**
+     * Bloque «Temario de estudio» para el alumno (fase 2, bandera 'temario').
+     * Solo llega aquí el temario PUBLICADO que el servidor entregó saneado
+     * ({ items: [{ tipo, texto, refs, orden }] }); se pinta como <details>
+     * nativo para que se pueda consultar durante el examen sin JS extra.
+     */
+    _htmlTemarioAlumno(temario) {
+      const esc = window.helpers.escapeHtml;
+      const items = (temario && Array.isArray(temario.items) ? temario.items : [])
+        .slice()
+        .sort((a, b) => (Number(a.orden) || 0) - (Number(b.orden) || 0));
+      if (!items.length) return '';
+      const TIPO = { referencia: 'Referencia', observacion: 'Observación', tarea: 'Tarea' };
+      const lineas = items.map((item) => {
+        const tipo = TIPO[item.tipo] || 'Texto libre';
+        return `<li class="examen-temario__item"><span class="examen-temario__tipo">${esc(tipo)}</span><span class="examen-temario__texto">${esc(String(item.texto || ''))}</span></li>`;
+      }).join('');
+      return `<details class="examen-temario">
+        <summary class="examen-temario__cabecera">Temario de estudio<span class="examen-temario__cuenta">${items.length} elemento${items.length === 1 ? '' : 's'}</span></summary>
+        <ol class="examen-temario__lista">${lineas}</ol>
+      </details>`;
+    },
+
     _renderizar(raiz, examen, preguntas, intento, respuestas, usuario, info) {
       const config = this._configDe(examen);
       const duracionMinutos = this._minutosDesdeConfig(config);
@@ -241,6 +264,12 @@
         barraModo = `<div class="examen-modo__linea">${insignia}<span>Lo realizas como <strong>${quien}</strong> · quedará registrado a tu nombre · sin salidas hasta entregar.</span></div>`;
       }
       const quienCorto = window.helpers.escapeHtml(usuario.nombre_completo || usuario.username || '');
+      // Temario publicado (fase 2): solo con la bandera activa y si el
+      // servidor lo entregó; queda plegado arriba del todo para poder
+      // consultarlo mientras se responde.
+      const temarioHtml = (window.features && window.features.activa('temario') && examen && examen.temario)
+        ? this._htmlTemarioAlumno(examen.temario)
+        : '';
 
       raiz.innerHTML = `
         <div class="examen-page examen-modo">
@@ -257,6 +286,7 @@
             ${barraModo}
           </header>
           <main class="o-contenedor examen-lista">
+            ${temarioHtml}
             <div id="preguntasExamen" class="examen-sin-paginar"></div>
           </main>
           <div class="examen-paginado" id="examenPaginado" hidden>
