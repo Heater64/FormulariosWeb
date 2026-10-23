@@ -13,7 +13,6 @@
 (function () {
   'use strict';
 
-  const ROLES = ['admin', 'editor', 'owner'];
   const etiquetaRol = { owner: 'Propietario', admin: 'Administrador', editor: 'Profesor' };
   const esc = (v) => window.panelUI.esc(v);
   const I = (nombre) => (window.Iconos ? window.Iconos.render(nombre) : '');
@@ -224,7 +223,10 @@
             <p id="estadoNotificaciones" class="cuenta-estado" role="status" aria-live="polite"></p>
           </section>
 
-          ${ROLES.includes(rol) ? `<section class="cuenta-bloque" aria-labelledby="tituloSeguridad">
+          <!-- Seguridad: disponible para TODO rol autenticado. El alumno no tiene
+               correo recuperable (usa un correo sintético), así que este formulario
+               es su única vía para cambiar la contraseña por sí mismo. -->
+          <section class="cuenta-bloque" aria-labelledby="tituloSeguridad">
             ${cabeceraBloque('shield', 'Seguridad', 'Protege el acceso a tu cuenta.', 'tituloSeguridad')}
             <details class="cuenta-detalles" id="detallesPassword">
               <summary class="cuenta-detalles__resumen">
@@ -256,7 +258,7 @@
                 </form>
               </div>
             </details>
-          </section>` : ''}
+          </section>
 
           <!-- Almacenamiento -->
           <section class="cuenta-bloque" aria-labelledby="tituloAlmacenamiento">

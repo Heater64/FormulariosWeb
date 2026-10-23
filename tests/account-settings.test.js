@@ -264,3 +264,73 @@ describe('interacción de Cuenta', () => {
     }
   });
 });
+
+describe('cambio de contraseña en Cuenta', () => {
+  function montarCuenta(rol) {
+    const dom = new JSDOM('<!doctype html><html><body><div id="raiz"></div></body></html>', {
+      url: 'http://localhost/#!/cuenta', runScripts: 'outside-only', pretendToBeVisual: true
+    });
+    const w = dom.window;
+    const raiz = w.document.getElementById('raiz');
+    const usuario = { id: 'u-1', username: 'ana', nombre_completo: 'Ana Pérez', rol, activo: true, preferencias: {} };
+
+    w.panelUI = { esc: (valor) => String(valor ?? '') };
+    w.Iconos = { render: (nombre) => `<i data-icono="${nombre}"></i>`, actualizar: vi.fn() };
+    w.helpers = {
+      mostrarAlerta: vi.fn(),
+      confirmar: vi.fn(async () => false),
+      formatearFecha: () => '1 de enero de 2026',
+      formulario: vi.fn(async () => null)
+    };
+    w.store = { obtener: () => usuario, actualizar: vi.fn() };
+    w.router = { navegar: vi.fn(), pathActual: () => '/cuenta' };
+    w.preferencias = { guardar: vi.fn(), aplicar: vi.fn() };
+    w.supabaseClient = null;
+    w.authRepository = { cambiarPassword: vi.fn(async () => {}) };
+
+    vm.runInContext(accountView, dom.getInternalVMContext(), { filename: 'js/vistas/vista-cuenta.js' });
+    return { w, raiz };
+  }
+
+  // Regresión: el bloque Seguridad estaba detrás de ROLES = ['admin','editor','owner'],
+  // así que un alumno no tenía NINGÚN formulario de contraseña en la app (su correo
+  // es sintético y la recuperación por enlace lo rechaza expresamente).
+  test('la sección Seguridad aparece también a un alumno (rol usuario)', async () => {
+    const { w, raiz } = montarCuenta('usuario');
+    await w.vistaCuenta.montar(raiz);
+
+    expect(raiz.querySelector('#detallesPassword')).toBeTruthy();
+    expect(raiz.querySelector('#formPassword')).toBeTruthy();
+    expect(raiz.querySelector('#btnPassword')).toBeTruthy();
+    expect(raiz.innerHTML).toContain('Cambiar contraseña');
+  });
+
+  test('el formulario envía la contraseña actual y la nueva a authRepository', async () => {
+    const { w, raiz } = montarCuenta('usuario');
+    await w.vistaCuenta.montar(raiz);
+
+    raiz.querySelector('#actual').value = 'Antigua123';
+    raiz.querySelector('#nueva').value = 'Nueva123';
+    raiz.querySelector('#confirmar').value = 'Nueva123';
+    raiz.querySelector('#formPassword').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolver) => setTimeout(resolver, 0));
+
+    expect(w.authRepository.cambiarPassword).toHaveBeenCalledWith('Antigua123', 'Nueva123');
+    expect(w.helpers.mostrarAlerta).toHaveBeenCalledWith('Contraseña actualizada.', 'exito');
+  });
+
+  test('si las contraseñas nuevas no coinciden no se llama al servidor', async () => {
+    const { w, raiz } = montarCuenta('usuario');
+    await w.vistaCuenta.montar(raiz);
+
+    raiz.querySelector('#actual').value = 'Antigua123';
+    raiz.querySelector('#nueva').value = 'Nueva123';
+    raiz.querySelector('#confirmar').value = 'Distinta123';
+    raiz.querySelector('#formPassword').dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }));
+    await new Promise((resolver) => setTimeout(resolver, 0));
+
+    expect(w.authRepository.cambiarPassword).not.toHaveBeenCalled();
+    expect(raiz.querySelector('#avisoPassword').hidden).toBe(false);
+    expect(raiz.querySelector('#avisoPassword').textContent).toContain('no coinciden');
+  });
+});

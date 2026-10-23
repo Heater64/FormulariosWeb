@@ -74,10 +74,14 @@
     style.textContent = `
       .pwa-pill{display:flex;align-items:center;gap:10px;width:fit-content;max-width:100%;margin:0 auto 12px;padding:6px 6px 6px 14px;border:1px solid var(--b,#E2E8F0);border-radius:999px;background:var(--c,#fff);color:var(--ts,#475569);font:500 13px/1.3 var(--body,system-ui,sans-serif);box-shadow:0 1px 2px rgba(0,0,0,.06)}
       .pwa-pill__texto{white-space:nowrap}
-      .pwa-pill__instalar{border:0;border-radius:999px;padding:7px 14px;background:var(--a,#2563EB);color:#fff;font:inherit;font-weight:700;cursor:pointer}
+      .pwa-pill__instalar{position:relative;border:0;border-radius:999px;padding:7px 14px;background:var(--a,#2563EB);color:#fff;font:inherit;font-weight:700;cursor:pointer}
       .pwa-pill__instalar:hover{background:var(--ah,#1D4ED8)}
-      .pwa-pill__cerrar{border:0;background:transparent;color:var(--tt,#5E6D84);font-size:18px;line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer}
+      .pwa-pill__cerrar{position:relative;border:0;background:transparent;color:var(--tt,#5E6D84);font-size:18px;line-height:1;width:32px;height:32px;border-radius:50%;cursor:pointer}
       .pwa-pill__cerrar:hover{background:var(--fa,#F1F5F9)}
+      /* Área táctil de 44×44 (AGENTS.md) sin engordar la píldora: el pseudo
+         elemento amplía el área pulsable, no la caja visible. Entre la × y el
+         botón hay 10px de separación, así que su halo no lo pisa. */
+      .pwa-pill__instalar::after,.pwa-pill__cerrar::after{content:'';position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);width:44px;height:44px}
       .pwa-pill:focus-within{outline:none}
     `;
     document.head.appendChild(style);
